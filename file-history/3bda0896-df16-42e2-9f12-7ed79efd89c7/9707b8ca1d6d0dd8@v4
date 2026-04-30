@@ -1,0 +1,22 @@
+package com.yottastudios.ns.collabspace.shared.config.properties;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@Data
+@ConfigurationProperties(prefix = "mattermost")
+public class MattermostProperties {
+
+    private String echoCueToken;
+    private String reviewCueToken;
+    private String xArtToken;
+    private String mmXTeamId;
+    private String reqToken;
+
+    /** XCollabSpace机器人token */
+    private String xcollabspaceBotToken;
+
+    /** 公告推送目标频道ID */
+    private String xcollabspaceChannelId;
+
+}

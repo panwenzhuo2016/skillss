@@ -1,0 +1,1283 @@
+<template>
+    <oa-template-content
+        v-if="visible"
+        :show-header="true"
+        :show-back-btn="true"
+        :show-save-btn="true"
+        header-:title="`${$t('t2405221746')}`"
+        :show-footer="true"
+        :is-confirm-disabled="confirmDisable"
+        :is-save-disabled="saveDisabled"
+        page-type="loanStrikeBalance"
+        @back="back"
+        @save="save"
+        @cancel="cancel"
+        @confirm="confirm"
+    >
+        <oa-template-c-item :show-footer="false" :title="`${$t('t341')}`">
+            <el-form ref="form" v-loading="loading" label-width="140px" size="small" label-position="left">
+                <div class="topText">
+                    <div v-if="!openText" class="explain">
+                        <p>{{ loanExplainText.text1 }}</p>
+                        <p>{{ loanExplainText.text2 }}</p>
+                        <p>
+                            {{ loanExplainText.text3 }}
+                            <span @click="open">{{ loanExplainText.text4 }}</span>
+                        </p>
+                    </div>
+                    <div v-if="openText" class="explain">
+                        <p v-for="(val, index) in Object.keys(loanExplainTextMore)" :key="val">
+                            <template v-if="index !== Object.keys(loanExplainTextMore).length - 1">{{
+                                loanExplainTextMore[val]
+                            }}</template>
+                            <span v-else @click="close">{{ loanExplainTextMore[val] }}</span>
+                        </p>
+                    </div>
+                </div>
+                <el-form-item :label="`${$t('t2405221747')}`" required>
+                    <el-select
+                        v-model="editData.relativeNo"
+                        :disabled="isReEdit"
+                        :placeholder="`${$t('select')}`"
+                        value-key="no"
+                        @change="handleRelativeNo"
+                    >
+                        <el-option
+                            v-for="(item, index) in editOptions.relativeOptions"
+                            :key="index"
+                            :label="item.no"
+                            :value="item"
+                        />
+                    </el-select>
+                </el-form-item>
+
+                <el-form-item :label="`${$t('department')}`">
+                    {{ editData.department }}
+                </el-form-item>
+
+                <el-form-item :label="`${$t('t240522648')}`">
+                    {{ `￥${showLoanAmount}` }}
+                </el-form-item>
+
+                <el-form-item :label="`${$t('t2405221748')}`" required>
+                    <el-select v-model="editData.type" :disabled="typeEditAble" :placeholder="`${$t('select')}`">
+                        <el-option
+                            v-for="item in editOptions.typeOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                        />
+                    </el-select>
+                </el-form-item>
+
+                <el-form-item :label="`${$t('t363')}`" required>
+                    <el-cascader
+                        ref="shareSubject"
+                        v-model="editData.shareSubject"
+                        :options="editOptions.departmentBranchOptions"
+                        :disabled="shareSubInputAvailable"
+                        @change="handleShareSubjects"
+                    />
+                </el-form-item>
+                <team-building-loan
+                    v-if="editData.type === 'team_building_reversal'"
+                    ref="tb_extra_info"
+                    v-model="editData.tm_extra_info"
+                />
+
+                <AddFormDetail
+                    ref="rm_detail"
+                    :re-edit-data="reEditDetailData"
+                    :process_key="editData.type"
+                    :charge-detail="chargeDetail"
+                    :is-re-edit="isReEdit"
+                    @changeLoanDetail="ww"
+                />
+
+                <el-form-item :label="`${$t('t2405221749')}`">
+                    <i class="iconfont icon-renminbi"></i>{{ editData.totalMoneySp }}
+                </el-form-item>
+                <el-form-item>
+                    <div class="tip">
+                        若借款没有使用完，可将剩余款项退回至公司账号，并且在冲账费用中新增“退回借款”类型的费用明细并上传退款凭证。
+                    </div>
+                </el-form-item>
+                <el-form-item :label="`${$t('t2405221751')}`" required>
+                    <el-input
+                        v-model="editData.remark"
+                        type="textarea"
+                        show-word-limit
+                        maxlength="1000"
+                        :place-holder="`${$t('t455')}`"
+                    />
+                </el-form-item>
+
+                <el-form-item :label="`${$t('t2405221752')}`">
+                    <div class="fileContent">
+                        <div>
+                            <SupplyFiles
+                                v-for="data in commonFileData"
+                                :key="data.value"
+                                :data="data"
+                                format=".pdf,.doc,.docx,.bmp,.jpg,.png,.xls,.xlsx"
+                                :size="50"
+                                @onload="onload($event)"
+                            >
+                                <!-- <template>
+                                    <UploadStatusItem
+                                        v-for="(item, index) of commonFileData"
+                                        :key="index"
+                                        class="pt10"
+                                        :name="item.label"
+                                        :fail="false"
+                                    >
+                                        <span
+                                            class="assetDelete"
+                                            @click.stop="deleteHistoryFiles(index,data.historyFiles)"
+                                        >删除</span>
+                                    </UploadStatusItem>
+                                </template> -->
+                            </SupplyFiles>
+                        </div>
+                    </div>
+                    <div v-if="historyFile.length">
+                        <div
+                            v-for="(item, ind) in historyFile"
+                            :key="ind"
+                            class="text-blue-500 row3-value flex items-center"
+                        >
+                            <span v-if="item.key" class="cursor-pointer">{{ item.key }}</span>
+                            <span class="assetDelete" @click.stop="deleteHistoryFiles(ind, item)">{{$t('t489')}}</span>
+                        </div>
+                    </div>
+                </el-form-item>
+
+                <el-form-item :label="`${$t('add_cc')}`">
+                    <template v-if="!showEditCC">
+                        <span v-if="editData.ccEdit && editData.ccEdit.length">
+                            {{ editData.ccEdit.join('、') }}
+                        </span>
+                        <span class="editCC" @click="editCC">{{ $t('edit') }}</span>
+                    </template>
+                    <template v-else>
+                        <div>
+                            <div class="nameList">
+                                <div v-for="item in temporaryCC" :key="item" class="person">
+                                    <div>
+                                        {{ item }}
+                                    </div>
+                                    <i class="el-icon-circle-close" @click="deleteCC(item)"></i>
+                                </div>
+                                <div>
+                                    <el-autocomplete
+                                        ref="ccAutoComplete"
+                                        v-model="ccNickName"
+                                        :fetch-suggestions="querySearchCC"
+                                        :placeholder="$t('t570')"
+                                        class="myInput"
+                                        :trigger-on-focus="false"
+                                        suffix-icon="el-icon-search"
+                                        size="small"
+                                        @select="handleSelectCC"
+                                        @keyup.enter.native="handleSelectCC"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <el-button size="mini" @click="cancelCCEdit">
+                                    {{ $t('cancel') }}
+                                </el-button>
+                                <el-button size="mini" type="primary" @click="confirmCCEdit">
+                                    {{ $t('t486') }}
+                                </el-button>
+                            </div>
+                        </div>
+                    </template>
+                </el-form-item>
+            </el-form>
+        </oa-template-c-item>
+        <loan-process-card :path="path" />
+    </oa-template-content>
+</template>
+
+<script lang="ts">
+import { type } from 'os'
+
+import _ from 'lodash'
+import split from 'lodash'
+import moment from 'moment'
+import { Vue, Component, Prop, Watch, Model } from 'vue-property-decorator'
+
+import { OCApprovalApis } from '@/apis'
+import { userExistsAPI } from '@/apis/StaffPage/OCLoan'
+import { uploadDict } from '@/app/Common/MDictionary'
+import OaTemplateCItem from '@/app/PC/Common/OaCommTemplate/OaTemplateCItem.vue'
+import OaTemplateContent from '@/app/PC/Common/OaCommTemplate/OaTemplateContent.vue'
+import UploadStatusItem from '@/app/PC/Common/UploadCommon/UploadStatusItem.vue'
+import { handlerMoneyNO } from '@/app/PC/StaffPage/OCSystem/utils/OCRequest'
+import store from '@/store'
+
+import {
+    getStrikeBalanceMapAPI,
+    StrikeBalanceMap,
+    getableLoanRequestsAPI,
+    preInitiateDataAPI,
+    startInitiateDataAPI,
+    authorizeAPI,
+    getRequestDetailAPI,
+    reEditAPI,
+    getLoanRequestDetailAPI,
+    loanAuthorizeAPI,
+    nicknameExistsAPI,
+} from '../../../../../../apis/OCSystemAPI/loan/LoanStrikeBalance/index'
+import SupplyFiles from '../../../OaApproval/components/SupplyFiles.vue'
+import CCEdit from '../../../Reimbursement/components/CCEdit.vue'
+import RMDetailForm from '../../../Reimbursement/components/RMDetailForm.vue'
+
+import AddFormDetail from './AddFormDetail.vue'
+import LoanProcessCard from './LoanProcessCard.vue'
+import { loanExplainText, loanExplainTextMore } from './LoanStrikeBalanceTips'
+import TeamBuildingLoan from './TeamBuildingLoan.vue'
+import {updateIsClosedAPI} from "@/apis/AccountManagement";
+
+@Component({
+    name: 'AddLoanStrikeBalance',
+    components: {
+        OaTemplateContent,
+        OaTemplateCItem,
+        LoanProcessCard,
+        UploadStatusItem,
+        TeamBuildingLoan,
+        RMDetailForm,
+        SupplyFiles,
+        CCEdit,
+        AddFormDetail,
+    },
+    created() {
+        getStrikeBalanceMapAPI().then(() => {
+            this.editOptions.typeOptions = StrikeBalanceMap.getOptions('loanTypeMap')
+            this.editOptions.departmentBranchOptions = StrikeBalanceMap.getOptions(
+                'strikeBalanceDepartmentBranchMap'
+            )
+        })
+        // 关联借款申请可选择项
+        getableLoanRequestsAPI().then(res => {
+            this.editOptions.relativeOptions = res.data
+        })
+    },
+})
+export default class extends Vue {
+    @Prop({ type: Array, default: () => [] }) reEditData: Record<string, any>
+    @Prop({ type: Number, default: 0 }) reEditItem
+    @Prop({ type: Object, default: () => ({}) }) localSavedData: Record<string, any>
+    // 关联借款
+    @Prop({ type: Object, default: () => ({}) }) relativeItem
+    @Prop({ type: Boolean, default: false }) visible
+    @Watch('reEditItem', { deep: true, immediate: true })
+    changeReEditItem(val) {
+        if (val) {
+            this.$nextTick(() => {
+                this.getReEditDetail(val)
+            })
+        }
+    }
+    // 借款入口发起冲账
+    @Watch('relativeData', { deep: true, immediate: true })
+    changeRelativeItem(val) {
+        if (val.relativeNo) {
+            this.editData.relativeNo = val.relativeNo
+            this.editData.department = val.department
+            this.editData.loanAmount = val.loanAmount
+            this.editData.total_loan_money = val.loanAmount
+            this.showLoanAmount = handlerMoneyNO(val.loanAmount)
+        }
+    }
+
+    get relativeData() {
+        return this.relativeItem.relativeNo ? this.relativeItem : {}
+    }
+    @Watch('editData', { deep: true, immediate: true })
+    changeConfirmDisable(val) {
+        // 限制保存按钮
+        if (this.loanDetailFlag) {
+            if (val.relativeNo !== '' && val.type !== '' && val.group !== 0 && val.remark !== '') {
+                // 类型为团建费
+                if (
+                    val.type === 'team_building_reversal' &&
+                    val.tm_extra_info.department_or_project_group !== '' &&
+                    val.tm_extra_info?.selectedSeasons?.length !== 0 &&
+                    val.tm_extra_info?.team_building_season?.every(
+                        item => item.number != '' && item.participants != ''
+                    )
+                ) {
+                    // 大于
+                    if (
+                        this.editData.totalMoney > _.toNumber(this.editData.total_loan_money) &&
+                        !this.isReEdit
+                    ) {
+                        this.preInitiateAble = true
+                        this.saveDisabled = true
+                        // 小于等于
+                    } else if (!(this.editData.totalMoney > _.toNumber(this.editData.total_loan_money))) {
+                        this.preInitiateAble = true
+                        if (this.path.length) {
+                            this.saveDisabled = false
+                        }
+                        if (
+                            !this.oneTipsFlag &&
+                            this.editData.totalMoney < _.toNumber(this.editData.total_loan_money)
+                        ) {
+                            this.$message.warning('冲账总金额=借款总金额时才能提交冲账申请，可以先保存为草稿')
+                            this.oneTipsFlag = true
+                        }
+                    } else {
+                        this.saveDisabled = true
+                    }
+                } else if (this.editData.totalMoney < _.toNumber(this.editData.total_loan_money)) {
+                    this.preInitiateAble = true
+                    if (this.path.length) {
+                        this.saveDisabled = false
+                    }
+                    if (!this.oneTipsFlag) {
+                        this.$message.warning('冲账总金额=借款总金额时才能提交冲账申请，可以先保存为草稿')
+                        this.oneTipsFlag = true
+                    }
+                } else if (this.editData.totalMoney == _.toNumber(this.editData.total_loan_money)) {
+                    this.preInitiateAble = true
+                    if (this.path.length) {
+                        this.saveDisabled = false
+                    }
+                } else if (this.editData.totalMoney > _.toNumber(this.editData.total_loan_money)) {
+                    this.preInitiateAble = true
+                    this.saveDisabled = true
+                    if (!this.tipsFlag) {
+                        this.$message.warning(`${this.$t('t2405221754')}`)
+                    }
+                    this.tipsFlag = true
+                } else {
+                    this.saveDisabled = true
+                }
+            } else {
+                this.saveDisabled = true
+            }
+        } else {
+            this.saveDisabled = true
+        }
+        const num = this.editData.tm_extra_info?.team_building_season?.reduce(
+            (sum, cur) => sum + _.toNumber(cur.number),
+            0
+        )
+        // 限制提交按钮
+        if (this.loanDetailFlag) {
+            if (val.relativeNo !== '' && val.type !== '' && val.group !== 0 && val.remark !== '') {
+                // 团建费
+                {
+                    if (
+                        val.type === 'team_building_reversal' &&
+                        val.tm_extra_info.department_or_project_group !== '' &&
+                        val.tm_extra_info?.selectedSeasons?.length !== 0 &&
+                        val.tm_extra_info?.team_building_season?.every(
+                            item => item.number != '' && item.participants != ''
+                        )
+                    ) {
+                        if (num * 300 > this.removeReturnLoan || num * 300 == this.removeReturnLoan) {
+                            this.preInitiateAble = true
+                            if (
+                                this.path.length &&
+                                this.editData.totalMoney === _.toNumber(this.editData.total_loan_money)
+                            ) {
+                                this.confirmDisable = false
+                            } else {
+                                this.confirmDisable = true
+                            }
+                        } else {
+                            // this.$message.warning(`${this.$t('t2405221755')}`)
+                            this.confirmDisable = true
+                        }
+                    } else {
+                        this.confirmDisable = true
+                    }
+                    if (val.type !== 'team_building_reversal') {
+                        this.preInitiateAble = true
+                        if (
+                            this.path.length &&
+                            this.editData.totalMoney === _.toNumber(this.editData.total_loan_money)
+                        ) {
+                            this.confirmDisable = false
+                        }
+                    }
+                }
+            } else {
+                this.confirmDisable = true
+            }
+        } else {
+            this.confirmDisable = true
+        }
+        if (val.type === 'team_building_reversal' && num * 300 < this.removeReturnLoan) {
+            if (!this.teamBuildingTips) {
+                this.$message.warning('冲账总金额不能超过团建最大金额')
+                this.teamBuildingTips = true
+            }
+        }
+    }
+
+    @Watch('editData.type', { deep: true, immediate: true })
+    editDataTypeChange(val) {
+        this.oneTipsFlag = false
+        this.tipsFlag = false
+        this.saveDisabled = true
+        this.confirmDisable = true
+    }
+
+    @Watch('preInitiateAble', { deep: true, immediate: true })
+    preInitiateAbleChange(val) {
+        if (val && this.path.length === 0 && !this.isReEdit && !this.preInitiateFlag) {
+            this.preInitiate()
+            this.preInitiateFlag = true
+        }
+    }
+
+    @Watch('saveDisabled', { deep: true, immediate: true })
+    saveDisableChange(val) {
+        if (
+            !val &&
+            this.path.length === 0 &&
+            !this.isReEdit &&
+            !this.preInitiateFlag &&
+            this.preInitiateAble
+        ) {
+            this.preInitiate()
+            this.preInitiateFlag = true
+        }
+    }
+
+    viewParam = {
+        // 预览文件的参数
+        show: false,
+        loading: false,
+        index: 0, // 当前预览文件的序号
+        list: [],
+    }
+
+    // 选择data
+    editOptions = {
+        relativeOptions: [],
+        typeOptions: [],
+        shareOptions: [],
+        departmentBranchOptions: [],
+    }
+    preInitiateAble = false
+
+    // 添加数据
+    editData = {
+        // 关联借款申请
+        relativeNo: '',
+        // 发起人部门
+        department: '',
+        // 借款总金额
+        loanAmount: '',
+        // 冲账类型
+        type: '',
+        // 费用分摊主体
+        shareSubject: 0,
+        // 冲账总金额
+        totalMoney: 0,
+        totalMoneySp: '',
+        // 备注
+        remark: '',
+        // 其他附件
+        otherFiles: [],
+        group: 0,
+        branch: 0,
+        detail: [],
+        tm_extra_info: {},
+        // 自定义抄送人
+        ccEdit: [],
+        total_loan_money: '',
+    }
+    preInitiateFlag = false
+    commonFileData = [
+        {
+            value: 'file',
+            label: '',
+            isRequired: false,
+            historyFiles: [],
+            upFiles: [],
+        },
+    ]
+    showLoanAmount = ''
+    chargeDetail = []
+    openText = false // 是否展示详细的说明
+    confirmDisable = true
+    saveDisabled = true
+    loanDetailFlag = false
+    loan_detail = []
+    path = []
+    tm_extra_info = {}
+    reEditType = ''
+    reEditReimbursementDetail = []
+    applicationsInfo: Record<string, any> = {
+        process_key: 'overwork_taxi_reimbursement',
+        department_branch: [],
+        total_money: '',
+        remark: '',
+    }
+    loading = false
+    fileData = []
+    paramsInfo = {
+        extraCCInfo: {
+            ccNames: [],
+        },
+    }
+    ccNickNamesInfo = {}
+    ccNickName = '' // 搜索的花名
+    temporaryCC = [] // 编辑中的cc名单
+    showEditCC = false
+    ccSearchResult = []
+    loanExplainText = loanExplainText
+    loanExplainTextMore = loanExplainTextMore
+    reEditDetailData = []
+    shareSubInputAvailable = false
+    momentToday = moment().format('YYYY-MM-DD')
+    historyFile = []
+    // 是否重新编辑
+    isReEdit = false
+    removeReturnLoan = 0
+    historyExtraCC = []
+    files = []
+    totalExtra = []
+    // 冲账类型是否可更改
+    typeEditAble = false
+    oneTipsFlag = false
+    tipsFlag = false
+    submitter = []
+    loanSubmitter = []
+    loanExtraCC = []
+    teamBuildingTips = false
+
+    @Watch('editData', { immediate: true, deep: true })
+    EditDataChanged(val) {
+        console.log(val, 'vvdd')
+
+        if (
+            val.type === 'team_building_reversal' ||
+            val.type === 'administration_reversal' ||
+            val.type === 'personnel_reversal'
+        ) {
+            this.editData.shareSubject = 10
+            this.editData.group = 10
+            this.editData.branch = 0
+            this.shareSubInputAvailable = true
+        } else {
+            if (!this.isReEdit) {
+                this.editData.shareSubject = 0
+            }
+            this.shareSubInputAvailable = false
+        }
+        const processKeyLabel = StrikeBalanceMap.getByValue('loanTypeMapMap', this.editData.type)?.label
+        if (processKeyLabel != undefined) {
+            this.chargeDetail = StrikeBalanceMap.getOptions(processKeyLabel)
+        }
+    }
+
+    onload({ key, fileList }) {
+        console.log(key, fileList, 'list')
+        this.editData.otherFiles = fileList
+    }
+
+    changeLoanInfo(val) {
+        console.log('====================================')
+        console.log(val, 'val')
+        console.log('====================================')
+    }
+
+    async preInitiate() {
+        try {
+            const param = this.getParam()
+            if (param.tm_extra_info.team_building_season) {
+                param.tm_extra_info.team_building_season.map(item => {
+                    if (typeof item.participants == 'string') {
+                        item.participants.split('、')
+                    }
+                })
+            }
+            const res = await preInitiateDataAPI(param)
+            this.path = res.nodes
+            this.submitter = res.submitter
+            if (this.path.length) {
+                if (!(this.editData.totalMoney > _.toNumber(this.editData.total_loan_money))) {
+                    this.saveDisabled = false
+                }
+                if (this.editData.totalMoney == _.toNumber(this.editData.total_loan_money)) {
+                    this.confirmDisable = false
+                }
+            }
+        } catch (e) {
+            console.log(e, 'e')
+
+            this.$message.error(e.error_msg)
+        }
+    }
+
+    reduceFiles() {
+        if (this.historyFile.length) {
+            this.historyFile.map(item => {
+                this.editData.otherFiles.push({
+                    hasError: false,
+                    isDone: true,
+                    pieceDone: 1,
+                    pieceTotal: 1,
+                    name: item.key,
+                    uniqueName: item.value,
+                })
+            })
+        }
+        // 文件去重
+        const obj = {}
+        console.log(this.editData.otherFiles)
+
+        this.files = this.editData.otherFiles.reduce((prev, cur) => {
+            obj[cur.uniqueName] ? '' : (obj[cur.uniqueName] = true && prev.push(cur))
+            return prev
+        }, [])
+        console.log(this.files, 'hhhhh')
+    }
+
+    getParam() {
+        // 参加团建人员改为数组
+        try {
+            console.log(this.editData)
+            if (this.isReEdit) {
+                this.reduceFiles()
+            }
+
+            // this.editData.ccEdit = this.editData.ccEdit.length ? this.editData.ccEdit.map(item => item.nickname) : []
+            // if (this.historyExtraCC.length) {
+            //     this.editData.ccEdit = this.editData.ccEdit.length ? [...this.editData.ccEdit, ...this.historyExtraCC] : [...this.historyExtraCC]
+            // }
+
+            const param = {
+                nickName: store.state.userInfo.nickname,
+                sfuserId: store.state.userInfo.id,
+                group: this.editData.group,
+                branch: this.editData.branch,
+                totalMoney: this.editData.totalMoney,
+                remark: this.editData.remark,
+                type: this.editData.type,
+                relatedNo: this.editData.relativeNo,
+                appendix: this.isReEdit
+                    ? this.files?.map(item => ({
+                          value: item.value ? item.value : item.uniqueName,
+                          key: item.name,
+                      }))
+                    : this.editData.otherFiles?.map(item => ({
+                          value: item.value ? item.value : item.uniqueName,
+                          key: item.name,
+                      })),
+
+                detail: this.editData.detail.map(item => ({
+                    fare_type: StrikeBalanceMap.getByValue('fareMap', item.loan_type).label,
+                    money: item.money,
+                    detail_remark: item.remark,
+                    activity_date:
+                        this.editData.type === 'team_building_reversal' ? item.teamDate : item.travel_date,
+                    invoice: item.invoice.map(i => ({
+                        key: i.file_name ? i.file_name : i.key,
+                        title: i.title,
+                        value: i.url ? i.url : i.value,
+                        file_name: i.file_name,
+                        url: i.url,
+                        need_to_be_identified: i.need_to_be_identified,
+                        is_identified: i.is_identified,
+                        invoice_name: i.invoice_name,
+                        buyerName: i.buyerName,
+                        invoice_number: i.invoice_number,
+                        invoiceDate: i.invoiceDate,
+                        invoice_no: i.invoice_no,
+                        isRepeatWithDatabase: i.isRepeatWithDatabase,
+                        isRepeatWithOtherInvoice: i.isRepeatWithOtherInvoice,
+                        notMatchConfig: i.notMatchConfig,
+                    })),
+                })),
+
+                tm_extra_info: {
+                    department_or_project_group:
+                        this.editData.type === 'team_building_reversal'
+                            ? this.editData.tm_extra_info.department_or_project_group
+                            : undefined,
+                    selectedSeasons:
+                        this.editData.type === 'team_building_reversal'
+                            ? this.editData.tm_extra_info?.selectedSeasons
+                            : undefined,
+                    team_building_season:
+                        this.editData.type === 'team_building_reversal'
+                            ? this.editData.tm_extra_info?.team_building_season.map(i => ({
+                                  number: _.toNumber(i.number),
+                                  participants:
+                                      typeof i.participants == 'string'
+                                          ? i.participants.split('、')
+                                          : i.participants,
+                                  // participants: i.participants,
+                                  season: _.toNumber(i.season),
+                                  timeInfo: i.timeInfo,
+                                  year: _.toNumber(i.year),
+                              }))
+                            : undefined,
+                },
+                extraCC: this.editData.ccEdit,
+                info: {
+                    initNodes:
+                        this.path.length === 0
+                            ? undefined
+                            : this.path.map(item => ({
+                                  operator_type: item.operatorType,
+                                  operator: item.nickNames,
+                              })),
+                },
+            }
+            return param
+        } catch (e) {
+            console.log(e, 'getParam e')
+        }
+    }
+
+    deleteHistoryFiles(index, item) {
+        // 有url属性是历史附件，没有是新上传附件
+        if (item.hasOwnProperty('url')) {
+            this.historyFile.splice(index, 1)
+        }
+    }
+
+    ww(data) {
+        this.loan_detail = data
+        this.loan_detail.map(item => {
+            item.money = _.toNumber(item.loan_money)
+        })
+        this.editData.detail = this.loan_detail
+        this.editData.totalMoney = _.sumBy(data, function (i) {
+            return _.toNumber(i.loan_money)
+        })
+        this.editData.totalMoneySp = handlerMoneyNO(
+            _.sumBy(data, function (i) {
+                return _.toNumber(i.loan_money)
+            })
+        )
+        // 如果有退回借款，团建费冲账，校验团建费最大金额是否小于冲账总金额 - 退回借款
+        const refundOfLoan = `${this.$t('t2405221756')}`
+        this.removeReturnLoan = _.sumBy(data, function (i) {
+            if (i.loan_type != refundOfLoan) {
+                return _.toNumber(i.loan_money)
+            }
+        })
+
+        if (this.editData.type == 'team_building_reversal') {
+            this.loanDetailFlag =
+                this.loan_detail.every(item => item.loan_type !== '' && item.invoice.length !== 0) &&
+                this.editData.totalMoney !== 0
+        } else if (this.editData.type == 'trip_reversal') {
+            this.loanDetailFlag =
+                this.loan_detail.every(
+                    item => item.loan_type !== '' && item.invoice.length !== 0 && item.travel_date !== ''
+                ) && this.editData.totalMoney !== 0
+        } else {
+            this.loanDetailFlag =
+                this.loan_detail.every(item => item.loan_type !== '' && item.invoice.length !== 0) &&
+                this.editData.totalMoney !== 0
+        }
+        console.log(this.editData.detail, 'detail')
+    }
+
+    // 获取费用分摊主体的branch&group
+    handleShareSubjects() {
+        const node = this.$refs.shareSubject.getCheckedNodes()[0]
+        if (node.parent == null) {
+            this.editData.group = node.value
+            this.editData.branch = 0
+            this.editData.shareSubject = node.data.value
+        } else {
+            this.editData.branch = node.value
+            this.editData.group = node.parent.value
+            this.editData.shareSubject = node.data.value
+        }
+    }
+
+    // 获取部门和借款金额
+    handleRelativeNo(data) {
+        this.editData.relativeNo = data.no
+        this.editData.department = data.department
+        this.editData.loanAmount = data.total_money
+        this.editData.total_loan_money = data.total_money
+        this.showLoanAmount = handlerMoneyNO(this.editData.loanAmount)
+    }
+
+    // 付款部门为人事部/行政部时，自动将艾莎加入抄送列表
+    autoAddAishaToExtraCC(param) {
+        const deptName = this.editData.department
+        const userNickname = store.state.userInfo.nickname
+        if (['人事部', '行政部'].includes(deptName) && userNickname !== '艾莎') {
+            if (!param.extraCC) {
+                param.extraCC = []
+            }
+            if (!param.extraCC.includes('艾莎')) {
+                param.extraCC.push('艾莎')
+            }
+        }
+    }
+    // 保存为草稿
+    async save() {
+        if (!this.path.length) {
+            return
+        }
+        const loading = this.$loading({})
+        try {
+            const param = this.getParam()
+            this.autoAddAishaToExtraCC(param)
+            console.log('====================================')
+            console.log(param, 'param')
+            console.log('====================================')
+            const result = await getLoanRequestDetailAPI(this.editData.relativeNo)
+            let loanUser = []
+            let user = []
+            const sfusers = this.path.map(item => item.nickNames)
+            sfusers.map(item => (user = user.concat(item)))
+            this.loanSubmitter = result.specialNickNames.flat()
+            result.nodes.map(item => (loanUser = loanUser.concat(item)))
+            this.loanExtraCC = result.loanExtraCC
+            const res = this.isReEdit
+                ? await reEditAPI(param, this.reEditItem, false, [
+                      ...new Set(
+                          user
+                              .concat(loanUser)
+                              .concat(param.extraCC)
+                              .concat(this.submitter)
+                              .concat(this.loanSubmitter)
+                              .concat(this.loanExtraCC)
+                      ),
+                  ])
+                : await startInitiateDataAPI(param, 0)
+            if (!this.isReEdit) {
+                const authorizeParam = {
+                    id: res.requestId,
+                    sfusers: [
+                        ...new Set(
+                            user
+                                .concat(loanUser)
+                                .concat(param.extraCC)
+                                .concat(this.submitter)
+                                .concat(this.loanSubmitter)
+                                .concat(this.loanExtraCC)
+                        ),
+                    ],
+                }
+                await authorizeAPI(authorizeParam)
+            }
+            this.$message.success(`${this.$t('t2405221496')}`)
+            this.cancel()
+            this.back()
+        } catch (e) {
+            this.$message.error(e.error_msg)
+        } finally {
+            loading.close()
+        }
+    }
+
+    async confirm() {
+        if (!this.path.length) {
+            return
+        }
+        const loading = this.$loading({})
+        try {
+            const param = this.getParam()
+            this.autoAddAishaToExtraCC(param)
+            console.log(param, 'ggggg')
+            // 授权人范围：冲账审批流节点中花名 + 抄送人 +冲账行政提交人（specialNickNames） + 借款审批流中节点花名 + 借款详情specialNicknames + 借款抄送人
+            // loanUser: 借款审批流节点花名； submitter: 冲账的specialNickName； loanSubmitter: 借款specialNickName； user：冲账审批流节点花名； loanExtraCC: 借款抄送人
+            const result = await getLoanRequestDetailAPI(this.editData.relativeNo)
+            let loanUser = []
+            result.nodes.map(item => (loanUser = loanUser.concat(item)))
+            const sfusers = this.path.map(item => item.nickNames)
+            let user = []
+            sfusers.map(item => (user = user.concat(item)))
+            this.loanSubmitter = result.specialNickNames.flat()
+            this.loanExtraCC = result.loanExtraCC
+            // 确认（start为1，为0是保存为草稿，）
+            const res = this.isReEdit
+                ? await reEditAPI(param, this.reEditItem, true, [
+                      ...new Set(
+                          user
+                              .concat(loanUser)
+                              .concat(param.extraCC)
+                              .concat(this.submitter)
+                              .concat(this.loanSubmitter)
+                              .concat(this.loanExtraCC)
+                      ),
+                  ])
+                : await startInitiateDataAPI(param, 1)
+            const authorizeParam = {
+                id: res.requestId,
+                sfusers: [
+                    ...new Set(
+                        user
+                            .concat(loanUser)
+                            .concat(param.extraCC)
+                            .concat(this.submitter)
+                            .concat(this.loanSubmitter)
+                            .concat(this.loanExtraCC)
+                    ),
+                ],
+            }
+            if (!this.isReEdit) {
+                await authorizeAPI(authorizeParam)
+            }
+            const loanAuthorizeParam = {
+                id: result.id,
+                sfusers: [
+                    ...new Set(
+                        user
+                            .concat(loanUser)
+                            .concat(param.extraCC)
+                            .concat(this.submitter)
+                            .concat(this.loanExtraCC)
+                            .concat(this.loanSubmitter)
+                    ),
+                ],
+            }
+            await loanAuthorizeAPI(loanAuthorizeParam)
+            this.$message.success(`${this.$t('t2405221757')}`)
+            this.cancel()
+            this.back()
+        } catch (e) {
+            console.log('====================================')
+            console.log(e, 'e')
+            console.log('====================================')
+            this.$message.error(e.error_msg)
+        } finally {
+            loading.close()
+            this.$emit('search')
+        }
+    }
+
+    async getReEditDetail(id) {
+        // const loading = this.$loading({})
+        try {
+            this.loading = true
+            const res = await getRequestDetailAPI({ id: id })
+            this.isReEdit = true
+            this.editData = {
+                relativeNo: res.basic.data.relatedNo,
+                department: res.basic.data.department,
+                loanAmount: res.basic.data.totalLoanMoney,
+                total_loan_money: res.basic.data.total_loan_money,
+                totalMoneySp: res.basic.data.totalMoneySp,
+                type: res.basic.data.type,
+                shareSubject: res.basic.data.branch ? res.basic.data.branch : res.basic.data.group,
+                branch: res.basic.data.branch,
+                group: res.basic.data.group,
+                remark: res.basic.data.remark,
+                otherFiles: res.basic.appendix,
+                detail: res.basic.data.detail,
+                tm_extra_info: {},
+                totalMoney: _.toNumber(res.basic.data.totalMoney),
+                ccEdit: [],
+            }
+            this.showLoanAmount = res.basic.data.totalLoanMoney
+            this.reEditType = res.basic.data.type
+            if (res.basic.data.type === 'team_building_reversal') {
+                this.editData.tm_extra_info = res.basic.data.team_building_season
+            }
+
+            this.historyFile = res.basic?.appendix.map(item => ({
+                key: item.key,
+                isRequired: false,
+                url: item.url,
+                value: item.value,
+            }))
+            this.editData.otherFiles = []
+            this.editData.ccEdit = res.basic.data.ccExtra ? res.basic.data.ccExtra : []
+            // this.paramsInfo.extraCCInfo.ccNames = JSON.parse(JSON.stringify(this.paramsInfo.extraCCInfo.ccNames))
+            this.reEditDetailData = JSON.parse(JSON.stringify(res.basic.data.detail)).map((item, index) => ({
+                ...item,
+                dataIndex: index + 1,
+            }))
+            this.path = res.basic.info.initNodes.map(item => ({
+                operatorType: item.operator_type,
+                operatorTypeLabel: StrikeBalanceMap.getByValue('operatorLabelMap', item.operator_type).label,
+                nickNames: item.operator,
+            }))
+            this.typeEditAble = res.basic.data.state !== 1
+            this.submitter = res.basic.specialNickName.flat()
+        } catch (e) {
+            console.log(e)
+
+            this.$message.error(e.error_msg)
+        } finally {
+            this.loading = false
+        }
+    }
+
+    // 编辑抄送人
+    editCC() {
+        this.showEditCC = true
+        if (this.editData.ccEdit && this.editData.ccEdit.length) {
+            this.temporaryCC = [...this.editData.ccEdit]
+        }
+    }
+
+    // 删除抄送人
+    deleteCC(item) {
+        this.temporaryCC = _.difference(this.temporaryCC, [item])
+    }
+    async querySearchCC(queryString, cb) {
+        if (!queryString || !queryString.safeTrim()) {
+            cb([])
+            return
+        }
+
+        const qString = _.capitalize(queryString.safeTrim())
+
+        const res = await nicknameExistsAPI(qString)
+        this.ccSearchResult = []
+
+        if (res) {
+            this.ccSearchResult.push({ value: qString })
+        }
+
+        cb(this.ccSearchResult)
+    }
+
+    handleSelectCC() {
+        this.$refs.ccAutoComplete.suggestions = []
+
+        if (!this.ccNickName) {
+            this.$message.warning(`${this.$t('t520')}`)
+            return
+        }
+        if (!this.ccSearchResult.length) {
+            this.$message.warning(`${this.$t('t567')}`)
+            return
+        }
+
+        this.addTemporaryCC()
+    }
+    addTemporaryCC() {
+        if (this.ccSearchResult[0] && !this.temporaryCC.includes(this.ccSearchResult[0].value)) {
+            this.temporaryCC = _.difference(
+                [...this.temporaryCC, this.ccSearchResult[0].value],
+                [this.$store.state.userInfo.nickname]
+            )
+        }
+        this.ccSearchResult = []
+        this.ccNickName = ''
+    }
+
+    cancelCCEdit() {
+        this.showEditCC = false
+        this.ccSearchResult = []
+        this.ccNickName = ''
+        this.temporaryCC = []
+    }
+    confirmCCEdit() {
+        this.editData.ccEdit = [...this.temporaryCC]
+        this.cancelCCEdit()
+    }
+
+    open() {
+        this.openText = true
+    }
+    close() {
+        this.openText = false
+    }
+
+    back() {
+        this.cancel()
+
+        this.oneTipsFlag = false
+        this.tipsFlag = false
+        this.$emit('update:visible', false)
+        this.$emit('update:reEditItem', 0)
+        this.$emit('search')
+        this.preInitiateFlag = false
+    }
+
+    cancel() {
+        this.preInitiateAble = false
+        this.preInitiateFlag = false
+        this.oneTipsFlag = false
+        this.tipsFlag = false
+        this.teamBuildingTips = false
+        this.typeEditAble = false
+        this.$emit('update:visible', false)
+        this.$emit('update:reEditItem', 0)
+        this.$emit('search')
+        // 关联借款申请可选择项
+        getableLoanRequestsAPI().then(res => {
+            this.editOptions.relativeOptions = res.data
+        })
+        this.submitter = []
+        this.loanSubmitter = []
+        this.preInitiateFlag = false
+        this.historyFile = []
+        this.isReEdit = false
+        this.editData = {
+            // 关联借款申请
+            relativeNo: '',
+            // 发起人部门
+            department: '',
+            // 借款总金额
+            loanAmount: '',
+            // 冲账类型
+            type: '',
+            // 费用分摊主体
+            shareSubject: 0,
+            // 冲账总金额
+            totalMoney: 0,
+            totalMoneySp: '',
+            // 备注
+            remark: '',
+            // 其他附件
+            otherFiles: [],
+            group: 0,
+            branch: 0,
+            detail: [],
+            tm_extra_info: {},
+            // 自定义抄送人
+            ccEdit: [],
+            total_loan_money: '',
+        }
+        this.showLoanAmount = ''
+        this.loan_detail = []
+        this.path = []
+        this.tm_extra_info = {}
+        this.paramsInfo = {
+            extraCCInfo: {
+                ccNames: [],
+            },
+        }
+        this.historyExtraCC = []
+        this.saveDisabled = false
+        this.confirmDisable = false
+        this.commonFileData = [
+            {
+                value: 'file',
+                label: '',
+                isRequired: false,
+                historyFiles: [],
+                upFiles: [],
+            },
+        ]
+    }
+}
+</script>
+
+<style lang="less" scoped>
+/deep/.el-input__prefix {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    > i {
+        width: 30px;
+        font-size: 14px;
+    }
+}
+/deep/ .icon-renminbi {
+    font-size: 14px;
+}
+.tip {
+    border-radius: 5px;
+    display: inline-block;
+    height: 30px;
+    background-color: grey;
+    color: white;
+    padding: 0 5px;
+}
+.inputStyle {
+    width: 200px;
+}
+.explain {
+    display: inline-block;
+    padding: 10px;
+    margin: 10px 10px 0 0;
+    background: #606266;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 12px;
+    line-height: 24px;
+
+    span {
+        cursor: pointer;
+        color: #409eff;
+    }
+}
+.topText {
+    margin-bottom: 1rem;
+    margin-left: 1rem;
+}
+.fileContent {
+    display: flex;
+    justify-content: space-between;
+
+    > .text {
+        width: 60%;
+
+        .fileExplain {
+            display: inline-block;
+            padding: 10px;
+            margin-left: 2rem;
+            background: #606266;
+            border-radius: 0.5rem;
+            color: #fff;
+            font-size: 12px;
+            line-height: 24px;
+            text-align: left;
+
+            span {
+                color: #409eff;
+                cursor: pointer;
+            }
+        }
+    }
+}
+.assetDelete {
+    margin-left: 30px;
+    color: #f00;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.el-tag + .el-tag {
+    margin-left: 10px;
+}
+
+.editCC {
+    cursor: pointer;
+    color: #3b82f6;
+}
+
+/deep/.nameList {
+    margin-bottom: 10px;
+    display: flex;
+    .person {
+        position: relative;
+        margin-right: 0.5rem;
+        width: 100px;
+        height: 32px;
+        line-height: 32px;
+        border-radius: 5px;
+        background: @gray-100;
+        text-align: center;
+        div {
+            transform: translateX(-10px);
+        }
+        i {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+    }
+    .el-input {
+        width: 10rem;
+    }
+}
+</style>

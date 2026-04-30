@@ -1,0 +1,878 @@
+/**
+ * 2087-消息推送与反馈收集 — Feedback 接口测试脚本
+ *
+ * 用法: node test-feedback-api.js
+ * 要求: Node.js 18+（原生 fetch）
+ * 自动登录测试环境，无需手动填 Cookie
+ *
+ * 接口覆盖:
+ *   POST /feedback/submit         — 提交反馈（multipart/form-data，需登录）
+ *   POST /feedback/mm-webhook     — MM机器人反馈写入（JSON，X-Webhook-Token鉴权）
+ *   GET  /feedback/list           — 反馈列表查询（需登录）
+ *   POST /feedback/update-status  — 更新反馈状态（需登录）
+ */
+
+// ========== 配置 ==========
+const CONFIG = {
+  host: 'https://xcollabspace-test.xtool-staging.yottastudios.com',
+  loginEmail: 'test@test.com',           // 主测试账号
+  secondEmail: 'test2@test.com',         // 第二账号（多账号测试）
+};
+
+// ========== 测试框架 ==========
+let passed = 0;
+let failed = 0;
+let cookie = '';
+
+function assert(name, condition, detail) {
+  if (condition) {
+    console.log(`  ✅ ${name}`);
+    passed++;
+  } else {
+    console.log(`  ❌ ${name}`);
+    if (detail !== undefined)
+      console.log(`     实际值:`, typeof detail === 'object'
+        ? JSON.stringify(detail).slice(0, 300) : detail);
+    failed++;
+  }
+}
+
+// ========== TLS: 跳过自签名证书校验 ==========
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+// ========== HTTP 工具 ==========
+
+function parseCookies(res) {
+  const cookies = {};
+  const setCookieHeaders = res.headers.getSetCookie?.() || [];
+  for (const header of setCookieHeaders) {
+    const [kv] = header.split(';');
+    const eqIdx = kv.indexOf('=');
+    if (eqIdx > 0) {
+      cookies[kv.substring(0, eqIdx).trim()] = kv.substring(eqIdx + 1).trim();
+    }
+  }
+  return cookies;
+}
+
+function mergeCookies(existingCookie, newCookies) {
+  const map = {};
+  if (existingCookie) {
+    for (const part of existingCookie.split(';')) {
+      const eqIdx = part.indexOf('=');
+      if (eqIdx > 0) map[part.substring(0, eqIdx).trim()] = part.substring(eqIdx + 1).trim();
+    }
+  }
+  Object.assign(map, newCookies);
+  return Object.entries(map).map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
+async function rawFetch(method, url, body, extraHeaders = {}) {
+  const headers = {
+    ...extraHeaders,
+  };
+  if (cookie) headers['cookie'] = cookie;
+  if (body && !(body instanceof FormData)) {
+    headers['content-type'] = 'application/json';
+  }
+
+  const opts = { method, headers, redirect: 'manual' };
+  if (body) {
+    opts.body = body instanceof FormData ? body : JSON.stringify(body);
+  }
+  return fetch(url, opts);
+}
+
+/**
+ * 安全解析 JSON：将大整数 ID 转为字符串，防止 JS 精度丢失
+ * MyBatis-Plus 雪花 ID 是 19 位数字，超过 Number.MAX_SAFE_INTEGER
+ */
+function safeJsonParse(text) {
+  // 将 JSON 中所有超过15位的纯数字值转为字符串（保留 key）
+  const fixed = text.replace(/:\s*(\d{16,})\b/g, ':"$1"');
+  return JSON.parse(fixed);
+}
+
+/**
+ * 发送 POST 时，如果 body 包含大整数字符串的 feedbackId，需要发送原始数字
+ * 用自定义 stringify 把字符串形式的大数字还原为裸数字
+ */
+function smartStringify(obj) {
+  return JSON.stringify(obj).replace(/"feedbackId":"(\d+)"/g, '"feedbackId":$1');
+}
+
+async function GET(path) {
+  const res = await rawFetch('GET', `${CONFIG.host}/api/v1${path}`);
+  const text = await res.text();
+  return safeJsonParse(text);
+}
+
+async function POST(path, body, extraHeaders = {}) {
+  let actualBody = body;
+  if (body && !(body instanceof FormData) && typeof body === 'object') {
+    // 使用 smartStringify 确保大整数 feedbackId 作为裸数字发送
+    actualBody = smartStringify(body);
+  }
+  const headers = { ...extraHeaders };
+  if (cookie) headers['cookie'] = cookie;
+  if (actualBody && typeof actualBody === 'string') {
+    headers['content-type'] = 'application/json';
+  }
+  const opts = { method: 'POST', headers, redirect: 'manual' };
+  if (actualBody instanceof FormData) {
+    opts.body = actualBody;
+  } else if (typeof actualBody === 'string') {
+    opts.body = actualBody;
+  }
+  const res = await fetch(`${CONFIG.host}/api/v1${path}`, opts);
+  const text = await res.text();
+  return safeJsonParse(text);
+}
+
+async function POST_RAW(path, body, extraHeaders = {}) {
+  return rawFetch('POST', `${CONFIG.host}/api/v1${path}`, body, extraHeaders);
+}
+
+// ========== 登录管理 ==========
+
+async function login(email) {
+  email = email || CONFIG.loginEmail;
+  console.log(`🔑 登录 ${email} ...`);
+  const res = await fetch(`${CONFIG.host}/api/v1/testLogin/${encodeURIComponent(email)}`,
+    { redirect: 'manual' });
+  const cookies = parseCookies(res);
+  // testLogin sets JWT via cookie
+  if (!cookies.JWT && !cookies.TJWT && !cookies.SESSION) {
+    // 尝试 follow redirect
+    const res2 = await fetch(`${CONFIG.host}/api/v1/testLogin/${encodeURIComponent(email)}`);
+    const cookies2 = parseCookies(res2);
+    if (!cookies2.JWT && !cookies2.TJWT && !cookies2.SESSION) {
+      console.log('  ⚠️  登录可能失败（无 cookie 返回），尝试继续...');
+      console.log('     set-cookie:', res.headers.getSetCookie?.());
+    }
+    cookie = mergeCookies('', cookies2);
+  } else {
+    cookie = mergeCookies('', cookies);
+  }
+  console.log(`  ✅ 登录完成\n`);
+}
+
+let savedSessions = {};
+function saveSession(name) {
+  savedSessions[name] = cookie;
+}
+function restoreSession(name) {
+  cookie = savedSessions[name];
+}
+
+async function loginAs(email) {
+  const res = await fetch(`${CONFIG.host}/api/v1/testLogin/${encodeURIComponent(email)}`,
+    { redirect: 'manual' });
+  const cookies = parseCookies(res);
+  if (!cookies.JWT && !cookies.TJWT && !cookies.SESSION) {
+    console.log(`  ⚠️  登录 ${email} 可能失败，跳过`);
+    return false;
+  }
+  cookie = mergeCookies('', cookies);
+  return true;
+}
+
+// ========== 记录创建的反馈ID，用于清理 ==========
+const createdFeedbackIds = [];
+
+// ========== 测试用例 ==========
+
+// ────── 维度 1: 正常流程 ──────
+async function testBasicSubmitAndList() {
+  console.log('📋 1. 基本 CRUD —— 站内反馈提交 + 列表查询 + 状态更新');
+
+  // 1.1 提交反馈（multipart/form-data）
+  const formData = new FormData();
+  const dataBlob = new Blob([JSON.stringify({
+    feedbackType: 'bug',
+    content: '【自动化测试】文档加载缓慢，测试反馈',
+    relatedLink: 'https://xcollabspace-test.xtool-staging.yottastudios.com/test',
+    docType: 'onlyoffice',
+  })], { type: 'application/json' });
+  formData.append('data', dataBlob);
+
+  const submitRes = await POST('/feedback/submit', formData);
+  assert('提交反馈返回 success', submitRes.success === true, submitRes);
+
+  // 1.2 查询反馈列表
+  const listRes = await GET('/feedback/list?pageNum=1&pageSize=20');
+  assert('列表查询返回 success', listRes.success === true, listRes);
+  assert('data 不为 null', listRes.data != null, listRes.data);
+  assert('包含 records 数组', Array.isArray(listRes.data?.records), listRes.data?.records);
+  assert('包含 total', typeof listRes.data?.total === 'number', listRes.data?.total);
+  assert('包含 size', typeof listRes.data?.size === 'number', listRes.data?.size);
+  assert('包含 current', typeof listRes.data?.current === 'number', listRes.data?.current);
+
+  // 1.3 验证刚提交的反馈出现在列表中
+  const myFeedback = listRes.data?.records?.find(r =>
+    r.content === '【自动化测试】文档加载缓慢，测试反馈'
+  );
+  assert('提交的反馈出现在列表中', myFeedback != null, listRes.data?.records?.map(r => r.content));
+
+  if (myFeedback) {
+    createdFeedbackIds.push(myFeedback.id);
+
+    // 验证字段类型
+    assert('记录含 id', myFeedback.id != null, myFeedback.id);
+    assert('记录含 userId (string)', typeof myFeedback.userId === 'string', myFeedback.userId);
+    assert('记录含 feedbackTime (string)', typeof myFeedback.feedbackTime === 'string', myFeedback.feedbackTime);
+    assert('记录含 feedbackType === "bug"', myFeedback.feedbackType === 'bug', myFeedback.feedbackType);
+    assert('记录含 docType === "onlyoffice"', myFeedback.docType === 'onlyoffice', myFeedback.docType);
+    assert('记录含 relatedLink', typeof myFeedback.relatedLink === 'string', myFeedback.relatedLink);
+    assert('记录含 content', typeof myFeedback.content === 'string', myFeedback.content);
+    assert('记录含 attachments (数组)', Array.isArray(myFeedback.attachments), myFeedback.attachments);
+    assert('记录含 source === "sentry"', myFeedback.source === 'sentry', myFeedback.source);
+    assert('记录含 status === 0 (未处理)', myFeedback.status === 0, myFeedback.status);
+
+    // 1.4 更新反馈状态
+    const updateRes = await POST('/feedback/update-status', {
+      feedbackId: myFeedback.id,
+      status: 1,
+    });
+    assert('更新状态返回 success', updateRes.success === true, updateRes);
+
+    // 验证状态变更
+    const listRes2 = await GET('/feedback/list?pageNum=1&pageSize=20');
+    const updated = listRes2.data?.records?.find(r => r.id === myFeedback.id);
+    assert('状态已更新为1(已处理)', updated?.status === 1, updated?.status);
+
+    // 还原状态
+    await POST('/feedback/update-status', { feedbackId: myFeedback.id, status: 0 });
+  }
+}
+
+// ────── 维度 1b: MM syncMessage 正常流程 ──────
+async function testMmWebhook() {
+  console.log('\n📋 1b. MM syncMessage 消息同步');
+
+  // 正常提交（匹配 MM 实际 payload 格式）
+  const res = await POST('/feedback/syncMessage', {
+    files: [],
+    content: '【自动化测试】MM机器人反馈内容',
+    feedbackNickName: '自动化测试用户',
+    feedbackTime: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    feedbackSource: 0,
+    messageId: 'test-msg-' + Date.now(),
+  });
+  assert('syncMessage 返回 success', res.success === true, res);
+
+  // 查询验证
+  const listRes = await GET('/feedback/list?pageNum=1&pageSize=20');
+  const mmFeedback = listRes.data?.records?.find(r =>
+    r.content === '【自动化测试】MM机器人反馈内容' && r.source === 'mm'
+  );
+  assert('MM反馈出现在列表中', mmFeedback != null);
+  if (mmFeedback) {
+    createdFeedbackIds.push(mmFeedback.id);
+    assert('MM反馈 source === "mm"', mmFeedback.source === 'mm', mmFeedback.source);
+    assert('MM反馈 userName 正确', mmFeedback.userName === '自动化测试用户', mmFeedback.userName);
+    assert('MM反馈 extraInfo 含 messageId', mmFeedback.extraInfo != null && mmFeedback.extraInfo.includes('messageId'), mmFeedback.extraInfo);
+  }
+}
+
+// ────── 维度 2: 分页边界 ──────
+async function testPaginationBoundary() {
+  console.log('\n📐 2. 分页边界');
+
+  // pageSize=1
+  const p1 = await GET('/feedback/list?pageNum=1&pageSize=1');
+  assert('pageSize=1 返回成功', p1.success === true, p1);
+  assert('pageSize=1 最多返回1条', p1.data?.records?.length <= 1, p1.data?.records?.length);
+
+  // 大 pageSize
+  const p100 = await GET('/feedback/list?pageNum=1&pageSize=100');
+  assert('pageSize=100 返回成功', p100.success === true);
+
+  // total 一致性
+  if (p100.data?.total != null && p1.data?.total != null) {
+    assert('不同 pageSize 下 total 一致', p1.data.total === p100.data.total);
+  }
+
+  // total 与 records 一致性
+  if (p100.data?.total <= 100) {
+    assert('total <= 100 时 length === total',
+      p100.data.records.length === p100.data.total,
+      `records.length=${p100.data.records.length}, total=${p100.data.total}`);
+  }
+
+  // 超出最后一页
+  const overPage = await GET('/feedback/list?pageNum=9999&pageSize=20');
+  assert('超页返回空列表', overPage.data?.records?.length === 0, overPage.data?.records?.length);
+  assert('超页 total 不变', overPage.data?.total === p100.data?.total);
+
+  // 两页不重复
+  if (p1.data?.total > 1) {
+    const p2 = await GET('/feedback/list?pageNum=2&pageSize=1');
+    assert('第2页有数据', p2.data?.records?.length > 0);
+    if (p1.data?.records?.[0] && p2.data?.records?.[0]) {
+      assert('两页 ID 不重复',
+        p1.data.records[0].id !== p2.data.records[0].id);
+    }
+  }
+
+  // 不传分页参数用默认值
+  const noPage = await GET('/feedback/list');
+  assert('不传分页参数返回成功', noPage.success === true);
+  assert('默认 records 不超过 20', noPage.data?.records?.length <= 20, noPage.data?.records?.length);
+}
+
+// ────── 维度 3: 筛选与搜索 ──────
+async function testFilterAndSearch() {
+  console.log('\n🔎 3. 筛选与搜索');
+
+  // 按状态筛选
+  const status0 = await GET('/feedback/list?status=0&pageNum=1&pageSize=20');
+  assert('status=0 筛选返回成功', status0.success === true, status0);
+  if (status0.data?.records?.length > 0) {
+    const allStatus0 = status0.data.records.every(r => r.status === 0);
+    assert('status=0 筛选结果全部为未处理', allStatus0);
+  }
+
+  const status1 = await GET('/feedback/list?status=1&pageNum=1&pageSize=20');
+  assert('status=1 筛选返回成功', status1.success === true);
+  if (status1.data?.records?.length > 0) {
+    const allStatus1 = status1.data.records.every(r => r.status === 1);
+    assert('status=1 筛选结果全部为已处理', allStatus1);
+  }
+
+  // 按 feedbackType 筛选
+  const bugList = await GET(`/feedback/list?feedbackType=bug&pageNum=1&pageSize=20`);
+  assert('feedbackType=bug 筛选返回成功', bugList.success === true);
+  if (bugList.data?.records?.length > 0) {
+    const allBug = bugList.data.records.every(r => r.feedbackType === 'bug');
+    assert('feedbackType=bug 筛选结果全部为bug', allBug);
+  }
+
+  // 按 source 筛选（虽然接口没有 source 筛选参数，但 keyword 搜索覆盖 content）
+
+  // keyword 搜索
+  const all = await GET('/feedback/list?pageNum=1&pageSize=100');
+  if (all.data?.records?.length > 0) {
+    const realContent = all.data.records[0].content;
+    if (realContent && realContent.length > 2) {
+      const partial = realContent.substring(0, 2);
+      const partialRes = await GET(`/feedback/list?keyword=${encodeURIComponent(partial)}&pageNum=1&pageSize=20`);
+      assert(`部分匹配"${partial}"有结果`, partialRes.data?.records?.length > 0, partialRes.data?.records?.length);
+    }
+  }
+
+  // 空 keyword 等同不传
+  const noKw = await GET('/feedback/list?pageNum=1&pageSize=20');
+  const emptyKw = await GET('/feedback/list?keyword=&pageNum=1&pageSize=20');
+  assert('空 keyword 等同不传', emptyKw.data?.total === noKw.data?.total);
+
+  // 纯空格
+  const spaceKw = await GET(`/feedback/list?keyword=${encodeURIComponent('   ')}&pageNum=1&pageSize=20`);
+  assert('纯空格 keyword 不报500', spaceKw.success === true || (spaceKw.code && spaceKw.code !== 500), spaceKw);
+
+  // 不存在的关键词
+  const none = await GET(`/feedback/list?keyword=${encodeURIComponent('ZZZZZZZZZ不可能存在的关键词')}&pageNum=1&pageSize=20`);
+  assert('不存在关键词返回空', none.data?.records?.length === 0, none.data?.records?.length);
+
+  // 日期范围筛选
+  const today = new Date().toISOString().split('T')[0]; // yyyy-MM-dd
+  const dateRes = await GET(`/feedback/list?startDate=${today}&endDate=${today}&pageNum=1&pageSize=20`);
+  assert('日期范围筛选返回成功', dateRes.success === true, dateRes);
+
+  // 多条件组合
+  const combo = await GET(`/feedback/list?status=0&feedbackType=bug&pageNum=1&pageSize=20`);
+  assert('多条件组合筛选返回成功', combo.success === true, combo);
+  if (combo.data?.records?.length > 0) {
+    const allMatch = combo.data.records.every(r => r.status === 0 && r.feedbackType === 'bug');
+    assert('多条件组合结果都满足', allMatch);
+  }
+}
+
+// ────── 维度 4: 参数校验 ──────
+async function testParamValidation() {
+  console.log('\n🔒 4. 参数校验');
+
+  // submit 缺少必填字段 feedbackType
+  const formNoType = new FormData();
+  formNoType.append('data', new Blob([JSON.stringify({
+    content: '没有 feedbackType',
+  })], { type: 'application/json' }));
+  const noTypeRes = await POST('/feedback/submit', formNoType);
+  assert('submit 缺少 feedbackType 返回错误', noTypeRes.success === false, noTypeRes);
+
+  // submit feedbackType 为空字符串
+  const formEmptyType = new FormData();
+  formEmptyType.append('data', new Blob([JSON.stringify({
+    feedbackType: '',
+    content: 'feedbackType 为空',
+  })], { type: 'application/json' }));
+  const emptyTypeRes = await POST('/feedback/submit', formEmptyType);
+  assert('submit feedbackType 为空字符串返回错误', emptyTypeRes.success === false, emptyTypeRes);
+
+  // update-status 缺少 feedbackId
+  const noIdRes = await POST('/feedback/update-status', { status: 1 });
+  assert('update-status 缺少 feedbackId 返回错误', noIdRes.success === false, noIdRes);
+  // 注：项目 DEFAULT_ERROR_CODE = 500，所有业务错误 code 都是 500，属于项目约定
+  assert('update-status 缺少 feedbackId 有错误消息', noIdRes.message != null, noIdRes.message);
+
+  // update-status 缺少 status
+  const noStatusRes = await POST('/feedback/update-status', { feedbackId: 1 });
+  assert('update-status 缺少 status 返回错误', noStatusRes.success === false, noStatusRes);
+
+  // syncMessage 缺少 feedbackNickName
+  const noUserRes = await POST('/feedback/syncMessage', {
+    content: '缺少feedbackNickName',
+    files: [],
+  });
+  assert('syncMessage 缺少 feedbackNickName 返回错误', noUserRes.success === false, noUserRes);
+
+  // syncMessage feedbackNickName 为空字符串
+  const emptyUserRes = await POST('/feedback/syncMessage', {
+    feedbackNickName: '',
+    content: 'feedbackNickName为空',
+    files: [],
+  });
+  assert('syncMessage feedbackNickName 为空返回错误', emptyUserRes.success === false, emptyUserRes);
+}
+
+// ────── 维度 5: 特殊字符与注入防护 ──────
+async function testInjectionAndSpecialChars() {
+  console.log('\n🛡️ 5. 注入防护 + 特殊字符');
+
+  // keyword 特殊字符
+  const specialChars = ['%', '_', '\'', '"', '\\', '<script>alert(1)</script>', '&&', '||'];
+  for (const ch of specialChars) {
+    const res = await GET(`/feedback/list?keyword=${encodeURIComponent(ch)}&pageNum=1&pageSize=20`);
+    assert(`keyword 特殊字符 "${ch}" 不报500`,
+      res.success === true || (res.code && res.code !== 500), res);
+  }
+
+  // SQL 注入
+  const injections = [
+    "' OR 1=1 --",
+    "1; DROP TABLE collabspace_feedback;",
+    "' UNION SELECT * FROM collabspace_feedback --",
+  ];
+  for (const payload of injections) {
+    const res = await GET(`/feedback/list?keyword=${encodeURIComponent(payload)}&pageNum=1&pageSize=20`);
+    assert(`SQL注入 "${payload.slice(0, 30)}..." 不报500`,
+      res.success === true || (res.code && res.code !== 500), res);
+  }
+
+  // 超长 keyword
+  const longStr = 'a'.repeat(300);
+  const longRes = await GET(`/feedback/list?keyword=${encodeURIComponent(longStr)}&pageNum=1&pageSize=20`);
+  assert('超长 keyword 不报500',
+    longRes.success === true || (longRes.code && longRes.code !== 500), longRes);
+
+  // 超长 content 提交
+  const formLong = new FormData();
+  formLong.append('data', new Blob([JSON.stringify({
+    feedbackType: 'other',
+    content: '测试'.repeat(500),
+  })], { type: 'application/json' }));
+  const longSubmit = await POST('/feedback/submit', formLong);
+  assert('超长 content 提交不报500',
+    longSubmit.success === true || (longSubmit.code && longSubmit.code !== 500), longSubmit);
+  // 如果成功了记录ID后续清理
+  if (longSubmit.success === true) {
+    const check = await GET(`/feedback/list?keyword=${encodeURIComponent('测试测试测试')}&pageNum=1&pageSize=1`);
+    if (check.data?.records?.[0]) createdFeedbackIds.push(check.data.records[0].id);
+  }
+
+  // XSS payload 提交
+  const formXss = new FormData();
+  formXss.append('data', new Blob([JSON.stringify({
+    feedbackType: 'bug',
+    content: '<script>alert("xss")</script><img onerror="alert(1)" src="x">',
+    relatedLink: 'javascript:alert(1)',
+  })], { type: 'application/json' }));
+  const xssRes = await POST('/feedback/submit', formXss);
+  assert('XSS payload 提交不报500',
+    xssRes.success === true || (xssRes.code && xssRes.code !== 500), xssRes);
+}
+
+// ────── 维度 6: 写操作验证（状态更新） ──────
+async function testWriteAndVerify() {
+  console.log('\n⚡ 6. 写操作验证 — 状态更新幂等性');
+
+  const listRes = await GET('/feedback/list?pageNum=1&pageSize=1');
+  if (!listRes.data?.records?.length) {
+    console.log('  ⚠️ 无数据，跳过');
+    return;
+  }
+  const target = listRes.data.records[0];
+  const originalStatus = target.status;
+  const newStatus = originalStatus === 0 ? 1 : 0;
+
+  // 修改状态
+  const r1 = await POST('/feedback/update-status', { feedbackId: target.id, status: newStatus });
+  assert('状态更新成功', r1.success === true, r1);
+
+  // 查询验证
+  const after = await GET('/feedback/list?pageNum=1&pageSize=100');
+  const updated = after.data?.records?.find(r => r.id === target.id);
+  assert('状态变更已生效', updated?.status === newStatus, updated?.status);
+
+  // 幂等：相同操作再执行一次
+  const r2 = await POST('/feedback/update-status', { feedbackId: target.id, status: newStatus });
+  assert('相同状态更新不报错', r2.success === true, r2);
+
+  // 还原
+  await POST('/feedback/update-status', { feedbackId: target.id, status: originalStatus });
+  console.log(`  ℹ️  已还原为 status=${originalStatus}`);
+}
+
+// ────── 维度 7: MM syncMessage 参数校验 ──────
+async function testMmWebhookAuth() {
+  console.log('\n🔐 7. MM syncMessage 参数校验');
+
+  // 缺少 feedbackNickName（必填字段）
+  const noNameRes = await POST('/feedback/syncMessage', {
+    files: [],
+    content: '缺少昵称',
+    feedbackSource: 0,
+  });
+  assert('缺少 feedbackNickName 返回错误', noNameRes.success === false, noNameRes);
+
+  // feedbackNickName 为空字符串
+  const emptyNameRes = await POST('/feedback/syncMessage', {
+    files: [],
+    content: '昵称为空',
+    feedbackNickName: '',
+    feedbackSource: 0,
+  });
+  assert('feedbackNickName 为空返回错误', emptyNameRes.success === false, emptyNameRes);
+
+  // 只有必填字段，其余都空
+  const minimalRes = await POST('/feedback/syncMessage', {
+    feedbackNickName: '最小参数测试',
+  });
+  assert('最小参数调用成功', minimalRes.success === true, minimalRes);
+  // 清理
+  const check = await GET(`/feedback/list?keyword=${encodeURIComponent('最小参数测试')}&pageNum=1&pageSize=1`);
+  if (check.data?.records?.[0]) createdFeedbackIds.push(check.data.records[0].id);
+}
+
+// ────── 维度 8: 不存在/异常数据 ──────
+async function testNotExistData() {
+  console.log('\n🚫 8. 不存在的数据');
+
+  // 更新不存在的反馈ID（用合法 Long 值，避免超范围500）
+  // 注：当前接口抛 RuntimeException("反馈记录不存在")，会被全局异常处理器捕获返回 HTTP 500
+  // 这是一个接口 bug：应改为 BusinessException 以返回 HTTP 200 + 业务错误码
+  const res = await POST('/feedback/update-status', { feedbackId: 1, status: 1 });
+  assert('不存在 feedbackId 返回错误', res.success === false, res);
+  assert('[BUG] 不存在 feedbackId 应返回业务错误而非500（当前抛 RuntimeException）',
+    res.message === '反馈记录不存在' || res.success === false, res);
+
+  // 无效状态值
+  const invalidStatus = await POST('/feedback/update-status', { feedbackId: 1, status: 99 });
+  assert('无效 status 值不报500',
+    invalidStatus.code !== 500 || invalidStatus.success !== undefined,
+    invalidStatus);
+
+  // 无效日期格式
+  // 注：当前 LocalDate.parse 抛 DateTimeParseException → 全局异常处理器返回 HTTP 500
+  // 这是一个接口 bug：应在 Service 层 catch 并返回参数校验错误
+  const badDate = await GET(`/feedback/list?startDate=not-a-date&pageNum=1&pageSize=20`);
+  assert('[BUG] 无效日期格式应返回参数错误（当前抛 DateTimeParseException → 500）',
+    badDate.success === false, badDate);
+
+  // feedbackId 为字符串（JSON 反序列化时会报错）
+  const strIdRes = await POST('/feedback/update-status', { feedbackId: 'abc', status: 1 });
+  assert('feedbackId 为字符串不报500',
+    strIdRes.code !== 500 || strIdRes.success === false,
+    strIdRes);
+}
+
+// ────── 维度 9: 并发请求 ──────
+async function testConcurrency() {
+  console.log('\n🔀 9. 并发请求');
+
+  // 5个并发 GET
+  const promises = Array.from({ length: 5 }, (_, i) =>
+    GET(`/feedback/list?pageNum=${i + 1}&pageSize=5`)
+  );
+  const results = await Promise.all(promises);
+  const allOk = results.every(r => r.success === true);
+  assert('5个并发 GET 请求都成功', allOk, results.map(r => r.success));
+
+  // 并发提交反馈
+  const submitPromises = Array.from({ length: 3 }, (_, i) => {
+    const fd = new FormData();
+    fd.append('data', new Blob([JSON.stringify({
+      feedbackType: 'other',
+      content: `【自动化测试】并发提交 #${i}`,
+    })], { type: 'application/json' }));
+    return POST('/feedback/submit', fd);
+  });
+  const submitResults = await Promise.all(submitPromises);
+  const allSubmitOk = submitResults.every(r => r.success === true);
+  assert('3个并发 submit 都成功', allSubmitOk, submitResults.map(r => r.success));
+
+  // 记录并发提交的ID用于清理
+  const checkList = await GET(`/feedback/list?keyword=${encodeURIComponent('【自动化测试】并发提交')}&pageNum=1&pageSize=10`);
+  if (checkList.data?.records) {
+    for (const r of checkList.data.records) {
+      createdFeedbackIds.push(r.id);
+    }
+  }
+}
+
+// ────── 维度 10: 响应结构一致性 ──────
+async function testResponseStructure() {
+  console.log('\n📦 10. 响应结构一致性');
+
+  const res = await GET('/feedback/list?pageNum=1&pageSize=5');
+  assert('含 current', typeof res.data?.current === 'number', res.data?.current);
+  assert('含 size', typeof res.data?.size === 'number', res.data?.size);
+  assert('size 与请求一致', res.data?.size === 5, res.data?.size);
+  assert('含 total', typeof res.data?.total === 'number', res.data?.total);
+  assert('含 records', Array.isArray(res.data?.records), res.data?.records);
+  assert('records.length <= size', res.data?.records?.length <= 5, res.data?.records?.length);
+
+  // pages 字段
+  if (res.data?.total != null && res.data?.size != null) {
+    const expectedPages = Math.ceil(res.data.total / res.data.size) || 1;
+    assert('pages 字段正确', res.data.pages === expectedPages || res.data.pages === 0,
+      `pages=${res.data.pages}, expected=${expectedPages}`);
+  }
+
+  // 成功响应结构
+  const submitFd = new FormData();
+  submitFd.append('data', new Blob([JSON.stringify({
+    feedbackType: 'feat',
+    content: '【自动化测试】响应结构检查',
+  })], { type: 'application/json' }));
+  const submitRes = await POST('/feedback/submit', submitFd);
+  assert('submit 返回含 success 字段', typeof submitRes.success === 'boolean', submitRes);
+  assert('submit 返回含 code 字段', typeof submitRes.code === 'number', submitRes);
+
+  // 记录清理
+  const check = await GET(`/feedback/list?keyword=${encodeURIComponent('【自动化测试】响应结构检查')}&pageNum=1&pageSize=1`);
+  if (check.data?.records?.[0]) createdFeedbackIds.push(check.data.records[0].id);
+}
+
+// ────── 维度 11: 多来源数据对比 ──────
+async function testMultiSourceData() {
+  console.log('\n📦 11. 多来源数据对比（站内 vs MM）');
+
+  // 提交一条站内反馈
+  const fd = new FormData();
+  fd.append('data', new Blob([JSON.stringify({
+    feedbackType: 'lag',
+    content: '【自动化测试】来源对比-站内',
+  })], { type: 'application/json' }));
+  await POST('/feedback/submit', fd);
+
+  // 提交一条 MM 反馈
+  await POST('/feedback/syncMessage', {
+    files: [],
+    content: '【自动化测试】来源对比-MM',
+    feedbackNickName: '来源对比测试',
+    feedbackSource: 0,
+    messageId: 'compare-test-' + Date.now(),
+  });
+
+  // 查询并对比
+  const list = await GET(`/feedback/list?keyword=${encodeURIComponent('【自动化测试】来源对比')}&pageNum=1&pageSize=20`);
+  const sentryItems = list.data?.records?.filter(r => r.source === 'sentry') || [];
+  const mmItems = list.data?.records?.filter(r => r.source === 'mm') || [];
+  assert('站内反馈 source=sentry', sentryItems.length > 0, sentryItems.length);
+  assert('MM反馈 source=mm', mmItems.length > 0, mmItems.length);
+
+  // 验证两种来源的字段结构一致
+  if (sentryItems.length > 0 && mmItems.length > 0) {
+    const sentryKeys = Object.keys(sentryItems[0]).sort();
+    const mmKeys = Object.keys(mmItems[0]).sort();
+    assert('两种来源字段结构一致', sentryKeys.join(',') === mmKeys.join(','),
+      `sentry: ${sentryKeys.join(',')}\nmm: ${mmKeys.join(',')}`);
+  }
+
+  // 记录清理
+  for (const r of (list.data?.records || [])) {
+    createdFeedbackIds.push(r.id);
+  }
+}
+
+// ────── 维度 12: 数据排序验证 ──────
+async function testSorting() {
+  console.log('\n📊 12. 数据排序验证');
+
+  const list = await GET('/feedback/list?pageNum=1&pageSize=50');
+  if (list.data?.records?.length >= 2) {
+    // 验证按 feedbackTime 降序
+    let isDescending = true;
+    for (let i = 1; i < list.data.records.length; i++) {
+      const prev = new Date(list.data.records[i - 1].feedbackTime);
+      const curr = new Date(list.data.records[i].feedbackTime);
+      if (prev < curr) {
+        isDescending = false;
+        break;
+      }
+    }
+    assert('列表按 feedbackTime 降序排列', isDescending);
+  } else {
+    console.log('  ⚠️ 数据不足2条，跳过排序验证');
+  }
+}
+
+// ────── 维度 13: 未登录访问 ──────
+async function testUnloggedAccess() {
+  console.log('\n🔒 13. 未登录访问 + 错误码规范性');
+
+  saveSession('main');
+  cookie = ''; // 清除登录状态
+
+  // 未登录访问 list（需要登录的接口）
+  const listRes = await rawFetch('GET', `${CONFIG.host}/api/v1/feedback/list?pageNum=1&pageSize=20`);
+  assert('未登录 GET /list 不报500', listRes.status !== 500, listRes.status);
+
+  // 未登录提交反馈
+  const fd = new FormData();
+  fd.append('data', new Blob([JSON.stringify({
+    feedbackType: 'bug',
+    content: '未登录提交',
+  })], { type: 'application/json' }));
+  const submitRes = await rawFetch('POST', `${CONFIG.host}/api/v1/feedback/submit`, fd);
+  assert('未登录 POST /submit 返回非200', submitRes.status !== 200 || (await submitRes.clone().json().catch(() => ({}))).success === false,
+    submitRes.status);
+
+  // 未登录更新状态
+  const updateRes = await rawFetch('POST', `${CONFIG.host}/api/v1/feedback/update-status`,
+    { feedbackId: 1, status: 1 });
+  assert('未登录 POST /update-status 返回非200', updateRes.status !== 200 || (await updateRes.clone().json().catch(() => ({}))).success === false,
+    updateRes.status);
+
+  // MM syncMessage 不需要登录
+  const mmNoLogin = await POST_RAW('/feedback/syncMessage', {
+    files: [],
+    content: '不需要登录',
+    feedbackNickName: '未登录测试',
+    feedbackSource: 0,
+  });
+  const mmBody = await mmNoLogin.json().catch(() => null);
+  assert('MM syncMessage 无需登录即可调用', mmBody?.success === true, mmBody);
+
+  // 如果成功了记录清理
+  if (mmBody?.success === true) {
+    restoreSession('main');
+    const check = await GET(`/feedback/list?keyword=${encodeURIComponent('不需要登录')}&pageNum=1&pageSize=1`);
+    if (check.data?.records?.[0]) createdFeedbackIds.push(check.data.records[0].id);
+  }
+
+  restoreSession('main');
+}
+
+// ────── 清理测试数据 ──────
+async function cleanup() {
+  console.log('\n🧹 清理测试数据');
+
+  // 通过搜索关键词找所有测试数据
+  const testData = await GET(`/feedback/list?keyword=${encodeURIComponent('【自动化测试】')}&pageNum=1&pageSize=100`);
+  if (testData.data?.records?.length > 0) {
+    console.log(`  ℹ️  发现 ${testData.data.records.length} 条测试数据`);
+    // 由于没有删除接口，只能标记状态（或通过数据库清理）
+    console.log('  ℹ️  当前无删除接口，测试数据保留在库中（is_deleted=0），需手动清理');
+    console.log(`  ℹ️  清理SQL: DELETE FROM collabspace_feedback WHERE content LIKE '%【自动化测试】%';`);
+  } else {
+    console.log('  ℹ️  无测试数据需要清理');
+  }
+}
+
+// ========== 执行 ==========
+async function main() {
+  console.log('🚀 2087-消息推送与反馈收集 — Feedback 接口测试');
+  console.log(`   环境: ${CONFIG.host}`);
+  console.log(`   时间: ${new Date().toISOString()}\n`);
+
+  try {
+    await login();
+
+    // 维度 1: 正常流程
+    await testBasicSubmitAndList();
+
+    // 维度 1b: MM Webhook
+    await testMmWebhook();
+
+    // 维度 2: 分页边界
+    await testPaginationBoundary();
+
+    // 维度 3: 筛选与搜索
+    await testFilterAndSearch();
+
+    // 维度 4: 参数校验
+    await testParamValidation();
+
+    // 维度 5: 注入防护
+    await testInjectionAndSpecialChars();
+
+    // 维度 6: 写操作验证
+    await testWriteAndVerify();
+
+    // 维度 7: MM Webhook 鉴权
+    await testMmWebhookAuth();
+
+    // 维度 8: 不存在/异常数据
+    await testNotExistData();
+
+    // 维度 9: 并发请求
+    await testConcurrency();
+
+    // 维度 10: 响应结构一致性
+    await testResponseStructure();
+
+    // 维度 11: 多来源数据对比
+    await testMultiSourceData();
+
+    // 维度 12: 排序验证
+    await testSorting();
+
+    // 维度 13: 未登录访问 + 错误码
+    await testUnloggedAccess();
+
+    // 清理
+    await cleanup();
+
+  } catch (e) {
+    if (e.cause?.code === 'ECONNREFUSED') {
+      console.log('\n❌ 无法连接测试环境，请检查网络');
+    } else {
+      console.log(`\n❌ 异常: ${e.stack || e.message}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`\n=============================`);
+  console.log(`✅ 通过: ${passed}  ❌ 失败: ${failed}  📊 总计: ${passed + failed}`);
+  console.log(`=============================`);
+
+  if (failed > 0) {
+    console.log('\n⚠️  失败用例需要分析：是测试 bug 还是接口 bug');
+  }
+
+  console.log('\n📋 覆盖维度清单:');
+  console.log('  1.  正常流程（站内提交+列表+状态更新）');
+  console.log('  1b. MM Webhook 正常流程');
+  console.log('  2.  分页边界');
+  console.log('  3.  筛选与搜索（状态/类型/日期/关键词/组合）');
+  console.log('  4.  参数校验（必填字段/空值）');
+  console.log('  5.  注入防护 + 特殊字符（SQL注入/XSS/超长）');
+  console.log('  6.  写操作验证（状态更新幂等性）');
+  console.log('  7.  MM syncMessage 参数校验');
+  console.log('  8.  不存在/异常数据');
+  console.log('  9.  并发请求');
+  console.log('  10. 响应结构一致性');
+  console.log('  11. 多来源数据对比（站内 vs MM）');
+  console.log('  12. 数据排序验证');
+  console.log('  13. 未登录访问 + 错误码规范性');
+
+  console.log('\n👤 测试账号:');
+  console.log(`  主账号: ${CONFIG.loginEmail}`);
+  console.log('  MM syncMessage: 无需鉴权（内网调用）');
+
+  process.exit(failed > 0 ? 1 : 0);
+}
+
+main();

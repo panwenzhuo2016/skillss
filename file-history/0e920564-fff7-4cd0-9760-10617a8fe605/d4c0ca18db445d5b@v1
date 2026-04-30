@@ -1,0 +1,235 @@
+# Dify 部署指南
+
+> 此服务仅与 OA 后端进行内部交互，可直接部署在 OA 后端所在服务器上
+
+## 1. 安装部署
+
+```bash
+git clone https://github.com/langgenius/dify.git
+cd dify/docker
+cp .env.example .env
+```
+
+> **注意**：`.env` 里 `EXPOSE_NGINX_PORT=80`、`EXPOSE_NGINX_SSL_PORT=443` 默认会占用宿主机 80 和 443 端口，如有冲突需要修改，并记下改后的端口供 OA 环境变量配置
+
+```bash
+docker compose up -d
+```
+
+## 2. 初始化配置
+
+1. 浏览器访问 `服务器ip:EXPOSE_NGINX_PORT`
+2. 设置管理员账密
+
+## 3. 配置模型
+
+1. 登录后，点击右上角头像 → 设置 → 模型供应商，安装 **OpenAI-API-compatible**
+2. 安装后，点击模型列表 → OpenAI-API-compatible 右下角的 **添加模型**
+3. 填写以下配置：
+
+| 配置项 | 值 |
+|--------|-----|
+| 模型名称 | `gemini-3-pro-preview` |
+| 模型类型 | LLM |
+| API Key | 单独提供 |
+| API endpoint URL | `https://data-infer.yottastudios.com/new_api/v1` |
+| API endpoint 中的模型名称 | `gemini-3-pro-preview` |
+| 模型上下文长度 | `1048576` |
+| 最大 token 上限 | `65536` |
+| 思考模式支持 | 两种模式都支持 |
+| 其它 | 默认 |
+
+4. 点击 **添加**
+
+## 4. 导入工作流
+
+返回主页，点击 **导入 DSL 文件**，导入以下内容：
+
+```yml
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: OA问答
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.41@680b9357e6cd290ef5e8691a35286bffddb75bf30c8dacfe351d8b5e5fd87283
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: 1774415900972-llm
+      source: '1774415900972'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: llm-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables:
+        - hint: ''
+          label: system_prompt
+          max_length: 25600
+          options: []
+          placeholder: ''
+          required: true
+          type: paragraph
+          variable: system_prompt
+      height: 107
+      id: '1774415900972'
+      position:
+        x: 65.60069261815124
+        y: 261
+      positionAbsolute:
+        x: 65.60069261815124
+        y: 261
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gemini-3-pro-preview
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: 2e97ebfc-ee07-48e1-aacf-d21b078260e5
+          role: system
+          text: '{{#1774415900972.system_prompt#}}'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 86
+      id: llm
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        answer: '{{#llm.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 101
+      id: answer
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: 218.46696682487345
+      y: -33.94220303651423
+      zoom: 1.148698354997035
+  rag_pipeline_variables: []
+```
+
+## 5. 获取 API 密钥
+
+1. 导入后主页会出现 **OA问答** 应用，进入后点击 **访问 API**
+2. 在右上角点击 **API 密钥**，生成一个密钥
+3. 将密钥配置到 OA 开发人员指定的变量，或交给 OA 开发人员进行配置

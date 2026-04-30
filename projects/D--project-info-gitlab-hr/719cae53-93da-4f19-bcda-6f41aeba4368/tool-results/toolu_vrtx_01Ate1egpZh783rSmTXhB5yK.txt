@@ -1,0 +1,187 @@
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-22-        parent::setUp();
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-23-        SfusersMd::create(['id' => 2, 'nickname' => 'a']);
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-24-        ReferenceLogMd::create(['id' => 1,            'reference_id' => '090', // 操作ID
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php:25:            'reference_type' => '025', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-26-            'old_data' => '241', // 旧数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-27-            'new_data' => '987', // 新数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-28-        ]);
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-29-        ReferenceLogMd::create(['id' => 2,            'reference_id' => '723', // 操作ID
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php:30:            'reference_type' => '344', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-31-            'old_data' => '509', // 旧数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-32-            'new_data' => '806', // 新数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-33-        ]);
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-34-        ReferenceLogMd::create(['id' => 3,            'reference_id' => '798', // 操作ID
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php:35:            'reference_type' => '789', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-36-            'old_data' => '531', // 旧数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-37-            'new_data' => '139', // 新数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-38-        ]);
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-39-        ReferenceLogMd::create(['id' => 4,            'reference_id' => '846', // 操作ID
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php:40:            'reference_type' => '128', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-41-            'old_data' => '255', // 旧数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-42-            'new_data' => '285', // 新数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-43-        ]);
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-44-        ReferenceLogMd::create(['id' => 5,            'reference_id' => '116', // 操作ID
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php:45:            'reference_type' => '621', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-46-            'old_data' => '958', // 旧数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-47-            'new_data' => '562', // 新数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-48-        ]);
+--
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-53-    {
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-54-        $input =
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-55-            ['reference_id' => '1', // 操作ID
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php:56:                'reference_type' => '1', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-57-                'old_data' => '1', // 旧数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-58-                'new_data' => '1', // 新数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-59-            ];
+--
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-65-
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-66-//        $input2 =
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-67-//            ['reference_id' => '2', // 操作ID
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php:68://                'reference_type' => '2', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-69-//                'old_data' => '2', // 旧数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-70-//                'new_data' => '2', // 新数据
+D:\project\info-gitlab\hr\hr-server\tests\Unit\Http\Controllers\ReferenceLogControllerTest.php-71-//            ];
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\StaffManagementService.php-646-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\StaffManagementService.php-647-        return $result;
+D:\project\info-gitlab\hr\hr-server\app\Service\StaffManagementService.php-648-    }
+D:\project\info-gitlab\hr\hr-server\app\Service\StaffManagementService.php:649:    // ------------------------------------------------------------------------发送应聘登记表-----------------------------------------------------------------------------------------//
+D:\project\info-gitlab\hr\hr-server\app\Service\StaffManagementService.php-650-    public function pushResumeToOfficial($input)
+D:\project\info-gitlab\hr\hr-server\app\Service\StaffManagementService.php-651-    {
+D:\project\info-gitlab\hr\hr-server\app\Service\StaffManagementService.php-652-        return OfficialApiLib::sendRequest(
+--
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-27-    {
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-28-        $input = Arr::only($request->all(), [
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-29-            'reference_id', // 操作ID
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php:30:            'reference_type', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-31-            'old_data', // 旧数据
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-32-            'new_data', // 新数据
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-33-            'per_page', ]) + ['per_page' => 50];
+--
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-44-    {
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-45-        $input = Arr::only($request->all(), [
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-46-            'reference_id', // 操作ID
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php:47:            'reference_type', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-48-            'old_data', // 旧数据
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-49-            'new_data', // 新数据
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-50-        ]);
+--
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-76-        $input = Arr::only($request->all(), [
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-77-            'id',
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-78-            'reference_id', // 操作ID
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php:79:            'reference_type', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-80-            'old_data', // 旧数据
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-81-            'new_data', // 新数据
+D:\project\info-gitlab\hr\hr-server\app\Http\Controllers\ReferenceLogController.php-82-        ]);
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-24-        if (Arr::has($input, 'reference_id')) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-25-            $query->where('reference_id', $input['reference_id']);
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-26-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php:27:        // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-28-        if (Arr::has($input, 'reference_type')) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-29-            $query->where('reference_type', $input['reference_type']);
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-30-        }
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-39-
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-40-        $paginatedData = $query->select([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-41-            'reference_id', // 操作ID
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php:42:            'reference_type', // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-43-            'old_data', // 旧数据
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-44-            'new_data', // 新数据
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-45-            'created_at',
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-75-
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-76-        return (bool)ReferenceLogMd::create([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-77-            'reference_id' => $input['reference_id'], // 操作ID
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php:78:            'reference_type' => $input['reference_type'], // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-79-            'old_data' => $input['old_data'], // 旧数据
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-80-            'new_data' => $input['new_data'], // 新数据
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-81-        ]);
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-103-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-104-
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-105-        $datas->reference_id = $input['reference_id'] ?? $datas->reference_id; // 操作ID
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php:106:        $datas->reference_type = $input['reference_type'] ?? $datas->reference_type; // 操作类型 1-发起信息采集,2-应聘登记表,3hr创建
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-107-        $datas->old_data = $input['old_data'] ?? $datas->old_data; // 旧数据
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-108-        $datas->new_data = $input['new_data'] ?? $datas->new_data; // 新数据
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceLogService.php-109-        return $datas->save();
+--
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceInfoMd.php-22- * * @property int $process_status 处理状态 0-待处理 1-已处理
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceInfoMd.php-23- * * @property string $gen_time 生成时间
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceInfoMd.php-24- * * @property string $update_time 更新时间
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceInfoMd.php:25: * * @property int $data_source 数据来源 1 关联员工花名的入职登记表 2 关联简历姓名应聘登记表 3 HR录入
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceInfoMd.php-26- * * @property object $exception_type 异常类型 1 多个员工/简历证明联系方式 2 多个员工/简历证明人  数组可多个
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceInfoMd.php-27- * * @property int $exception_handling 异常处理 1 保持异常 2 忽略异常
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceInfoMd.php-28- * * @property string $remarks 备注
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-465-        $carbon_now = now();
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-466-        if (isset($input['reference_name']) && $input['reference_name'] != $datas->reference_name) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-467-            ReferenceLogMd::create([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php:468:                'reference_type' => 4, // 1 关联员工花名的入职登记表 新增 2 关联简历姓名应聘登记表 新增  3 Hr 新增 4 证明人姓名 变更 5 公司变更 6 联系方式变更 7 备注变更 8 处理结果变更 9 异常处理变更
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-469-                'reference_id' => $datas->id,
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-470-                'new_data' => $input['reference_name'],
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-471-                'old_data' => $datas->reference_name,
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-474-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-475-        if (isset($input['company']) && $input['company'] != $datas->company) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-476-            ReferenceLogMd::create([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php:477:                'reference_type' => 5, // 1 关联员工花名的入职登记表 新增 2 关联简历姓名应聘登记表 新增  3 Hr 新增 4 证明人姓名 变更 5 公司变更 6 联系方式变更 7
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-478-                // 备注变更 8 处理结果变更 9 异常处理变更
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-479-                'reference_id' => $datas->id,
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-480-                'new_data' => $input['company'],
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-484-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-485-        if (isset($input['contact']) && $input['contact'] != $datas->contact) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-486-            ReferenceLogMd::create([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php:487:                'reference_type' => 6, // 1 关联员工花名的入职登记表 新增 2 关联简历姓名应聘登记表 新增  3 Hr 新增 4 证明人姓名 变更 5 公司变更 6 联系方式变更 7
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-488-                // 备注变更 8 处理结果变更 9 异常处理变更
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-489-                'reference_id' => $datas->id,
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-490-                'new_data' => $input['contact'],
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-503-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-504-        if (isset($input['remarks']) && $input['remarks'] != $datas->remarks) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-505-            ReferenceLogMd::create([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php:506:                'reference_type' => 7, // 1 关联员工花名的入职登记表 新增 2 关联简历姓名应聘登记表 新增  3 Hr 新增 4 证明人姓名 变更 5 公司变更 6 联系方式变更 7
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-507-                // 备注变更 8 处理结果变更 9 异常处理变更
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-508-                'reference_id' => $datas->id,
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-509-                'new_data' => $input['remarks'],
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-513-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-514-        if (isset($input['process_status']) && $input['process_status'] != $datas->process_status) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-515-            ReferenceLogMd::create([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php:516:                'reference_type' => 8, // 1 关联员工花名的入职登记表 新增 2 关联简历姓名应聘登记表 新增  3 Hr 新增 4 证明人姓名 变更 5 公司变更 6 联系方式变更 7
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-517-                // 备注变更 8 处理结果变更 9 异常处理变更
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-518-                'reference_id' => $datas->id,
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-519-                'new_data' => $input['process_status'],
+--
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-523-        }
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-524-        if (isset($input['exception_handling']) && $input['exception_handling'] != $datas->exception_handling) {
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-525-            ReferenceLogMd::create([
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php:526:                'reference_type' => 9, // 1 关联员工花名的入职登记表 新增 2 关联简历姓名应聘登记表 新增  3 Hr 新增 4 证明人姓名 变更 5 公司变更 6 联系方式变更 7
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-527-                // 备注变更 8 处理结果变更 9 异常处理变更
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-528-                'reference_id' => $datas->id,
+D:\project\info-gitlab\hr\hr-server\app\Service\ReferenceInfoService.php-529-                'new_data' => $input['exception_handling'],
+--
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceLogMd.php-8- * App\Models\ReferenceLog.
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceLogMd.php-9- *
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceLogMd.php-10- * @property int $reference_id 操作ID
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceLogMd.php:11: * @property int $reference_type 操作类型 1 关联员工花名的入职登记表 新增 2 关联简历姓名应聘登记表 新增  3 Hr 新增 4 证明人姓名 变更 5 公司变更 6 联系方式变更 7 备注变更 8 处理结果变更 9 异常处理变更
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceLogMd.php-12- * @property string $old_data 旧数据
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceLogMd.php-13- * @property string $new_data 新数据
+D:\project\info-gitlab\hr\hr-server\app\Models\ReferenceLogMd.php-14- * @property null|\Illuminate\Support\Carbon $created_at
+--
+D:\project\info-gitlab\hr\hr-server\app\Jobs\PullFromOfficial.php-124-                // 员工信息采集
+D:\project\info-gitlab\hr\hr-server\app\Jobs\PullFromOfficial.php-125-                case 'staff_information_collect':[$real_id, $flag, $error] = $this->pullStaffInformationCollect($data);
+D:\project\info-gitlab\hr\hr-server\app\Jobs\PullFromOfficial.php-126-                    break;
+D:\project\info-gitlab\hr\hr-server\app\Jobs\PullFromOfficial.php:127:                // 人员应聘登记表信息采集
+D:\project\info-gitlab\hr\hr-server\app\Jobs\PullFromOfficial.php-128-                case 'resume_info_collect':[$real_id, $flag, $error] = $this->pullResumeInformationCollect($data);
+D:\project\info-gitlab\hr\hr-server\app\Jobs\PullFromOfficial.php-129-                    break;
+D:\project\info-gitlab\hr\hr-server\app\Jobs\PullFromOfficial.php-130-                // 笔试信息
+--
+D:\project\info-gitlab\hr\hr-server\database\migrations\2024_05_07_112058_create_reference_log_table.php-15-        Schema::create('reference_log', function (Blueprint $table) {
+D:\project\info-gitlab\hr\hr-server\database\migrations\2024_05_07_112058_create_reference_log_table.php-16-            $table->id();
+D:\project\info-gitlab\hr\hr-server\database\migrations\2024_05_07_112058_create_reference_log_table.php-17-            $table->integer('reference_id');
+D:\project\info-gitlab\hr\hr-server\database\migrations\2024_05_07_112058_create_reference_log_table.php:18:            $table->smallInteger('reference_type')->default(0)->comment('1-发起信息采集,2-应聘登记表,3hr创建');
+D:\project\info-gitlab\hr\hr-server\database\migrations\2024_05_07_112058_create_reference_log_table.php-19-            $table->text('old_data')->nullable();
+D:\project\info-gitlab\hr\hr-server\database\migrations\2024_05_07_112058_create_reference_log_table.php-20-            $table->text('new_data')->nullable();
+D:\project\info-gitlab\hr\hr-server\database\migrations\2024_05_07_112058_create_reference_log_table.php-21-            $table->timestamps();

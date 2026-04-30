@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "NotebookEdit"
+    ],
+    "deny": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  },
+  "model": "claude-opus-4-6",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys,json,re; d\u003djson.load(sys.stdin); cmd\u003dd.get(\u0027tool_input\u0027,{}).get(\u0027command\u0027,\u0027\u0027); print(json.dumps({\u0027decision\u0027:\u0027block\u0027,\u0027reason\u0027:\u0027git commit/push is globally prohibited.\u0027})) if re.match(r\u0027^git\\s+(commit|push)\u0027, cmd, re.IGNORECASE) else None\""
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    }
+  },
+  "env": {
+    "ANTHROPIC_API_KEY": "yotta_pk_21ba700d662c786b542e8899d2a65071",
+    "ANTHROPIC_BASE_URL": "https://tower-ai.yottastudios.com/zi/proxy"
+  }
+}

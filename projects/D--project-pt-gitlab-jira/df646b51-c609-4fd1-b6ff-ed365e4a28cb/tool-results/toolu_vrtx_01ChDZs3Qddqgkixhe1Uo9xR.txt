@@ -1,0 +1,1566 @@
+     1→     1→package com.yottastudios.jira.servlet;
+     2→     2→
+     3→     3→import java.io.IOException;
+     4→     4→import java.util.*;
+     5→     5→import java.util.function.BiConsumer;
+     6→     6→import javax.servlet.http.HttpServlet;
+     7→     7→import javax.servlet.http.HttpServletRequest;
+     8→     8→import javax.servlet.http.HttpServletResponse;
+     9→     9→
+    10→    10→import com.atlassian.jira.bc.user.search.UserSearchParams;
+    11→    11→import com.atlassian.jira.bc.user.search.UserSearchService;
+    12→    12→import com.atlassian.jira.event.type.EventDispatchOption;
+    13→    13→import com.atlassian.jira.issue.*;
+    14→    14→import com.atlassian.jira.issue.link.IssueLink;
+    15→    15→import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+    16→    16→import com.atlassian.sal.api.auth.LoginUriProvider;
+    17→    17→import com.atlassian.sal.api.net.RequestFactory;
+    18→    18→import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
+    19→    19→import com.atlassian.sal.api.user.UserManager;
+    20→    20→import com.atlassian.sal.api.user.UserProfile;
+    21→    21→import com.atlassian.templaterenderer.TemplateRenderer;
+    22→    22→import com.atlassian.webresource.api.assembler.PageBuilderService;
+    23→    23→
+    24→    24→import com.yottastudios.jira.ao.IssueTemplate;
+    25→    25→import com.yottastudios.jira.ao.TemplateGroup;
+    26→    26→import com.yottastudios.jira.ao.Template;
+    27→    27→import com.yottastudios.jira.ro.*;
+    28→    28→import com.yottastudios.jira.mapper.TemplateGroupMapper;
+    29→    29→import com.yottastudios.jira.mapper.TemplateMapper;
+    30→    30→import com.yottastudios.jira.vo.TemplateGroupVo;
+    31→    31→import com.yottastudios.jira.vo.TemplateGroupDeleteVo;
+    32→    32→import com.yottastudios.jira.vo.TemplateVo;
+    33→    33→import com.yottastudios.jira.mapper.IssueTemplateMapper;
+    34→    34→import com.yottastudios.jira.vo.IssueTemplateVo;
+    35→    35→import com.yottastudios.jira.util.SprintHelper;
+    36→    36→
+    37→    37→import lombok.AllArgsConstructor;
+    38→    38→import lombok.Data;
+    39→    39→import lombok.NoArgsConstructor;
+    40→    40→import lombok.extern.slf4j.Slf4j;
+    41→    41→import org.codehaus.jackson.map.ObjectMapper;
+    42→    42→import org.json.JSONObject;
+    43→    43→import org.json.JSONArray;
+    44→    44→
+    45→    45→import javax.inject.Inject;
+    46→    46→
+    47→    47→import com.atlassian.jira.component.ComponentAccessor;
+    48→    48→import com.atlassian.jira.security.JiraAuthenticationContext;
+    49→    49→import com.atlassian.jira.issue.issuetype.IssueType;
+    50→    50→import com.atlassian.jira.issue.link.IssueLinkManager;
+    51→    51→import com.atlassian.jira.issue.link.IssueLinkType;
+    52→    52→import com.atlassian.jira.issue.link.IssueLinkTypeManager;
+    53→    53→import com.atlassian.jira.project.Project;
+    54→    54→import com.atlassian.jira.project.ProjectManager;
+    55→    55→import com.atlassian.jira.config.ConstantsManager;
+    56→    56→import com.atlassian.jira.issue.priority.Priority;
+    57→    57→import com.atlassian.jira.bc.issue.IssueService;
+    58→    58→import com.atlassian.jira.user.ApplicationUser;
+    59→    59→import com.atlassian.jira.issue.fields.CustomField;
+    60→    60→import com.atlassian.jira.issue.customfields.manager.OptionsManager;
+    61→    61→import com.atlassian.jira.issue.customfields.option.Option;
+    62→    62→import com.atlassian.jira.issue.customfields.option.Options;
+    63→    63→import com.atlassian.jira.issue.context.IssueContext;
+    64→    64→import com.atlassian.jira.issue.context.IssueContextImpl;
+    65→    65→import com.atlassian.jira.issue.fields.config.FieldConfig;
+    66→    66→import com.atlassian.jira.util.ErrorCollection;
+    67→    67→
+    68→    68→import static com.yottastudios.jira.core.support.HttpJsonSupport.*;
+    69→    69→
+    70→    70→import java.text.SimpleDateFormat;
+    71→    71→import java.util.Date;
+    72→    72→import java.util.Locale;
+    73→    73→import java.util.List;
+    74→    74→import java.util.Arrays;
+    75→    75→import java.util.stream.Collectors;
+    76→    76→import java.util.ArrayDeque;
+    77→    77→import java.util.Deque;
+    78→    78→import java.util.LinkedHashMap;
+    79→    79→import java.util.Set;
+    80→    80→import java.util.HashSet;
+    81→    81→
+    82→    82→@Slf4j
+    83→    83→public class JiraBotServlet extends HttpServlet {
+    84→    84→    private static final String PLUGIN_STORAGE_KEY = "com.atlassian.plugins.yottastudios.jira.jirabot";
+    85→    85→    private static final String LINK_TYPE_UPSTREAM = "上游任务";
+    86→    86→    private static final String LINK_TYPE_PARENT = "父任务";
+    87→    87→
+    88→    88→    private final Map<String, BiConsumer<HttpServletRequest, HttpServletResponse>> getRoutes = new HashMap<>();
+    89→    89→    private final Map<String, BiConsumer<HttpServletRequest, HttpServletResponse>> postRoutes = new HashMap<>();
+    90→    90→
+    91→    91→    @ComponentImport
+    92→    92→    private final UserManager userManager;
+    93→    93→    @ComponentImport
+    94→    94→    private final LoginUriProvider loginUriProvider;
+    95→    95→    @ComponentImport
+    96→    96→    private final TemplateRenderer templateRenderer;
+    97→    97→    @ComponentImport
+    98→    98→    private final PluginSettingsFactory pluginSettingsFactory;
+    99→    99→    @ComponentImport
+   100→   100→    private final RequestFactory<?> requestFactory;
+   101→   101→    @ComponentImport
+   102→   102→    private final PageBuilderService pageBuilderService;
+   103→   103→
+   104→   104→    private final TemplateGroupMapper templateGroupMapper;
+   105→   105→    private final TemplateMapper templateMapper;
+   106→   106→    private final IssueTemplateMapper issueTemplateMapper;
+   107→   107→
+   108→   108→    @Inject
+   109→   109→    public JiraBotServlet(UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, RequestFactory<?> requestFactory, PageBuilderService pageBuilderService, TemplateGroupMapper templateGroupMapper, TemplateMapper templateMapper, IssueTemplateMapper issueTemplateMapper) {
+   110→   110→        this.userManager = userManager;
+   111→   111→        this.loginUriProvider = loginUriProvider;
+   112→   112→        this.templateRenderer = templateRenderer;
+   113→   113→        this.pluginSettingsFactory = pluginSettingsFactory;
+   114→   114→        this.requestFactory = requestFactory;
+   115→   115→        this.pageBuilderService = pageBuilderService;
+   116→   116→        this.templateGroupMapper = templateGroupMapper;
+   117→   117→        this.templateMapper = templateMapper;
+   118→   118→        this.issueTemplateMapper = issueTemplateMapper;
+   119→   119→
+   120→   120→        initRoutes();
+   121→   121→    }
+   122→   122→
+   123→   123→    @FunctionalInterface
+   124→   124→    private interface RequestHandler {
+   125→   125→        void handle(HttpServletRequest request, HttpServletResponse response) throws Exception;
+   126→   126→    }
+   127→   127→
+   128→   128→    private BiConsumer<HttpServletRequest, HttpServletResponse> withExceptionHandling(RequestHandler handler) {
+   129→   129→        return (request, response) -> {
+   130→   130→            try {
+   131→   131→                handler.handle(request, response);
+   132→   132→            } catch (Exception e) {
+   133→   133→                log.warn("Error handling request: " + e.getMessage());
+   134→   134→                e.printStackTrace();
+   135→   135→            }
+   136→   136→        };
+   137→   137→    }
+   138→   138→
+   139→   139→
+   140→   140→
+   141→   141→    private void initRoutes() {
+   142→   142→        // GET
+   143→   143→        getRoutes.put("/getUserInfo", jsonEndpoint(this::getUserInfo));
+   144→   144→        getRoutes.put("/", withExceptionHandling(this::renderHomePage));
+   145→   145→        getRoutes.put("/api-docs", withExceptionHandling(this::renderApiDocs));
+   146→   146→        getRoutes.put("/blank", withExceptionHandling(this::renderBlankPage));
+   147→   147→
+   148→   148→        // POST
+   149→   149→        postRoutes.put("/getUserInfo", jsonEndpoint(this::getUserInfo));
+   150→   150→        postRoutes.put("/issue/create", jsonEndpoint(this::createJiraIssue));
+   151→   151→        postRoutes.put("/issue/create/batch", jsonEndpoint(this::batchCreateJiraIssues));
+   152→   152→        // 仅测试合作任务使用，有问题进行回退
+   153→   153→        postRoutes.put("/issue/create/batch2", jsonEndpoint(this::batchCreateJiraIssues2));
+   154→   154→        postRoutes.put("/issue/create/v2", jsonEndpoint(this::createJiraIssueV2));
+   155→   155→        postRoutes.put("/template-group/create", jsonEndpoint(this::createTemplateGroup));
+   156→   156→        postRoutes.put("/template-group/update", jsonEndpoint(this::updateTemplateGroup));
+   157→   157→        postRoutes.put("/template-group/delete", jsonEndpoint(this::deleteTemplateGroup));
+   158→   158→        postRoutes.put("/template-group/list", jsonEndpoint(this::listTemplateGroups));
+   159→   159→        postRoutes.put("/template/create", jsonEndpoint(this::createTemplate));
+   160→   160→        postRoutes.put("/template/update", jsonEndpoint(this::updateTemplate));
+   161→   161→        postRoutes.put("/template/delete", jsonEndpoint(this::deleteTemplate));
+   162→   162→        postRoutes.put("/template/listByGroupId", jsonEndpoint(this::listTemplatesByGroupId));
+   163→   163→        postRoutes.put("/issue-template/create", jsonEndpoint(this::createIssueTemplate));
+   164→   164→        postRoutes.put("/issue-template/update", jsonEndpoint(this::updateIssueTemplate));
+   165→   165→        postRoutes.put("/issue-template/delete", jsonEndpoint(this::deleteIssueTemplate));
+   166→   166→        postRoutes.put("/issue-template/listByTemplate", jsonEndpoint(this::listIssueTemplatesByTemplate));
+   167→   167→    }
+   168→   168→
+   169→   169→    @Override
+   170→   170→    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+   171→   171→        if (handleRequest(request, response, getRoutes)) {
+   172→   172→            return;
+   173→   173→        }
+   174→   174→
+   175→   175→        try {
+   176→   176→            renderHomePage(request, response);
+   177→   177→        } catch (Exception e) {
+   178→   178→            throw new RuntimeException(e);
+   179→   179→        }
+   180→   180→    }
+   181→   181→
+   182→   182→    @Override
+   183→   183→    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws  IOException {
+   184→   184→        if (handleRequest(request, response, postRoutes)) {
+   185→   185→            return;
+   186→   186→        }
+   187→   187→
+   188→   188→        response.sendRedirect(request.getContextPath() + "/plugins/servlet/jiraBot");
+   189→   189→    }
+   190→   190→
+   191→   191→    private boolean handleRequest(HttpServletRequest request, HttpServletResponse response,
+   192→   192→                                  Map<String, BiConsumer<HttpServletRequest, HttpServletResponse>> routes) {
+   193→   193→        String pathInfo = request.getPathInfo();
+   194→   194→        if (pathInfo == null) {
+   195→   195→            pathInfo = "/";
+   196→   196→        }
+   197→   197→
+   198→   198→        BiConsumer<HttpServletRequest, HttpServletResponse> handler = routes.get(pathInfo);
+   199→   199→        if (handler != null) {
+   200→   200→            handler.accept(request, response);
+   201→   201→            return true;
+   202→   202→        }
+   203→   203→
+   204→   204→        return false;
+   205→   205→    }
+   206→   206→
+   207→   207→    private void renderHomePage(HttpServletRequest request, HttpServletResponse response) throws Exception {
+   208→   208→        templateRenderer.render("home.vm", response.getWriter());
+   209→   209→    }
+   210→   210→
+   211→   211→    private void renderApiDocs(HttpServletRequest request, HttpServletResponse response) throws Exception {
+   212→   212→        templateRenderer.render("api-docs.vm", response.getWriter());
+   213→   213→    }
+   214→   214→
+   215→   215→    private void renderBlankPage(HttpServletRequest request, HttpServletResponse response) throws Exception {
+   216→   216→        templateRenderer.render("blank.vm", response.getWriter());
+   217→   217→    }
+   218→   218→
+   219→   219→    private SimpleUserInfo getUserInfo(HttpServletRequest request) {
+   220→   220→        UserProfile user = userManager.getRemoteUser(request);
+   221→   221→
+   222→   222→        if (user == null) {
+   223→   223→            log.warn("无法获取用户信息，userProfile为null");
+   224→   224→            throw new RuntimeException("无法获取用户信息");
+   225→   225→        }
+   226→   226→
+   227→   227→        JSONObject userInfo = new JSONObject();
+   228→   228→        userInfo.put("username", user.getUsername());
+   229→   229→        userInfo.put("displayName", user.getFullName());
+   230→   230→        userInfo.put("email", user.getEmail());
+   231→   231→
+   232→   232→        return new SimpleUserInfo(user.getUsername(), user.getFullName(), user.getEmail());
+   233→   233→    }
+   234→   234→
+   235→   235→    @Data
+   236→   236→    @AllArgsConstructor
+   237→   237→    @NoArgsConstructor
+   238→   238→    private class SimpleUserInfo {
+   239→   239→        private String username;
+   240→   240→        private String displayName;
+   241→   241→        private String email;
+   242→   242→    }
+   243→   243→
+   244→   244→    @Data
+   245→   245→    @AllArgsConstructor
+   246→   246→    private static class CreatedIssueInfo {
+   247→   247→        private String issueKey;
+   248→   248→        private Long issueId;
+   249→   249→    }
+   250→   250→
+   251→   251→    private TemplateGroupVo createTemplateGroup(HttpServletRequest request) throws Exception {
+   252→   252→        UserProfile user = userManager.getRemoteUser(request);
+   253→   253→        if (user == null) throw new RuntimeException("未登录");
+   254→   254→
+   255→   255→        TemplateGroupCreateRo ro = readJsonBody(request, TemplateGroupCreateRo.class);
+   256→   256→        if (ro == null || ro.getName() == null || ro.getName().trim().isEmpty()) {
+   257→   257→            throw new RuntimeException("名称不能为空");
+   258→   258→        }
+   259→   259→        TemplateGroup created = templateGroupMapper.create(ro.getName().trim());
+   260→   260→        return TemplateGroupVo.from(created);
+   261→   261→    }
+   262→   262→
+   263→   263→    private TemplateGroupVo updateTemplateGroup(HttpServletRequest request) throws Exception {
+   264→   264→        UserProfile user = userManager.getRemoteUser(request);
+   265→   265→        if (user == null) throw new RuntimeException("未登录");
+   266→   266→
+   267→   267→        TemplateGroupUpdateRo ro = readJsonBody(request, TemplateGroupUpdateRo.class);
+   268→   268→        if (ro == null || ro.getId() <= 0) throw new RuntimeException("非法ID");
+   269→   269→        if (ro.getName() == null || ro.getName().trim().isEmpty()) throw new RuntimeException("名称不能为空");
+   270→   270→        TemplateGroup updated = templateGroupMapper.update(ro.getId(), ro.getName().trim());
+   271→   271→        if (updated == null) throw new RuntimeException("记录不存在");
+   272→   272→        return TemplateGroupVo.from(updated);
+   273→   273→    }
+   274→   274→
+   275→   275→    private TemplateGroupDeleteVo deleteTemplateGroup(HttpServletRequest request) throws Exception {
+   276→   276→        UserProfile user = userManager.getRemoteUser(request);
+   277→   277→        if (user == null) throw new RuntimeException("未登录");
+   278→   278→
+   279→   279→        TemplateGroupDeleteRo ro = readJsonBody(request, TemplateGroupDeleteRo.class);
+   280→   280→        if (ro == null || ro.getId() <= 0) throw new RuntimeException("非法ID");
+   281→   281→        boolean success = templateGroupMapper.deleteById(ro.getId());
+   282→   282→        return new TemplateGroupDeleteVo(success);
+   283→   283→    }
+   284→   284→
+   285→   285→    private List<TemplateGroupVo> listTemplateGroups(HttpServletRequest request) throws Exception {
+   286→   286→        UserProfile user = userManager.getRemoteUser(request);
+   287→   287→        if (user == null) throw new RuntimeException("未登录");
+   288→   288→
+   289→   289→        readJsonBody(request, TemplateGroupListRo.class);
+   290→   290→
+   291→   291→        TemplateGroup[] all = templateGroupMapper.list();
+   292→   292→        List<TemplateGroupVo> groups = new ArrayList<>();
+   293→   293→        for (TemplateGroup g : all) groups.add(TemplateGroupVo.from(g));
+   294→   294→        return groups;
+   295→   295→    }
+   296→   296→
+   297→   297→
+   298→   298→
+   299→   299→    private CreatedIssueInfo createJiraIssue(HttpServletRequest request) throws Exception {
+   300→   300→        // 用户校验与上下文
+   301→   301→        UserProfile userProfile = userManager.getRemoteUser(request);
+   302→   302→        if (userProfile == null) {
+   303→   303→            throw new RuntimeException("未登录");
+   304→   304→        }
+   305→   305→        ApplicationUser applicationUser = ComponentAccessor.getUserManager().getUserByName(userProfile.getUsername());
+   306→   306→        if (applicationUser == null) {
+   307→   307→            throw new RuntimeException("无法获取应用用户");
+   308→   308→        }
+   309→   309→        JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getJiraAuthenticationContext();
+   310→   310→        jiraAuthenticationContext.setLoggedInUser(applicationUser);
+   311→   311→
+   312→   312→        CreateJiraIssueRo ro = readJsonBody(request, CreateJiraIssueRo.class);
+   313→   313→        Map<String, Object> fields = ro.getFields();
+   314→   314→        if (fields == null) {
+   315→   315→            throw new RuntimeException("请求体字段不能为空");
+   316→   316→        }
+   317→   317→
+   318→   318→        Issue created = createIssueWithParameters(applicationUser, fields);
+   319→   319→
+   320→   320→        // 创建链接
+   321→   321→        if (!isBlank(ro.getTargetLinkIssueKey()) && !isBlank(ro.getLinkTypeName())) {
+   322→   322→            createIssueLink(created.getKey(), ro.getTargetLinkIssueKey(), ro.getLinkTypeName(), applicationUser);
+   323→   323→        }
+   324→   324→
+   325→   325→        return new CreatedIssueInfo(created.getKey(), created.getId());
+   326→   326→    }
+   327→   327→
+   328→   328→    private CreatedIssueInfo createJiraIssueV2(HttpServletRequest request) throws Exception {
+   329→   329→        UserProfile userProfile = userManager.getRemoteUser(request);
+   330→   330→        if (userProfile == null) throw new RuntimeException("未登录");
+   331→   331→        ApplicationUser applicationUser = ComponentAccessor.getUserManager().getUserByName(userProfile.getUsername());
+   332→   332→        if (applicationUser == null) throw new RuntimeException("无法获取应用用户");
+   333→   333→        JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getJiraAuthenticationContext();
+   334→   334→        jiraAuthenticationContext.setLoggedInUser(applicationUser);
+   335→   335→
+   336→   336→        String body = readBody(request);
+   337→   337→        if (body == null || body.trim().isEmpty()) throw new RuntimeException("请求体不能为空");
+   338→   338→        JSONObject obj = new JSONObject(body);
+   339→   339→        CreateJiraIssueV2Ro ro = CreateJiraIssueV2Ro.parseCreateJiraIssueV2(obj);
+   340→   340→        if (ro.getFields() == null) throw new RuntimeException("请求体字段不能为空");
+   341→   341→
+   342→   342→        Issue created = createIssueWithParameters(applicationUser, ro.getFields());
+   343→   343→
+   344→   344→        if (ro.getLinks() != null) {
+   345→   345→            for (com.yottastudios.jira.ro.LinkCreateRo link : ro.getLinks()) {
+   346→   346→                if (link == null) continue;
+   347→   347→                if (isBlank(link.getLinkTypeName()) || isBlank(link.getTargetIssueKey())) continue;
+   348→   348→                createIssueLink(created.getKey(), link.getTargetIssueKey(), link.getLinkTypeName(), applicationUser);
+   349→   349→            }
+   350→   350→        }
+   351→   351→
+   352→   352→        return new CreatedIssueInfo(created.getKey(), created.getId());
+   353→   353→    }
+   354→   354→
+   355→   355→    private List<CreatedIssueInfo> batchCreateJiraIssues(HttpServletRequest request) throws Exception {
+   356→   356→        UserProfile userProfile = userManager.getRemoteUser(request);
+   357→   357→        if (userProfile == null) throw new RuntimeException("未登录");
+   358→   358→        ApplicationUser applicationUser = ComponentAccessor.getUserManager().getUserByName(userProfile.getUsername());
+   359→   359→        if (applicationUser == null) throw new RuntimeException("无法获取应用用户");
+   360→   360→        JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getJiraAuthenticationContext();
+   361→   361→        jiraAuthenticationContext.setLoggedInUser(applicationUser);
+   362→   362→
+   363→   363→        String body = readBody(request);
+   364→   364→        if (body == null || body.trim().isEmpty()) throw new RuntimeException("请求体不能为空");
+   365→   365→        JSONObject root = new JSONObject(body);
+   366→   366→        if (!root.has("issues")) throw new RuntimeException("issues不能为空");
+   367→   367→        JSONArray arr = root.getJSONArray("issues");
+   368→   368→        if (arr.length() == 0) throw new RuntimeException("issues不能为空");
+   369→   369→
+   370→   370→        List<CreateJiraIssueV2Ro> issueRos = new ArrayList<>();
+   371→   371→        for (int i = 0; i < arr.length(); i++) {
+   372→   372→            Object item = arr.get(i);
+   373→   373→            if (!(item instanceof JSONObject)) throw new RuntimeException("issues项必须为对象");
+   374→   374→            issueRos.add(CreateJiraIssueV2Ro.parseCreateJiraIssueV2((JSONObject) item));
+   375→   375→        }
+   376→   376→
+   377→   377→        for (CreateJiraIssueV2Ro item : issueRos) {
+   378→   378→            if (item.getIssueTemplateId() == null) throw new RuntimeException("每个issue必须包含issueTemplateId");
+   379→   379→            if (item.getFields() == null) throw new RuntimeException("请求体字段不能为空");
+   380→   380→        }
+   381→   381→
+   382→   382→        Map<Long, CreateJiraIssueV2Ro> templateIdToItem = new LinkedHashMap<>();
+   383→   383→        for (CreateJiraIssueV2Ro item : issueRos) {
+   384→   384→            Long id = item.getIssueTemplateId();
+   385→   385→            if (templateIdToItem.containsKey(id)) throw new RuntimeException("issueTemplateId重复: " + id);
+   386→   386→            templateIdToItem.put(id, item);
+   387→   387→        }
+   388→   388→
+   389→   389→        Map<Long, List<Long>> edges = new HashMap<>();
+   390→   390→        Map<Long, Integer> indegree = new HashMap<>();
+   391→   391→        for (Long id : templateIdToItem.keySet()) indegree.put(id, 0);
+   392→   392→        for (CreateJiraIssueV2Ro item : issueRos) {
+   393→   393→            Long parent = item.getParentIssueTemplateId();
+   394→   394→            if (parent != null) {
+   395→   395→                if (!templateIdToItem.containsKey(parent)) throw new RuntimeException("未找到依赖的issueTemplateId: " + parent);
+   396→   396→                edges.computeIfAbsent(parent, k -> new ArrayList<>()).add(item.getIssueTemplateId());
+   397→   397→                indegree.put(item.getIssueTemplateId(), indegree.get(item.getIssueTemplateId()) + 1);
+   398→   398→            }
+   399→   399→            List<Long> ups = item.getUpstreamIssueTemplateIds();
+   400→   400→            if (ups != null) {
+   401→   401→                for (Long up : ups) {
+   402→   402→                    if (up == null) continue;
+   403→   403→                    if (!templateIdToItem.containsKey(up)) throw new RuntimeException("未找到依赖的issueTemplateId: " + up);
+   404→   404→                    edges.computeIfAbsent(up, k -> new ArrayList<>()).add(item.getIssueTemplateId());
+   405→   405→                    indegree.put(item.getIssueTemplateId(), indegree.get(item.getIssueTemplateId()) + 1);
+   406→   406→                }
+   407→   407→            }
+   408→   408→        }
+   409→   409→
+   410→   410→        Set<Long> nodesWithChildren = new HashSet<>(edges.keySet());
+   411→   411→        Set<Long> nodesReferencedAsChild = new HashSet<>();
+   412→   412→        for (List<Long> children : edges.values()) nodesReferencedAsChild.addAll(children);
+   413→   413→        Set<Long> inGraph = new HashSet<>();
+   414→   414→        inGraph.addAll(nodesWithChildren);
+   415→   415→        inGraph.addAll(nodesReferencedAsChild);
+   416→   416→
+   417→   417→        Deque<Long> queue = new ArrayDeque<>();
+   418→   418→        for (Long id : inGraph) if (indegree.get(id) == 0) queue.addLast(id);
+   419→   419→        List<Long> topoOrder = new ArrayList<>();
+   420→   420→        while (!queue.isEmpty()) {
+   421→   421→            Long u = queue.removeFirst();
+   422→   422→            topoOrder.add(u);
+   423→   423→            List<Long> children = edges.get(u);
+   424→   424→            if (children == null || children.isEmpty()) continue;
+   425→   425→            for (Long v : children) {
+   426→   426→                int d = indegree.get(v) - 1;
+   427→   427→                indegree.put(v, d);
+   428→   428→                if (d == 0) queue.addLast(v);
+   429→   429→            }
+   430→   430→        }
+   431→   431→        if (topoOrder.size() != inGraph.size()) throw new RuntimeException("存在循环依赖，请检查上游/父任务设置");
+   432→   432→
+   433→   433→        List<Long> standalone = new ArrayList<>();
+   434→   434→        for (CreateJiraIssueV2Ro item : issueRos) {
+   435→   435→            Long id = item.getIssueTemplateId();
+   436→   436→            boolean noParent = item.getParentIssueTemplateId() == null;
+   437→   437→            List<Long> ups = item.getUpstreamIssueTemplateIds();
+   438→   438→            boolean noUpstreams = ups == null || ups.isEmpty();
+   439→   439→            if (noParent && noUpstreams && !inGraph.contains(id)) standalone.add(id);
+   440→   440→        }
+   441→   441→        List<Long> orderedIds = new ArrayList<>();
+   442→   442→        orderedIds.addAll(topoOrder);
+   443→   443→        orderedIds.addAll(standalone);
+   444→   444→
+   445→   445→        String dependencyTreeLog = renderDependencyForest(edges, inGraph, standalone);
+   446→   446→        log.error("批量创建依赖关系树:\n{}", dependencyTreeLog);
+   447→   447→
+   448→   448→        for (Long id : orderedIds) {
+   449→   449→            CreateJiraIssueV2Ro item = templateIdToItem.get(id);
+   450→   450→            validateIssueFields(applicationUser, item.getFields());
+   451→   451→        }
+   452→   452→
+   453→   453→        Map<Long, String> templateIdToIssueKey = new HashMap<>();
+   454→   454→        List<CreatedIssueInfo> results = new ArrayList<>();
+   455→   455→        for (Long id : orderedIds) {
+   456→   456→            CreateJiraIssueV2Ro item = templateIdToItem.get(id);
+   457→   457→            Map<String, Object> fields = item.getFields();
+   458→   458→
+   459→   459→            Issue created = createIssueWithParameters(applicationUser, fields);
+   460→   460→
+   461→   461→            Long parent = item.getParentIssueTemplateId();
+   462→   462→            if (parent != null) {
+   463→   463→                String parentKey = templateIdToIssueKey.get(parent);
+   464→   464→                if (parentKey == null) throw new RuntimeException("内部错误：未找到依赖创建结果: " + parent);
+   465→   465→                createIssueLink(created.getKey(), parentKey, LINK_TYPE_PARENT, applicationUser);
+   466→   466→            }
+   467→   467→
+   468→   468→            List<Long> ups = item.getUpstreamIssueTemplateIds();
+   469→   469→            if (ups != null) {
+   470→   470→                for (Long up : ups) {
+   471→   471→                    if (up == null) continue;
+   472→   472→                    String upKey = templateIdToIssueKey.get(up);
+   473→   473→                    if (upKey == null) throw new RuntimeException("内部错误：未找到依赖创建结果: " + up);
+   474→   474→                    createIssueLink(created.getKey(), upKey, LINK_TYPE_UPSTREAM, applicationUser);
+   475→   475→                }
+   476→   476→            }
+   477→   477→
+   478→   478→            if (item.getLinks() != null) {
+   479→   479→                Set<String> autoPairs = new HashSet<>();
+   480→   480→                if (parent != null) autoPairs.add(LINK_TYPE_PARENT + "@" + templateIdToIssueKey.get(parent));
+   481→   481→                if (ups != null) {
+   482→   482→                    for (Long up : ups) {
+   483→   483→                        if (up == null) continue;
+   484→   484→                        String upKey = templateIdToIssueKey.get(up);
+   485→   485→                        if (upKey != null) autoPairs.add(LINK_TYPE_UPSTREAM + "@" + upKey);
+   486→   486→                    }
+   487→   487→                }
+   488→   488→                for (LinkCreateRo link : item.getLinks()) {
+   489→   489→                    if (link == null) continue;
+   490→   490→                    String type = link.getLinkTypeName();
+   491→   491→                    String tgt = link.getTargetIssueKey();
+   492→   492→                    if (isBlank(type) || isBlank(tgt)) continue;
+   493→   493→                    String pair = type + "@" + tgt;
+   494→   494→                    if (autoPairs.contains(pair)) continue;
+   495→   495→                    createIssueLink(created.getKey(), tgt, type, applicationUser);
+   496→   496→                }
+   497→   497→            }
+   498→   498→
+   499→   499→            templateIdToIssueKey.put(id, created.getKey());
+   500→   500→            results.add(new CreatedIssueInfo(created.getKey(), created.getId()));
+   501→   501→        }
+   502→   502→        return results;
+   503→   503→    }
+   504→   504→
+   505→   505→
+   506→   506→
+   507→   507→
+   508→   508→    private List<CreatedIssueInfo> batchCreateJiraIssues2(HttpServletRequest request) throws Exception {
+   509→   509→        UserProfile userProfile = userManager.getRemoteUser(request);
+   510→   510→        if (userProfile == null) throw new RuntimeException("未登录");
+   511→   511→        ApplicationUser applicationUser = ComponentAccessor.getUserManager().getUserByName(userProfile.getUsername());
+   512→   512→        if (applicationUser == null) throw new RuntimeException("无法获取应用用户");
+   513→   513→        JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getJiraAuthenticationContext();
+   514→   514→        jiraAuthenticationContext.setLoggedInUser(applicationUser);
+   515→   515→
+   516→   516→        String body = readBody(request);
+   517→   517→        if (body == null || body.trim().isEmpty()) throw new RuntimeException("请求体不能为空");
+   518→   518→        JSONObject root = new JSONObject(body);
+   519→   519→        if (!root.has("issues")) throw new RuntimeException("issues不能为空");
+   520→   520→        JSONArray arr = root.getJSONArray("issues");
+   521→   521→        if (arr.length() == 0) throw new RuntimeException("issues不能为空");
+   522→   522→
+   523→   523→        List<CreateJiraIssueV2Ro> issueRos = new ArrayList<>();
+   524→   524→        for (int i = 0; i < arr.length(); i++) {
+   525→   525→            Object item = arr.get(i);
+   526→   526→            if (!(item instanceof JSONObject)) throw new RuntimeException("issues项必须为对象");
+   527→   527→            // 假如负责组字段传了多个组，进行一次拆分 fields customfield_10403
+   528→   528→            List<JSONObject> transJsonList = transJsonList(item);
+   529→   529→            for (JSONObject transJson : transJsonList) {
+   530→   530→                issueRos.add(CreateJiraIssueV2Ro.parseCreateJiraIssueV2(transJson));
+   531→   531→            }
+   532→   532→        }
+   533→   533→
+   534→   534→        for (CreateJiraIssueV2Ro item : issueRos) {
+   535→   535→            if (item.getIssueTemplateId() == null) throw new RuntimeException("每个issue必须包含issueTemplateId");
+   536→   536→            if (item.getFields() == null) throw new RuntimeException("请求体字段不能为空");
+   537→   537→        }
+   538→   538→
+   539→   539→        Map<Long, CreateJiraIssueV2Ro> templateIdToItem = new LinkedHashMap<>();
+   540→   540→        for (CreateJiraIssueV2Ro item : issueRos) {
+   541→   541→            Long id = item.getIssueTemplateId();
+   542→   542→            if (templateIdToItem.containsKey(id)) throw new RuntimeException("issueTemplateId重复: " + id);
+   543→   543→            templateIdToItem.put(id, item);
+   544→   544→        }
+   545→   545→
+   546→   546→        Map<Long, List<Long>> edges = new HashMap<>();
+   547→   547→        Map<Long, Integer> indegree = new HashMap<>();
+   548→   548→        for (Long id : templateIdToItem.keySet()) indegree.put(id, 0);
+   549→   549→        for (CreateJiraIssueV2Ro item : issueRos) {
+   550→   550→            Long parent = item.getParentIssueTemplateId();
+   551→   551→            if (parent != null) {
+   552→   552→                if (!templateIdToItem.containsKey(parent)) throw new RuntimeException("未找到依赖的issueTemplateId: " + parent);
+   553→   553→                edges.computeIfAbsent(parent, k -> new ArrayList<>()).add(item.getIssueTemplateId());
+   554→   554→                indegree.put(item.getIssueTemplateId(), indegree.get(item.getIssueTemplateId()) + 1);
+   555→   555→            }
+   556→   556→            List<Long> ups = item.getUpstreamIssueTemplateIds();
+   557→   557→            if (ups != null) {
+   558→   558→                for (Long up : ups) {
+   559→   559→                    if (up == null) continue;
+   560→   560→                    if (!templateIdToItem.containsKey(up)) throw new RuntimeException("未找到依赖的issueTemplateId: " + up);
+   561→   561→                    edges.computeIfAbsent(up, k -> new ArrayList<>()).add(item.getIssueTemplateId());
+   562→   562→                    indegree.put(item.getIssueTemplateId(), indegree.get(item.getIssueTemplateId()) + 1);
+   563→   563→                }
+   564→   564→            }
+   565→   565→        }
+   566→   566→
+   567→   567→        Set<Long> nodesWithChildren = new HashSet<>(edges.keySet());
+   568→   568→        Set<Long> nodesReferencedAsChild = new HashSet<>();
+   569→   569→        for (List<Long> children : edges.values()) nodesReferencedAsChild.addAll(children);
+   570→   570→        Set<Long> inGraph = new HashSet<>();
+   571→   571→        inGraph.addAll(nodesWithChildren);
+   572→   572→        inGraph.addAll(nodesReferencedAsChild);
+   573→   573→
+   574→   574→        Deque<Long> queue = new ArrayDeque<>();
+   575→   575→        for (Long id : inGraph) if (indegree.get(id) == 0) queue.addLast(id);
+   576→   576→        List<Long> topoOrder = new ArrayList<>();
+   577→   577→        while (!queue.isEmpty()) {
+   578→   578→            Long u = queue.removeFirst();
+   579→   579→            topoOrder.add(u);
+   580→   580→            List<Long> children = edges.get(u);
+   581→   581→            if (children == null || children.isEmpty()) continue;
+   582→   582→            for (Long v : children) {
+   583→   583→                int d = indegree.get(v) - 1;
+   584→   584→                indegree.put(v, d);
+   585→   585→                if (d == 0) queue.addLast(v);
+   586→   586→            }
+   587→   587→        }
+   588→   588→        if (topoOrder.size() != inGraph.size()) throw new RuntimeException("存在循环依赖，请检查上游/父任务设置");
+   589→   589→
+   590→   590→        List<Long> standalone = new ArrayList<>();
+   591→   591→        for (CreateJiraIssueV2Ro item : issueRos) {
+   592→   592→            Long id = item.getIssueTemplateId();
+   593→   593→            boolean noParent = item.getParentIssueTemplateId() == null;
+   594→   594→            List<Long> ups = item.getUpstreamIssueTemplateIds();
+   595→   595→            boolean noUpstreams = ups == null || ups.isEmpty();
+   596→   596→            if (noParent && noUpstreams && !inGraph.contains(id)) standalone.add(id);
+   597→   597→        }
+   598→   598→        List<Long> orderedIds = new ArrayList<>();
+   599→   599→        orderedIds.addAll(topoOrder);
+   600→   600→        orderedIds.addAll(standalone);
+   601→   601→
+   602→   602→        String dependencyTreeLog = renderDependencyForest(edges, inGraph, standalone);
+   603→   603→        log.error("批量创建依赖关系树:\n{}", dependencyTreeLog);
+   604→   604→
+   605→   605→        for (Long id : orderedIds) {
+   606→   606→            CreateJiraIssueV2Ro item = templateIdToItem.get(id);
+   607→   607→            validateIssueFields(applicationUser, item.getFields());
+   608→   608→        }
+   609→   609→
+   610→   610→        Map<Long, String> templateIdToIssueKey = new HashMap<>();
+   611→   611→        Map<String, Map<String, Object>> specialFields = new HashMap<>();
+   612→   612→        Map<String, Issue> issueMap = new HashMap<>();
+   613→   613→        List<CreatedIssueInfo> results = new ArrayList<>();
+   614→   614→        for (Long id : orderedIds) {
+   615→   615→            CreateJiraIssueV2Ro item = templateIdToItem.get(id);
+   616→   616→            Map<String, Object> fields = item.getFields();
+   617→   617→            // 此处对fields做特殊处理，指定的fields假如不合预设类型，会被在fields移除
+   618→   618→            Map<String, Object> specialMap = filterSpecialFields(fields);
+   619→   619→            Issue created = createIssueWithParameters(applicationUser, fields);
+   620→   620→            specialFields.put(created.getKey(),  specialMap);
+   621→   621→            issueMap.put(created.getKey(), created);
+   622→   622→
+   623→   623→            Long parent = item.getParentIssueTemplateId();
+   624→   624→            if (parent != null) {
+   625→   625→                String parentKey = templateIdToIssueKey.get(parent);
+   626→   626→                if (parentKey == null) throw new RuntimeException("内部错误：未找到依赖创建结果: " + parent);
+   627→   627→                createIssueLink(created.getKey(), parentKey, LINK_TYPE_PARENT, applicationUser);
+   628→   628→            }
+   629→   629→
+   630→   630→            List<Long> ups = item.getUpstreamIssueTemplateIds();
+   631→   631→            if (ups != null) {
+   632→   632→                for (Long up : ups) {
+   633→   633→                    if (up == null) continue;
+   634→   634→                    String upKey = templateIdToIssueKey.get(up);
+   635→   635→                    if (upKey == null) throw new RuntimeException("内部错误：未找到依赖创建结果: " + up);
+   636→   636→                    createIssueLink(created.getKey(), upKey, LINK_TYPE_UPSTREAM, applicationUser);
+   637→   637→                }
+   638→   638→            }
+   639→   639→
+   640→   640→            if (item.getLinks() != null) {
+   641→   641→                Set<String> autoPairs = new HashSet<>();
+   642→   642→                if (parent != null) autoPairs.add(LINK_TYPE_PARENT + "@" + templateIdToIssueKey.get(parent));
+   643→   643→                if (ups != null) {
+   644→   644→                    for (Long up : ups) {
+   645→   645→                        if (up == null) continue;
+   646→   646→                        String upKey = templateIdToIssueKey.get(up);
+   647→   647→                        if (upKey != null) autoPairs.add(LINK_TYPE_UPSTREAM + "@" + upKey);
+   648→   648→                    }
+   649→   649→                }
+   650→   650→                for (LinkCreateRo link : item.getLinks()) {
+   651→   651→                    if (link == null) continue;
+   652→   652→                    String type = link.getLinkTypeName();
+   653→   653→                    String tgt = link.getTargetIssueKey();
+   654→   654→                    if (isBlank(type) || isBlank(tgt)) continue;
+   655→   655→                    String pair = type + "@" + tgt;
+   656→   656→                    if (autoPairs.contains(pair)) continue;
+   657→   657→                    createIssueLink(created.getKey(), tgt, type, applicationUser);
+   658→   658→                }
+   659→   659→            }
+   660→   660→
+   661→   661→            templateIdToIssueKey.put(id, created.getKey());
+   662→   662→            results.add(new CreatedIssueInfo(created.getKey(), created.getId()));
+   663→   663→        }
+   664→   664→
+   665→   665→        return results;
+   666→   666→    }
+   667→   667→
+   668→   668→    private List<JSONObject> transJsonList(Object item) {
+   669→   669→        List<JSONObject> resultList = new ArrayList<>();
+   670→   670→
+   671→   671→        log.warn("=== 开始处理单个issue对象 ===");
+   672→   672→        log.warn("输入的issue对象: {}", item);
+   673→   673→
+   674→   674→        try {
+   675→   675→            JSONObject issue = (JSONObject) item;
+   676→   676→            JSONObject fields = issue.getJSONObject("fields");
+   677→   677→
+   678→   678→            if (fields == null || !fields.keySet().contains("customfield_10403")) {
+   679→   679→                log.warn("issue的fields字段为空，直接返回原对象");
+   680→   680→                resultList.add(issue);
+   681→   681→                return resultList;
+   682→   682→            }
+   683→   683→
+   684→   684→            log.warn("fields字段内容: {}", fields);
+   685→   685→
+   686→   686→            // 获取项目键列表（从customfield_10403）
+   687→   687→            String customField10403 = fields.getString("customfield_10403");
+   688→   688→            log.warn("customfield_10403字段值: {}", customField10403);
+   689→   689→
+   690→   690→            if (customField10403 == null || customField10403.trim().isEmpty()) {
+   691→   691→                log.warn("customfield_10403字段为空，直接返回原对象");
+   692→   692→                resultList.add(issue);
+   693→   693→                return resultList;
+   694→   694→            }
+   695→   695→
+   696→   696→            // 按逗号分割项目键
+   697→   697→            String[] projectKeys = customField10403.split(",");
+   698→   698→            log.warn("分割后的项目键数组: {}", Arrays.toString(projectKeys));
+   699→   699→
+   700→   700→            // 需要特殊处理的字段名
+   701→   701→            String[] targetFields = {"customfield_11008", "customfield_11026",
+   702→   702→                    "customfield_11006", "customfield_11004"};
+   703→   703→
+   704→   704→            // 为每个项目键创建一个新的JSON对象
+   705→   705→            for (String projectKey : projectKeys) {
+   706→   706→                projectKey = projectKey.trim();
+   707→   707→                log.warn("处理项目键: '{}'", projectKey);
+   708→   708→
+   709→   709→                // 复制整个issue对象，保留所有原有字段
+   710→   710→                JSONObject newJson = deepCopyJson(issue);
+   711→   711→                JSONObject newFields = newJson.getJSONObject("fields");
+   712→   712→
+   713→   713→                // 设置customfield_10403为当前项目键
+   714→   714→                newFields.put("customfield_10403", projectKey);
+   715→   715→
+   716→   716→                // 处理目标字段
+   717→   717→                for (String fieldName : targetFields) {
+   718→   718→                    if (!fields.has(fieldName)){
+   719→   719→                        continue;
+   720→   720→                    }
+   721→   721→                    Object fieldValue = fields.get(fieldName);
+   722→   722→                    String processedValue = processFieldForProjectKey(fieldValue, projectKey);
+   723→   723→                    newFields.put(fieldName, processedValue);
+   724→   724→                    log.warn("字段'{}'处理完成: {}", fieldName, processedValue);
+   725→   725→                }
+   726→   726→                // 随机生成模板id
+   727→   727→                Random random = new Random();
+   728→   728→                newJson.put("issueTemplateId", Math.abs(random.nextLong()));
+   729→   729→
+   730→   730→                log.warn("生成的新对象: {}", newJson);
+   731→   731→                resultList.add(newJson);
+   732→   732→            }
+   733→   733→
+   734→   734→            log.warn("处理完成，从1个对象生成了{}个对象", resultList.size());
+   735→   735→
+   736→   736→        } catch (Exception e) {
+   737→   737→            log.error("处理issue对象时发生错误: {}", e.getMessage(), e);
+   738→   738→            log.error("出错的输入数据: {}", item);
+   739→   739→        }
+   740→   740→
+   741→   741→        return resultList;
+   742→   742→    }
+   743→   743→
+   744→   744→    /**
+   745→   745→     * 根据项目键处理字段值
+   746→   746→     * 从数组中找到以项目键开头的值，去掉前缀返回
+   747→   747→     */
+   748→   748→    private String processFieldForProjectKey(Object fieldValue, String projectKey) {
+   749→   749→        log.warn("      ~~~> 开始处理字段值匹配，项目键: '{}'", projectKey);
+   750→   750→        log.warn("      ~~~> 输入字段值: {} (类型: {})", fieldValue, fieldValue != null ? fieldValue.getClass().getSimpleName() : "null");
+   751→   751→
+   752→   752→        if (fieldValue == null) {
+   753→   753→            log.warn("      ~~~> 字段值为null，返回空字符串");
+   754→   754→            return "";
+   755→   755→        }
+   756→   756→
+   757→   757→        try {
+   758→   758→            List<String> valueList = new ArrayList<>();
+   759→   759→
+   760→   760→            // 解析字段值为字符串数组
+   761→   761→            if (fieldValue instanceof JSONArray) {
+   762→   762→                log.warn("      ~~~> 字段值是JSONArray类型");
+   763→   763→                JSONArray array = (JSONArray) fieldValue;
+   764→   764→                for (int i = 0; i < array.length(); i++) {
+   765→   765→                    Object item = array.get(i);
+   766→   766→                    if (item != null) {
+   767→   767→                        valueList.add(item.toString());
+   768→   768→                        log.warn("      ~~~> 从JSONArray中提取值[{}]: '{}'", i, item.toString());
+   769→   769→                    }
+   770→   770→                }
+   771→   771→            } else if (fieldValue instanceof List) {
+   772→   772→                log.warn("      ~~~> 字段值是List类型");
+   773→   773→                List<?> list = (List<?>) fieldValue;
+   774→   774→                for (int i = 0; i < list.size(); i++) {
+   775→   775→                    Object item = list.get(i);
+   776→   776→                    if (item != null) {
+   777→   777→                        valueList.add(item.toString());
+   778→   778→                        log.warn("      ~~~> 从List中提取值[{}]: '{}'", i, item.toString());
+   779→   779→                    }
+   780→   780→                }
+   781→   781→            } else if (fieldValue instanceof Object[]) {
+   782→   782→                log.warn("      ~~~> 字段值是Object[]类型");
+   783→   783→                Object[] array = (Object[]) fieldValue;
+   784→   784→                for (int i = 0; i < array.length; i++) {
+   785→   785→                    Object item = array[i];
+   786→   786→                    if (item != null) {
+   787→   787→                        valueList.add(item.toString());
+   788→   788→                        log.warn("      ~~~> 从Object[]中提取值[{}]: '{}'", i, item.toString());
+   789→   789→                    }
+   790→   790→                }
+   791→   791→            } else {
+   792→   792→                log.warn("      ~~~> 字段值是单个值类型");
+   793→   793→                valueList.add(fieldValue.toString());
+   794→   794→                log.warn("      ~~~> 单个值: '{}'", fieldValue.toString());
+   795→   795→            }
+   796→   796→
+   797→   797→            log.warn("      ~~~> 解析完成，值列表: {}", valueList);
+   798→   798→
+   799→   799→            // 在数组中查找以当前项目键开头的值
+   800→   800→            String prefix = projectKey + "-";
+   801→   801→            log.warn("      ~~~> 查找前缀: '{}'", prefix);
+   802→   802→
+   803→   803→            for (int i = 0; i < valueList.size(); i++) {
+   804→   804→                String value = valueList.get(i);
+   805→   805→                log.warn("      ~~~> 检查值[{}]: '{}' 是否以前缀'{}'开头", i, value, prefix);
+   806→   806→
+   807→   807→                if (value != null && value.startsWith(prefix)) {
+   808→   808→                    String result = value.substring(prefix.length());
+   809→   809→                    log.warn("      ~~~> ✓ 找到匹配值！原值: '{}' -> 去前缀后: '{}'", value, result);
+   810→   810→                    return result;
+   811→   811→                }
+   812→   812→            }
+   813→   813→
+   814→   814→            log.warn("      ~~~> ✗ 没找到以'{}'开头的匹配值，返回空字符串", prefix);
+   815→   815→            return "";
+   816→   816→
+   817→   817→        } catch (Exception e) {
+   818→   818→            log.error("      ~~~> 处理字段值时发生错误，字段值: {}, 项目键: {}, 错误: {}",
+   819→   819→                    fieldValue, projectKey, e.getMessage(), e);
+   820→   820→            return "";
+   821→   821→        }
+   822→   822→    }
+   823→   823→
+   824→   824→    /**
+   825→   825→     * JSON深拷贝方法，保留所有字段
+   826→   826→     */
+   827→   827→    private JSONObject deepCopyJson(JSONObject original) {
+   828→   828→        log.debug("开始深拷贝JSON对象，原对象键数量: {}", original.keySet().size());
+   829→   829→
+   830→   830→        JSONObject copy = new JSONObject();
+   831→   831→
+   832→   832→        // 遍历原对象的所有键值对
+   833→   833→        for (String key : original.keySet()) {
+   834→   834→            Object value = original.get(key);
+   835→   835→            log.debug("拷贝字段 '{}': {} (类型: {})", key, value, value != null ? value.getClass().getSimpleName() : "null");
+   836→   836→
+   837→   837→            if (value instanceof JSONObject) {
+   838→   838→                log.debug("字段'{}'是JSONObject，进行递归拷贝", key);
+   839→   839→                copy.put(key, deepCopyJson((JSONObject) value));
+   840→   840→            } else if (value instanceof JSONArray) {
+   841→   841→                log.debug("字段'{}'是JSONArray，进行数组拷贝", key);
+   842→   842→                JSONArray originalArray = (JSONArray) value;
+   843→   843→                JSONArray copyArray = new JSONArray();
+   844→   844→                for (int i = 0; i < originalArray.length(); i++) {
+   845→   845→                    Object arrayItem = originalArray.get(i);
+   846→   846→                    if (arrayItem instanceof JSONObject) {
+   847→   847→                        copyArray.put(deepCopyJson((JSONObject) arrayItem));
+   848→   848→                    } else {
+   849→   849→                        copyArray.put(arrayItem);
+   850→   850→                    }
+   851→   851→                }
+   852→   852→                copy.put(key, copyArray);
+   853→   853→            } else {
+   854→   854→                log.debug("字段'{}'是基本类型，直接拷贝", key);
+   855→   855→                copy.put(key, value);
+   856→   856→            }
+   857→   857→        }
+   858→   858→
+   859→   859→        log.debug("深拷贝完成，新对象键数量: {}", copy.keySet().size());
+   860→   860→        return copy;
+   861→   861→    }
+   862→   862→
+   863→   863→
+   864→   864→
+   865→   865→
+   866→   866→
+   867→   867→    private List<Issue> findCooperationLinkedIssue(Issue issue) {
+   868→   868→        IssueLinkManager issueLinkManager = ComponentAccessor.getIssueLinkManager();
+   869→   869→        List<Issue> issueList = new ArrayList<>();
+   870→   870→
+   871→   871→        // 获取入站链接
+   872→   872→        List<IssueLink> inwardLinks = issueLinkManager.getInwardLinks(issue.getId());
+   873→   873→        if (inwardLinks != null) {
+   874→   874→            inwardLinks.forEach(issueLink -> {
+   875→   875→                if (issueLink.getIssueLinkType() != null &&
+   876→   876→                        "合作".equals(issueLink.getIssueLinkType().getName())) {
+   877→   877→                    Issue sourceIssue = issueLink.getSourceObject();
+   878→   878→                    if (sourceIssue != null) {
+   879→   879→                        issueList.add(sourceIssue);
+   880→   880→                    }
+   881→   881→                }
+   882→   882→            });
+   883→   883→        }
+   884→   884→
+   885→   885→        // 获取出站链接
+   886→   886→        List<IssueLink> outwardLinks = issueLinkManager.getOutwardLinks(issue.getId());
+   887→   887→        if (outwardLinks != null) {
+   888→   888→            outwardLinks.forEach(issueLink -> {
+   889→   889→                if (issueLink.getIssueLinkType() != null &&
+   890→   890→                        "合作".equals(issueLink.getIssueLinkType().getName())) {
+   891→   891→                    Issue destinationIssue = issueLink.getDestinationObject();
+   892→   892→                    if (destinationIssue != null) {
+   893→   893→                        issueList.add(destinationIssue);
+   894→   894→                    }
+   895→   895→                }
+   896→   896→            });
+   897→   897→        }
+   898→   898→
+   899→   899→        return issueList;
+   900→   900→    }
+   901→   901→
+   902→   902→
+   903→   903→    public Map<String, Map<String, Object>> transformDataSimple(Map<String, Map<String, Object>> originalData) {
+   904→   904→        Map<String, Map<String, Object>> result = new HashMap<>();
+   905→   905→
+   906→   906→        for (Map.Entry<String, Map<String, Object>> entry : originalData.entrySet()) {
+   907→   907→            String issueKey = entry.getKey(); // "PX-556"
+   908→   908→            Map<String, Object> fields = entry.getValue();
+   909→   909→
+   910→   910→            Map<String, Object> newStructure = new HashMap<>();
+   911→   911→
+   912→   912→            // 遍历所有字段
+   913→   913→            for (Map.Entry<String, Object> fieldEntry : fields.entrySet()) {
+   914→   914→                String fieldName = fieldEntry.getKey(); // "customfield_11004"
+   915→   915→                Object fieldValue = fieldEntry.getValue(); // 这个值是一个string数组[PXTL-nuoyan,PX-feibai]
+   916→   916→
+   917→   917→                // 解析字段值，提取groupname和username
+   918→   918→                List<String> parsedData = parseFieldValue(fieldValue);
+   919→   919→                parsedData.forEach(data -> {
+   920→   920→                    String[] splitData = data.split("-");
+   921→   921→                    if (splitData.length != 2){
+   922→   922→                        return;
+   923→   923→                    }
+   924→   924→                    String groupname = splitData[0];
+   925→   925→                    String username = splitData[1];
+   926→   926→                    // 只有groupname和username都不为空时才处理
+   927→   927→                    if (groupname != null && !groupname.trim().isEmpty() &&
+   928→   928→                            username != null && !username.trim().isEmpty()) {
+   929→   929→
+   930→   930→                        if (newStructure.containsKey(groupname)){
+   931→   931→                            Object object = newStructure.get(groupname);
+   932→   932→                            if (object instanceof Map) {
+   933→   933→                                @SuppressWarnings("unchecked")
+   934→   934→                                Map<String, String> valueMap = (Map<String, String>) object;
+   935→   935→                                valueMap.put(fieldName, username);
+   936→   936→                            }
+   937→   937→                        } else {
+   938→   938→                            Map<String, String> valueMap = new HashMap<>();
+   939→   939→                            valueMap.put(fieldName, username);
+   940→   940→                            newStructure.put(groupname, valueMap);
+   941→   941→                        }
+   942→   942→                    }
+   943→   943→                });
+   944→   944→            }
+   945→   945→            result.put(issueKey, newStructure);
+   946→   946→        }
+   947→   947→
+   948→   948→        return result;
+   949→   949→    }
+   950→   950→
+   951→   951→
+   952→   952→    public List<String> parseFieldValue(Object fieldValue) {
+   953→   953→        List<String> result = new ArrayList<>();
+   954→   954→
+   955→   955→        if (fieldValue == null) {
+   956→   956→            return result;
+   957→   957→        }
+   958→   958→
+   959→   959→        // 数组类型
+   960→   960→        if (fieldValue instanceof Object[]) {
+   961→   961→            Object[] array = (Object[]) fieldValue;
+   962→   962→            for (Object item : array) {
+   963→   963→                if (item != null) {
+   964→   964→                    result.add(item.toString());
+   965→   965→                }
+   966→   966→            }
+   967→   967→        }
+   968→   968→        // 集合类型
+   969→   969→        else if (fieldValue instanceof Collection) {
+   970→   970→            Collection<?> collection = (Collection<?>) fieldValue;
+   971→   971→            for (Object item : collection) {
+   972→   972→                if (item != null) {
+   973→   973→                    result.add(item.toString());
+   974→   974→                }
+   975→   975→            }
+   976→   976→        }
+   977→   977→        // 字符串类型
+   978→   978→        else {
+   979→   979→            result.add(fieldValue.toString());
+   980→   980→        }
+   981→   981→
+   982→   982→        return result;
+   983→   983→    }
+   984→   984→
+   985→   985→
+   986→   986→    private Map<String, Object> filterSpecialFields(Map<String, Object> fields) {
+   987→   987→        Map<String, Object> specialFields = new HashMap<>();
+   988→   988→        // customfield_11008 承接组pm  customfield_11026 承接组qa customfield_11006 承接组程序 customfield_11004 承接组策划
+   989→   989→        List<String> specialKeys = Arrays.asList("customfield_11008","customfield_11026","customfield_11006","customfield_11004");
+   990→   990→
+   991→   991→        if (fields != null) {
+   992→   992→            fields.forEach((key, value) -> {
+   993→   993→                if (key != null && specialKeys.contains(key) && value != null) {
+   994→   994→                    specialFields.put(key, value);
+   995→   995→                }
+   996→   996→            });
+   997→   997→            specialFields.forEach(fields::remove);
+   998→   998→        }
+   999→   999→
+  1000→  1000→        return specialFields;
+  1001→  1001→    }
+  1002→  1002→
+  1003→  1003→    private String renderDependencyForest(Map<Long, List<Long>> edges, Set<Long> inGraph, List<Long> standalone) {
+  1004→  1004→        StringBuilder sb = new StringBuilder();
+  1005→  1005→        Set<Long> referenced = new HashSet<>();
+  1006→  1006→        for (List<Long> children : edges.values()) referenced.addAll(children);
+  1007→  1007→        List<Long> roots = new ArrayList<>();
+  1008→  1008→        for (Long id : inGraph) if (!referenced.contains(id)) roots.add(id);
+  1009→  1009→
+  1010→  1010→        if (!roots.isEmpty()) sb.append("依赖树:\n");
+  1011→  1011→        for (Long root : roots) appendDependencyTree(root, edges, "", sb);
+  1012→  1012→
+  1013→  1013→        if (!standalone.isEmpty()) {
+  1014→  1014→            if (sb.length() > 0) sb.append('\n');
+  1015→  1015→            sb.append("独立节点(无上下游): ");
+  1016→  1016→            for (int i = 0; i < standalone.size(); i++) {
+  1017→  1017→                if (i > 0) sb.append(", ");
+  1018→  1018→                sb.append(standalone.get(i));
+  1019→  1019→            }
+  1020→  1020→        }
+  1021→  1021→        return sb.toString();
+  1022→  1022→    }
+  1023→  1023→
+  1024→  1024→    private void appendDependencyTree(Long nodeId, Map<Long, List<Long>> edges, String indent, StringBuilder sb) {
+  1025→  1025→        sb.append(indent).append("- ").append(nodeId).append('\n');
+  1026→  1026→        List<Long> children = edges.get(nodeId);
+  1027→  1027→        if (children == null || children.isEmpty()) return;
+  1028→  1028→        String childIndent = indent + "  ";
+  1029→  1029→        for (Long child : children) appendDependencyTree(child, edges, childIndent, sb);
+  1030→  1030→    }
+  1031→  1031→
+  1032→  1032→    private void validateIssueFields(ApplicationUser user, Map<String, Object> fields) {
+  1033→  1033→        IssueService issueService = ComponentAccessor.getIssueService();
+  1034→  1034→        IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
+  1035→  1035→
+  1036→  1036→        processFieldsToParameters(fields, issueInputParameters);
+  1037→  1037→
+  1038→  1038→        IssueService.CreateValidationResult validationResult = issueService.validateCreate(user, issueInputParameters);
+  1039→  1039→        if (!validationResult.isValid()) {
+  1040→  1040→            String errorDetails = formatErrorCollection(validationResult.getErrorCollection());
+  1041→  1041→            throw new RuntimeException("创建Issue验证失败: " + errorDetails);
+  1042→  1042→        }
+  1043→  1043→    }
+  1044→  1044→
+  1045→  1045→    private void processFieldsToParameters(Map<String, Object> fields, IssueInputParameters issueInputParameters) {
+  1046→  1046→        ProjectManager projectManager = ComponentAccessor.getProjectManager();
+  1047→  1047→        ConstantsManager constantsManager = ComponentAccessor.getConstantsManager();
+  1048→  1048→
+  1049→  1049→        Map<String, String> allUserMap  = getAllUserEmailToUsernameMapRecommended();
+  1050→  1050→
+  1051→  1051→        Project project = null;
+  1052→  1052→        IssueType issueType = null;
+  1053→  1053→        String priorityId = null;
+  1054→  1054→        Map<String, Object> customFields = new HashMap<>();
+  1055→  1055→
+  1056→  1056→        for (Map.Entry<String, Object> entry : fields.entrySet()) {
+  1057→  1057→            String key = entry.getKey();
+  1058→  1058→            Object value = entry.getValue();
+  1059→  1059→            if (value == null) continue;
+  1060→  1060→
+  1061→  1061→            switch (key) {
+  1062→  1062→                case "projectKey": {
+  1063→  1063→                    project = projectManager.getProjectObjByKey(String.valueOf(value));
+  1064→  1064→                    if (project == null) throw new RuntimeException("项目不存在: " + value);
+  1065→  1065→                    issueInputParameters.setProjectId(project.getId());
+  1066→  1066→                    break;
+  1067→  1067→                }
+  1068→  1068→                case "issueType": {
+  1069→  1069→                    issueType = findIssueTypeByName(constantsManager, String.valueOf(value));
+  1070→  1070→                    if (issueType == null) throw new RuntimeException("Issue类型不存在: " + value);
+  1071→  1071→                    issueInputParameters.setIssueTypeId(issueType.getId());
+  1072→  1072→                    break;
+  1073→  1073→                }
+  1074→  1074→                case "summary": {
+  1075→  1075→                    issueInputParameters.setSummary(String.valueOf(value));
+  1076→  1076→                    break;
+  1077→  1077→                }
+  1078→  1078→                case "description": {
+  1079→  1079→                    String desc = String.valueOf(value);
+  1080→  1080→                    if (!isBlank(desc)) issueInputParameters.setDescription(desc);
+  1081→  1081→                    break;
+  1082→  1082→                }
+  1083→  1083→                case "priority": {
+  1084→  1084→                    priorityId = findPriorityIdByName(constantsManager, String.valueOf(value));
+  1085→  1085→                    if (priorityId != null) issueInputParameters.setPriorityId(priorityId);
+  1086→  1086→                    break;
+  1087→  1087→                }
+  1088→  1088→                case "assignee": {
+  1089→  1089→                    String assignee = String.valueOf(value);
+  1090→  1090→                    if (!isBlank(assignee)) issueInputParameters.setAssigneeId(changeUserName(assignee, allUserMap));
+  1091→  1091→                    break;
+  1092→  1092→                }
+  1093→  1093→                case "reporter": {
+  1094→  1094→                    String reporter = String.valueOf(value);
+  1095→  1095→                    if (!isBlank(reporter)) issueInputParameters.setReporterId(changeUserName(reporter, allUserMap));
+  1096→  1096→                    break;
+  1097→  1097→                }
+  1098→  1098→                case "duedate": {
+  1099→  1099→                    String s = String.valueOf(value);
+  1100→  1100→                    if (!isBlank(s)) issueInputParameters.setDueDate(normalizeDueDate(s));
+  1101→  1101→                    break;
+  1102→  1102→                }
+  1103→  1103→                default: {
+  1104→  1104→                    if (key.startsWith("customfield_")) customFields.put(key, value);
+  1105→  1105→                    break;
+  1106→  1106→                }
+  1107→  1107→            }
+  1108→  1108→        }
+  1109→  1109→
+  1110→  1110→        if (!customFields.isEmpty()) {
+  1111→  1111→            CustomFieldManager customFieldManager = ComponentAccessor.getCustomFieldManager();
+  1112→  1112→            OptionsManager optionsManager = ComponentAccessor.getOptionsManager();
+  1113→  1113→
+  1114→  1114→            for (Map.Entry<String, Object> entry : customFields.entrySet()) {
+  1115→  1115→                String fieldName = String.valueOf(entry.getKey());
+  1116→  1116→                Object fieldValue = entry.getValue();
+  1117→  1117→                if (!fieldName.startsWith("customfield")) continue;
+  1118→  1118→
+  1119→  1119→                CustomField customField = customFieldManager.getCustomFieldObject(fieldName);
+  1120→  1120→                if (customField == null) throw new RuntimeException("自定义字段不存在: " + fieldName);
+  1121→  1121→
+  1122→  1122→                String fieldId = customField.getId();
+  1123→  1123→                String typeKey = customField.getCustomFieldType().getKey();
+  1124→  1124→
+  1125→  1125→                switch (typeKey) {
+  1126→  1126→                    case "com.pyxis.greenhopper.jira:gh-sprint": {
+  1127→  1127→                        if (fieldValue != null) {
+  1128→  1128→                            String input = String.valueOf(fieldValue).trim();
+  1129→  1129→                            if (!input.isEmpty()) {
+  1130→  1130→                                String valueToSet = input;
+  1131→  1131→                                if (!input.matches("^\\d+$")) {
+  1132→  1132→                                    List<com.yottastudios.jira.util.SprintHelper.SprintInfo> matched = SprintHelper.fetchSprints(input);
+  1133→  1133→                                    String sprintId = (matched != null && !matched.isEmpty()) ? matched.get(0).getId() : null;
+  1134→  1134→                                    if (sprintId == null || sprintId.trim().isEmpty()) {
+  1135→  1135→                                        if (project != null && "PXM".equalsIgnoreCase(project.getKey())) {
+  1136→  1136→                                            sprintId = SprintHelper.findCurrentVersionSprintPXM();
+  1137→  1137→                                        } else {
+  1138→  1138→                                            sprintId = SprintHelper.findCurrentVersionSprint();
+  1139→  1139→                                        }
+  1140→  1140→                                    }
+  1141→  1141→                                    valueToSet = sprintId == null ? "" : sprintId;
+  1142→  1142→                                }
+  1143→  1143→                                if (!valueToSet.isEmpty()) issueInputParameters.addCustomFieldValue(fieldId, valueToSet);
+  1144→  1144→                            }
+  1145→  1145→                        }
+  1146→  1146→                        break;
+  1147→  1147→                    }
+  1148→  1148→                    case "com.atlassian.jira.plugin.system.customfieldtypes:datepicker":
+  1149→  1149→                    case "com.atlassian.jira.plugin.system.customfieldtypes:datetime": {
+  1150→  1150→                        if (fieldValue != null && !String.valueOf(fieldValue).trim().isEmpty()) {
+  1151→  1151→                            String dateStr = normalizeDueDate(String.valueOf(fieldValue));
+  1152→  1152→                            issueInputParameters.addCustomFieldValue(fieldId, dateStr);
+  1153→  1153→                        }
+  1154→  1154→                        break;
+  1155→  1155→                    }
+  1156→  1156→                    case "com.atlassian.jira.plugin.system.customfieldtypes:userpicker": {
+  1157→  1157→                        if (fieldValue != null) {
+  1158→  1158→                            String username = String.valueOf(fieldValue);
+  1159→  1159→                            issueInputParameters.addCustomFieldValue(fieldId, changeUserName(username, allUserMap));
+  1160→  1160→                        }
+  1161→  1161→                        break;
+  1162→  1162→                    }
+  1163→  1163→                    case "com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker": {
+  1164→  1164→                        List<String> usernames = new ArrayList<>();
+  1165→  1165→                        if (fieldValue instanceof Collection) {
+  1166→  1166→                            for (Object name : (Collection<?>) fieldValue) usernames.add(String.valueOf(name));
+  1167→  1167→                        } else if (fieldValue != null) {
+  1168→  1168→                            usernames.add(String.valueOf(fieldValue));
+  1169→  1169→                        }
+  1170→  1170→                        if (!usernames.isEmpty()) issueInputParameters.addCustomFieldValue(fieldId, changeUserNameBatch(usernames.toArray(new String[0]), allUserMap));
+  1171→  1171→                        break;
+  1172→  1172→                    }
+  1173→  1173→                    case "com.atlassian.jira.plugin.system.customfieldtypes:select": {
+  1174→  1174→                        if (project == null || issueType == null) throw new RuntimeException("处理选择类自定义字段需要提供projectKey与issueType");
+  1175→  1175→                        IssueContext ctx = new IssueContextImpl(project.getId(), issueType.getId());
+  1176→  1176→                        FieldConfig cfg = customField.getRelevantConfig(ctx);
+  1177→  1177→                        Options options = optionsManager.getOptions(cfg);
+  1178→  1178→                        if (options == null) throw new RuntimeException("未找到选择项: " + customField.getName());
+  1179→  1179→
+  1180→  1180→                        Option selected = null;
+  1181→  1181→                        for (Option op : options) {
+  1182→  1182→                            if (Objects.equals(op.getValue(), String.valueOf(fieldValue))) { selected = op; break; }
+  1183→  1183→                        }
+  1184→  1184→                        if (selected == null) throw new RuntimeException("选项不存在: " + fieldValue + " for field: " + customField.getName());
+  1185→  1185→                        issueInputParameters.addCustomFieldValue(fieldId, String.valueOf(selected.getOptionId()));
+  1186→  1186→                        break;
+  1187→  1187→                    }
+  1188→  1188→                    case "com.atlassian.jira.plugin.system.customfieldtypes:multiselect": {
+  1189→  1189→                        if (project == null || issueType == null) throw new RuntimeException("处理选择类自定义字段需要提供projectKey与issueType");
+  1190→  1190→                        IssueContext ctx = new IssueContextImpl(project.getId(), issueType.getId());
+  1191→  1191→                        FieldConfig cfg = customField.getRelevantConfig(ctx);
+  1192→  1192→                        Options options = optionsManager.getOptions(cfg);
+  1193→  1193→                        if (options == null) throw new RuntimeException("未找到选择项: " + customField.getName());
+  1194→  1194→
+  1195→  1195→                        List<String> selectedIds = new ArrayList<>();
+  1196→  1196→                        Collection<?> values = (fieldValue instanceof Collection) ? (Collection<?>) fieldValue : Collections.singletonList(String.valueOf(fieldValue));
+  1197→  1197→                        for (Object v : values) {
+  1198→  1198→                            boolean matched = false;
+  1199→  1199→                            for (Option op : options) {
+  1200→  1200→                                if (Objects.equals(op.getValue(), String.valueOf(v))) {
+  1201→  1201→                                    selectedIds.add(String.valueOf(op.getOptionId()));
+  1202→  1202→                                    matched = true;
+  1203→  1203→                                    break;
+  1204→  1204→                                }
+  1205→  1205→                            }
+  1206→  1206→                            if (!matched) throw new RuntimeException("选项不存在: " + v + " for field: " + customField.getName());
+  1207→  1207→                        }
+  1208→  1208→                        issueInputParameters.addCustomFieldValue(fieldId, selectedIds.toArray(new String[0]));
+  1209→  1209→                        break;
+  1210→  1210→                    }
+  1211→  1211→                    default: {
+  1212→  1212→                        issueInputParameters.addCustomFieldValue(fieldId, String.valueOf(fieldValue));
+  1213→  1213→                    }
+  1214→  1214→                }
+  1215→  1215→            }
+  1216→  1216→        }
+  1217→  1217→    }
+  1218→  1218→
+  1219→  1219→    private String changeUserNameBatch(String[] userNameList, Map<String, String> allUserMap) {
+  1220→  1220→        return changeUserName(String.join(",", userNameList), allUserMap);
+  1221→  1221→    }
+  1222→  1222→
+  1223→  1223→    private String changeUserName(String userNameList, Map<String, String> allUserMap) {
+  1224→  1224→        // userNameList根据","区分, 对每个字段补充@yottastodios.com,如果存在，使用value，不存在使用原值
+  1225→  1225→        String[] userList = userNameList.split(",");
+  1226→  1226→        List<String> transList = new ArrayList<>();
+  1227→  1227→        for(String u : userList){
+  1228→  1228→            String email = u + "@yottastudios.com";
+  1229→  1229→            transList.add(allUserMap.getOrDefault(email, u));
+  1230→  1230→        }
+  1231→  1231→        return String.join(",", transList);
+  1232→  1232→    }
+  1233→  1233→
+  1234→  1234→    /**
+  1235→  1235→     * 使用UserSearchService进行用户搜索,获取全部的用户
+  1236→  1236→     */
+  1237→  1237→    private Map<String, String> getAllUserEmailToUsernameMapRecommended() {
+  1238→  1238→        Map<String, String> emailToUsernameMap = new HashMap<>();
+  1239→  1239→
+  1240→  1240→        try {
+  1241→  1241→            UserSearchService userSearchService = ComponentAccessor.getComponent(UserSearchService.class);
+  1242→  1242→
+  1243→  1243→            // 搜索所有用户，使用空字符串作为查询参数
+  1244→  1244→            UserSearchParams searchParams = UserSearchParams.builder()
+  1245→  1245→                    .allowEmptyQuery(true)
+  1246→  1246→                    .includeActive(true)
+  1247→  1247→                    .includeInactive(false)  // 根据需要可以改为true
+  1248→  1248→                    .maxResults(999)  // 获取所有结果
+  1249→  1249→                    .build();
+  1250→  1250→
+  1251→  1251→            List<ApplicationUser> users = userSearchService.findUsers("", searchParams);
+  1252→  1252→
+  1253→  1253→            for (ApplicationUser user : users) {
+  1254→  1254→                String email = user.getEmailAddress();
+  1255→  1255→                String username = user.getUsername();
+  1256→  1256→
+  1257→  1257→                if (email != null && !email.trim().isEmpty()) {
+  1258→  1258→                    emailToUsernameMap.put(email, username);
+  1259→  1259→                }
+  1260→  1260→            }
+  1261→  1261→
+  1262→  1262→        } catch (Exception e) {
+  1263→  1263→            System.err.println("获取用户信息失败: " + e.getMessage());
+  1264→  1264→        }
+  1265→  1265→
+  1266→  1266→        return emailToUsernameMap;
+  1267→  1267→    }
+  1268→  1268→
+  1269→  1269→    private Issue createIssueWithParameters(ApplicationUser user, Map<String, Object> fields) {
+  1270→  1270→        IssueService issueService = ComponentAccessor.getIssueService();
+  1271→  1271→        IssueInputParameters issueInputParameters = issueService.newIssueInputParameters();
+  1272→  1272→
+  1273→  1273→        processFieldsToParameters(fields, issueInputParameters);
+  1274→  1274→
+  1275→  1275→        IssueService.CreateValidationResult validationResult = issueService.validateCreate(user, issueInputParameters);
+  1276→  1276→        if (!validationResult.isValid()) {
+  1277→  1277→            String errorDetails = formatErrorCollection(validationResult.getErrorCollection());
+  1278→  1278→            throw new RuntimeException("创建Issue验证失败: " + errorDetails);
+  1279→  1279→        }
+  1280→  1280→
+  1281→  1281→        IssueService.IssueResult issueResult = issueService.create(user, validationResult);
+  1282→  1282→        if (!issueResult.isValid()) {
+  1283→  1283→            String errorDetails = formatErrorCollection(issueResult.getErrorCollection());
+  1284→  1284→            throw new RuntimeException("创建Issue失败: " + errorDetails);
+  1285→  1285→        }
+  1286→  1286→
+  1287→  1287→        return issueResult.getIssue();
+  1288→  1288→    }
+  1289→  1289→
+  1290→  1290→    private IssueType findIssueTypeByName(ConstantsManager constantsManager, String issueTypeName) {
+  1291→  1291→        if (isBlank(issueTypeName)) return null;
+  1292→  1292→        Collection<IssueType> issueTypes = constantsManager.getAllIssueTypeObjects();
+  1293→  1293→        for (IssueType type : issueTypes) {
+  1294→  1294→            if (type.getName().equalsIgnoreCase(issueTypeName)) return type;
+  1295→  1295→        }
+  1296→  1296→        return null;
+  1297→  1297→    }
+  1298→  1298→
+  1299→  1299→    private String findPriorityIdByName(ConstantsManager constantsManager, String priorityName) {
+  1300→  1300→        if (isBlank(priorityName)) return null;
+  1301→  1301→        Collection<Priority> priorities = constantsManager.getPriorityObjects();
+  1302→  1302→        for (Priority p : priorities) {
+  1303→  1303→            if (p.getName().equalsIgnoreCase(priorityName)) return p.getId();
+  1304→  1304→        }
+  1305→  1305→        return null;
+  1306→  1306→    }
+  1307→  1307→
+  1308→  1308→    private boolean isBlank(String s) {
+  1309→  1309→        return s == null || s.trim().isEmpty();
+  1310→  1310→    }
+  1311→  1311→    
+  1312→  1312→    private String formatErrorCollection(ErrorCollection errorCollection) {
+  1313→  1313→        Map<String, String> errors = errorCollection.getErrors();
+  1314→  1314→        Collection<String> messages = errorCollection.getErrorMessages();
+  1315→  1315→        StringBuilder sb = new StringBuilder();
+  1316→  1316→        if (errors != null && !errors.isEmpty()) {
+  1317→  1317→            String joined = errors.entrySet()
+  1318→  1318→                    .stream()
+  1319→  1319→                    .map(e -> e.getKey() + "=" + e.getValue())
+  1320→  1320→                    .collect(Collectors.joining("; "));
+  1321→  1321→            sb.append(joined);
+  1322→  1322→        }
+  1323→  1323→        if (messages != null && !messages.isEmpty()) {
+  1324→  1324→            String joinedMsgs = String.join("; ", messages);
+  1325→  1325→            if (sb.length() > 0) sb.append("; ");
+  1326→  1326→            sb.append(joinedMsgs);
+  1327→  1327→        }
+  1328→  1328→        return sb.toString();
+  1329→  1329→    }
+  1330→  1330→
+  1331→  1331→    private String normalizeDueDate(String input) {
+  1332→  1332→        String s = input == null ? null : input.trim();
+  1333→  1333→        if (isBlank(s)) return s;
+  1334→  1334→        List<String> patterns = Arrays.asList(
+  1335→  1335→            "yyyy-MM-dd",
+  1336→  1336→            "yyyy/MM/dd",
+  1337→  1337→            "yyyy.MM.dd",
+  1338→  1338→            "yyyy-MM-dd HH:mm:ss",
+  1339→  1339→            "yyyy/MM/dd HH:mm:ss",
+  1340→  1340→            "d/MMM/yy",
+  1341→  1341→            "dd/MMM/yy"
+  1342→  1342→        );
+  1343→  1343→        List<Locale> locales = Arrays.asList(Locale.CHINA, Locale.SIMPLIFIED_CHINESE, Locale.ENGLISH, Locale.getDefault());
+  1344→  1344→        for (Locale loc : locales) {
+  1345→  1345→            for (String p : patterns) {
+  1346→  1346→                try {
+  1347→  1347→                    SimpleDateFormat parser = new SimpleDateFormat(p, loc);
+  1348→  1348→                    parser.setLenient(false);
+  1349→  1349→                    Date dt = parser.parse(s);
+  1350→  1350→                    SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd", Locale.CHINA);
+  1351→  1351→                    return formatter.format(dt);
+  1352→  1352→                } catch (Exception ignored) {
+  1353→  1353→                }
+  1354→  1354→            }
+  1355→  1355→        }
+  1356→  1356→        // 如果无法解析，原样返回，让Jira给出校验错误
+  1357→  1357→        return s;
+  1358→  1358→    }
+  1359→  1359→
+  1360→  1360→    
+  1361→  1361→    /**
+  1362→  1362→     * 创建Issue之间的链接
+  1363→  1363→     */
+  1364→  1364→    private void createIssueLink(String sourceIssueKey, String targetIssueKey, String linkTypeName, ApplicationUser user) throws Exception {
+  1365→  1365→        log.warn("create Link: {}, from {}, to {}", linkTypeName, sourceIssueKey, targetIssueKey);
+  1366→  1366→        if (isBlank(sourceIssueKey)) throw new RuntimeException("源IssueKey不能为空");
+  1367→  1367→        if (isBlank(targetIssueKey)) throw new RuntimeException("目标IssueKey不能为空");
+  1368→  1368→        if (isBlank(linkTypeName)) throw new RuntimeException("链接类型名称不能为空");
+  1369→  1369→
+  1370→  1370→        IssueManager issueManager = ComponentAccessor.getIssueManager();
+  1371→  1371→        Issue source = issueManager.getIssueObject(sourceIssueKey);
+  1372→  1372→        if (source == null) throw new RuntimeException("找不到源Issue: " + sourceIssueKey);
+  1373→  1373→        Issue target = issueManager.getIssueObject(targetIssueKey);
+  1374→  1374→        if (target == null) throw new RuntimeException("找不到目标Issue: " + targetIssueKey);
+  1375→  1375→
+  1376→  1376→        IssueLinkTypeManager issueLinkTypeManager = ComponentAccessor.getComponent(IssueLinkTypeManager.class);
+  1377→  1377→        IssueLinkType linkType = findLinkTypeByName(issueLinkTypeManager, linkTypeName);
+  1378→  1378→        if (linkType == null) throw new RuntimeException("未找到链接类型: " + linkTypeName);
+  1379→  1379→
+  1380→  1380→        IssueLinkManager issueLinkManager = ComponentAccessor.getIssueLinkManager();
+  1381→  1381→        issueLinkManager.createIssueLink(
+  1382→  1382→            source.getId(),
+  1383→  1383→            target.getId(),
+  1384→  1384→            linkType.getId(),
+  1385→  1385→            1L,
+  1386→  1386→            user
+  1387→  1387→        );
+  1388→  1388→    }
+  1389→  1389→    
+  1390→  1390→    /**
+  1391→  1391→     * 根据名称查找链接类型
+  1392→  1392→     */
+  1393→  1393→    private IssueLinkType findLinkTypeByName(IssueLinkTypeManager issueLinkTypeManager, String linkTypeName) {
+  1394→  1394→        try {
+  1395→  1395→            Collection<IssueLinkType> linkTypes = issueLinkTypeManager.getIssueLinkTypes();
+  1396→  1396→            
+  1397→  1397→            // 首先尝试精确匹配
+  1398→  1398→            for (IssueLinkType linkType : linkTypes) {
+  1399→  1399→                if (linkType.getName().equalsIgnoreCase(linkTypeName) || 
+  1400→  1400→                    linkType.getOutward().equalsIgnoreCase(linkTypeName) || 
+  1401→  1401→                    linkType.getInward().equalsIgnoreCase(linkTypeName)) {
+  1402→  1402→                    return linkType;
+  1403→  1403→                }
+  1404→  1404→            }
+  1405→  1405→            
+  1406→  1406→            // 如果没有精确匹配，尝试部分匹配
+  1407→  1407→            for (IssueLinkType linkType : linkTypes) {
+  1408→  1408→                if (linkType.getName().toLowerCase().contains(linkTypeName.toLowerCase()) || 
+  1409→  1409→                    linkType.getOutward().toLowerCase().contains(linkTypeName.toLowerCase()) || 
+  1410→  1410→                    linkType.getInward().toLowerCase().contains(linkTypeName.toLowerCase())) {
+  1411→  1411→                    return linkType;
+  1412→  1412→                }
+  1413→  1413→            }
+  1414→  1414→        } catch (Exception e) {
+  1415→  1415→            log.warn("查找链接类型时出错: " + e.getMessage(), e);
+  1416→  1416→        }
+  1417→  1417→        
+  1418→  1418→        return null;
+  1419→  1419→    }
+  1420→  1420→
+  1421→  1421→    // Template handlers
+  1422→  1422→    private TemplateVo createTemplate(HttpServletRequest request) throws Exception {
+  1423→  1423→        UserProfile user = userManager.getRemoteUser(request);
+  1424→  1424→        if (user == null) throw new RuntimeException("未登录");
+  1425→  1425→        TemplateCreateRo ro = readJsonBody(request, TemplateCreateRo.class);
+  1426→  1426→        if (ro == null) throw new RuntimeException("请求体不能为空");
+  1427→  1427→        if (ro.getName() == null || ro.getName().trim().isEmpty()) throw new RuntimeException("name不能为空");
+  1428→  1428→        if (ro.getGroupId() <= 0) throw new RuntimeException("groupId非法");
+  1429→  1429→        // 校验 groupId 是否存在
+  1430→  1430→        TemplateGroup group = templateGroupMapper.getById(ro.getGroupId());
+  1431→  1431→        if (group == null) throw new RuntimeException("group不存在");
+  1432→  1432→        
+  1433→  1433→        String projectKey = ro.getProjectKey();
+  1434→  1434→        // 校验 projectKey 是否存在（只有在有值时才校验）
+  1435→  1435→        if (projectKey != null && !projectKey.trim().isEmpty()) {
+  1436→  1436→            ProjectManager pm = ComponentAccessor.getProjectManager();
+  1437→  1437→            Project pj = pm.getProjectObjByKey(projectKey.trim());
+  1438→  1438→            if (pj == null) throw new RuntimeException("project不存在: " + projectKey);
+  1439→  1439→            projectKey = projectKey.trim();
+  1440→  1440→        } else {
+  1441→  1441→            projectKey = "";
+  1442→  1442→        }
+  1443→  1443→        
+  1444→  1444→        Template t = templateMapper.create(projectKey, ro.getName().trim(), ro.getGroupId());
+  1445→  1445→        return TemplateVo.from(t);
+  1446→  1446→    }
+  1447→  1447→
+  1448→  1448→    private TemplateVo updateTemplate(HttpServletRequest request) throws Exception {
+  1449→  1449→        UserProfile user = userManager.getRemoteUser(request);
+  1450→  1450→        if (user == null) throw new RuntimeException("未登录");
+  1451→  1451→        TemplateUpdateRo ro = readJsonBody(request, TemplateUpdateRo.class);
+  1452→  1452→        if (ro == null || ro.getId() <= 0) throw new RuntimeException("非法ID");
+  1453→  1453→        if (ro.getName() == null || ro.getName().trim().isEmpty()) throw new RuntimeException("name不能为空");
+  1454→  1454→        
+  1455→  1455→        String projectKey = ro.getProjectKey();
+  1456→  1456→        // 校验 projectKey 是否存在（只有在有值时才校验）
+  1457→  1457→        if (projectKey != null && !projectKey.trim().isEmpty()) {
+  1458→  1458→            ProjectManager pm = ComponentAccessor.getProjectManager();
+  1459→  1459→            Project pj = pm.getProjectObjByKey(projectKey.trim());
+  1460→  1460→            if (pj == null) throw new RuntimeException("project不存在: " + projectKey);
+  1461→  1461→            projectKey = projectKey.trim();
+  1462→  1462→        } else {
+  1463→  1463→            projectKey = "";
+  1464→  1464→        }
+  1465→  1465→        
+  1466→  1466→        Template updated = templateMapper.update(ro.getId(), ro.getName().trim(), projectKey);
+  1467→  1467→        if (updated == null) throw new RuntimeException("记录不存在");
+  1468→  1468→        return TemplateVo.from(updated);
+  1469→  1469→    }
+  1470→  1470→
+  1471→  1471→    private JSONObject deleteTemplate(HttpServletRequest request) throws Exception {
+  1472→  1472→        UserProfile user = userManager.getRemoteUser(request);
+  1473→  1473→        if (user == null) throw new RuntimeException("未登录");
+  1474→  1474→        TemplateDeleteRo ro = readJsonBody(request, TemplateDeleteRo.class);
+  1475→  1475→        if (ro == null || ro.getId() <= 0) throw new RuntimeException("非法ID");
+  1476→  1476→        boolean success = templateMapper.deleteById(ro.getId());
+  1477→  1477→        JSONObject obj = new JSONObject();
+  1478→  1478→        obj.put("success", success);
+  1479→  1479→        return obj;
+  1480→  1480→    }
+  1481→  1481→
+  1482→  1482→    private List<TemplateVo> listTemplatesByGroupId(HttpServletRequest request) throws Exception {
+  1483→  1483→        UserProfile user = userManager.getRemoteUser(request);
+  1484→  1484→        if (user == null) throw new RuntimeException("未登录");
+  1485→  1485→        TemplateListRo ro = readJsonBody(request, TemplateListRo.class);
+  1486→  1486→        if (ro == null || ro.getGroupId() <= 0) throw new RuntimeException("groupId非法");
+  1487→  1487→        // 校验 groupId 是否存在
+  1488→  1488→        TemplateGroup group = templateGroupMapper.getById(ro.getGroupId());
+  1489→  1489→        if (group == null) throw new RuntimeException("group不存在");
+  1490→  1490→        Template[] arr = templateMapper.listByGroupId(ro.getGroupId());
+  1491→  1491→        List<TemplateVo> items = new ArrayList<>();
+  1492→  1492→        for (Template t : arr) items.add(TemplateVo.from(t));
+  1493→  1493→        return items;
+  1494→  1494→    }
+  1495→  1495→
+  1496→  1496→
+  1497→  1497→
+  1498→  1498→    private IssueTemplateVo createIssueTemplate(HttpServletRequest request) throws Exception {
+  1499→  1499→        UserProfile user = userManager.getRemoteUser(request);
+  1500→  1500→        if (user == null) throw new RuntimeException("未登录");
+  1501→  1501→        IssueTemplateCreateRo ro = readJsonBody(request, IssueTemplateCreateRo.class);
+  1502→  1502→        if (ro == null) throw new RuntimeException("请求体不能为空");
+  1503→  1503→        if (ro.getTemplateId() <= 0) throw new RuntimeException("templateId非法");
+  1504→  1504→        // 校验 template 是否存在
+  1505→  1505→        Template template = templateMapper.getById(ro.getTemplateId());
+  1506→  1506→        if (template == null) throw new RuntimeException("template不存在");
+  1507→  1507→        // 创建
+  1508→  1508→        int nextOrder = issueTemplateMapper.getMaxOrderNoByTemplateId(ro.getTemplateId()) + 1;
+  1509→  1509→        if (nextOrder <= 0) nextOrder = 1;
+  1510→  1510→        IssueTemplate it = issueTemplateMapper.create(
+  1511→  1511→                ro.getTemplateId(),
+  1512→  1512→                ro.getFields(),
+  1513→  1513→                nextOrder,
+  1514→  1514→                ro.getParentIssueTemplateId(),
+  1515→  1515→                (ro.getUpstreamIssueTemplateIds() == null || ro.getUpstreamIssueTemplateIds().isEmpty())
+  1516→  1516→                        ? ""
+  1517→  1517→                        : ro.getUpstreamIssueTemplateIds().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","))
+  1518→  1518→        );
+  1519→  1519→        return IssueTemplateVo.from(it);
+  1520→  1520→    }
+  1521→  1521→
+  1522→  1522→    private IssueTemplateVo updateIssueTemplate(HttpServletRequest request) throws Exception {
+  1523→  1523→        UserProfile user = userManager.getRemoteUser(request);
+  1524→  1524→        if (user == null) throw new RuntimeException("未登录");
+  1525→  1525→        IssueTemplateUpdateRo ro = readJsonBody(request, IssueTemplateUpdateRo.class);
+  1526→  1526→        if (ro == null || ro.getId() <= 0) throw new RuntimeException("非法ID");
+  1527→  1527→        IssueTemplate updated = issueTemplateMapper.update(
+  1528→  1528→                ro.getId(),
+  1529→  1529→                ro.getFields(),
+  1530→  1530→                ro.getParentIssueTemplateId(),
+  1531→  1531→                (ro.getUpstreamIssueTemplateIds() == null || ro.getUpstreamIssueTemplateIds().isEmpty())
+  1532→  1532→                        ? ""
+  1533→  1533→                        : ro.getUpstreamIssueTemplateIds().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","))
+  1534→  1534→        );
+  1535→  1535→        if (updated == null) throw new RuntimeException("记录不存在");
+  1536→  1536→        return IssueTemplateVo.from(updated);
+  1537→  1537→    }
+  1538→  1538→
+  1539→  1539→    private JSONObject deleteIssueTemplate(HttpServletRequest request) throws Exception {
+  1540→  1540→        UserProfile user = userManager.getRemoteUser(request);
+  1541→  1541→        if (user == null) throw new RuntimeException("未登录");
+  1542→  1542→        IssueTemplateDeleteRo ro = readJsonBody(request, IssueTemplateDeleteRo.class);
+  1543→  1543→        if (ro == null || ro.getId() <= 0) throw new RuntimeException("非法ID");
+  1544→  1544→        boolean success = issueTemplateMapper.deleteById(ro.getId());
+  1545→  1545→        JSONObject obj = new JSONObject();
+  1546→  1546→        obj.put("success", success);
+  1547→  1547→        return obj;
+  1548→  1548→    }
+  1549→  1549→
+  1550→  1550→    private List<IssueTemplateVo> listIssueTemplatesByTemplate(HttpServletRequest request) throws Exception {
+  1551→  1551→        UserProfile user = userManager.getRemoteUser(request);
+  1552→  1552→        if (user == null) throw new RuntimeException("未登录");
+  1553→  1553→        IssueTemplateListRo ro = readJsonBody(request, IssueTemplateListRo.class);
+  1554→  1554→        if (ro == null || ro.getTemplateId() <= 0) throw new RuntimeException("templateId非法");
+  1555→  1555→        // 校验 template 是否存在
+  1556→  1556→        Template template = templateMapper.getById(ro.getTemplateId());
+  1557→  1557→        if (template == null) throw new RuntimeException("template不存在");
+  1558→  1558→        IssueTemplate[] arr = issueTemplateMapper.listByTemplateId(ro.getTemplateId());
+  1559→  1559→        List<IssueTemplateVo> list = new ArrayList<>();
+  1560→  1560→        for (IssueTemplate it : arr) list.add(IssueTemplateVo.from(it));
+  1561→  1561→        return list;
+  1562→  1562→    }
+  1563→  1563→
+  1564→  1564→
+  1565→  1565→}
+  1566→  1566→

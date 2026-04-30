@@ -1,0 +1,89 @@
+package com.yottastudios.ns.collabspace.manageback.controller;
+
+import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+import com.yottastudios.ns.collabspace.manageback.ro.AddManagementSpaceRo;
+import com.yottastudios.ns.collabspace.manageback.vo.ManagementSpaceVo;
+import com.yottastudios.ns.collabspace.core.support.ResponseData;
+import com.yottastudios.ns.collabspace.manageback.manager.query.ManagementSpaceQueryManger;
+import com.yottastudios.ns.collabspace.manageback.manager.update.ManagementSpaceUpdateManger;
+import com.yottastudios.ns.collabspace.manageback.ro.RemoveManagementSpaceRo;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.ApiResource;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.GetResource;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.PostResource;
+import com.yottastudios.ns.collabspace.shared.context.SessionContext;
+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+import com.yottastudios.ns.collabspace.space.manager.query.SpaceChangeRecordQueryManager;
+import com.yottastudios.ns.collabspace.space.ro.SpaceChangeRecordPageRo;
+import com.yottastudios.ns.collabspace.space.vo.SpaceChangeRecordVo;
+import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@Slf4j
+@RestController
+@Tag(name = "ManageBack Space")
+@ApiResource(path = "/management/space")
+public class ManagementSpaceController {
+
+    @Resource
+    private ManagementSpaceQueryManger managementSpaceQueryManger;
+    @Resource
+    private ManagementSpaceUpdateManger managementSpaceUpdateManger;
+    @Resource
+    private SpaceChangeRecordQueryManager spaceChangeRecordQueryManager;
+    @Resource
+    private IApitableGrpcClientService apitableGrpcClientService;
+    @Value("#{'${user-auth.super-board-manager-list}'.split(',')}")
+    private List<String> allowUserList;
+
+    @GetResource(path = "/list/get",requiredPermission = false)
+    @Operation(summary = "List All Space")
+    public ResponseData<List<ManagementSpaceVo>> spaceList() {
+
+        Long userId = SessionContext.getUserId();
+        List<ManagementSpaceVo> spaces = managementSpaceQueryManger.getSpaceList(userId);
+        return ResponseData.success(spaces);
+
+    }
+
+    @PostResource(path = "/add",requiredPermission = false)
+    @Operation(summary = "Add Space")
+    public ResponseData<Void> addSpace(@RequestBody @Valid final AddManagementSpaceRo ro) {
+        Long userId = SessionContext.getUserId();
+        managementSpaceUpdateManger.addSpace(ro, userId);
+        return ResponseData.success();
+    }
+
+    @PostResource(path = "/remove",requiredPermission = false)
+    @Operation(summary = "Remove Space")
+    public ResponseData<Void> removeSpace(@RequestBody @Valid final RemoveManagementSpaceRo ro) {
+        Long userId = SessionContext.getUserId();
+        managementSpaceUpdateManger.removeSpace(ro,userId);
+        return ResponseData.success();
+    }
+
+    @GetResource(path = "/changeRecord/page", requiredPermission = false)
+    @Operation(summary = "查询空间站变更记录（产品后台）")
+    public ResponseData<PageInfo<SpaceChangeRecordVo>> changeRecordPage(SpaceChangeRecordPageRo ro) {
+        Long userId = SessionContext.getUserId();
+        UserSimpleInfoVo userSimpleInfoVo = apitableGrpcClientService.getUserById(userId);
+        if (userSimpleInfoVo == null || !allowUserList.contains(userSimpleInfoVo.getNickName())) {
+            log.warn("[lbl][2101-变更记录][ChangeRecord][DENIED] 非超管访问变更记录, userId={}", userId);
+            throw new BusinessException("No Authorization");
+        }
+        PageInfo<SpaceChangeRecordVo> result = spaceChangeRecordQueryManager.page(
+                ro.getSpaceId(), ro.getType(), ro.getPageNum(), ro.getPageSize());
+        return ResponseData.success(result);
+    }
+
+
+}

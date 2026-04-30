@@ -1,0 +1,81 @@
+{
+  "local_base_path": "/home/username/Sentry/projects",
+  "report_path": "/home/username/Sentry/reports",
+  "sentry": {
+    "base_url": "https://sentry.yottastudios.com",
+    "org": "yotta"
+  },
+  "grafana": {
+    "base_url": "https://xgrafana.yottastudios.com",
+    "loki_datasource_id": 2
+  },
+  "gitlab": {
+    "base_url": "https://pt-gitlab.yottastudios.com"
+  },
+  "projects": {
+    "collabspace-server": {
+      "gitlab_path": "px/collabspace/collabspace-server",
+      "loki_app": "collabspace-server"
+    },
+    "collabspace-web": {
+      "gitlab_path": "px/collabspace/collabspace-web",
+      "loki_app": "collabspace-web"
+    },
+    "apitable-backend-server": {
+      "gitlab_path": "px/apitable/apitable",
+      "loki_app": "backend-server"
+    },
+    "apitable-web-server": {
+      "gitlab_path": "px/apitable/apitable",
+      "loki_app": "web-server"
+    },
+    "apitable-room-server": {
+      "gitlab_path": "px/apitable/apitable",
+      "loki_app": "room-server"
+    },
+    "echo-server": {
+      "gitlab_path": "px/echo/echo-server",
+      "loki_app": "echo-server"
+    },
+    "echo-web": {
+      "gitlab_path": "px/echo/echo-web",
+      "loki_app": "echo-node"
+    },
+    "affine-backend": {
+      "gitlab_path": "px/affine/affine",
+      "loki_app": "affine"
+    },
+    "affine-frontend": {
+      "gitlab_path": "px/affine/affine",
+      "loki_app": "affine-frontend-prod"
+    },
+    "map-server": {
+      "gitlab_path": "px/xmap/map-server",
+      "loki_app": "map-server"
+    },
+    "map-web": {
+      "gitlab_path": "px/xmap/map-web",
+      "loki_app": null
+    },
+    "jas": {
+      "gitlab_path": "px/apitable/jas",
+      "loki_app": "jas"
+    },
+    "nextspace": {
+      "gitlab_path": "px/nextspace/nextspace",
+      "loki_app": null
+    }
+  },
+  "infra_repos": {
+    "gateway": {
+      "gitlab_path": "px/collabspace-prod/gateway",
+      "branch": "aio-service",
+      "loki_app": "gateway"
+    },
+    "kubernetes": {
+      "gitlab_path": "px/collabspace-prod/kubernetes",
+      "branch": "aio-service",
+      "loki_app": null
+    }
+  }
+}

@@ -1,0 +1,14 @@
+package com.yottastudios.ns.collabspace.feedback.enums;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public enum FeedbackSource {
+    SENTRY("sentry", "站内反馈"),
+    MM("mm", "Mattermost反馈");
+
+    private final String code;
+    private final String desc;
+}

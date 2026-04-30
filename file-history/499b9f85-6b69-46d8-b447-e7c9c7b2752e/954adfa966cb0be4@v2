@@ -1,0 +1,109 @@
+# AI 日报上下文压缩与 HTML 清洗设计
+
+## 概述
+
+在 AI 日报聊天功能中，用户同步日报数据后发送给 AI 前，对上下文内容进行两项预处理：
+1. **HTML 清洗** — 去除日报富文本中的 HTML 标签，保留纯文本
+2. **上下文压缩** — 同一人连续多天日报内容完全相同时，合并为一条
+
+## 处理时机
+
+在 `AiChatPanel.vue` 的 `sendMessage` 方法中，`compressContext`（gzip 压缩）之前执行预处理。
+
+- **AiSyncModal** 不修改，保持原有拼接逻辑
+- **context card** 展示原始内容，不受影响
+- 仅发送给 AI 的数据会被清洗和压缩
+
+## 新增文件
+
+`src/app/PC/StaffPage/OaDailyReport/OthersReports/aiContextUtils.ts`
+
+### 函数 1：`stripHtml(html: string): string`
+
+- 使用 `DOMParser` 解析 HTML 字符串为 DOM，取 `textContent`
+- 处理 `<br>` 转换行，`&nbsp;` 转空格
+- 清理连续 3 个以上换行为 2 个
+
+### 函数 2：`compressDailyContext(context: string): string`
+
+**输入格式**（AiSyncModal 生成的 context）：
+```
+【2026-03-07】
+张三：
+今日工作内容...
+
+李四：
+今日工作内容...
+
+---
+
+【2026-03-06】
+张三：
+今日工作内容...
+```
+
+**算法步骤**：
+1. 按 `---` 分割为日期段
+2. 对每个日期段，用正则提取日期（`【YYYY-MM-DD】`）
+3. 按 `花名：` 分割为各人条目，提取人名和内容
+4. 按人名分组，建立 `Map<人名, {date: string, content: string}[]>`
+5. 对每个人，将内容完全相同的**连续日期**合并为日期区间
+6. 重新拼接为压缩后的 context
+
+**匹配规则**：
+- 仅同一人跨日期比较
+- 纯文本完全一致才合并（HTML 清洗后比较）
+- 非连续日期不合并
+
+**输出格式**：
+```
+张三：
+[3/1-3/7] 近期工作安排：XXX
+
+[3/8] 今日工作：YYY
+
+---
+
+李四：
+[3/1-3/3] 内容：AAA
+
+[3/4-3/7] 内容：BBB
+```
+
+**结构变化**：从"按日期分组"变为"按人分组"，每人的内容按日期区间排列。
+
+**边界处理**：
+- 只有 1 天的不合并，展示 `[3/8]`
+- "未提交"/"休息日"条目不参与内容比较，独立保留
+- 如果压缩后总长度反而更长，返回原始 context
+
+## 修改文件
+
+### `AiChatPanel.vue` — `sendMessage` 方法
+
+在 `compressContext` 调用前增加预处理：
+
+```typescript
+import { stripHtml, compressDailyContext } from './aiContextUtils'
+
+// sendMessage 中
+let processedContext = contextToSend
+if (processedContext) {
+    processedContext = stripHtml(processedContext)
+    processedContext = compressDailyContext(processedContext)
+}
+const compressedContext = processedContext ? await this.compressContext(processedContext) : ''
+```
+
+## 不修改的部分
+
+- `AiSyncModal.vue` — 保持原有拼接逻辑
+- `compressContext` 方法 — gzip 压缩逻辑不变
+- context card 展示 — 展示原始 `reportContext`
+
+## 影响范围
+
+| 模块 | 文件 | 改动类型 |
+|------|------|----------|
+| AI 日报 | `OthersReports/aiContextUtils.ts` | 新增 |
+| AI 日报 | `OthersReports/AiChatPanel.vue` | 修改（sendMessage） |

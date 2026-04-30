@@ -1,0 +1,196 @@
+import { useState } from "react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
+import { Clock, FileQuestion, RotateCcw, AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { useExamDetail, useStartExam, useResumeExam } from "@/hooks/use-exams"
+
+export const Route = createFileRoute("/_layout/exams/$id")({
+  component: ExamDetailPage,
+})
+
+function ExamDetailPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { id } = Route.useParams()
+  const examId = Number(id)
+  const { data: exam, isLoading } = useExamDetail(examId)
+  const startMutation = useStartExam()
+  const resumeMutation = useResumeExam()
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  /** 跳转到答题页 */
+  const goToTakePage = (res: { recordId: number; questions: any[] }, startTime: string) => {
+    console.log("[lbl][goToTakePage] res:", res, "startTime:", startTime, "exam:", exam)
+    console.log("[lbl][goToTakePage] recordId:", res.recordId, "questions.length:", res.questions?.length)
+    navigate({
+      to: `/exams/${examId}/take`,
+      state: (prev) => {
+        const newState = {
+          ...prev,
+          recordId: res.recordId,
+          questions: res.questions,
+          startTime,
+          timeLimitMin: exam!.timeLimitMin,
+          examTitle: exam!.title,
+        }
+        console.log("[lbl][goToTakePage] navigate state:", newState)
+        return newState
+      },
+    })
+  }
+
+  const handleStart = () => {
+    startMutation.mutate(examId, {
+      onSuccess: (res) => goToTakePage(res, new Date().toISOString()),
+      onError: (err) => {
+        toast.error(err.message)
+        setShowConfirm(false)
+      },
+    })
+  }
+
+  const handleResume = () => {
+    console.log("[lbl][handleResume] exam:", exam, "inProgressRecordId:", exam?.inProgressRecordId)
+    if (!exam?.inProgressRecordId) return
+    resumeMutation.mutate(
+      { examId, recordId: exam.inProgressRecordId },
+      {
+        onSuccess: (res) => {
+          console.log("[lbl][handleResume] onSuccess res:", res)
+          goToTakePage(res, new Date().toISOString())
+        },
+        onError: (err) => {
+          console.error("[lbl][handleResume] onError:", err)
+          toast.error(err.message)
+        },
+      },
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="py-10 text-center text-muted-foreground">
+        {t("common.loading")}
+      </div>
+    )
+  }
+
+  if (!exam) {
+    return (
+      <div className="py-10 text-center text-muted-foreground">
+        {t("common.noData")}
+      </div>
+    )
+  }
+
+  const timeDisplay =
+    exam.timeLimitMin > 0
+      ? t("exam.timeLimitValue", { min: exam.timeLimitMin })
+      : t("exam.noTimeLimit")
+
+  const attemptsDisplay =
+    exam.remainingAttempts === null
+      ? t("exam.unlimited")
+      : t("exam.attemptsValue", { count: exam.remainingAttempts })
+
+  const hasInProgress = exam.inProgressRecordId != null
+  const canStart = !hasInProgress && (exam.remainingAttempts === null || exam.remainingAttempts > 0)
+
+  return (
+    <div className="mx-auto max-w-lg space-y-6">
+      {/* 考试信息卡 */}
+      <div className="rounded-lg border p-6 space-y-4">
+        <h1 className="text-2xl font-bold">{exam.title}</h1>
+
+        <div className="space-y-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <FileQuestion className="h-4 w-4" />
+            <span>
+              {t("exam.questionCountLabel")}: {exam.questionCount}
+              {t("exam.questionUnit")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span>
+              {t("exam.timeLimitLabel")}: {timeDisplay}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <RotateCcw className="h-4 w-4" />
+            <span>
+              {t("exam.remainingAttemptsLabel")}: {attemptsDisplay}
+            </span>
+          </div>
+        </div>
+
+        {hasInProgress ? (
+          <>
+            <div className="flex items-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{t("exam.inProgressHint")}</span>
+            </div>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleResume}
+              disabled={resumeMutation.isPending}
+            >
+              {t("exam.continueExam")}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={!canStart}
+              onClick={() => setShowConfirm(true)}
+            >
+              {t("exam.startExam")}
+            </Button>
+
+            {!canStart && (
+              <p className="text-center text-sm text-destructive">
+                {t("exam.noAttemptsLeft")}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* 确认弹窗 */}
+      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("exam.confirmStartTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("exam.confirmStartDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirm(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleStart}
+              disabled={startMutation.isPending}
+            >
+              {t("common.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

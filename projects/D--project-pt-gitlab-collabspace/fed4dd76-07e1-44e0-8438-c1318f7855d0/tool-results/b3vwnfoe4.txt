@@ -1,0 +1,615 @@
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java b/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java
+index 9c32c2f1..be3464af 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java
+@@ -29,9 +29,13 @@ import org.apache.commons.collections4.CollectionUtils;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Component;
+ 
++import java.nio.charset.StandardCharsets;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
+ import java.time.Duration;
+ import java.util.ArrayList;
+ import java.util.HashMap;
++import java.util.HexFormat;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Set;
+@@ -78,13 +82,24 @@ public class ControlTemplate {
+             .build();
+ 
+     private String buildExecuteCacheKey(Principal principal, ControlId controlId, ControlRequestOption requestOption) {
+-        String principalPart = principal.getPrincipalType() + ":" + principal.getPrincipal();
+-        String typePart = String.valueOf(controlId.getControlType());
+-        List<String> ids = new ArrayList<>(controlId.getControlIds());
+-        ids.sort(String::compareTo);
+-        String idsPart = String.join(",", ids);
+-        String optPart = requestOption == null ? "" : requestOption.cacheKey();
+-        return principalPart + "|" + typePart + "|" + idsPart + "|" + optPart;
++        try {
++            MessageDigest md = MessageDigest.getInstance("MD5");
++            // 逐段 update，避免拼接 ~1MB 中间字符串
++            md.update((principal.getPrincipalType() + ":" + principal.getPrincipal() + "|"
++                    + controlId.getControlType() + "|").getBytes(StandardCharsets.UTF_8));
++            List<String> ids = new ArrayList<>(controlId.getControlIds());
++            ids.sort(String::compareTo);
++            for (String id : ids) {
++                md.update(id.getBytes(StandardCharsets.UTF_8));
++                md.update((byte) ',');
++            }
++            String optPart = requestOption == null ? "" : requestOption.cacheKey();
++            md.update(("|" + optPart).getBytes(StandardCharsets.UTF_8));
++            return HexFormat.of().formatHex(md.digest());
++        } catch (NoSuchAlgorithmException e) {
++            // MD5 is guaranteed by JVM spec, should never happen
++            throw new IllegalStateException("MD5 not available", e);
++        }
+     }
+ 
+     private record DefaultControlRequestWrapper(ControlRequestOption requestOption) implements ControlRequestWrapper {
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeController.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeController.java
+index 87ccf3e7..2bbb44cb 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeController.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeController.java
+@@ -1,6 +1,7 @@
+ package com.yottastudios.ns.collabspace.workspace.controller;
+ 
+ import com.fasterxml.jackson.core.JsonProcessingException;
++import com.fasterxml.jackson.databind.ObjectMapper;
+ import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
+ import com.yottastudios.ns.collabspace.base.service.INodeService;
+ import com.yottastudios.ns.collabspace.base.vo.TreeNode;
+@@ -30,14 +31,18 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
+ import io.swagger.v3.oas.annotations.media.Schema;
+ import io.swagger.v3.oas.annotations.tags.Tag;
+ import jakarta.annotation.Resource;
++import jakarta.servlet.http.HttpServletResponse;
+ import jakarta.validation.Valid;
+ import lombok.extern.slf4j.Slf4j;
+ import org.springframework.web.bind.annotation.PathVariable;
+ import org.springframework.web.bind.annotation.RequestBody;
+ import org.springframework.web.bind.annotation.RestController;
+ 
++import java.io.IOException;
++import java.io.OutputStream;
+ import java.util.List;
+ import java.util.Map;
++import java.util.zip.GZIPOutputStream;
+ 
+ @Slf4j
+ @RestController
+@@ -66,6 +71,9 @@ public class SpaceNodeController {
+     @Resource
+     private ICollabspaceGrpcClientService collabspaceGrpcClientService;
+ 
++    @Resource
++    private ObjectMapper objectMapper;
++
+     @PostResource(path = "/createSpaceNode", externalOnly = true)
+     @Parameters({
+             @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+@@ -203,10 +211,18 @@ public class SpaceNodeController {
+                     schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+     })
+     @Operation(summary = "Get Space Node Tree")
+-    public ResponseData<List<TreeNode<SpaceNodeVo>>> getSpaceNodeTree() {
++    public void getSpaceNodeTree(HttpServletResponse response) throws IOException {
+         String spaceId = SpaceHolder.get();
+         List<TreeNode<SpaceNodeVo>> result = spaceNodeQueryManager.getSpaceNodeTree(spaceId);
+-        return ResponseData.success(result);
++        ResponseData<List<SpaceNodeTreeNodeVo>> responseData = ResponseData.success(SpaceNodeTreeNodeVo.fromList(result));
++
++        response.setHeader("Content-Encoding", "gzip");
++        response.setContentType("application/json");
++        try (OutputStream out = response.getOutputStream();
++             GZIPOutputStream gzipStream = new GZIPOutputStream(out)) {
++            objectMapper.writeValue(gzipStream, responseData);
++            gzipStream.finish();
++        }
+     }
+ 
+     @GetResource(path = "/{id}/spaceNodeInfo", requiredPermission = false)
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/dto/SpaceNodeWithNodeDto.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/dto/SpaceNodeWithNodeDto.java
+new file mode 100644
+index 00000000..294ddc6a
+--- /dev/null
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/dto/SpaceNodeWithNodeDto.java
+@@ -0,0 +1,47 @@
++package com.yottastudios.ns.collabspace.workspace.dto;
++
++import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
++import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
++import lombok.Data;
++import lombok.EqualsAndHashCode;
++import lombok.NoArgsConstructor;
++
++/**
++ * JOIN result combining space_node and node table fields.
++ * Used by listBySpaceIdJoinNode to avoid a second listByRelIds query when building the tree.
++ */
++@Data
++@EqualsAndHashCode(callSuper = true)
++@NoArgsConstructor
++public class SpaceNodeWithNodeDto extends SpaceNodeEntity {
++
++    /** node.id (aliased to avoid conflict with space_node.id) */
++    private Long nodeId;
++    /** node.parent_id */
++    private Long parentId;
++    /** node.pre_id */
++    private Long preId;
++    /** node.tree_id */
++    private String treeId;
++    /** node.node_key */
++    private Integer nodeKey;
++    /** node.node_type */
++    private String nodeType;
++
++    /** 是否有 reader 角色分配（锁定标识原始值） */
++    private Boolean isLocked;
++    /** 是否有启用的分享链接（分享标识原始值） */
++    private Boolean hasShare;
++
++    public NodeEntity toNodeEntity() {
++        NodeEntity entity = new NodeEntity();
++        entity.setId(this.nodeId);
++        entity.setRelId(this.getId());   // node.rel_id = space_node.id
++        entity.setParentId(this.parentId);
++        entity.setPreId(this.preId);
++        entity.setTreeId(this.treeId);
++        entity.setNodeKey(this.nodeKey);
++        entity.setNodeType(this.nodeType);
++        return entity;
++    }
++}
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java
+index cae40e7d..3217990e 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java
+@@ -48,14 +48,6 @@ public class NodeRoleFilter {
+                                 bits -> controlRole.permissionToBean(NodePermissionView.class)
+                         );
+                         vo.setPermissions(permissions);
+-                        // isLocked 仅管理员可见
+-                        if (!Boolean.TRUE.equals(permissions.getManageable())) {
+-                            vo.setIsLocked(null);
+-                        }
+-                        // hasShare 仅编辑及以上可见
+-                        if (!Boolean.TRUE.equals(permissions.getEditable())) {
+-                            vo.setHasShare(null);
+-                        }
+                         return true;
+                     }
+                 })
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java
+index 6ebe656d..9d9db093 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java
+@@ -15,7 +15,6 @@ import com.yottastudios.ns.collabspace.control.infrastructure.role.ControlRoleMa
+ import com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants;
+ import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+ import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+-import com.yottastudios.ns.collabspace.shared.config.properties.ConstProperties;
+ import com.yottastudios.ns.collabspace.shared.context.SessionContext;
+ import com.yottastudios.ns.collabspace.shared.util.CollectionUtil;
+ import com.yottastudios.ns.collabspace.space.dto.SpaceAcrossConfigDto;
+@@ -24,6 +23,7 @@ import com.yottastudios.ns.collabspace.space.entity.SpaceEntity;
+ import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
+ import com.yottastudios.ns.collabspace.space.mapper.SpaceMapper;
+ import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeRecycleBinEntity;
+ import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeTypeEnum;
+@@ -50,6 +50,8 @@ import java.io.Serializable;
+ import java.util.*;
+ import java.util.stream.Collectors;
+ 
++import static com.yottastudios.ns.collabspace.core.support.tree.v2.DefaultTreeBuildFactory.ROOT_PARENT_ID;
++
+ @Slf4j
+ @Service
+ public class SpaceNodeQueryManagerImpl implements SpaceNodeQueryManager {
+@@ -81,20 +83,50 @@ public class SpaceNodeQueryManagerImpl implements SpaceNodeQueryManager {
+     private SpaceMapper spaceMapper;
+     @Resource
+     private SpaceQueryManager spaceQueryManager;
+-
+     @Override
+     public List<TreeNode<SpaceNodeVo>> getSpaceNodeTree(String spaceId) {
+         long t0 = System.currentTimeMillis();
+ 
+-        List<SpaceNodeEntity> spaceNodeEntities = spaceNodeService.listBySpaceId(spaceId, false);
++        // 联表查询：一次 DB 同时取 space_node 数据 + node 树结构 + 锁定/分享标识
++        List<SpaceNodeWithNodeDto> combined = spaceNodeService.listBySpaceIdWithNodeInfo(spaceId, false);
+         long t1 = System.currentTimeMillis();
+-        log.info("[2009-perf][getSpaceNodeTree] spaceId={} nodeCount={} listBySpaceId={}ms", spaceId, spaceNodeEntities.size(), t1 - t0);
++        log.info("[2009-perf][getSpaceNodeTree] spaceId={} nodeCount={} listBySpaceIdJoinNode={}ms", spaceId, combined.size(), t1 - t0);
++
++        // 从 DTO 提取锁定/分享标识，按 id 索引
++        Map<Long, SpaceNodeWithNodeDto> dtoMap = new HashMap<>(combined.size());
++        List<SpaceNodeEntity> entities = new ArrayList<>(combined.size());
++        List<NodeEntity> nodeEntities = new ArrayList<>(combined.size());
++        for (SpaceNodeWithNodeDto dto : combined) {
++            dtoMap.put(dto.getId(), dto);
++            entities.add(dto);
++            nodeEntities.add(dto.toNodeEntity());
++        }
+ 
+-        List<SpaceNodeVo> vos = spaceNodeTransfer.toSpaceNodeVoWithRole(spaceNodeEntities);
++        List<SpaceNodeVo> vos = spaceNodeTransfer.toSpaceNodeVoWithRole(entities);
+         long t2 = System.currentTimeMillis();
+         log.info("[2009-perf][getSpaceNodeTree] spaceId={} toSpaceNodeVoWithRole={}ms", spaceId, t2 - t1);
+ 
+-        List<TreeNode<SpaceNodeVo>> result = treeNodeTemplate.buildNodeTree(vos);
++        // 设置锁定/分享标识（已在主查询中一并获取，无额外 DB 调用）
++        // 先清除 BeanUtils 复制的值，只设 true，null 不序列化
++        for (SpaceNodeVo vo : vos) {
++            vo.setIsLocked(null);
++            vo.setHasShare(null);
++            SpaceNodeWithNodeDto dto = dtoMap.get(vo.getId());
++            if (dto == null) continue;
++            // 锁定标识：仅管理员可见，且实际有锁时才设 true
++            if (vo.getPermissions() != null && Boolean.TRUE.equals(vo.getPermissions().getManageable())
++                    && Boolean.TRUE.equals(dto.getIsLocked())) {
++                vo.setIsLocked(true);
++            }
++            // 分享标识：编辑者可见，且实际有分享时才设 true
++            if (vo.getPermissions() != null && Boolean.TRUE.equals(vo.getPermissions().getEditable())
++                    && Boolean.TRUE.equals(dto.getHasShare())) {
++                vo.setHasShare(true);
++            }
++        }
++
++        // 使用预取的 nodeEntities，跳过 buildNodeTree 内部的 listByRelIds
++        List<TreeNode<SpaceNodeVo>> result = treeNodeTemplate.buildNodeTree(vos, nodeEntities, ROOT_PARENT_ID);
+         long t3 = System.currentTimeMillis();
+         log.info("[2009-perf][getSpaceNodeTree] spaceId={} buildNodeTree={}ms total={}ms", spaceId, t3 - t2, t3 - t0);
+ 
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java
+index d565717e..4d761c5c 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java
+@@ -1,6 +1,7 @@
+ package com.yottastudios.ns.collabspace.workspace.mapper;
+ 
+ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.dto.TypeCountDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import org.apache.ibatis.annotations.Param;
+@@ -45,6 +46,34 @@ public interface SpaceNodeMapper extends BaseMapper<SpaceNodeEntity> {
+     List<SpaceNodeEntity> listByIdsIncludeDeleted(@Param("ids") Collection<? extends Serializable> ids);
+ 
+ 
++    /**
++     * 联表查询 space_node + node，一次 DB 往返同时获取节点数据和树结构信息，
++     * 避免 buildNodeTree 内部再发起 listByRelIds 二次查询。
++     */
++    @Select("SELECT " +
++            "  sn.id, sn.space_id, sn.name, sn.description, sn.app_space_node_id, " +
++            "  sn.type, sn.icon, sn.is_snapshot, sn.ai_enable, sn.ai_quoted, sn.ai_reference_status, " +
++            "  sn.created_by, sn.updated_by, sn.created_at, sn.updated_at, sn.is_deleted, " +
++            "  n.id AS node_id, n.parent_id, n.pre_id, n.tree_id, n.node_key, n.node_type, " +
++            "  CASE WHEN locked.node_id IS NOT NULL THEN 1 ELSE 0 END AS is_locked, " +
++            "  CASE WHEN EXISTS (" +
++            "    SELECT 1 FROM ${tablePrefix}node_share ns2 " +
++            "    WHERE ns2.space_node_id = sn.id AND ns2.is_enabled = 1 AND ns2.is_deleted = 0" +
++            "  ) THEN 1 ELSE 0 END AS has_share " +
++            "FROM ${tablePrefix}space_node sn " +
++            "INNER JOIN ${tablePrefix}node n ON n.rel_id = sn.id AND n.is_deleted = 0 " +
++            "LEFT JOIN (" +
++            "  SELECT DISTINCT CAST(c.control_id AS UNSIGNED) AS node_id FROM ${tablePrefix}control c " +
++            "  JOIN ${tablePrefix}control_role cr ON c.control_id = cr.control_id " +
++            "  WHERE c.space_id = #{spaceId} AND cr.role_code = 'reader' " +
++            "  AND c.is_deleted = 0 AND cr.is_deleted = 0" +
++            ") locked ON locked.node_id = sn.id " +
++            "WHERE sn.space_id = #{spaceId} " +
++            "  AND sn.is_snapshot = #{isSnapshot} " +
++            "  AND sn.is_deleted = 0")
++    List<SpaceNodeWithNodeDto> listBySpaceIdJoinNode(@Param("spaceId") String spaceId,
++                                                     @Param("isSnapshot") boolean isSnapshot);
++
+     @Select("SELECT type AS spaceNodeType, COUNT(1) AS count FROM ${tablePrefix}space_node WHERE created_at >= #{startAt} AND created_at < #{endAt} AND is_deleted = 0 GROUP BY type ORDER BY type")
+     List<TypeCountDto> countCreatedNodesGroupByType(@Param("startAt") LocalDateTime startAt,
+                                                     @Param("endAt") LocalDateTime endAt);
+@@ -58,6 +87,4 @@ public interface SpaceNodeMapper extends BaseMapper<SpaceNodeEntity> {
+     })
+     void updateNodeIcon(@Param("id") Long id, @Param("icon")String icon);
+ 
+-
+-
+ }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/INodeShareService.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/INodeShareService.java
+index f3d8e7c0..c1ad5fdb 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/INodeShareService.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/INodeShareService.java
+@@ -20,9 +20,4 @@ public interface INodeShareService extends IService<NodeShareEntity> {
+     List<NodeShareEntity> listBySpaceNodeIdsAndTypesAndBits(List<Long> spaceNodeIds, List<Integer> shareTypes, List<Long> propBits);
+ 
+     boolean delByShareId(String shareId);
+-
+-    /**
+-     * 批量查询有效分享（isEnabled=true 且未过期）的节点ID集合
+-     */
+-    List<Long> listActiveSpaceNodeIds(List<Long> spaceNodeIds);
+ } 
+\ No newline at end of file
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java
+index 962dc308..aca01ea2 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java
+@@ -1,6 +1,7 @@
+ package com.yottastudios.ns.collabspace.workspace.service;
+ 
+ import com.baomidou.mybatisplus.extension.service.IService;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ 
+ import java.io.Serializable;
+@@ -32,4 +33,9 @@ public interface ISpaceNodeService extends IService<SpaceNodeEntity> {
+     List<SpaceNodeEntity> getSpaceNodeByAppIds(List<String> appSpaceNodeIds);
+ 
+     Map<Long, String> getSnapshotNodeIdToSpaceIdMap(Collection<? extends Serializable> nodeIds);
++
++    /**
++     * 联表查询 space_node + node，一次 DB 往返同时返回节点数据和树结构信息。
++     */
++    List<SpaceNodeWithNodeDto> listBySpaceIdWithNodeInfo(String spaceId, boolean isSnapshot);
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeUserRoleCacheService.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeUserRoleCacheService.java
+index bb9ce00e..10e4e359 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeUserRoleCacheService.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeUserRoleCacheService.java
+@@ -15,9 +15,4 @@ public interface ISpaceNodeUserRoleCacheService extends IService<SpaceNodeUserRo
+     List<Long> listUserIdsByspaceNodeIdsAndMinRole(List<Long> spaceNodeIds, NodeRoleLevel minRole);
+ 
+     List<SpaceNodeUserRoleCacheEntity> batchUpsert(List<SpaceNodeUserRoleCacheEntity> caches);
+-
+-    /**
+-     * 返回存在只读用户（roleLevel=READER）的节点ID集合
+-     */
+-    List<Long> listLockedSpaceNodeIds(List<Long> spaceNodeIds);
+ }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/NodeShareServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/NodeShareServiceImpl.java
+index 17f483d1..9c9bf61f 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/NodeShareServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/NodeShareServiceImpl.java
+@@ -9,7 +9,6 @@ import com.yottastudios.ns.collabspace.workspace.service.INodeShareService;
+ import org.apache.commons.collections4.CollectionUtils;
+ import org.springframework.stereotype.Service;
+ 
+-import java.time.LocalDateTime;
+ import java.util.ArrayList;
+ import java.util.List;
+ 
+@@ -69,23 +68,6 @@ public class NodeShareServiceImpl extends ServiceImpl<NodeShareMapper, NodeShare
+         return list(queryWrapper);
+     }
+ 
+-    @Override
+-    public List<Long> listActiveSpaceNodeIds(List<Long> spaceNodeIds) {
+-        if (CollectionUtils.isEmpty(spaceNodeIds)) {
+-            return new ArrayList<>();
+-        }
+-        return lambdaQuery()
+-                .in(NodeShareEntity::getSpaceNodeId, spaceNodeIds)
+-                .eq(NodeShareEntity::getIsEnabled, true)
+-                .and(w -> w.isNull(NodeShareEntity::getExpireTime)
+-                        .or().gt(NodeShareEntity::getExpireTime, LocalDateTime.now()))
+-                .list()
+-                .stream()
+-                .map(NodeShareEntity::getSpaceNodeId)
+-                .distinct()
+-                .toList();
+-    }
+-
+     @Override
+     public boolean delByShareId(String id) {
+         UpdateWrapper<NodeShareEntity> updateWrapper = new UpdateWrapper<>();
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java
+index 9f87bba9..9aebd3a7 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java
+@@ -3,6 +3,7 @@ package com.yottastudios.ns.collabspace.workspace.service.impl;
+ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+ import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeException;
+ import com.yottastudios.ns.collabspace.workspace.mapper.SpaceNodeMapper;
+@@ -104,6 +105,11 @@ public class SpaceNodeServiceImpl extends ServiceImpl<SpaceNodeMapper, SpaceNode
+         return list(queryWrapper);
+     }
+ 
++    @Override
++    public List<SpaceNodeWithNodeDto> listBySpaceIdWithNodeInfo(String spaceId, boolean isSnapshot) {
++        return baseMapper.listBySpaceIdJoinNode(spaceId, isSnapshot);
++    }
++
+     @Override
+     public Map<Long, String> getSnapshotNodeIdToSpaceIdMap(Collection<? extends Serializable> nodeIds) {
+         if (CollectionUtils.isEmpty(nodeIds)) {
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeUserRoleCacheServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeUserRoleCacheServiceImpl.java
+index ebbea9e1..803faa96 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeUserRoleCacheServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeUserRoleCacheServiceImpl.java
+@@ -54,22 +54,6 @@ public class SpaceNodeUserRoleCacheServiceImpl extends ServiceImpl<SpaceNodeUser
+                 .toList();
+     }
+ 
+-    @Override
+-    public List<Long> listLockedSpaceNodeIds(List<Long> spaceNodeIds) {
+-        if (CollectionUtils.isEmpty(spaceNodeIds)) {
+-            return Collections.emptyList();
+-        }
+-        return lambdaQuery()
+-                .in(SpaceNodeUserRoleCacheEntity::getSpaceNodeId, spaceNodeIds)
+-                .eq(SpaceNodeUserRoleCacheEntity::getRoleLevel, NodeRoleLevel.READER.getLevel())
+-                .list()
+-                .stream()
+-                .map(SpaceNodeUserRoleCacheEntity::getSpaceNodeId)
+-                .filter(Objects::nonNull)
+-                .distinct()
+-                .toList();
+-    }
+-
+     @Override
+     @Transactional
+     public List<SpaceNodeUserRoleCacheEntity> batchUpsert(List<SpaceNodeUserRoleCacheEntity> caches) {
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java
+index 2d1c9b18..993d26f4 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java
+@@ -9,9 +9,7 @@ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeStarEntity;
+ import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeTypeEnum;
+ import com.yottastudios.ns.collabspace.workspace.filter.NodeRoleFilter;
+-import com.yottastudios.ns.collabspace.workspace.service.INodeShareService;
+ import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeStarService;
+-import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeUserRoleCacheService;
+ import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeVo;
+ import jakarta.annotation.Resource;
+ import lombok.extern.slf4j.Slf4j;
+@@ -36,12 +34,6 @@ public class SpaceNodeTransfer {
+     @Resource
+     private NodeRoleFilter nodeRoleFilter;
+ 
+-    @Resource
+-    private INodeShareService nodeShareService;
+-
+-    @Resource
+-    private ISpaceNodeUserRoleCacheService spaceNodeUserRoleCacheService;
+-
+     public SpaceNodeVo toSpaceNodeVo(SpaceNodeEntity entity) {
+         if (entity == null) return new SpaceNodeVo();
+         return toSpaceNodeVo(List.of(entity)).getFirst();
+@@ -64,12 +56,6 @@ public class SpaceNodeTransfer {
+ 
+         Map<String, Map<Integer, List<SpaceAppRelEntity>>> thirdAppGroupMap= spaceAppRelEntities.stream().collect(Collectors.groupingBy(SpaceAppRelEntity::getSpaceId, Collectors.groupingBy(SpaceAppRelEntity::getAppType)));
+ 
+-        List<Long> allNodeIds = entities.stream().map(SpaceNodeEntity::getId).toList();
+-        Set<Long> activeShareNodeIds = new HashSet<>(nodeShareService.listActiveSpaceNodeIds(allNodeIds));
+-        Set<Long> lockedNodeIds = new HashSet<>(spaceNodeUserRoleCacheService.listLockedSpaceNodeIds(allNodeIds));
+-        long t2b = System.currentTimeMillis();
+-        log.info("[2009-perf][toSpaceNodeVo] activeShare={}ms lockedNodes={}ms activeShareCount={} lockedCount={}", t2b - t2, t2b - t2, activeShareNodeIds.size(), lockedNodeIds.size());
+-
+         List<SpaceNodeVo> result = entities.stream()
+                 .map(e -> {
+                     Boolean isStarred = starredSpaceNodeSet.contains(e.getId());
+@@ -81,14 +67,11 @@ public class SpaceNodeTransfer {
+                                 &&CollectionUtils.isNotEmpty(thirdAppMap.get(SpaceAppTypeEnum.AFFINE.getValue())))
+                             appSpaceId=thirdAppMap.get(SpaceAppTypeEnum.AFFINE.getValue()).getFirst().getAppSpaceId();
+                     }
+-                    SpaceNodeVo vo = new SpaceNodeVo(e, creatorName, isStarred, appSpaceId, e.getIcon());
+-                    vo.setHasShare(activeShareNodeIds.contains(e.getId()));
+-                    vo.setIsLocked(lockedNodeIds.contains(e.getId()));
+-                    return vo;
++                    return new SpaceNodeVo(e, creatorName, isStarred, appSpaceId, e.getIcon());
+                 })
+                 .toList();
+         long t3 = System.currentTimeMillis();
+-        log.info("[2009-perf][toSpaceNodeVo] streamMapping(nicknames)={}ms entityCount={}", t3 - t2b, entities.size());
++        log.info("[2009-perf][toSpaceNodeVo] streamMapping(nicknames)={}ms entityCount={}", t3 - t2, entities.size());
+ 
+         return result;
+     }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/SpaceNodeTreeNodeVo.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/SpaceNodeTreeNodeVo.java
+new file mode 100644
+index 00000000..5cfb9fc5
+--- /dev/null
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/SpaceNodeTreeNodeVo.java
+@@ -0,0 +1,63 @@
++package com.yottastudios.ns.collabspace.workspace.vo;
++
++import com.fasterxml.jackson.databind.annotation.JsonSerialize;
++import com.yottastudios.ns.collabspace.base.vo.TreeNode;
++import com.yottastudios.ns.collabspace.shared.support.serializer.LongToStringSerializer;
++import com.yottastudios.ns.collabspace.shared.support.serializer.NullCollectionSerializer;
++import io.swagger.v3.oas.annotations.media.Schema;
++import lombok.Data;
++
++import java.util.List;
++import java.util.stream.Collectors;
++
++/**
++ * spaceNodeTree 接口专用树节点 VO，去掉前端不使用的字段（treeId、relId、nodeKey、preId）
++ */
++@Data
++@Schema(name = "SpaceNodeTreeNodeVo")
++public class SpaceNodeTreeNodeVo {
++
++    @JsonSerialize(using = LongToStringSerializer.class)
++    @Schema(description = "ID")
++    private Long id;
++
++    @JsonSerialize(using = LongToStringSerializer.class)
++    @Schema(description = "Parent ID")
++    private Long parentId;
++
++    @Schema(description = "Node Type")
++    private String nodeType;
++
++    @Schema(description = "Data associated with this node")
++    private SpaceNodeVo data;
++
++    @JsonSerialize(nullsUsing = NullCollectionSerializer.class)
++    @Schema(description = "Child Nodes")
++    private List<SpaceNodeTreeNodeVo> children;
++
++    public static SpaceNodeTreeNodeVo from(TreeNode<SpaceNodeVo> node) {
++        if (node == null) {
++            return null;
++        }
++        SpaceNodeTreeNodeVo vo = new SpaceNodeTreeNodeVo();
++        vo.setId(node.getId());
++        vo.setParentId(node.getParentId());
++        vo.setNodeType(node.getNodeType());
++        vo.setData(node.getData());
++        if (node.getChildren() != null) {
++            vo.setChildren(node.getChildren().stream()
++                    .map(SpaceNodeTreeNodeVo::from)
++                    .collect(Collectors.toList()));
++        }
++        return vo;
++    }
++
++    public static List<SpaceNodeTreeNodeVo> fromList(List<TreeNode<SpaceNodeVo>> nodes) {
++        if (nodes == null) {
++            return List.of();
++        }
++        return nodes.stream()
++                .map(SpaceNodeTreeNodeVo::from)
++                .collect(Collectors.toList());
++    }
++}
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/SpaceNodeVo.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/SpaceNodeVo.java
+index af9cffb3..7f13b51c 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/SpaceNodeVo.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/SpaceNodeVo.java
+@@ -1,6 +1,7 @@
+ package com.yottastudios.ns.collabspace.workspace.vo;
+ 
+ import com.fasterxml.jackson.annotation.JsonIgnore;
++import com.fasterxml.jackson.annotation.JsonInclude;
+ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+ import com.yottastudios.ns.collabspace.base.service.RelIdProvider;
+@@ -76,10 +77,12 @@ public class SpaceNodeVo implements RelIdProvider {
+     @JsonDeserialize(using = DateFormatToLocalDateTimeDeserializer.class)
+     private LocalDateTime updatedAt;
+ 
+-    @Schema(description = "文档存在只读用户（权限锁定标识），仅管理员可见，无权查看时为null")
++    @Schema(description = "是否有非默认只读角色分配（锁定标识），仅管理员可见")
++    @JsonInclude(JsonInclude.Include.NON_NULL)
+     private Boolean isLocked;
+ 
+-    @Schema(description = "文档存在有效的公开分享链接，仅编辑及以上权限可见，无权查看时为null")
++    @Schema(description = "是否有启用的分享链接（分享标识），编辑者可见")
++    @JsonInclude(JsonInclude.Include.NON_NULL)
+     private Boolean hasShare;
+ 
+     public SpaceNodeVo(SpaceNodeEntity entity, String creatorName, Boolean isStarred, String appSpaceId, String icon) {

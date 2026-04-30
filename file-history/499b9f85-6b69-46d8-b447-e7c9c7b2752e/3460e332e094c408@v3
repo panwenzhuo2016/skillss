@@ -1,0 +1,255 @@
+/**
+ * AI 日报上下文预处理工具
+ * - HTML 清洗：去除 HTML 标签，保留纯文本
+ * - 上下文压缩：按人分组 → 三分字段 → 相同内容连续日期合并
+ */
+
+interface ReportFields {
+    today: string
+    tomorrow: string
+    upcoming: string
+}
+
+interface PersonDateEntry {
+    date: string
+    fields: ReportFields | null
+    /** 未提交 / 休息日等特殊文本 */
+    special: string | null
+}
+
+// ----------------------------------------------------------------
+// HTML 清洗
+// ----------------------------------------------------------------
+
+/**
+ * 去除 HTML 标签，保留纯文本
+ */
+export function stripHtml(html: string): string {
+    if (!html) return ''
+    // <br> 转换行
+    let text = html.replace(/<br\s*\/?>/gi, '\n')
+    const doc = new DOMParser().parseFromString(text, 'text/html')
+    text = doc.body.textContent ?? ''
+    // &nbsp; 在 textContent 中会变成 \u00A0
+    text = text.replace(/\u00A0/g, ' ')
+    // 连续 3+ 换行压缩为 2 个
+    text = text.replace(/\n{3,}/g, '\n\n')
+    return text.trim()
+}
+
+// ----------------------------------------------------------------
+// 从日报 HTML 表格提取三个字段
+// ----------------------------------------------------------------
+
+// 标题关键词 → 字段名映射
+const LABEL_KEYWORDS: { key: keyof ReportFields; keywords: string[] }[] = [
+    { key: 'today', keywords: ['今日工作', "today's work", 'today work'] },
+    { key: 'tomorrow', keywords: ['明日工作', "tomorrow's work", 'tomorrow work'] },
+    { key: 'upcoming', keywords: ['近期工作', 'upcoming work', 'upcoming schedule'] },
+]
+
+/**
+ * 根据第一列标题文本匹配字段名
+ */
+function matchFieldKey(labelText: string): keyof ReportFields | null {
+    const lower = labelText.toLowerCase().trim()
+    for (const { key, keywords } of LABEL_KEYWORDS) {
+        if (keywords.some(kw => lower.includes(kw))) return key
+    }
+    return null
+}
+
+/**
+ * 解析日报 HTML 表格，提取三字段纯文本
+ * 按第一列标题文本匹配字段，兼容行顺序变化、多余行、缺少行
+ */
+export function parseReportContent(htmlContent: string): ReportFields | null {
+    if (!htmlContent) return null
+    try {
+        const doc = new DOMParser().parseFromString(htmlContent, 'text/html')
+        const rows = doc.querySelectorAll('tr')
+        if (rows.length === 0) return null
+
+        const result: ReportFields = { today: '', tomorrow: '', upcoming: '' }
+        let matched = 0
+
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].querySelectorAll('td')
+            if (cells.length < 2) continue
+
+            const label = cells[0].textContent ?? ''
+            const fieldKey = matchFieldKey(label)
+            if (fieldKey) {
+                result[fieldKey] = stripHtml(cells[1].innerHTML)
+                matched++
+            }
+        }
+
+        // 至少匹配到 1 个字段才视为有效表格
+        return matched > 0 ? result : null
+    } catch {
+        return null
+    }
+}
+
+// ----------------------------------------------------------------
+// 上下文压缩
+// ----------------------------------------------------------------
+
+/** 日期字符串 YYYY-MM-DD 格式化为 M/D */
+function formatShortDate(dateStr: string): string {
+    const parts = dateStr.split('-')
+    if (parts.length < 3) return dateStr
+    const m = parseInt(parts[1], 10)
+    const d = parseInt(parts[2], 10)
+    return `${m}/${d}`
+}
+
+/** 判断两个 YYYY-MM-DD 日期是否连续（差 1 天） */
+function isConsecutive(dateA: string, dateB: string): boolean {
+    const a = new Date(dateA)
+    const b = new Date(dateB)
+    const diff = Math.abs(a.getTime() - b.getTime())
+    return diff <= 86400000 // 1天
+}
+
+interface DateRange {
+    dates: string[] // 升序排列的 YYYY-MM-DD
+    content: string
+}
+
+/**
+ * 将同一字段的 {date, content}[] 按连续日期 + 相同内容合并为区间
+ */
+function mergeDateRanges(entries: { date: string; content: string }[]): DateRange[] {
+    if (!entries.length) return []
+
+    // 按日期升序
+    const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date))
+    const ranges: DateRange[] = []
+    let current: DateRange = { dates: [sorted[0].date], content: sorted[0].content }
+
+    for (let i = 1; i < sorted.length; i++) {
+        const prev = current.dates[current.dates.length - 1]
+        if (sorted[i].content === current.content && isConsecutive(prev, sorted[i].date)) {
+            current.dates.push(sorted[i].date)
+        } else {
+            ranges.push(current)
+            current = { dates: [sorted[i].date], content: sorted[i].content }
+        }
+    }
+    ranges.push(current)
+    return ranges
+}
+
+/** 格式化日期区间标签 */
+function formatRangeLabel(dates: string[]): string {
+    if (dates.length === 1) return `[${formatShortDate(dates[0])}]`
+    return `[${formatShortDate(dates[0])}-${formatShortDate(dates[dates.length - 1])}]`
+}
+
+const FIELD_LABELS: Record<keyof ReportFields, string> = {
+    today: '今日工作内容',
+    tomorrow: '明日工作计划',
+    upcoming: '近期工作安排',
+}
+
+/**
+ * 对 AiSyncModal 生成的日报 context 做预处理：
+ * 1. HTML 清洗
+ * 2. 按人分组 + 三分字段
+ * 3. 同一人同字段连续日期内容相同时合并
+ */
+export function compressDailyContext(context: string): string {
+    if (!context) return ''
+
+    // 按 --- 分割为日期段
+    const sections = context.split(/\n-{3,}\n/)
+    const personMap = new Map<string, PersonDateEntry[]>()
+
+    for (const section of sections) {
+        // 提取日期
+        const dateMatch = section.match(/【(\d{4}-\d{2}-\d{2})】/)
+        if (!dateMatch) continue
+        const date = dateMatch[1]
+
+        // 按人分割：找到 "花名：" 开头的段落
+        // context 格式: "【日期】\n花名：\n内容\n\n花名：\n内容"
+        const afterDate = section.slice(section.indexOf('】') + 1).trim()
+        // 用正则匹配 "花名：" 开头（花名不含换行和：）
+        const personBlocks = afterDate.split(/\n(?=\S+?：\n)/)
+
+        for (const block of personBlocks) {
+            if (!block.trim()) continue
+            const nameMatch = block.match(/^(.+?)：\n?([\s\S]*)$/)
+            if (!nameMatch) continue
+            const name = nameMatch[1].trim()
+            const content = nameMatch[2].trim()
+
+            if (!personMap.has(name)) personMap.set(name, [])
+
+            // 判断是否为特殊条目（未提交/休息日）
+            const isSpecial = !content.includes('<t') && !content.includes('<T') &&
+                (content.includes('未提交') || content.includes('休息日') ||
+                 content.includes('unsubmitted') || content.length < 20)
+
+            if (isSpecial || !content) {
+                personMap.get(name)!.push({ date, fields: null, special: stripHtml(content) || '未提交' })
+            } else {
+                const fields = parseReportContent(content)
+                if (fields) {
+                    personMap.get(name)!.push({ date, fields, special: null })
+                } else {
+                    // 非标准表格，整体作为纯文本
+                    personMap.get(name)!.push({ date, fields: null, special: stripHtml(content) })
+                }
+            }
+        }
+    }
+
+    if (personMap.size === 0) return stripHtml(context)
+
+    // 按人输出压缩结果
+    const result: string[] = []
+
+    for (const [name, entries] of personMap) {
+        const lines: string[] = [`${name}：`]
+
+        // 分离有字段的和特殊条目
+        const fieldEntries = entries.filter(e => e.fields !== null) as { date: string; fields: ReportFields; special: null }[]
+        const specialEntries = entries.filter(e => e.special !== null) as { date: string; fields: null; special: string }[]
+
+        if (fieldEntries.length > 0) {
+            // 对三个字段分别做合并
+            for (const key of ['today', 'tomorrow', 'upcoming'] as (keyof ReportFields)[]) {
+                const fieldData = fieldEntries
+                    .map(e => ({ date: e.date, content: e.fields[key] }))
+                    .filter(e => e.content) // 跳过空内容
+
+                if (!fieldData.length) continue
+
+                const ranges = mergeDateRanges(fieldData)
+                lines.push(`【${FIELD_LABELS[key]}】`)
+                for (const range of ranges) {
+                    lines.push(`${formatRangeLabel(range.dates)} ${range.content}`)
+                }
+                lines.push('') // 字段间空行
+            }
+        }
+
+        // 特殊条目（未提交/休息日）
+        if (specialEntries.length > 0) {
+            const specialRanges = mergeDateRanges(
+                specialEntries.map(e => ({ date: e.date, content: e.special }))
+            )
+            for (const range of specialRanges) {
+                lines.push(`${formatRangeLabel(range.dates)} ${range.content}`)
+            }
+            lines.push('')
+        }
+
+        result.push(lines.join('\n').trim())
+    }
+
+    return result.join('\n\n---\n\n')
+}

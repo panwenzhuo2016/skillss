@@ -1,0 +1,1506 @@
+     1→const bottomText_C = 'Yotta is committed to building an inclusive environment where creative professionals from a multitude of diverse cultural backgrounds collaborate to inspire audiences and each other. We are passionately supportive of equality in all its forms and never discriminate on the basis of race, color, religion, sex, orientation, identity, national origin, handicap, or any other category protected by applicable federal and state law.';
+     2→const whyJoinUs_C = 'Yotta’s huge fanbase has helped turn us into a globally ranked game developer with offices worldwide. Despite our success, at heart we are still players trying to create exciting and engaging, never-before-experienced games. That drive to make games that we want to play is what animates our well-resourced, ambitious, creative team members. Working together in a supportive, open workplace and taking cues from our gaming communities, we create products that entertain the world.';
+     3→const toHave_C = 'We Expect You To Have: ';
+     4→const betterHave_C = 'Even Better If You Have: ';
+     5→const hybridRole1 = 'Hybrid role based in El Segundo (Monday, Wednesday & Thursday on-site).';
+     6→const hybridRole2 = 'Hybrid role based in El Segundo (Monday, Wednesday & Thursday on-site);';
+     7→const hybridRole21 = 'Current working hours: Monday – Friday, 11am – 8pm Pacific Time (including one-hour break);';
+     8→const hybridRole3 = 'This is a hybrid role based in Los Angeles. (Currently hybrid because of the pandemic).';
+     9→const pay_C = 'The estimated base pay range for this role is: ';
+    10→const doing_C = 'What You’ll Be Doing: ';
+    11→const jobInfo = [
+    12→	{
+    13→		jobID: 1,
+    14→		bottomText: bottomText_C,
+    15→
+    16→		whyJoinUs: whyJoinUs_C,
+    17→
+    18→		qualifications: [
+    19→			toHave_C,
+    20→			'1) Bachelor degree or above.',
+    21→			'2) Experience in customer service in the gaming industry.',
+    22→			'3) Good sense of customer service.',
+    23→			'4) Ability to work well in a team.',
+    24→			'5) Good writing skills.',
+    25→			'6) Strong communication skills and the ability to adapt quickly.',
+    26→			'7) Passion for video games and must have a certain understanding of mobile games.',
+    27→			'8) Cheerful personality and be responsible at work.',
+    28→
+    29→			betterHave_C,
+    30→			'1) Conversational skills in Chinese a plus (not a must).'
+    31→		],
+    32→		AdditionalInformation: [
+    33→			hybridRole3,
+    34→		],
+    35→		responsibilities: [
+    36→			'As a Game Support Specialist, you will be at the forefront of our games. You will help in creating the best player experience possible and support our awesome players! You will also be responsible for our player communities and popular social media platforms, as well as testing, gathering, analyzing and reporting valuable feedback in order to constantly improve the player experience.',
+    37→			doing_C,
+    38→			'1. Familiarize yourself with the game products operated by our company.',
+    39→			'2. Constantly communicate with players in English-speaking regions. Answer players’ questions via online chat and email.',
+    40→			'3. Establish a good relationship with players, collect their opinions and suggestions on game products, and provide timely feedback.',
+    41→			'4. Maintain and manage game forums, player communities, and email communication to solve player-related issues.',
+    42→			'5. QA testing and report any in-game technical issues.'
+    43→		],
+    44→
+    45→		name: 'Game Support Specialist',
+    46→
+    47→		location: 'Los Angeles ',
+    48→
+    49→		isClosed: true,
+    50→	},
+    51→	{
+    52→		jobID: 4,
+    53→		bottomText: bottomText_C,
+    54→
+    55→		whyJoinUs: whyJoinUs_C,
+    56→
+    57→		qualifications: [
+    58→
+    59→			toHave_C,
+    60→			'1) Bachelor degree or above, preferably in literature, screenwriting, film, game design or a related field;',
+    61→			'2) Strong understanding of narrative structures, character development, and plot progression;',
+    62→			'3) 2+ years of working experience as a narrative designer or writer in the video game industry;',
+    63→			'4) Participate in at least one AAA project, from start to finish, in a narrative role;',
+    64→			'5) Familiarity with narrative structures, character development, and plot progression;',
+    65→			'6) Passion for stories and games, especially story-driven AAA games and action games;',
+    66→			'7) Communicates complex ideas clearly and concisely, both in writing and in person, and applies analytical skills to drive informed decision-making.',
+    67→
+    68→			betterHave_C,
+    69→			'1) Familiarity with crime genre;',
+    70→			'2) Experience writing for story-rich, cinematic games.'
+    71→		],
+    72→		AdditionalInformation: [
+    73→			hybridRole2,
+    74→			hybridRole21,
+    75→			pay_C + '80-140k USD.',
+    76→		],
+    77→		responsibilities: [
+    78→			'We are on the lookout for a narrative designer who could bring a whole new world of crime stories to' +
+    79→			' life on our original AAA game project in the LA studio. You will be responsible for everything that' +
+    80→			' relates to the story of the game, as well as working and assisting other departments and working together to make the creative ideas a reality. We invite you to apply for this role if you are looking to start an amazing journey with a group of game & narrative enthusiasts.',
+    81→
+    82→			doing_C,
+    83→			'1. Build the overall worldview of the game according to the project requirements, helping to develop the world and the narratives within it;',
+    84→			'2. Ideate, develop, adapt, write, and revise stories and scripts for in-game narratives, while integrating them seamlessly into the established worldview through modifications and fine adjustments as needed; ',
+    85→			'3. Work closely with other disciplines, including design, cinematics, art, production and more to integrate narrative into all aspects of the game world;',
+    86→			'4. Work alongside the other narrative designers to research and develop original stories;',
+    87→			'5. Collaborate on and peer review all scripts alongside other narrative designers;',
+    88→			'6. Develop, create and pitch original storylines to stakeholders;',
+    89→			'7. Responsible for the writing of in-game strings and text content, such as dialogue, mission' +
+    90→			' descriptions and other miscellaneous copywriting;',
+    91→			'8. Take initiative by proactively driving tasks forward to support team and organizational success;',
+    92→			'9. Collaborate closely with the Lead Narrative Designer to help realize and refine the creative vision' +
+    93→			' of the game.',
+    94→		],
+    95→
+    96→		name: 'Narrative Designer',
+    97→
+    98→		location: 'Los Angeles',
+    99→
+   100→		isClosed: false,
+   101→	},
+   102→	{
+   103→		jobID: 5,
+   104→		bottomText: bottomText_C,
+   105→
+   106→		whyJoinUs: whyJoinUs_C,
+   107→
+   108→		qualifications: [
+   109→
+   110→			toHave_C,
+   111→			'1) Project management experience on AAA games on any major platform preferred (consoles, PC, mobile); ',
+   112→			'2) Ability to be a relationship-builder, enjoy making connections with lots of different people and teams; ',
+   113→			'3) Ability to be a go-getter, willing to encourage people to achieve greatness; ',
+   114→			'4) Experience and passion for video games; ',
+   115→			'5) Ability to communicate and resolve conflicts effectively. ',
+   116→
+   117→			betterHave_C,
+   118→			'1) History of collaboration with release management, production or live operations of games.'
+   119→		],
+   120→		AdditionalInformation: [
+   121→			hybridRole3,
+   122→		],
+   123→		responsibilities: [
+   124→
+   125→			'As a Product Manager, you will hold a key role in the success of a game. You will be managing and tracking the key steps and working with key stakeholders such as the game development team and art team. You will use your proficient communication skills and conflict resolution skills to make sure the core of the game has been correctly conveyed and the game process is on the right track to achieve the final success.  ',
+   126→
+   127→			doing_C,
+   128→			'1. Understand the core vision and key principles of the game and communicate them to internal teams and external partners; ',
+   129→			'2. Develop project workflows and identifying key steps, make sure our game progress on as expected (including but not limited to script writing and art progress); ',
+   130→			'3. Oversee the process for each step and keep them on track; ',
+   131→			'4. Utilize computer tools and project management software to facilitate smooth workflows; ',
+   132→			'5. Work with production director, core team and local partners to develop production plans, manage scope and determine appropriate staffing plans.'
+   133→		],
+   134→
+   135→		name: 'Product Manager',
+   136→
+   137→		location: 'Los Angeles',
+   138→
+   139→		isClosed: true,
+   140→	},
+   141→	{
+   142→		jobID: 6,
+   143→		bottomText: bottomText_C,
+   144→
+   145→		whyJoinUs: whyJoinUs_C,
+   146→
+   147→		qualifications: [
+   148→
+   149→			toHave_C,
+   150→			'1) 5+ years of industry experience, including 1+ years of management experience; ',
+   151→			'2) Strong documentation and communication, organizational, time management, and interpersonal skills; ',
+   152→			'3) Ability to work with internal and external teams to achieve visual excellence for the content and experience we create for the game; ',
+   153→			'4) A deep understanding of the difference and transformation between 2D art and 3D resources; ',
+   154→			'5) Strong executive skills, able to lead the team to achieve the established art style and work on the objectives of the project.',
+   155→
+   156→			betterHave_C,
+   157→			'1) Experience in AAA game development or Film production; ',
+   158→			'2) Experience in cooperation with overseas companies.'
+   159→		],
+   160→		AdditionalInformation: [
+   161→			hybridRole3,
+   162→		],
+   163→		responsibilities: [
+   164→
+   165→			'As the leader of an art team, you will be in charge of the overall artistic vision for one of our games. You will not only be the glue of this art team by giving directions and someone they they can count on, but also be the connection between your team and the product team.  ',
+   166→
+   167→			doing_C,
+   168→			'1. Build out a diverse team of creative talent, nurture the growth, career and well-being of the art team; ',
+   169→			'2. Extend the game\'s aesthetic vision beyond core game visuals to cohesively support the player experience and market considerations; ',
+   170→			'3. Develop partnerships with external outsourcing partners to ensure assets hit style, timeliness, technical and quality targets.'
+   171→		],
+   172→
+   173→		name: 'Art Director',
+   174→
+   175→		location: 'Los Angeles',
+   176→
+   177→		isClosed: true,
+   178→	},
+   179→	{
+   180→		jobID: 7,
+   181→		bottomText: bottomText_C,
+   182→
+   183→		whyJoinUs: whyJoinUs_C,
+   184→
+   185→		qualifications: [
+   186→
+   187→			toHave_C,
+   188→			'1) Art major or related with 2+ years of working experience; ',
+   189→			'2) Specialized training in graphic and interactive design or illustration from a 4 year program or equivalent level of professional experience required; ',
+   190→			'3) Good understanding of graphic design tools like Photoshop, Flash, etc.; ',
+   191→			'4) Experience in developing 2+ kinds of mobile games; ',
+   192→			'5) 2+ years of professional experience designing for games and/or interactive media; ',
+   193→			'6) Proficiency in visual design, good understanding of interactive design; ',
+   194→			'7) Good communication skills.',
+   195→
+   196→			betterHave_C,
+   197→			'1) Experience in AAA game development or Film production; ',
+   198→			'2) Experience in cooperation with overseas companies.'
+   199→		],
+   200→		AdditionalInformation: [
+   201→			hybridRole3,
+   202→		],
+   203→		responsibilities: [
+   204→
+   205→			'As a Game UI Artist, you will not just follow the art instructions of your art director, but utilize your creativity to design the game layout to ensure that the style is conveyed and thus optimize the game experience. ',
+   206→
+   207→			doing_C,
+   208→			'1. Responsible for UI design including interface, icons, buttons etc. based on game style, user experience and usability design; ',
+   209→			'2. Design advertising photos based on program needs; ',
+   210→			'3. Responsible for designing product logo and icons; ',
+   211→			'4. Responsible for designing other visual products and setting standards.'
+   212→		],
+   213→
+   214→		name: 'Game UI Artist',
+   215→
+   216→		location: 'Los Angeles',
+   217→
+   218→		isClosed: true,
+   219→	},
+   220→	{
+   221→		jobID: 8,
+   222→		bottomText: bottomText_C,
+   223→
+   224→		whyJoinUs: whyJoinUs_C,
+   225→
+   226→		qualifications: [
+   227→
+   228→			toHave_C,
+   229→			'1) 2+ years of working experience, experience in game art is a plus; ',
+   230→			'2) Proficiency in Painter or Photoshop, good at European /American realistic style or American cartoon style; ',
+   231→			'3) Good knowledge of art, rich creativity, imagination and modeling capabilities; ',
+   232→			'4) Good communication and collaboration skills.',
+   233→
+   234→			betterHave_C,
+   235→			'1) Experience in AAA game development or Film production; ',
+   236→			'2) Experience in cooperation with overseas companies.'
+   237→		],
+   238→		AdditionalInformation: [
+   239→			hybridRole3,
+   240→		],
+   241→		responsibilities: [
+   242→
+   243→			'As a Game Concept Artist, you will be responsible for the overall style, look and feel of a game. You will create art for the environments and/or characters, set the first foundation for the 3D artists, animators, designers and programmers to help them better understand the aesthetic of the game and finally bring this project to life. You will also have a deep connection with other people in your team. ',
+   244→
+   245→			doing_C,
+   246→			'1. Responsible for designing 2D game environments, objects and/or characters; ',
+   247→			'2. Work closely with art department and other departments to keep quality and style consistent across all art, and understand the project requirements; ',
+   248→			'3. Work closely with Project Manager and Art Director to understand a project\'s art direction; ',
+   249→			'4. Apply changes based on the feedback received; ',
+   250→			'5. Correctly construct a finished product from an original design.'
+   251→		],
+   252→
+   253→		name: 'Game Concept Artist (Environment/Characters)',
+   254→
+   255→		location: 'Los Angeles',
+   256→
+   257→		isClosed: true,
+   258→	},
+   259→	{
+   260→		jobID: 9,
+   261→		bottomText: bottomText_C,
+   262→
+   263→		whyJoinUs: whyJoinUs_C,
+   264→
+   265→		qualifications: [
+   266→
+   267→			toHave_C,
+   268→			'1) Proficiency in 3Dmax or Maya, Zbrush and other 3D modeling software; ',
+   269→			'2) Experience with low- and high-model making related to different production types. Next-generation production experience will be preferred; ',
+   270→			'3) Good communication, coordination, and expression skills, and have the awareness and ability to facilitate and solve problems; ',
+   271→			'4) Ability to learn quickly and continuously improve the overall quality of everything you work on; ',
+   272→			'5) Ability to work effectively with every department of the development process: designers, programmers, tech art, animation, etc..',
+   273→
+   274→			betterHave_C,
+   275→			'1) Experience in AAA game development or Film production; ',
+   276→			'2) Experience in cooperation with overseas companies.'
+   277→		],
+   278→		AdditionalInformation: [
+   279→			hybridRole3,
+   280→		],
+   281→		responsibilities: [
+   282→
+   283→			'As a 3D Character Artist, you are the one who brings the 2D concept art to life. You create the models for the characters in the game based on the concept art in accordance with the design references already in place by the lead artist and lead designer. You own part of the responsibility of keeping the player immersed in the game’s world. ',
+   284→
+   285→			doing_C,
+   286→			'1. Responsible for 3D character modeling, quality supervision, output character production templates and specifications; ',
+   287→			'2. Responsible for the formulation and promotion of art node model link plans; ',
+   288→			'3. Responsible for the character modeling and texture production of the game;',
+   289→			'4. Able to output high-quality 3D art resources.'
+   290→		],
+   291→
+   292→		name: '3D Character Artist',
+   293→
+   294→		location: 'Los Angeles',
+   295→
+   296→		isClosed: true,
+   297→	},
+   298→	{
+   299→		jobID: 10,
+   300→		bottomText: bottomText_C,
+   301→
+   302→		whyJoinUs: whyJoinUs_C,
+   303→
+   304→		qualifications: [
+   305→
+   306→			toHave_C,
+   307→			'1) 3+ year of working experience with good understanding of art design, animation and creativity; ',
+   308→			'2) Proficiency in 2D and 3D software and particle system such as AE, Photoshop, Illusion, Maya and 3ds Max, experience in Unity is preferred; ',
+   309→			'3) Familiarity with the process of making special effects, fabrication and output of 2D sequential frames, design principles of 3D special effects; ',
+   310→			'4) Passion for video games, rich game experience and willing to learn techniques from other games.',
+   311→
+   312→			betterHave_C,
+   313→			'1) Experience in AAA game development or Film production; ',
+   314→			'2) Experience in cooperation with overseas companies.'
+   315→		],
+   316→		AdditionalInformation: [
+   317→			hybridRole3,
+   318→		],
+   319→		responsibilities: [
+   320→
+   321→			'As a VFX Artist, you will create effects and bring some magic to the game’s world. You will play a vital role in the game, as you will bring to it a more professional look, as well as provide a more engaging and immersed experience for the players.  ',
+   322→
+   323→			doing_C,
+   324→			'1. Use Photoshop, Maya/Max, and in-game systems to craft consistently charming, eye-catching, real-time effects; ',
+   325→			'2. Utilize 3D graphics including mesh, particle systems, physics, ribbons, shaders, etc. to deliver desired visual effects; ',
+   326→			'3. Create and implement VFX for characters, environments, UI, etc., as well as supplementary assets such as textures, models, and animations.',
+   327→		],
+   328→
+   329→		name: 'VFX Artist',
+   330→
+   331→		location: 'Los Angeles',
+   332→
+   333→		isClosed: true,
+   334→	},
+   335→	{
+   336→		jobID: 11,
+   337→		bottomText: bottomText_C,
+   338→
+   339→		whyJoinUs: whyJoinUs_C,
+   340→
+   341→		qualifications: [
+   342→
+   343→			toHave_C,
+   344→			'1) 3+ years of experience in game animation; ',
+   345→			'2) Ability to work with structure, modeling, and animation; ',
+   346→			'3) Good background in animation design, a strong understanding of body movements and the movement rhythms of characters and animals; ',
+   347→			'4) Ability to correctly grasp how things move, and have an innovative spirit for animation design; ',
+   348→			'5) Passion for the game industry and video games, be proactive, and have a good team spirit.',
+   349→
+   350→			betterHave_C,
+   351→			'1) Experience in AAA game development or Film production; ',
+   352→			'2) Experience in cooperation with overseas companies.',
+   353→		],
+   354→		AdditionalInformation: [
+   355→			hybridRole3,
+   356→		],
+   357→		responsibilities: [
+   358→
+   359→			'As an Animator, you will inject the personality, emotion and realism to the game. In other words, you will breathe life into otherwise inanimate objects. You will also communicate constantly with other people in your team to reach a deeper understanding of the character, environment or any object you will be working on in the game. ',
+   360→
+   361→			doing_C,
+   362→			'1. Responsible for the design and production of character actions in the game; ',
+   363→			'2. Check that the actions and the effects in the game work out.',
+   364→		],
+   365→
+   366→		name: 'Animator',
+   367→
+   368→		location: 'Los Angeles',
+   369→
+   370→		isClosed: true,
+   371→	},
+   372→	{
+   373→		jobID: 12,
+   374→		bottomText: bottomText_C,
+   375→
+   376→		whyJoinUs: whyJoinUs_C,
+   377→
+   378→		qualifications: [
+   379→
+   380→			toHave_C,
+   381→			'1) 3+ years of experience in a game production environment; ',
+   382→			'2) Familiarity with the use of game art production tools, such as 3DMax, Maya, Houdini, Blender, Substance Designer, Substance Painter, Mari, Photoshop; ',
+   383→			'3) Understanding of mainstream commercial game development engines, such as unity3d and UE4; ',
+   384→			'4) Intermediate understanding of (and technical proficiency in) fundamental 3D concepts such as modeling, texturing, rendering, shading, lighting, rigging, skinning, dynamics, particle systems, and image manipulation techniques; ',
+   385→			'5) Commitment to continuously learn and familiarize oneself with various technologies, technical concepts, ideas, and problems.',
+   386→
+   387→			betterHave_C,
+   388→			'1) Experience in AAA game development or Film production; ',
+   389→			'2) Experience in cooperation with overseas companies.',
+   390→		],
+   391→		AdditionalInformation: [
+   392→			hybridRole3,
+   393→		],
+   394→		responsibilities: [
+   395→
+   396→			'As a Technical Artist, you will be the bridge between the art team and program team. You will enhance the art efficiency and performance in a technical way. You will utilize your excellent communication skills as well as a thorough understanding of game art and development during the game’s development process.  ',
+   397→
+   398→			doing_C,
+   399→			'1. Work alongside peers on the Tech Art team and with the Tech Art Director to support the game and studio vision; ',
+   400→			'2. Translate the art performance requirements into technical solutions, follow up the implementation, and formulate technical specifications and workflow; ',
+   401→			'3. Develop auxiliary tools that can improve production efficiency and performance effect in art tools or game engines;  ',
+   402→			'4. Optimize the operation efficiency of the game rendering part and provide corresponding solutions.',
+   403→		],
+   404→
+   405→		name: 'Technical Artist',
+   406→
+   407→		location: 'Los Angeles',
+   408→
+   409→		isClosed: true,
+   410→	},
+   411→	{
+   412→		jobID: 13,
+   413→		bottomText: bottomText_C,
+   414→
+   415→		whyJoinUs: whyJoinUs_C,
+   416→
+   417→		qualifications: [
+   418→			toHave_C,
+   419→			'1) 3+ years of experience in a game production environment or intermediate experience in video game production or equivalent; ',
+   420→			'2) Familiarity with the use of game art production tools, such as Maya, Motionbuilder; ',
+   421→			'3) Understanding of mainstream commercial game development engines, such as unity3d and UE4; ',
+   422→			'4) Knowledge of the limitations of game engines and production needs; ',
+   423→			'5) Commitment to continuously learn and familiarize oneself with various technologies, technical concepts, ideas, and problems.',
+   424→
+   425→			betterHave_C,
+   426→			'1) Knowledge of Substance Painter and PBR workflows; ',
+   427→			'2) Knowledge of 3dsMax.'
+   428→		],
+   429→		AdditionalInformation: [
+   430→			hybridRole3,
+   431→		],
+   432→		responsibilities: [
+   433→			'As a Technical Artist, you will be the bridge between the art team and program team. You will enhance the art efficiency and performance in a technical way. You will utilize your excellent communication skills as well as a thorough understanding of game art and development during the game’s development process.  ',
+   434→
+   435→			doing_C,
+   436→			'1. Work alongside peers on the Tech Art team and with the Tech Art Director to support the game and studio vision; ',
+   437→			'2. Work in close collaboration with animators, modelers, and artistic director in order to produce high-quality rigs for animation; ',
+   438→			'3. Based on the models provided by the Modeling Department, carry out the rigging and skinning of weapons or characters; ',
+   439→			'4. Recognize proper mesh topology as well as repair and/or give feedback to the Modeling Department or outsourcing; ',
+   440→			'5. Implement control rigs to foster and simplify the work of animators; ',
+   441→			'6. Ensure that the final result (rigging/skinning) meets the artistic standards of the project.',
+   442→		],
+   443→
+   444→		name: 'Technical Artist (Rigging)',
+   445→
+   446→		location: 'Los Angeles',
+   447→
+   448→		isClosed: true,
+   449→	},
+   450→	{
+   451→		jobID: 14,
+   452→		bottomText: bottomText_C,
+   453→
+   454→		whyJoinUs: whyJoinUs_C,
+   455→
+   456→		qualifications: [
+   457→
+   458→			toHave_C,
+   459→			'1) 3+ years of experience in a game or film production environment; ',
+   460→			'2) Solid technical background with ability to design and implement systems; ',
+   461→			'3) Solid understanding of kinematics, animation principles and ability to translate this into tangible production tools and processes; ',
+   462→			'4) Experience with Python or other scripting languages; ',
+   463→			'5) Commitment to continuously learn and familiarize oneself with various technologies, technical concepts, ideas, and problems.',
+   464→
+   465→			betterHave_C,
+   466→			'1) Experienced working with motion capture data; ',
+   467→			'2) Experience in AAA game development or Film production.',
+   468→		],
+   469→		AdditionalInformation: [
+   470→			hybridRole3,
+   471→		],
+   472→		responsibilities: [
+   473→			'As a Technical Artist, you will be the bridge between the art team and program team. You will enhance the art efficiency and performance in a technical way. You will utilize your excellent communication skills as well as a thorough understanding of game art and development during the game’s development process.  ',
+   474→
+   475→			doing_C,
+   476→			'1. Work alongside peers on the Tech Art team and with the Tech Art Director to support the game and studio vision; ',
+   477→			'2. Work closely with our core team members to develop efficient and maintainable workflows; ',
+   478→			'3. Develop tools and workflows to support animators; ',
+   479→			'4. Keep updated on the latest industry\'s technological developments and research cutting-edge solutions to apply them into the projects.',
+   480→		],
+   481→
+   482→		name: 'Technical Artist (Animation)',
+   483→
+   484→		location: 'Los Angeles',
+   485→
+   486→		isClosed: true,
+   487→	},
+   488→	{
+   489→		jobID: 15,
+   490→		bottomText: bottomText_C,
+   491→
+   492→		whyJoinUs: whyJoinUs_C,
+   493→
+   494→		qualifications: [
+   495→
+   496→			toHave_C,
+   497→			'1) 3+ years of experience in a game or film production environment; ',
+   498→			'2) Proficiency in one or more programming language (Python, C#, C++, etc.); ',
+   499→			'3) The ability to evaluate existing workflows or pipelines, and then be able to suggest, present and implement improvements;  ',
+   500→			'4) Commitment to continuously learn and familiarize oneself with various technologies, technical concepts, ideas, and problems.',
+   501→
+   502→			betterHave_C,
+   503→			'1) Expertise in game development using unity3d or UE4; ',
+   504→			'2) Experience working in UI/UX design.',
+   505→		],
+   506→		AdditionalInformation: [
+   507→			hybridRole3,
+   508→		],
+   509→		responsibilities: [
+   510→
+   511→			'As a Technical Artist, you will be the bridge between the art team and program team. You will enhance the art efficiency and performance in a technical way. You will utilize your excellent communication skills as well as a thorough understanding of game art and development during the game’s development process.  ',
+   512→
+   513→			doing_C,
+   514→			'1. Work alongside peers on the Tech Art team and with the Tech Art Director to support the game and studio vision; ',
+   515→			'2. Design and develop improved content creation pipelines, processes, and workflows; ',
+   516→			'3. Automate and optimize inefficient workflows and processes; ',
+   517→			'4. Provide technical support to artists working from our art workflows.',
+   518→		],
+   519→
+   520→		name: 'Technical Artist (Pipeline)',
+   521→
+   522→		location: 'Los Angeles',
+   523→
+   524→		isClosed: true,
+   525→	},
+   526→	{
+   527→		jobID: 16,
+   528→		bottomText: bottomText_C,
+   529→
+   530→		whyJoinUs: whyJoinUs_C,
+   531→
+   532→		qualifications: [
+   533→
+   534→			toHave_C,
+   535→			'1) 3+ years of experience in a game production environment; ',
+   536→			'2) Strong experience with HLSL or GLSL shading languages; ',
+   537→			'3) Ability to write robust code and shading networks, both from a functional and architectural standpoint; ',
+   538→			'4) An advanced knowledge of environment shading, lighting, and material response; ',
+   539→			'5) Commitment to continuously learn and familiarize oneself with various technologies, technical concepts, ideas, and problems.',
+   540→
+   541→			betterHave_C,
+   542→			'1) Experience in AAA game development or Film production; ',
+   543→			'2) Experience Substance Designer, and/or Substance Painter.',
+   544→		],
+   545→		AdditionalInformation: [
+   546→			hybridRole3,
+   547→		],
+   548→		responsibilities: [
+   549→
+   550→			'As a Technical Artist, you will be the bridge between the art team and program team. You will enhance the art efficiency and performance in a technical way. You will utilize your excellent communication skills as well as a thorough understanding of game art and development during the game’s development process.  ',
+   551→
+   552→			doing_C,
+   553→			'1. Work alongside peers on the Tech Art team and with the Tech Art Director to support the game and studio vision; ',
+   554→			'2. Work closely with artists and engineers to develop more advanced rendering techniques; ',
+   555→			'3. Write shading code, create shading networks, and procedurally generate data; ',
+   556→			'4. Create tools that improve the workflow and streamline the art production pipelines; ',
+   557→			'5. Support the environment team in debugging issues within the game, tools, etc.; ',
+   558→			'6. Help drive the frame-rate and memory optimization of environment art.',
+   559→		],
+   560→
+   561→		name: 'Technical Artist (Look dev)',
+   562→
+   563→		location: 'Los Angeles',
+   564→
+   565→		isClosed: true,
+   566→	},
+   567→	{
+   568→		jobID: 17,
+   569→		bottomText: bottomText_C,
+   570→
+   571→		whyJoinUs: whyJoinUs_C,
+   572→
+   573→		qualifications: [
+   574→
+   575→			toHave_C,
+   576→			'1) 3+ years of experience as a tools and pipeline technical artist in the games industry or similar; ',
+   577→			'2) Experience with 3D game engines and advanced knowledge of Python scripting; ',
+   578→			'3) Understand mainstream commercial game development engines, such as unity3d and UE4; ',
+   579→			'4) Experience with production management software such as JIRA, Shotgun, etc.; ',
+   580→			'5) Commitment to continuously learn and familiarize oneself with various technologies, technical concepts, ideas, and problems.',
+   581→
+   582→			betterHave_C,
+   583→			'1) Experience in AAA game development or Film production; ',
+   584→			'2) Experience Substance Designer, and/or Substance Painter.',
+   585→		],
+   586→		AdditionalInformation: [
+   587→			hybridRole3,
+   588→		],
+   589→		responsibilities: [
+   590→
+   591→			'As a Technical Artist, you will be the bridge between the art team and program team. You will enhance the art efficiency and performance in a technical way. You will utilize your excellent communication skills as well as a thorough understanding of game art and development during the game’s development process.  ',
+   592→
+   593→			doing_C,
+   594→			'1. Work alongside peers on the Tech Art team and with the Tech Art Director to support the game and studio vision; ',
+   595→			'2. Design, develop and implement tools to manage art assets into the game engine, automate production software tracking and data, and ensure that assets are optimized; ',
+   596→			'3. Resolve technical issues that artists arise during production, and be guide on best practices to ensure consistency in the process and data-flow between the departments and teams; ',
+   597→			'4. Automate and optimize inefficient workflows and processes; ',
+   598→			'5. Collaborate with engineers on technical design and workflow solutions.',
+   599→		],
+   600→
+   601→		name: 'Technical Artist (Tools)',
+   602→
+   603→		location: 'Los Angeles',
+   604→
+   605→		isClosed: true,
+   606→	},
+   607→	{
+   608→		jobID: 18,
+   609→		bottomText: bottomText_C,
+   610→
+   611→		whyJoinUs: whyJoinUs_C,
+   612→
+   613→		qualifications: [
+   614→
+   615→			toHave_C,
+   616→			'1) Degree in Computer Science, Electrical Engineering, or a related STEM field; ',
+   617→			'2) 5+ years of work experience; ',
+   618→			'3) Strong skills in Python, Shell, Go, or related language; ',
+   619→			'4) Familiarity with the *nix command line and common shell scripting tasks; ',
+   620→			'5) Experience working with any of the Databases (MongDB, MySQL, Elasticsearch, Redis, etc.); ',
+   621→			'6) Experience with Amazon Web Services, Google Cloud, or Azure; ',
+   622→			'7) Familiarity with Linux and Windows operating system; ',
+   623→			'8) Familiarity with key DevOps technologies such as Docker, Git, Kubernetes; ',
+   624→			'9) Familiarity with wired and wireless networking protocols and products; ',
+   625→			'10) Knowledge of security scanning and monitoring tools like BlackDuck, Checkmarx and Contrast Security.',
+   626→		],
+   627→		AdditionalInformation: [
+   628→			hybridRole3,
+   629→		],
+   630→		responsibilities: [
+   631→
+   632→			'As an IT Operations Engineer, you will build online games in mobile and web platforms. You will focus on supporting our Cloud Platform and deployment of our code base across environments, and maintaining the online services thriving and secure. You will collaborate with teams of onshore and offshore developers, and also collaborate with game operation teams and data analysis teams. ',
+   633→
+   634→			doing_C,
+   635→			'1. Secure our cloud infrastructure; ',
+   636→			'2. Automate monitoring of cloud infrastructure using Zabbix and other monitoring tools; ',
+   637→			'3. Deploy/provision new cloud infrastructure; ',
+   638→			'4. Develop and maintain pipelines and systems release processes for build and change activities; ',
+   639→			'5. Work with cross-functional teams including security and compliance to continually improve the overall security posture of cloud resources; ',
+   640→			'6. Develop and maintain dashboards that report on the overall health and observational metrics for our cloud infrastructure.',
+   641→		],
+   642→
+   643→		name: 'IT Operations Engineer',
+   644→
+   645→		location: 'Los Angeles',
+   646→
+   647→		isClosed: true,
+   648→	},
+   649→	{
+   650→		jobID: 20,
+   651→		bottomText: bottomText_C,
+   652→
+   653→		whyJoinUs: whyJoinUs_C,
+   654→
+   655→		qualifications: [
+   656→			toHave_C,
+   657→			'1) 5+ years’ experience in game industry as a level designer role;',
+   658→			'2) Shipped at least one project, ideally ARPG genre in a level design role;',
+   659→			'3) Deep knowledge of game editor tools such as Radiant, Unreal, Unity or Crytek Editors;',
+   660→			'4) A strong demonstrable portfolio of personal and/or professional work;',
+   661→			'5) A proactive, self-driven teammate with outstanding problem-solving abilities;',
+   662→			'6) Capability of communicating well both verbally and in writing.',
+   663→			betterHave_C,
+   664→			'1) Experience in shipping AAA games;',
+   665→			'2) Experience in shipping large open world games;',
+   666→			'3) Experience in Unreal 4/5 projects.',
+   667→		],
+   668→		AdditionalInformation: [
+   669→			hybridRole2,
+   670→			hybridRole21,
+   671→			pay_C + '90-180k USD.',
+   672→		],
+   673→		responsibilities: [
+   674→			'As a Level Designer you will be the creator that structures the game concept, creates and fulfills the environment of each level. You will also oversee the implementation and update of the core logic components that are necessary for these levels to work.',
+   675→
+   676→			doing_C,
+   677→			'1. Create a complete and fascinating level for both single player and multiplayer;',
+   678→			'2. Apply core map level building principals to Points of Interest inside an open world map;',
+   679→			'3. Ensure the quality and consistency of your work from conception to delivery by correcting bugs and iterating based on peer assessment;',
+   680→			'4. Actively participate in peer reviews of additional game modes and levels.',
+   681→		],
+   682→
+   683→		name: 'Level Designer',
+   684→
+   685→		location: 'Los Angeles',
+   686→
+   687→		isClosed: false,
+   688→	},
+   689→	{
+   690→		jobID: 21,
+   691→		name: 'Senior Rigging Technical Artist',
+   692→		location: 'Los Angeles',
+   693→		bottomText: bottomText_C,
+   694→
+   695→		whyJoinUs: whyJoinUs_C,
+   696→
+   697→		qualifications: [
+   698→			toHave_C,
+   699→			'1) 3+ years of technical art/rigging/animation experience with multiple shipped game titles;',
+   700→			'2) Experience with Python, C# or C++ and familiarity with the Maya/3ds Max API;',
+   701→			'3) Experience with rigging and skinning complex character assets;',
+   702→			'4) Understanding of animation principles and human anatomy;',
+   703→			'5) Expert in standard industry tools including Maya, MotionBuilder etc. in applicable areas;',
+   704→			'6) Experience documenting processes required to educate artists on new tools or workflows.',
+   705→
+   706→			betterHave_C,
+   707→			'1) Experienced working with motion capture data;',
+   708→			'2) Experience in AAA game development or Film production.',
+   709→		],
+   710→
+   711→		AdditionalInformation: [
+   712→			hybridRole3,
+   713→		],
+   714→
+   715→		responsibilities: [
+   716→			'Now we are looking for someone like you… A technical artist with a mastery in Rigging!',
+   717→
+   718→			doing_C,
+   719→			'1. Work alongside peers on Technical Art team and with our Technical Art Director to support game and studio vision;',
+   720→			'2. Design complex skeletons, control rigs, secondary animation and skin deformations;',
+   721→			'3. Deploy animation tools, workflows, and pipelines to improve production efficiency for programmers and artists;',
+   722→			'4. Implement techniques and processes to solve character, animation and deformation challenges as identified by game designers;',
+   723→			'5. Coordinate with peers in problem identification and provide solutions.',
+   724→		],
+   725→
+   726→		isClosed: true,
+   727→	},
+   728→	{
+   729→		jobID: 23,
+   730→		bottomText: bottomText_C,
+   731→	 	whyJoinUs: whyJoinUs_C,
+   732→		qualifications: [
+   733→			toHave_C,
+   734→			'1) 3+ years’ experience in a designer or map/level designer role;',
+   735→			'2) Shipped at least one project, ideally an action ARPG or FPS genre in a level design role;',
+   736→			'3) Deep knowledge of game editing tools such as Radiant, Unreal, Unity or Crytek Editors;',
+   737→			'4) A strong demonstrable portfolio of personal and/or professional work;',
+   738→			'5) A proactive, self-driven teammate with outstanding problem-solving abilities;',
+   739→			'6) Capability of communicating both verbally and in writing.',
+   740→
+   741→			betterHave_C,
+   742→			'1) Experience in shipping AAA games;',
+   743→			'2) Experience in shipping large open world games;',
+   744→			'3) Experience in Unreal 4/5 projects.',
+   745→		],
+   746→		AdditionalInformation: [
+   747→			hybridRole1,
+   748→		],
+   749→		responsibilities: [
+   750→			'We are looking for a passionate Map Designer to help envision the open-world that we are developing! We are looking for someone that has a passion for RPG, ARPG and/or FPS games – and has a passion to work for a rapidly-growing gaming startup!',
+   751→
+   752→			doing_C,
+   753→			'1. Create a logical, complete and fascinating map, including but not limited to topography, area structure design, content placement, path design, etc;',
+   754→			'2. Ensure the quality and consistency of your work from conception to delivery by correcting bugs and iterating based on peer assessment;',
+   755→			'3. Work closely with level designers, the whole map must consider their work, so that we can create fascinating experience for our players;',
+   756→			'4. Actively participate in peer reviews of additional game modes and levels.',
+   757→		],
+   758→
+   759→		name: 'Map Designer',
+   760→
+   761→		location: 'Los Angeles',
+   762→
+   763→		isClosed: true,
+   764→	},
+   765→	{
+   766→		jobID: 25,
+   767→		bottomText: bottomText_C,
+   768→	 	whyJoinUs: whyJoinUs_C,
+   769→		qualifications: [
+   770→
+   771→			toHave_C,
+   772→			'1) 3+ years of related experience in HR role;',
+   773→			'2) Bachelor’s degree or above in Human Resources, Business or relevant field;',
+   774→			'3) Broad expertise in all areas of HR, including recruitment;',
+   775→			'4) Experience advising and directly supporting senior executives across multiple functions with a consultative style;',
+   776→			'5) Experience and passion working in a diverse work environment;',
+   777→			'6) Ability to be a self-starter, highly motivated and achievement oriented;',
+   778→			'7) Ability to maintain a strict code of confidentiality and discretion;',
+   779→			'8) Effective verbal and written communication skills with the ability to collaborate with cross-functional team members.',
+   780→
+   781→			betterHave_C,
+   782→			'1) Experience in the gaming, IT, tech, entertainment industry;',
+   783→			'2) Experience of working for a fast-paced technology focused business, in a start-up or start-up-like environment;',
+   784→			'3) Previous experience working in an international environment and working with teams in different time zones a plus;',
+   785→			'4) Any sort of passion for gaming!',
+   786→		],
+   787→		AdditionalInformation: [
+   788→			hybridRole1,
+   789→		],
+   790→		responsibilities: [
+   791→			'As a Human Resources Business Partner, you will act as our first HR member in the US! We hope you can bring a breadth of knowledge, skills and programs to our quickly growing team in Los Angeles. We are looking for an enthusiastic HRBP to join our rapidly growing team! Our games are played in 150 countries worldwide, but we want to focus on this one - and we need your help! If you are eager to take the next step in your career and are interested in working in a fast-paced, startup environment – keep on reading!',
+   792→
+   793→			doing_C,
+   794→			'1. Build trusted partnership with department leaders through consultative and collaborative efforts to ensure the efficient and effective delivery of HR programs and services that support development of organizational and talent capabilities;',
+   795→			'2. Provides consultation and support to managers in addressing employee issues;',
+   796→			'3. Provides leaders with analysis and recommendations to maintain high levels of engagement; ',
+   797→			'4. Partner with the management team to develop employees, build teams, improve organization culture, and contribute to the success of the business;',
+   798→			'5. Work with leaders and employees to identify, establish, and maintain a positive work environment and authentic culture which encourages diversity, inclusion, and belonging;',
+   799→			'6. Build strong relationship and effectively partner with the HR team in Shanghai to help implement all HR initiatives and strategies. Provide guidance and input on workforce planning to support business strategy;',
+   800→			'7. Analyzes trends and metrics in partnership with the international HR team to develop solutions, programs, and opportunities for learning;',
+   801→			'8. Responsible for a variety of HR-related tasks, including benefits, employee relations,  onboarding/offboarding, promote D&I projects, and more;',
+   802→			'9. Support Talent team in the recruitment process when needed;',
+   803→			'10. Support all members in the office, support one another and develop great teamwork, and develop a supportive, flexible and hard-working environment;',
+   804→			'11. Maintain in-depth knowledge of legal requirements related to day-to-day management of team members, reducing legal risks, and ensuring regulatory compliance;',
+   805→			'12. Responsible for administrative duties such as communicate with office building management and maintain office supplies;',
+   806→			'13. Complete all other tasks that are deemed appropriate for your role and assigned by your manager/supervisor.',
+   807→		],
+   808→
+   809→		name: 'Human Resources Business Partner',
+   810→
+   811→		location: 'Los Angeles',
+   812→
+   813→		isClosed: true,
+   814→	},
+   815→	{
+   816→		jobID: 26,
+   817→		bottomText: bottomText_C,
+   818→	 	whyJoinUs: whyJoinUs_C,
+   819→		qualifications: [
+   820→			toHave_C,
+   821→			'1) 5+ years of experience working in both game production and marketing/publishing environments;',
+   822→			'2) Ability to guide an entire team, to ensure the quality/vision is consistent and the appropriate style over the course of a project;',
+   823→			'3) Ability to create a team environment that fosters creativity, encourages ideas, and promotes growth;',
+   824→			'4) Experience working as director level positions such as Art Director, Cinematic Director and so on;',
+   825→			'5) Deep understanding of 2D and 3D art such as modeling, animation, lighting, shading, and rendering.',
+   826→		],
+   827→		AdditionalInformation: [
+   828→			hybridRole1,
+   829→		],
+   830→		responsibilities: [
+   831→			'As the leader of our marketing art team, the Art Director will be responsible for the team\'s management and quality, with a focus on the team\'s mission, direction, and cohesion.',
+   832→
+   833→			'You would promote consensus on production objectives and define the quality criteria of the marketing art for certain gaming projects.You will serve as the team\'s leader and strong advocate, and promote artistic quality and productive teamwork, ensuring high-quality visual direction and guidance across a variety of mediums and platforms.',
+   834→
+   835→			doing_C,
+   836→			'1. Act as direct supervisor for Marketing Art team leads and set guidelines for marketing art team members;',
+   837→			'2. Direct and lead the creative delivery of visual benchmarks and all Art deliverables;',
+   838→			'3. Partner with Cinematics Directors to establish continuity of artworks between mobile ads and cinematics;',
+   839→			'4. Work with the production team and leadership to define project scope, including managing the balance between optimization and visual quality;',
+   840→			'5. Identify and drive forward next-gen technologies and R&D efforts for the department.',
+   841→		],
+   842→
+   843→		name: 'Art Director (Marketing/Publishing)',
+   844→
+   845→		location: 'Los Angeles',
+   846→
+   847→		isClosed: true,
+   848→	},
+   849→	{
+   850→		jobID: 27,
+   851→		bottomText: bottomText_C,
+   852→	 	whyJoinUs: whyJoinUs_C,
+   853→		qualifications: [
+   854→			toHave_C,
+   855→			'1) 4+ years of experience in the game publishing, television, or film industry;',
+   856→			'2) Must-have strong experience and expertise in Unreal Engine 5. Please submit a reel showcasing clearly such skills;',
+   857→			'3) Experience in other 3D software like Maya, Houdini, Blender etc.;',
+   858→			'4) Expertise in various animation styles, lighting and VFX;',
+   859→			'5) Ability to showcase a balance of strong technical and artistic proficiency;',
+   860→			'6) A deep understanding of the role lighting and VFX play in shaping narratives and enhancing viewer experiences;',
+   861→			'7) A genuine passion for games and films;',
+   862→			'8) Exceptional communication and collaboration skills, with the ability to thrive in a team-oriented' +
+   863→			' environment;',
+   864→			'9) A demo reel exhibiting exceptional 3D animation abilities, along with a mastery of lighting and VFX' +
+   865→			' techniques, including UE5.',
+   866→
+   867→			betterHave_C,
+   868→			'1) Proven experience in film editing, with a concentration on the integration of lighting and VFX' +
+   869→			' components.',
+   870→		],
+   871→		AdditionalInformation: [
+   872→			hybridRole2,
+   873→			hybridRole21,
+   874→			pay_C + '80-120k USD.',
+   875→		],
+   876→		responsibilities: [
+   877→			'We are seeking talented people with strong expertise and great enthusiasm for cinematic animation in the gaming industry. You will be part of our marketing art team and cooperate with the overseas team to enhance the narrative by providing impressive performance for certain game projects.',
+   878→
+   879→			doing_C,
+   880→			'1. Develop and execute visually captivating ads and trailers, emphasize advanced lighting and VFX techniques, ensure adaptability across all devices, and deliver high-quality cinematic graphics;',
+   881→			'2. Spearhead the optimization of animation production pipelines, focusing on streamlining processes for seamless integration of lighting and VFX elements;',
+   882→			'3. Collaborate in the establishment and refinement of animation principles, championing the implementation of innovative lighting and VFX methodologies;',
+   883→			'4. Elevate the narrative quality of projects by crafting emotionally engaging performance;',
+   884→			'5. Provide mentorship and guidance to junior animators, fostering a culture of continuous learning and skill development in lighting and VFX.',
+   885→		],
+   886→
+   887→		name: 'Cinematic Artist (Lighting & VFX) (Marketing/Publishing)',
+   888→
+   889→		location: 'Los Angeles',
+   890→
+   891→		isClosed: false,
+   892→	},
+   893→	{
+   894→		jobID: 28,
+   895→		bottomText: bottomText_C,
+   896→	 	whyJoinUs: whyJoinUs_C,
+   897→		qualifications: [
+   898→
+   899→			toHave_C,
+   900→			'1) Experience in the gaming industry as a technical artist specializing in tools/pipelines;',
+   901→			'2) Experience in working with Unreal Engine;',
+   902→			'3) Experience in using 3dsMax/Houdini/Photoshop/Substance;',
+   903→			'4) Experience in scripting and programming languages (Python, C++, Javascript, etc.);',
+   904→			'5) High efficiency and self-discipline to meet deadlines without sacrificing quality when dealing with multiple tasks.',
+   905→		],
+   906→		AdditionalInformation: [
+   907→			hybridRole1,
+   908→		],
+   909→		responsibilities: [
+   910→			'As a Senior Pipeline Technical Artist you will help us improve our pipeline in the marketing art team, providing artists the tools they require to streamline and support their production, and guiding/training them on the use of tools and procedures. To assure the quality of artistic vision, you will work in collaboration with producers, designers, engineers, and other artists to address any technological problems relating to the production of art.',
+   911→
+   912→			doing_C,
+   913→			'1. Design, build, implement, and improve production tools and workflows for the marketing art team;',
+   914→			'2. Evaluate Artists\' needs, and identify issues, to understand and support the team.',
+   915→		],
+   916→
+   917→		name: 'Senior Pipeline Technical Artist (Marketing/Publishing)',
+   918→
+   919→		location: 'Los Angeles',
+   920→
+   921→		isClosed: true,
+   922→	},
+   923→	{
+   924→		jobID: 29,
+   925→		bottomText: bottomText_C,
+   926→	 	whyJoinUs: whyJoinUs_C,
+   927→		qualifications: [
+   928→			toHave_C,
+   929→			'1) Bachelor degree or above, preferably in Economics, Mathematics, Marketing, Finance, Business Administration, or a related field;',
+   930→			'2) 3+ years of experience in media buying/user acquisition/performance marketing in 2C business;',
+   931→			'3) 1+ years of experience in video gaming companies;',
+   932→			'4) Strong proficiency with Excel;',
+   933→			'5) Passion for digital marketing & video games.',
+   934→			betterHave_C,
+   935→			'1) Proficiency of SQL/Python;',
+   936→			'2) A strong understanding of funnel conversion metrics, retention rates, and LTV predictions.',
+   937→		],
+   938→		AdditionalInformation: [
+   939→			hybridRole2,
+   940→			hybridRole21,
+   941→			pay_C + '70-120k USD.',
+   942→		],
+   943→		responsibilities: [
+   944→			'As a User Acquisition Specialist, you will design, improve, and execute strategies of multiple channels for paid user acquisition and reactivation, giving priority to sustainable growth that takes into account the current condition of the product. We are on the lookout for ideal talents who are data-driven, result-oriented, and responsible, and have great passion for video game marketing.',
+   945→
+   946→			doing_C,
+   947→			'1. Manage a variety of user acquisition channels to acquire mobile users (include, but not limited to: Google, Facebook, Snapchat, Twitter, Tik Tok…etc);',
+   948→			'2. Responsible for UA optimization, A/B testing, and leading innovative improvement against assigned targets;',
+   949→			'3. Collaborate with Product, Research, Creative Art, and other teams to develop new and improve existing UA strategies and activities;',
+   950→			'4. Develop insights, testing methodologies, and process optimization for activities like UA, user analysis, and market trends monitoring.',
+   951→		],
+   952→
+   953→		name: 'User Acquisition Specialist',
+   954→
+   955→		location: 'Los Angeles',
+   956→
+   957→		isClosed: false,
+   958→	},
+   959→	{
+   960→		jobID: 30,
+   961→		bottomText: bottomText_C,
+   962→	 	whyJoinUs: whyJoinUs_C,
+   963→		qualifications: [
+   964→			toHave_C,
+   965→			'1) 3+ years work experience in game animation;',
+   966→			'2) 3-5 years of experience in large-scale game animation;',
+   967→			'3) Solid knowledge of structure, modeling, animation principles, etc., able to design high-quality animation performance;',
+   968→			'4) Good animation design foundation, strong understanding of characters and animals\' body movements and rhythm of movement, able to correctly grasp the laws of movement and development trend, and have innovative spirit for animation design;',
+   969→			'5) Great passion for the video game industry and video games, proactive, with good teamwork spirit;',
+   970→			'6) Ability to work with different time zones.',
+   971→
+   972→			betterHave_C,
+   973→			'1) Experience working on AAA games and third-person action games;',
+   974→			'2) Experience cooperating with overseas teams.',
+   975→		],
+   976→		AdditionalInformation: [
+   977→			hybridRole1,
+   978→		],
+   979→		responsibilities: [
+   980→			'Would you like to join a new game project from the very beginning? Be an instrumental part of a new game’s success?',
+   981→			'Join us as Lead 3D Animator on our newest open world story-driven game project in unreal engine. You would manage a new international team of 3D animators, and through exceptional communication skills and enthusiasm for mentorship can bring the team to new heights, bring the game to life and constantly push quality to the next level.',
+   982→
+   983→			doing_C,
+   984→			'1. Lead a team of 3D animators in both LA and Shanghai and ensure the timely completion of tasks and make sure that it fits the style and quality requirements;',
+   985→			'2. Responsible for the planning and progression of the animation production, and the quality supervision;',
+   986→			'3. Complete the animation design of the characters in the game together with the Animation director;',
+   987→			'4. Develop the animation and production process in line with the game;',
+   988→			'5. Ensure the way of action implementation and the effect in the game;',
+   989→			'6. Review the action resources submitted by outsourcing, and guide the outsourcing production.',
+   990→		],
+   991→
+   992→		name: 'Lead 3D Animator',
+   993→
+   994→		location: 'Los Angeles',
+   995→
+   996→		isClosed: true,
+   997→	},
+   998→	{
+   999→		jobID: 31,
+  1000→		bottomText: bottomText_C,
+  1001→	 	whyJoinUs: whyJoinUs_C,
+  1002→		qualifications: [
+  1003→			toHave_C,
+  1004→			'1) Proficiency in next generation PBR pipeline, skilled in 3DSMAX or MAYA, ZBrush, Substance Painter and other 3D modeling software;',
+  1005→			'2) Experience in 3D model production of both lowpoly and highpoly, with good aesthetics in modeling, texturing and clear UV mapping;',
+  1006→			'3) Familiarity with PBR pipelines;',
+  1007→			'4) Deep experience in realistic art style;',
+  1008→			'5) Good communication, coordination and presentation skills; awareness and ability to improve and solve problems;',
+  1009→			'6) Eager to keep learning the latest trends and sharing that with the team, in order to continuously improve the overall quality of the 3D team;',
+  1010→			'7) Interest for leading and mentoring other artists and leading them to do their best work;',
+  1011→			'8) Have good teamwork spirit, strong sense of responsibility;',
+  1012→			'9) Ability to work with different time zones.',
+  1013→			betterHave_C,
+  1014→			'1) Experience working on AAA games and third-person action games;',
+  1015→			'2) Experience cooperating with overseas teams.',
+  1016→		],
+  1017→		AdditionalInformation: [
+  1018→			hybridRole1,
+  1019→		],
+  1020→		responsibilities: [
+  1021→			'We are seeking a talented, motivated, and experienced Lead 3D Character Artist to join our newest open world story-driven game project in unreal engine. Someone that through exceptional communication skills and an enthusiasm for artist mentorship can bring a new and international 3D team to new heights, bring amazing characters to life and constantly push quality to the next level.',
+  1022→
+  1023→			doing_C,
+  1024→			'1. Lead a team of 3D character artists in both LA and Shanghai, and ensure the timely completion of art and make sure that it fits the style and quality requirements;',
+  1025→			'2. Responsible for next-generation character modeling quality supervision, output character production templates and specifications;',
+  1026→			'3. Responsible for the planning and progressing of the 3D art production;',
+  1027→			'4. Produce and lead the development of high-quality 3D game characters;',
+  1028→			'5. Responsible for the production of character modeling textures for the game, capable of outputting high-quality next-generation art resources;',
+  1029→			'6. Assist the corresponding developers and review the role resources submitted by outsourcing and guide the outsourcing production;',
+  1030→			'7. Document and communicate workflow and best practices to support consistency across the art team.',
+  1031→		],
+  1032→
+  1033→		name: 'Lead 3D Character Artist',
+  1034→
+  1035→		location: 'Los Angeles',
+  1036→
+  1037→		isClosed: true,
+  1038→	},
+  1039→	{
+  1040→		jobID: 32,
+  1041→		bottomText: bottomText_C,
+  1042→	 	whyJoinUs: whyJoinUs_C,
+  1043→		qualifications: [
+  1044→			toHave_C,
+  1045→			'1) Proficiency in next generation PBR pipeline, skilled in 3DSMAX or MAYA, ZBrush, Substance Painter and other 3D modeling software;',
+  1046→			'2) Experience in 3D model production with good aesthetics in modeling, texturing and clear UV mapping;',
+  1047→			'3) Familiarity with PBR pipelines;',
+  1048→			'4) Deep experience in realistic art style;',
+  1049→			'5) Good communication, coordination and presentation skills; awareness and ability to improve and solve problems;',
+  1050→			'6) Eager to keep learning the latest trends and sharing that with the team, in order to continuously improve the overall quality of the 3D team;',
+  1051→			'7) Interest for leading and mentoring other artists and leading them to do their best work;',
+  1052→			'8) Good teamwork spirit and strong sense of responsibility;',
+  1053→			'9) Ability to work with different time zones.',
+  1054→			betterHave_C,
+  1055→			'1) Experience working on AAA games and third-person action games;',
+  1056→			'2) Experience working on AAA games and third-person action games.',
+  1057→		],
+  1058→		AdditionalInformation: [
+  1059→			hybridRole1,
+  1060→		],
+  1061→		responsibilities: [
+  1062→			'We are seeking a talented, motivated, and experienced Lead 3D Environment Artist to join our newest open world story-driven game project in unreal engine. Someone that through exceptional communication skills and an enthusiasm for artist mentorship can bring a new and international 3D team to new heights, bring amazing characters to life and constantly push quality to the next level.',
+  1063→
+  1064→			doing_C,
+  1065→			'1. Lead a team of 3D environment artists in both LA and Shanghai and ensure the timely completion of art and make sure that it fits the style and quality requirements;',
+  1066→			'2. Responsible for next-generation environment modeling quality supervision, output environment production templates and specifications;',
+  1067→			'3. Responsible for the planning and progressing of the 3D art production;',
+  1068→			'4. Produce and lead the development of high-quality 3D game environments;',
+  1069→			'5. Responsible for the production of environment modeling textures for the game, capable of outputting high-quality next-generation art resources;',
+  1070→			'6. Assist the corresponding developers and review the role resources submitted by outsourcing and guide the outsourcing production;',
+  1071→			'7. Document and communicate workflow and best practices to support consistency across the art team.',
+  1072→		],
+  1073→
+  1074→		name: 'Lead 3D Environment Artist',
+  1075→
+  1076→		location: 'Los Angeles',
+  1077→
+  1078→		isClosed: true,
+  1079→	},
+  1080→	{
+  1081→		jobID: 33,
+  1082→		bottomText: bottomText_C,
+  1083→	 	whyJoinUs: whyJoinUs_C,
+  1084→		qualifications: [
+  1085→			toHave_C,
+  1086→			'1) Experience recruiting in the gaming industry, and good understanding of the industry and positions, including technical and art positions;',
+  1087→			'2) 2+ years’ experience;',
+  1088→			'3) Bachelor’s degree, in Human Resources or related field preferred;',
+  1089→			'4) Excellent verbal and written communication skills, and excellent interpersonal skills;',
+  1090→			'5) Passionate, flexible, adaptable, solutions-focused, proactive, and innovative;',
+  1091→			'6) Excellent time management skills with a proven ability to meet deadlines;',
+  1092→			'7) Familiarity with laws, regulations, and best practices applicable to hiring and recruitment;',
+  1093→			'8) Proficiency with or the ability to quickly learn applicant-tracking software or other recruitment systems;',
+  1094→			'9) Proficiency with Microsoft Office Suite or related software.',
+  1095→			betterHave_C,
+  1096→			'1) Experience of working for a fast-paced technology focused business, in a start-up or start-up-like environment;',
+  1097→			'2) Experience working in an international environment (working with teams in different time zones) a plus;',
+  1098→			'3) Related certificates a plus.',
+  1099→		],
+  1100→		AdditionalInformation: [
+  1101→			hybridRole1,
+  1102→		],
+  1103→		responsibilities: [
+  1104→			`As a Senior Talent Acquisition Specialist, you will be crucial in expanding our newest office with great talent, and finding the right people to continue building a great and positive environment. 
+  1105→			You will be responsible for our full-cycle recruitment, including technical recruitment, and you will utilize your experience and knowledge of the gaming industry to build completely new teams for completely new projects. Getting the right people in the right positions is crucial for a company to thrive, and especially in a new office. Join us and help us make this office great!`,
+  1106→
+  1107→			doing_C,
+  1108→			'1. Manage candidates through our whole recruitment process;',
+  1109→			'2. Manage multiple roles of different levels and disciplines;',
+  1110→			'3. Develop, facilitate, and implement all phases of the recruitment process;',
+  1111→			'4. Source candidates using various tools;',
+  1112→			'5. Communicate efficiently with hiring managers of different levels and disciplines and collaborate with them to identify and draft detailed and accurate job descriptions and hiring criteria;',
+  1113→			'6. Identify and implements efficient and effective recruiting methods and strategies based on the available role, industry standards, and the needs of the organization;',
+  1114→			'7. Track and report on the progress of your roles using data and analysis;',
+  1115→			'8. Offer insights and suggestions on how we can secure great hires for the business;',
+  1116→			'9. Work with an international team in Shanghai;',
+  1117→			'10. Performs other duties as assigned.',
+  1118→		],
+  1119→
+  1120→		name: 'Senior Talent Acquisition Specialist',
+  1121→
+  1122→		location: 'Los Angeles',
+  1123→
+  1124→		isClosed: true,
+  1125→	},
+  1126→	{
+  1127→		jobID: 35,
+  1128→		bottomText: bottomText_C,
+  1129→
+  1130→		whyJoinUs: whyJoinUs_C,
+  1131→
+  1132→		qualifications: [
+  1133→			toHave_C,
+  1134→			'1) Bachelor\'s degree or above;',
+  1135→			'2) 1 year and above of experience in the track design;',
+  1136→			'3) Deep experience and understanding in mainstream racing games, familiarity with track design of racing games;',
+  1137→			'4) Familiarity with Unreal Engine;',
+  1138→			'5) Great grasp and unique insights on track design;',
+  1139→			'6) Good communication skills, learning ability, active thinking, and strong logic;',
+  1140→			'7) Passion for games, team spirit, a strong sense of responsibility, and ability to bear the pressure of fast-paced development.',
+  1141→
+  1142→		],
+  1143→		AdditionalInformation: [
+  1144→			hybridRole1,
+  1145→		],
+  1146→		responsibilities: [
+  1147→			'We are on the lookout for a game designer who is skilled at track design in racing games and could help us work on a brand new AAA game project in our LA studio. You will be one of the core team members and collaborate with overseas colleagues to facilitate the progress and completion of this exciting project and eventually deliver it to millions of players all over the world. We invite you to apply for this role if you are looking to start an amazing journey with a group of game enthusiasts.',
+  1148→
+  1149→			doing_C,
+  1150→			'1. Responsible for prototype design of different types of the track (including but not limited to road races, cross-country races, etc.), setting up rules and gameplay of those tracks;',
+  1151→			'2. Responsible for drawing up test methods and plans for the tracks, familiarizing and following up on the production process, and adjusting track content in a timely manner;',
+  1152→			'3. Collaborate with the programmers to advance and complete the development of tools required for the track design;',
+  1153→			'4. Collaborate with internal and external teams and coordinate the required resources to complete the final prototype design of the tracks and ensure the smooth progress of the project;',
+  1154→			'5. Integrate tracks into urban road design and continuously improve the creativity, playability and operability of the game.',
+  1155→		],
+  1156→
+  1157→		name: 'Track Designer',
+  1158→
+  1159→		location: 'Los Angeles',
+  1160→
+  1161→		isClosed: true,
+  1162→	},
+  1163→	{
+  1164→		jobID: 38,
+  1165→		bottomText: bottomText_C,
+  1166→
+  1167→		whyJoinUs: whyJoinUs_C,
+  1168→
+  1169→		qualifications: [
+  1170→			toHave_C,
+  1171→			'1) Over 5 years’ work experience with field recording and creating audio for linear media;',
+  1172→			'2) Ability to design and implement audio scripting to achieve desired in-game audio features and dynamic playback;',
+  1173→			'3) Ability to learn and keep up with the cutting edge audio trends and  present competitive audio quality; ',
+  1174→			'4) Understanding of technical limitations and trade-offs, and an interest in exploring the potential of new audio technology to solve problems creatively;',
+  1175→			'5) Expert-level command of sound design and mixing skills;',
+  1176→			'6) Experience with Wwise and Unreal Engine 4/5.',
+  1177→
+  1178→		],
+  1179→		AdditionalInformation: [
+  1180→			hybridRole1,
+  1181→		],
+  1182→		responsibilities: [
+  1183→			'We are looking for an audio expert to help and work with internal teams to improve the audio immersion of our new unannounced AAA game project. Come and join us in our LA studio!',
+  1184→
+  1185→			doing_C,
+  1186→			'1. Collaborate with the audio team to design and implement cutting edge procedural audio systems related to vehicles or weapons;',
+  1187→			'2. Work closely with audio designers to implement SFX into the game world and ensure audio systems are performant and rock-solid;',
+  1188→			'3. Work alongside the core programming team to manage the audio system’s performance and feature set;',
+  1189→			'4. Create, optimize, and manage systems for sound implementation using Unreal Blueprints and Wwise;',
+  1190→			'5. Provide clear documented guidelines for sound designers to make sounds compatible with these systems.',
+  1191→		],
+  1192→
+  1193→		name: 'Senior Audio Programmer',
+  1194→
+  1195→		location: 'Los Angeles',
+  1196→
+  1197→		isClosed: true,
+  1198→	},
+  1199→	{
+  1200→		jobID: 39,
+  1201→		bottomText: bottomText_C,
+  1202→
+  1203→		whyJoinUs: whyJoinUs_C,
+  1204→
+  1205→		qualifications: [
+  1206→			toHave_C,
+  1207→			'1) Over 5 years’ work experience as a lighting technical artist;',
+  1208→			'2) Strong affinity for lighting techniques, color theory, and post-process effects for console hardware (Xbox and PS) and PC;',
+  1209→			'3) Strong understanding of in-game lighting with ability to discuss modern trends clearly;',
+  1210→			'4) Understanding of photography, camera terminology, exposure, and light;',
+  1211→			'5) Excellent understanding of color and color theory, space, material and light;',
+  1212→			'6) Competent understanding of game engines, tools, pipelines and development processes;',
+  1213→			'7) Experience with post processing and color grading techniques.',
+  1214→
+  1215→			betterHave_C,
+  1216→			'1) Experience in coding, scripting or shader writing;',
+  1217→			'2) Experience in AAA game projects.',
+  1218→		],
+  1219→		AdditionalInformation: [
+  1220→			hybridRole1,
+  1221→		],
+  1222→		responsibilities: [
+  1223→			'We are looking for talented lighting technical artists to work on our new unannounced AAA game project. You will be utilizing all your knowledge and skill sets to help present better visuals and further enhance the game immersion.',
+  1224→
+  1225→			doing_C,
+  1226→			'1. Work with related stakeholders to provide creative lighting solutions for various game modes and cinematics;',
+  1227→			'2. Generate visually stunning creative solutions that are within RAM and performance constraints across multiple platforms;',
+  1228→			'3. Collaborate closely across multiple teams and disciplines with a unified goal of creating the most visually compelling real-time rendering in the industry;',
+  1229→			'4. Help maintain the standards for PBR and lighting;',
+  1230→			'5. Assist in the documentation and communication of technical and process guidelines for all aspects of the lighting pipeline.',
+  1231→		],
+  1232→
+  1233→		name: 'Senior Lighting Technical Artist',
+  1234→
+  1235→		location: 'Los Angeles',
+  1236→
+  1237→		isClosed: true,
+  1238→	},
+  1239→	{
+  1240→		jobID: 42,
+  1241→		bottomText: bottomText_C,
+  1242→
+  1243→		whyJoinUs: whyJoinUs_C,
+  1244→
+  1245→		qualifications: [
+  1246→			toHave_C,
+  1247→			'1) Bachelor degree or above, with a major related to film production;',
+  1248→			'2) Over 5 years’ experience in the game industry working on game cinematics;',
+  1249→			'3) Deep familiarity with cinematic storytelling pipeline: script, storyboard, animatics, previz, and beautifully rendered cutscenes;',
+  1250→			'4) Experience mentoring or managing a team of game cinematics professionals to produce cutscenes that advance game narratives with the efficiency and aesthetics of mainstream movies;',
+  1251→			'5) Confidence in communicating the cinematic vision of a project to performers and studio staff such that the game project begins to feel like an exciting blockbuster movie;',
+  1252→			'6) Experience in successfully shipping multiple AAA titles that feature noteworthy cinematic cutscenes;',
+  1253→			'7) Knowledge of shot selections and the use of movement libraries to compose scenes that feel fresh and unique;',
+  1254→			'8) Experience running motion and performance capture sessions for scenes that can’t be built from movement libraries;',
+  1255→			'9) Technical grasp of the finer points of visual storytelling in games, including shot selection and perspective;',
+  1256→			'10) Ability to collaborate with other storytelling professionals, i.e., Narrative Designers, to create the most impactful scenes possible.',
+  1257→
+  1258→			betterHave_C,
+  1259→			'1) Passion for crime genre games or crime fiction;',
+  1260→			'2) Experience of  Unreal 5 cinematic tools;',
+  1261→			'3) Experience working with international teams in different time zones.',
+  1262→		],
+  1263→		AdditionalInformation: [
+  1264→			hybridRole1,
+  1265→		],
+  1266→		responsibilities: [
+  1267→			'Yotta is in the process of staffing up the R&D team located in Los Angeles, with talented game professionals to build our first AAA open world game project. We are looking for a talented and experienced cinematics expert to present a highly engaging cinematic experience for this project. You will report to the game producer and collaborate with other teams, such as the narrative, cinematics and animation, to provide a higher standard of the game cinematics production.',
+  1268→
+  1269→			doing_C,
+  1270→			'1. Oversee all visual storytelling to ensure that the game project achieves a cinematic and unforgettable look;',
+  1271→			'2. Direct cutscene production from script to screen, motivating the team  along the way by advocating for a cinematic approach that inspires the team;',
+  1272→			'3. Work within a team of cinematic professionals and make sure to meet the required deadlines; ',
+  1273→			'4. Blocking scenes; selecting shots, movements, and angles; ',
+  1274→			'5. Coordinate with the studio lighting artists and narrative designers to achieve the desired look for each scene.',
+  1275→		],
+  1276→
+  1277→		name: 'Cinematics Director',
+  1278→
+  1279→		location: 'Los Angeles',
+  1280→
+  1281→		isClosed: true,
+  1282→	},
+  1283→	{
+  1284→		jobID: 44,
+  1285→		bottomText: bottomText_C,
+  1286→
+  1287→		whyJoinUs: whyJoinUs_C,
+  1288→
+  1289→		qualifications: [
+  1290→			toHave_C,
+  1291→			'1) Over 5 years working experience in lighting;',
+  1292→			'2) Participated in the production of at least 2 shipped AAA games in lighting role;',
+  1293→			'3) Familiarity with Unreal Engine 5 and 3D software, especially Lumen in UE5;',
+  1294→			'4) Deep knowledge base in the art of lighting, including the use of light, color, source, brightness, and shadow;',
+  1295→			'5) In-depth knowledge of the latest developments in lighting tech, with experience in various lighting techniques and tools;',
+  1296→			'6) Highly self-motivated, great communication skills and team spirit;',
+  1297→			'7) Passion for the game industry.',
+  1298→
+  1299→			betterHave_C,
+  1300→			'1) Experience working with international teams in different time zones.',
+  1301→		],
+  1302→		AdditionalInformation: [
+  1303→			hybridRole2,
+  1304→			hybridRole21,
+  1305→			pay_C + '100-140k USD.',
+  1306→		],
+  1307→		responsibilities: [
+  1308→			'Yotta is in the process of staffing up the R&D team located in Los Angeles, with talented game professionals to build our first AAA open world game project. We are looking for a talented and experienced lighting expert who will report to the game director and collaborate with other teams like the cinematics team and technical art team to help create a highly immersive game environment and cutscenes.',
+  1309→
+  1310→			doing_C,
+  1311→			'1. Create lighting for all game world environments when taking into account the requirements of gameplay, game narrative and game feel;',
+  1312→			'2. Collaborate with different team members  such as level, mission, and narrative designers to present the perfect visuals and the resulting player experience;',
+  1313→			'3. Adjust in-game lighting according to the art directions and the requests of artists;',
+  1314→			'4. Make use of lighting system tools to streamline processes;',
+  1315→			'5. Create lighting for cutscenes, working alongside the Cinematic Director;',
+  1316→			'6. Teach other team members about the finer points of lighting in AAA game design. ',
+  1317→		],
+  1318→
+  1319→		name: 'Lighting Artist',
+  1320→
+  1321→		location: 'Los Angeles',
+  1322→
+  1323→		isClosed: false,
+  1324→	},
+  1325→	{
+  1326→		jobID: 45,
+  1327→		bottomText: bottomText_C,
+  1328→
+  1329→		whyJoinUs: whyJoinUs_C,
+  1330→
+  1331→		qualifications: [
+  1332→			toHave_C,
+  1333→			'1) Native English speaker with fluent standard American accent, able to accurately convey various emotions and tones;',
+  1334→			'2) Good expressiveness and acting abilities, able to create different voices based on character settings;',
+  1335→			'3) Understanding of the gaming industry and knowledge of different types of games and player preferences;',
+  1336→			'4) Prior experience in voice acting or sound performance is preferred;',
+  1337→			'5) Solid sound techniques and audio production knowledge, proficient in using voice-over equipment and software;',
+  1338→			'6) Strong interest and passion for sound and audio production, with creativity and imagination;',
+  1339→			'7) Excellent team spirit, good communication, and collaboration skills;',
+  1340→			'8) Please attach samples or a portfolio with your resume.'
+  1341→		],
+  1342→		AdditionalInformation: [
+  1343→			hybridRole2,
+  1344→			hybridRole21,
+  1345→			pay_C + '70-140k USD.',
+  1346→		],
+  1347→		responsibilities: [
+  1348→			'We are looking for voice actors who are passionate about the game industry to join us in our unannounced open world game project that we are developing and work with us to make our characters more vividly. We invite you to apply for this role if you are looking to start an amazing journey with a group of game enthusiasts.',
+  1349→			doing_C,
+  1350→			'1. Responsible for voicing game characters, including but not limited to dialogue, commentary, emotional expressions, and combat sound effects, using standard American accents;',
+  1351→			'2. Create voices and emotions that match the character\'s personality and maintain consistency and authenticity;',
+  1352→			'3. Participate in discussions and development of game plots, providing professional opinions and suggestions for character voices;',
+  1353→			'4. Work closely with the game development team to create vivid character images;',
+  1354→			'5. Participate in post-production and editing of game voice-overs to ensure audio quality and effects are optimal.'
+  1355→		],
+  1356→
+  1357→		name: 'Game Voice Actor',
+  1358→
+  1359→		location: 'Los Angeles ',
+  1360→
+  1361→		isClosed: true,
+  1362→	},
+  1363→	{
+  1364→		jobID: 46,
+  1365→		bottomText: bottomText_C,
+  1366→
+  1367→		whyJoinUs: whyJoinUs_C,
+  1368→
+  1369→		qualifications: [
+  1370→			toHave_C,
+  1371→			'1) Professional experience working on tech design or tech art, and high-end cinematic gameplay' +
+  1372→			' experiences, for at least five years total;Tech-centric skill set with a passion for cinematics;',
+  1373→			'2) The ability to quickly produce and iterate on prototypes;',
+  1374→			'3) The ability to troubleshoot and debug complex systems, and to solve problems that arise on the border between cinematics and gameplay;',
+  1375→			'4) Proficiency in blueprints and scripting languages;',
+  1376→			'5) Strong communication and collaboration skills, with the ability to work effectively in a team environment;',
+  1377→			'6) Passion for gaming and a deep understanding of what makes gameplay fun and engaging.',
+  1378→
+  1379→			betterHave_C,
+  1380→			'1) Experience working with Unreal Engine;',
+  1381→			'2) Experience working on AAA game titles;',
+  1382→			'3) Experience working on 3rd person ARPG style games;',
+  1383→			'4) Love of film or high-end action gameplay sequences.',
+  1384→		],
+  1385→		AdditionalInformation: [
+  1386→			hybridRole2,
+  1387→			hybridRole21,
+  1388→			pay_C + '130-160k USD.',
+  1389→		],
+  1390→		responsibilities: [
+  1391→			'We are looking for an experienced Cinematic Tech Designer to prototype and build high-end cinematic gameplay experiences. This role involves collaborating with level designers, cinematics director, and cinematics designers to design, prototype, and implement complex, AAA-quality cinematic gameplay sequences. The ideal candidate has a strong background in interactive and scripted cinematic experiences, with an emphasis on design and technical implementation within a game engine. Should be someone who can guide a project from start to finish, taking the sequence from rough design to finished, polished experience. Candidate should be able to work quickly, creating rapid prototypes to test and troubleshoot high-level design, before using blueprints or scripting to create the final version.',
+  1392→			'We invite you to apply for this role if you are looking to start an exciting journey at a growing studio.',
+  1393→			doing_C,
+  1394→			'1. Collaborate closely with level designers, cinematics designers, and cinematics director to design, prototype, and build AAA cinematic gameplay experiences;',
+  1395→			'2. Ensure that design and implementation are done in a systemic and modular way that is able to be used by designers in other departments;',
+  1396→			'3. Quickly produce and iterate prototypes based on project needs and feedback;',
+  1397→			'4. Design and implement miscellaneous other gameplay systems as needed;',
+  1398→			'5. Provide backend system support to ensure smooth integration and functionality;',
+  1399→			'6. Optimize and debug systems to ensure a seamless player experience;',
+  1400→			'7. Stay updated with industry trends and advancements in game design and technology.'
+  1401→		],
+  1402→
+  1403→		name: 'Cinematic Tech Designer',
+  1404→
+  1405→		location: 'Los Angeles ',
+  1406→
+  1407→		isClosed: false,
+  1408→	},
+  1409→	{
+  1410→		jobID: 47,
+  1411→		bottomText: bottomText_C,
+  1412→
+  1413→		whyJoinUs: whyJoinUs_C,
+  1414→
+  1415→		qualifications: [
+  1416→			toHave_C,
+  1417→			'1) Bachelor degree or above, preferably in literature, screenwriting, film, game design or a related field;',
+  1418→			'2) Strong understanding of narrative structures, character development, and plot progression;',
+  1419→			'3) 5+ years of working experience as a narrative designer or writer in the video game industry;',
+  1420→			'4) Completed or shipped at least one AAA project, from start to finish, in a narrative role;',
+  1421→			'5) Proficiency with narrative structures, character development, and plot progression;',
+  1422→			'6) Passion for stories and games, especially story-driven AAA games and action games;',
+  1423→			'7) Communicates complex ideas clearly and concisely, both in writing and in person, and applies analytical skills to drive informed decision-making.',
+  1424→
+  1425→			betterHave_C,
+  1426→			'1) Familiarity with crime genre;',
+  1427→			'2) Experience writing for story-rich, cinematic games.',
+  1428→		],
+  1429→		AdditionalInformation: [
+  1430→			hybridRole2,
+  1431→			hybridRole21,
+  1432→			pay_C + '130-180k USD.',
+  1433→		],
+  1434→		responsibilities: [
+  1435→			'We are on the lookout for a senior narrative designer who could bring a whole new world of crime stories to life on our original AAA game project in the LA studio. You will be responsible for everything that relates to the story of the game, as well as working and assisting other departments and working together to make the creative ideas a reality. We invite you to apply for this role if you are looking to start an amazing journey with a group of game & narrative enthusiasts.',
+  1436→			doing_C,
+  1437→			'1. Build the overall worldview of the game according to the project requirements, helping to develop the world and the narratives within it;',
+  1438→			'2. Ideate, develop, adapt, write, and revise stories and scripts for in-game narratives, while integrating them seamlessly into the established worldview through modifications and fine adjustments as needed;',
+  1439→			'3. Work closely with other disciplines, including design, cinematics, art, production and more to integrate narrative into all aspects of the game world;',
+  1440→			'4. Work alongside the other narrative designers to research and develop original stories;',
+  1441→			'5. Collaborate on and peer review scripts alongside other narrative designers;',
+  1442→			'6. Develop, create and pitch original storylines to stakeholders;',
+  1443→			'7. Responsible for the writing of in-game strings and text content, such as dialogue, mission descriptions and other miscellaneous copywriting;',
+  1444→			'8. Take initiative by proactively driving tasks forward, whether assigned or self-identified, to' +
+  1445→			' support team and organizational success;',
+  1446→			'9. Organize and manage the delivery of storylines and scripts from ideation to final implementation;',
+  1447→			'10. Collaborate closely with the Lead Narrative Designer, Cinematics Director, and Creative Director to' +
+  1448→			' help realize and refine the creative vision of the game.',
+  1449→		],
+  1450→
+  1451→		name: 'Senior Narrative Designer',
+  1452→
+  1453→		location: 'Los Angeles ',
+  1454→
+  1455→		isClosed: false,
+  1456→	},
+  1457→]
+  1458→
+  1459→export const jobTypeMap = {
+  1460→	'Marketing & Operations': {
+  1461→		job: [
+  1462→			'Cinematic Artist (Lighting & VFX) (Marketing/Publishing)',
+  1463→			'User Acquisition Specialist',
+  1464→		],
+  1465→
+  1466→		categoryIndex: 1,
+  1467→	},
+  1468→	'Design': {
+  1469→		job: [
+  1470→			'Narrative Designer',
+  1471→			'Level Designer',
+  1472→			'Cinematic Tech Designer',
+  1473→			'Senior Narrative Designer',
+  1474→		],
+  1475→
+  1476→		categoryIndex: 2,
+  1477→	},
+  1478→	'Corporate Functions': {
+  1479→		job: [
+  1480→		],
+  1481→
+  1482→		categoryIndex: 3,
+  1483→	},
+  1484→	'Art': {
+  1485→		job: [
+  1486→			'Lighting Artist',
+  1487→		],
+  1488→
+  1489→		categoryIndex: 4,
+  1490→	},
+  1491→	'Engineering': {
+  1492→		job: [
+  1493→		],
+  1494→
+  1495→		categoryIndex: 5,
+  1496→	}
+  1497→}
+  1498→
+  1499→
+  1500→export const jobList = Object.keys(jobTypeMap).flatMap(item => {
+  1501→	return jobTypeMap[item].job.map(o => {
+  1502→		const info = jobInfo.filter(oo => !oo.isClosed).find(oo => oo.name === o)
+  1503→		return info ? { ...info, category: item } : undefined
+  1504→	}).filter(o => o)
+  1505→})
+  1506→

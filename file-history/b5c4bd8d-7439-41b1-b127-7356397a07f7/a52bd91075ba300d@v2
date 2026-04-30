@@ -1,0 +1,836 @@
+# 空间站成员变更记录 - 实施计划
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 为空间站新增子管理员变更记录和成员变更记录的存储与查询功能
+
+**Architecture:** 新建统一的 `space_change_record` 表，用 type 字段区分子管理员变更和成员变更。在 MQ 事件处理器中写入记录（`UserAdminChangeEventHandler` 和 `UserSpaceChangeEventHandler`）。提供两个查询入口：驾驶舱（需主管理员权限）和产品管理后台（需超管权限），底层共用同一个 Manager。
+
+**Tech Stack:** Spring Boot 3.4.5, MyBatis-Plus, MySQL, RabbitMQ 事件消费
+
+**基础路径:** `collabspace-server/src/main/java/com/yottastudios/ns/collabspace`
+
+---
+
+### Task 1: 建表 — Liquibase 迁移脚本
+
+**Files:**
+- Create: `collabspace-server/src/main/resources/db/changelog/005_space_change_record.xml`
+- Modify: `collabspace-server/src/main/resources/db/changelog/db.changelog-master.xml`
+
+- [ ] **Step 1: 创建 Liquibase changeset 文件**
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005-1" author="luobeilin">
+        <createTable tableName="collabspace_space_change_record" remarks="空间站变更记录">
+            <column name="id" type="bigint" remarks="主键">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="space_id" type="varchar(255)" remarks="空间站ID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="tinyint" remarks="变更类型：1=子管理员变更，2=成员变更">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action" type="varchar(32)" remarks="操作：ADD/REMOVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operator_id" type="bigint" remarks="操作人用户ID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="target_user_id" type="bigint" remarks="被操作人用户ID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="detail" type="json" remarks="变更详情JSON"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP" remarks="创建时间">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="bigint" remarks="创建人"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP" remarks="更新时间"/>
+            <column name="updated_by" type="bigint" remarks="更新人"/>
+            <column name="is_deleted" type="tinyint unsigned" defaultValueNumeric="0" remarks="逻辑删除">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="collabspace_space_change_record" indexName="idx_space_id_type">
+            <column name="space_id"/>
+            <column name="type"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+```
+
+- [ ] **Step 2: 在 db.changelog-master.xml 中引入新文件**
+
+在 `004_permission_request.xml` 后追加一行：
+
+```xml
+<include file="classpath:db/changelog/005_space_change_record.xml" relativeToChangelogFile="false" />
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/main/resources/db/changelog/005_space_change_record.xml src/main/resources/db/changelog/db.changelog-master.xml
+git commit -m "feat: add space_change_record table migration"
+```
+
+---
+
+### Task 2: 枚举类
+
+**Files:**
+- Create: `space/enums/SpaceChangeTypeEnum.java`
+- Create: `space/enums/SpaceChangeActionEnum.java`
+
+- [ ] **Step 1: 创建变更类型枚举**
+
+```java
+package com.yottastudios.ns.collabspace.space.enums;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public enum SpaceChangeTypeEnum {
+
+    SUB_ADMIN(1, "子管理员变更"),
+    MEMBER(2, "成员变更"),
+    ;
+
+    private final int value;
+    private final String description;
+}
+```
+
+- [ ] **Step 2: 创建操作枚举**
+
+```java
+package com.yottastudios.ns.collabspace.space.enums;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public enum SpaceChangeActionEnum {
+
+    ADD("ADD", "添加"),
+    REMOVE("REMOVE", "移除"),
+    ;
+
+    private final String value;
+    private final String description;
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/space/enums/SpaceChangeTypeEnum.java src/main/java/com/yottastudios/ns/collabspace/space/enums/SpaceChangeActionEnum.java
+git commit -m "feat: add SpaceChangeTypeEnum and SpaceChangeActionEnum"
+```
+
+---
+
+### Task 3: Entity + Mapper + Service
+
+**Files:**
+- Create: `space/entity/SpaceChangeRecordEntity.java`
+- Create: `space/mapper/SpaceChangeRecordMapper.java`
+- Create: `space/service/ISpaceChangeRecordService.java`
+- Create: `space/service/impl/SpaceChangeRecordServiceImpl.java`
+
+- [ ] **Step 1: 创建实体类**
+
+```java
+package com.yottastudios.ns.collabspace.space.entity;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.yottastudios.ns.collabspace.core.entity.BaseEntity;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Map;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Accessors(chain = true)
+@SuperBuilder
+@TableName(keepGlobalPrefix = true, value = "space_change_record", autoResultMap = true)
+public class SpaceChangeRecordEntity extends BaseEntity implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private String spaceId;
+
+    /** 变更类型：1=子管理员变更，2=成员变更 */
+    private Integer type;
+
+    /** 操作：ADD / REMOVE */
+    private String action;
+
+    /** 操作人用户ID */
+    private Long operatorId;
+
+    /** 被操作人用户ID */
+    private Long targetUserId;
+
+    /** 变更详情JSON */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, Object> detail;
+}
+```
+
+- [ ] **Step 2: 创建 Mapper**
+
+```java
+package com.yottastudios.ns.collabspace.space.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yottastudios.ns.collabspace.space.entity.SpaceChangeRecordEntity;
+
+public interface SpaceChangeRecordMapper extends BaseMapper<SpaceChangeRecordEntity> {
+}
+```
+
+- [ ] **Step 3: 创建 Service 接口**
+
+```java
+package com.yottastudios.ns.collabspace.space.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.yottastudios.ns.collabspace.space.entity.SpaceChangeRecordEntity;
+
+public interface ISpaceChangeRecordService extends IService<SpaceChangeRecordEntity> {
+}
+```
+
+- [ ] **Step 4: 创建 Service 实现**
+
+```java
+package com.yottastudios.ns.collabspace.space.service.impl;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yottastudios.ns.collabspace.space.entity.SpaceChangeRecordEntity;
+import com.yottastudios.ns.collabspace.space.mapper.SpaceChangeRecordMapper;
+import com.yottastudios.ns.collabspace.space.service.ISpaceChangeRecordService;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SpaceChangeRecordServiceImpl extends ServiceImpl<SpaceChangeRecordMapper, SpaceChangeRecordEntity> implements ISpaceChangeRecordService {
+}
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/space/entity/SpaceChangeRecordEntity.java \
+  src/main/java/com/yottastudios/ns/collabspace/space/mapper/SpaceChangeRecordMapper.java \
+  src/main/java/com/yottastudios/ns/collabspace/space/service/ISpaceChangeRecordService.java \
+  src/main/java/com/yottastudios/ns/collabspace/space/service/impl/SpaceChangeRecordServiceImpl.java
+git commit -m "feat: add SpaceChangeRecord entity, mapper, service"
+```
+
+---
+
+### Task 4: 变更记录写入 Manager
+
+**Files:**
+- Create: `space/manager/update/SpaceChangeRecordUpdateManager.java`
+
+- [ ] **Step 1: 创建写入 Manager**
+
+```java
+package com.yottastudios.ns.collabspace.space.manager.update;
+
+import com.yottastudios.ns.collabspace.space.entity.SpaceChangeRecordEntity;
+import com.yottastudios.ns.collabspace.space.enums.SpaceChangeActionEnum;
+import com.yottastudios.ns.collabspace.space.enums.SpaceChangeTypeEnum;
+import com.yottastudios.ns.collabspace.space.service.ISpaceChangeRecordService;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+@Component
+@Slf4j
+public class SpaceChangeRecordUpdateManager {
+
+    @Resource
+    private ISpaceChangeRecordService spaceChangeRecordService;
+
+    /**
+     * 记录子管理员权限变更（增量拆分：每个权限一条记录）
+     *
+     * @param spaceId       空间站ID
+     * @param operatorId    操作人ID（主管理员）
+     * @param targetUserId  被操作人ID
+     * @param addedCodes    新增的权限码列表
+     * @param removedCodes  移除的权限码列表
+     */
+    public void recordSubAdminChange(String spaceId, Long operatorId, Long targetUserId,
+                                     List<String> addedCodes, List<String> removedCodes) {
+        List<SpaceChangeRecordEntity> records = new ArrayList<>();
+        for (String code : addedCodes) {
+            records.add(buildRecord(spaceId, SpaceChangeTypeEnum.SUB_ADMIN,
+                    SpaceChangeActionEnum.ADD, operatorId, targetUserId,
+                    Map.of("resourceCode", code)));
+        }
+        for (String code : removedCodes) {
+            records.add(buildRecord(spaceId, SpaceChangeTypeEnum.SUB_ADMIN,
+                    SpaceChangeActionEnum.REMOVE, operatorId, targetUserId,
+                    Map.of("resourceCode", code)));
+        }
+        if (!records.isEmpty()) {
+            spaceChangeRecordService.saveBatch(records);
+            log.info("[SpaceChangeRecord] 子管理员变更 spaceId={}, targetUserId={}, added={}, removed={}",
+                    spaceId, targetUserId, addedCodes, removedCodes);
+        }
+    }
+
+    /**
+     * 记录成员变更
+     *
+     * @param spaceId      空间站ID
+     * @param operatorId   操作人ID（主管理员）
+     * @param targetUserId 被操作人ID
+     * @param join         true=加入，false=移出
+     */
+    public void recordMemberChange(String spaceId, Long operatorId, Long targetUserId, boolean join) {
+        SpaceChangeActionEnum action = join ? SpaceChangeActionEnum.ADD : SpaceChangeActionEnum.REMOVE;
+        SpaceChangeRecordEntity record = buildRecord(spaceId, SpaceChangeTypeEnum.MEMBER,
+                action, operatorId, targetUserId, null);
+        spaceChangeRecordService.save(record);
+        log.info("[SpaceChangeRecord] 成员变更 spaceId={}, targetUserId={}, action={}",
+                spaceId, targetUserId, action.getValue());
+    }
+
+    private SpaceChangeRecordEntity buildRecord(String spaceId, SpaceChangeTypeEnum type,
+                                                 SpaceChangeActionEnum action, Long operatorId,
+                                                 Long targetUserId, Map<String, Object> detail) {
+        return SpaceChangeRecordEntity.builder()
+                .spaceId(spaceId)
+                .type(type.getValue())
+                .action(action.getValue())
+                .operatorId(operatorId)
+                .targetUserId(targetUserId)
+                .detail(detail)
+                .build();
+    }
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/space/manager/update/SpaceChangeRecordUpdateManager.java
+git commit -m "feat: add SpaceChangeRecordUpdateManager for recording changes"
+```
+
+---
+
+### Task 5: 在 UserAdminChangeEventHandler 中写入子管理员变更记录
+
+**Files:**
+- Modify: `consumer/handle/UserAdminChangeEventHandler.java`
+
+- [ ] **Step 1: 注入 SpaceChangeRecordUpdateManager**
+
+在 `UserAdminChangeEventHandler` 类中新增字段：
+
+```java
+@Resource
+private SpaceChangeRecordUpdateManager spaceChangeRecordUpdateManager;
+```
+
+- [ ] **Step 2: 在 handleSubAdmin 方法中添加记录逻辑**
+
+在 `handleSubAdmin` 方法中，`spaceUserResourceRelService.removeBatchByIds(oldResources)` 之前，计算增量并记录。修改后的完整方法：
+
+```java
+private void handleSubAdmin(UserAdminChangeEvent event) {
+    String spaceId = event.getSpaceId();
+    Long userId = event.getUserId();
+    List<String> newRoles = event.getNewRoles();
+    List<SpaceUserResourceRelEntity> oldResources = spaceUserResourceRelService.getByUserIdAndSpaceId(userId, spaceId);
+
+    // 计算权限增量并写入变更记录
+    List<String> oldCodes = oldResources.stream()
+            .map(SpaceUserResourceRelEntity::getResourceCode)
+            .toList();
+    List<String> newCodes = newRoles != null ? newRoles : List.of();
+    List<String> addedCodes = newCodes.stream().filter(c -> !oldCodes.contains(c)).toList();
+    List<String> removedCodes = oldCodes.stream().filter(c -> !newCodes.contains(c)).toList();
+
+    SpaceEntity spaceEntity = spaceService.getBySpaceId(spaceId);
+    Long operatorId = spaceEntity != null ? spaceEntity.getOwner() : null;
+    if (operatorId != null && (!addedCodes.isEmpty() || !removedCodes.isEmpty())) {
+        spaceChangeRecordUpdateManager.recordSubAdminChange(spaceId, operatorId, userId, addedCodes, removedCodes);
+    }
+
+    spaceUserResourceRelService.removeBatchByIds(oldResources);
+    List<SpaceUserResourceRelEntity> newResources = new ArrayList<>();
+    if (CollectionUtils.isEmpty(newRoles)) return;
+
+    for (String newResource : newRoles) {
+        SpaceUserResourceRelEntity entity = SpaceUserResourceRelEntity.builder()
+                .spaceId(spaceId)
+                .userId(userId)
+                .resourceCode(newResource)
+                .build();
+        newResources.add(entity);
+    }
+    spaceUserResourceRelService.saveBatch(newResources);
+    permissionCacheManager.updateAllNodesCacheAndBroadcast(spaceId, userId);
+}
+```
+
+注意：需要在类中增加 `ISpaceService` 的引入（已有 `spaceService` 字段，无需重复注入）。
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/consumer/handle/UserAdminChangeEventHandler.java
+git commit -m "feat: record sub-admin changes in UserAdminChangeEventHandler"
+```
+
+---
+
+### Task 6: 在 UserSpaceChangeEventHandler 中写入成员变更记录
+
+**Files:**
+- Modify: `consumer/handle/UserSpaceChangeEventHandler.java`
+
+- [ ] **Step 1: 注入 SpaceChangeRecordUpdateManager**
+
+在 `UserSpaceChangeEventHandler` 类中新增字段：
+
+```java
+@Resource
+private SpaceChangeRecordUpdateManager spaceChangeRecordUpdateManager;
+```
+
+- [ ] **Step 2: 在 handleUserJoinSpace 中添加记录逻辑**
+
+在 `handleUserJoinSpace` 方法中，`permissionCacheManager.updateAllNodesCacheAndBroadcast(...)` 之后，三方同步之前，添加：
+
+```java
+// 写入成员加入变更记录
+for (UserSpaceChangeEvent.UserInfo user : event.getUsers()) {
+    spaceChangeRecordUpdateManager.recordMemberChange(event.getSpaceId(), operatorId, user.getUserId(), true);
+}
+```
+
+- [ ] **Step 3: 在 handleUserQuitSpace 中添加记录逻辑**
+
+在 `handleUserQuitSpace` 方法中，三方同步之前，添加：
+
+```java
+// 写入成员移出变更记录
+for (UserSpaceChangeEvent.UserInfo user : event.getUsers()) {
+    spaceChangeRecordUpdateManager.recordMemberChange(event.getSpaceId(), operatorId, user.getUserId(), false);
+}
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/consumer/handle/UserSpaceChangeEventHandler.java
+git commit -m "feat: record member changes in UserSpaceChangeEventHandler"
+```
+
+---
+
+### Task 7: 查询 VO 和 RO
+
+**Files:**
+- Create: `space/vo/SpaceChangeRecordVo.java`
+- Create: `space/ro/SpaceChangeRecordPageRo.java`
+
+- [ ] **Step 1: 创建返回 VO**
+
+```java
+package com.yottastudios.ns.collabspace.space.vo;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.yottastudios.ns.collabspace.shared.support.serializer.LongToStringSerializer;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(name = "SpaceChangeRecordVo")
+public class SpaceChangeRecordVo {
+
+    @JsonSerialize(using = LongToStringSerializer.class)
+    @Schema(description = "记录ID")
+    private Long id;
+
+    @Schema(description = "变更类型：1=子管理员变更，2=成员变更")
+    private Integer type;
+
+    @Schema(description = "操作：ADD/REMOVE")
+    private String action;
+
+    @Schema(description = "操作人昵称")
+    private String operatorName;
+
+    @Schema(description = "被操作人昵称")
+    private String targetUserName;
+
+    @Schema(description = "变更描述")
+    private String description;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Schema(description = "变更时间")
+    private LocalDateTime createdAt;
+}
+```
+
+- [ ] **Step 2: 创建分页查询 RO**
+
+```java
+package com.yottastudios.ns.collabspace.space.ro;
+
+import com.yottastudios.ns.collabspace.core.ro.BasePageRo;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Schema(name = "SpaceChangeRecordPageRo")
+public class SpaceChangeRecordPageRo extends BasePageRo {
+
+    @Schema(description = "空间站ID（产品后台入口必传）")
+    private String spaceId;
+
+    @Schema(description = "变更类型：1=子管理员变更，2=成员变更，不传查全部")
+    private Integer type;
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/space/vo/SpaceChangeRecordVo.java \
+  src/main/java/com/yottastudios/ns/collabspace/space/ro/SpaceChangeRecordPageRo.java
+git commit -m "feat: add SpaceChangeRecordVo and SpaceChangeRecordPageRo"
+```
+
+---
+
+### Task 8: 查询 Manager
+
+**Files:**
+- Create: `space/manager/query/SpaceChangeRecordQueryManager.java`
+
+- [ ] **Step 1: 创建查询 Manager**
+
+```java
+package com.yottastudios.ns.collabspace.space.manager.query;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+import com.yottastudios.ns.collabspace.space.entity.SpaceChangeRecordEntity;
+import com.yottastudios.ns.collabspace.space.enums.SpaceChangeActionEnum;
+import com.yottastudios.ns.collabspace.space.enums.SpaceChangeTypeEnum;
+import com.yottastudios.ns.collabspace.space.enums.SpaceResourceEnum;
+import com.yottastudios.ns.collabspace.space.service.ISpaceChangeRecordService;
+import com.yottastudios.ns.collabspace.space.vo.SpaceChangeRecordVo;
+import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
+import com.yottastudios.ns.collabspace.shared.util.page.PageHelper;
+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+import jakarta.annotation.Resource;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Component;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+@Component
+public class SpaceChangeRecordQueryManager {
+
+    @Resource
+    private ISpaceChangeRecordService spaceChangeRecordService;
+
+    @Resource
+    private IApitableGrpcClientService apitableGrpcClientService;
+
+    /**
+     * 分页查询变更记录
+     */
+    public PageInfo<SpaceChangeRecordVo> page(String spaceId, Integer type, int pageNum, int pageSize) {
+        Page<SpaceChangeRecordEntity> page = new Page<>(pageNum, pageSize);
+
+        LambdaQueryWrapper<SpaceChangeRecordEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SpaceChangeRecordEntity::getSpaceId, spaceId);
+        if (type != null) {
+            wrapper.eq(SpaceChangeRecordEntity::getType, type);
+        }
+        wrapper.orderByDesc(SpaceChangeRecordEntity::getCreatedAt);
+
+        IPage<SpaceChangeRecordEntity> result = spaceChangeRecordService.page(page, wrapper);
+
+        if (CollectionUtils.isEmpty(result.getRecords())) {
+            return PageHelper.build(result.getCurrent(), result.getSize(), result.getTotal(), Collections.emptyList());
+        }
+
+        // 批量查询用户昵称
+        Set<Long> userIds = result.getRecords().stream()
+                .flatMap(r -> Stream.of(r.getOperatorId(), r.getTargetUserId()))
+                .collect(Collectors.toSet());
+        Map<Long, String> userNameMap = getUserNameMap(userIds);
+
+        List<SpaceChangeRecordVo> voList = result.getRecords().stream()
+                .map(entity -> toVo(entity, userNameMap))
+                .toList();
+
+        return PageHelper.build(result.getCurrent(), result.getSize(), result.getTotal(), voList);
+    }
+
+    private SpaceChangeRecordVo toVo(SpaceChangeRecordEntity entity, Map<Long, String> userNameMap) {
+        String operatorName = userNameMap.getOrDefault(entity.getOperatorId(), "未知用户");
+        String targetUserName = userNameMap.getOrDefault(entity.getTargetUserId(), "未知用户");
+        String description = buildDescription(entity, operatorName, targetUserName);
+
+        return SpaceChangeRecordVo.builder()
+                .id(entity.getId())
+                .type(entity.getType())
+                .action(entity.getAction())
+                .operatorName(operatorName)
+                .targetUserName(targetUserName)
+                .description(description)
+                .createdAt(entity.getCreatedAt())
+                .build();
+    }
+
+    private String buildDescription(SpaceChangeRecordEntity entity, String operatorName, String targetUserName) {
+        int type = entity.getType();
+        String action = entity.getAction();
+
+        if (type == SpaceChangeTypeEnum.MEMBER.getValue()) {
+            if (SpaceChangeActionEnum.ADD.getValue().equals(action)) {
+                return operatorName + " 将 " + targetUserName + " 添加至空间站";
+            } else {
+                return operatorName + " 将 " + targetUserName + " 移出空间站";
+            }
+        }
+
+        // 子管理员变更
+        String resourceName = getResourceName(entity.getDetail());
+        if (SpaceChangeActionEnum.ADD.getValue().equals(action)) {
+            return operatorName + " 将 " + targetUserName + " 添加为 " + resourceName;
+        } else {
+            return operatorName + " 移除" + targetUserName + "的" + resourceName + "权限";
+        }
+    }
+
+    private String getResourceName(Map<String, Object> detail) {
+        if (detail == null || !detail.containsKey("resourceCode")) {
+            return "未知权限";
+        }
+        String code = String.valueOf(detail.get("resourceCode"));
+        return switch (code) {
+            case "MANAGE_MEMBER" -> "成员管理员";
+            case "MANAGE_WORKBENCH" -> "文件管理员";
+            default -> code;
+        };
+    }
+
+    private Map<Long, String> getUserNameMap(Set<Long> userIds) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return Collections.emptyMap();
+        }
+        List<UserSimpleInfoVo> users = apitableGrpcClientService.getUserByIds(userIds.stream().toList());
+        if (CollectionUtils.isEmpty(users)) {
+            return Collections.emptyMap();
+        }
+        return users.stream()
+                .collect(Collectors.toMap(UserSimpleInfoVo::getId, UserSimpleInfoVo::getNickName,
+                        (a, b) -> a));
+    }
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/space/manager/query/SpaceChangeRecordQueryManager.java
+git commit -m "feat: add SpaceChangeRecordQueryManager with description assembly"
+```
+
+---
+
+### Task 9: 驾驶舱入口 Controller
+
+**Files:**
+- Create: `space/controller/SpaceChangeRecordController.java`
+
+- [ ] **Step 1: 创建 Controller**
+
+```java
+package com.yottastudios.ns.collabspace.space.controller;
+
+import com.yottastudios.ns.collabspace.core.support.ResponseData;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.ApiResource;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.GetResource;
+import com.yottastudios.ns.collabspace.shared.constants.ParamsConstants;
+import com.yottastudios.ns.collabspace.shared.holder.SpaceHolder;
+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+import com.yottastudios.ns.collabspace.space.manager.query.SpaceChangeRecordQueryManager;
+import com.yottastudios.ns.collabspace.space.ro.SpaceChangeRecordPageRo;
+import com.yottastudios.ns.collabspace.space.vo.SpaceChangeRecordVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@Tag(name = "Space Change Record")
+@ApiResource(path = "/space/changeRecord")
+public class SpaceChangeRecordController {
+
+    @Resource
+    private SpaceChangeRecordQueryManager spaceChangeRecordQueryManager;
+
+    @GetResource(path = "/page", requiredSpaceAdmin = true)
+    @Parameters({
+            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+    })
+    @Operation(summary = "分页查询空间站变更记录")
+    public ResponseData<PageInfo<SpaceChangeRecordVo>> page(SpaceChangeRecordPageRo ro) {
+        String spaceId = SpaceHolder.get();
+        PageInfo<SpaceChangeRecordVo> result = spaceChangeRecordQueryManager.page(
+                spaceId, ro.getType(), ro.getPageNum(), ro.getPageSize());
+        return ResponseData.success(result);
+    }
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/space/controller/SpaceChangeRecordController.java
+git commit -m "feat: add SpaceChangeRecordController for cockpit entry"
+```
+
+---
+
+### Task 10: 产品管理后台入口
+
+**Files:**
+- Modify: `manageback/controller/ManagementSpaceController.java`
+
+- [ ] **Step 1: 在 ManagementSpaceController 中新增查询方法**
+
+在类中注入 `SpaceChangeRecordQueryManager` 和验证方法，然后添加接口：
+
+```java
+@Resource
+private SpaceChangeRecordQueryManager spaceChangeRecordQueryManager;
+```
+
+新增方法（放在 `removeSpace` 方法之后）：
+
+```java
+@GetResource(path = "/changeRecord/page", requiredPermission = false)
+@Operation(summary = "查询空间站变更记录（产品后台）")
+public ResponseData<PageInfo<SpaceChangeRecordVo>> changeRecordPage(SpaceChangeRecordPageRo ro) {
+    Long userId = SessionContext.getUserId();
+    UserSimpleInfoVo userSimpleInfoVo = apitableGrpcClientService.getUserById(userId);
+    if (userSimpleInfoVo == null || !allowUserList.contains(userSimpleInfoVo.getNickName())) {
+        throw new BusinessException("No Authorization");
+    }
+    PageInfo<SpaceChangeRecordVo> result = spaceChangeRecordQueryManager.page(
+            ro.getSpaceId(), ro.getType(), ro.getPageNum(), ro.getPageSize());
+    return ResponseData.success(result);
+}
+```
+
+注意：需要在 `ManagementSpaceController` 中新增以下注入（如果不存在的话）：
+- `IApitableGrpcClientService apitableGrpcClientService`
+- `allowUserList`（参考 `SpaceController` 中的超管校验模式）
+
+查看 `ManagementSpaceController` 是否已有这些依赖，如果没有需要添加：
+
+```java
+@Resource
+private IApitableGrpcClientService apitableGrpcClientService;
+
+@Value("#{'${user-auth.super-board-manager-list}'.split(',')}")
+private List<String> allowUserList;
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/main/java/com/yottastudios/ns/collabspace/manageback/controller/ManagementSpaceController.java
+git commit -m "feat: add change record query in ManagementSpaceController"
+```
+
+---
+
+### Task 11: 编译验证
+
+- [ ] **Step 1: 编译项目**
+
+```bash
+cd collabspace-server && ./gradlew build -x test
+```
+
+预期：BUILD SUCCESSFUL
+
+- [ ] **Step 2: 修复编译错误（如有）**
+
+根据编译错误逐一修复，主要关注 import 缺失、类型不匹配等问题。
+
+- [ ] **Step 3: Commit（如有修复）**
+
+```bash
+git add -A
+git commit -m "fix: resolve compilation issues"
+```

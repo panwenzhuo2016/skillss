@@ -1,0 +1,88 @@
+# Task 13: 前端管理端页面
+
+**Status:** Pending
+
+**Files:**
+- Create: `exam-web/src/hooks/use-admin-exams.ts`
+- Create: `exam-web/src/hooks/use-admin-questions.ts`
+- Create: `exam-web/src/hooks/use-admin-whitelist.ts`
+- Create: `exam-web/src/hooks/use-admin-analysis.ts`
+- Create: `exam-web/src/components/question-form.tsx`
+- Create: `exam-web/src/components/ui/table.tsx`
+- Create: `exam-web/src/components/ui/badge.tsx`
+- Create: `exam-web/src/components/ui/tabs.tsx`
+- Create: `exam-web/src/components/ui/select.tsx`
+- Create: `exam-web/src/components/ui/radio-group.tsx`
+- Create: `exam-web/src/components/ui/textarea.tsx`
+- Create: `exam-web/src/components/ui/label.tsx`
+- Create: `exam-web/src/components/ui/dialog.tsx`
+- Create: `exam-web/src/routes/_layout/admin/exams/index.tsx`
+- Create: `exam-web/src/routes/_layout/admin/exams/create.tsx`
+- Create: `exam-web/src/routes/_layout/admin/exams/$id.edit.tsx`
+- Create: `exam-web/src/routes/_layout/admin/exams/$id.questions.tsx`
+- Create: `exam-web/src/routes/_layout/admin/exams/$id.whitelist.tsx`
+- Create: `exam-web/src/routes/_layout/admin/exams/$id.analysis.tsx`
+
+## Steps
+
+- [ ] **Step 1:** 追加 UI 组件（table, badge, tabs, select, radio-group, textarea, label, dialog），从 Radix UI 封装 + CVA + TailwindCSS
+
+- [ ] **Step 2:** `use-admin-exams.ts` — TanStack Query hooks
+  - useAdminExamList(page, size) — GET /api/admin/exams
+  - useCreateExam() — POST mutation
+  - useUpdateExam() — PUT mutation
+  - useDeleteExam() — DELETE mutation
+  - usePublishExam() — PUT /{id}/publish mutation
+  - useCloseExam() — PUT /{id}/close mutation
+  - 所有 mutation 成功后 invalidateQueries(['admin-exams'])
+
+- [ ] **Step 3:** `use-admin-questions.ts`
+  - useQuestionList(examId) — GET
+  - useAddQuestion() — POST mutation
+  - useBatchImportQuestions() — POST /batch mutation
+  - useUpdateQuestion() — PUT mutation
+  - useDeleteQuestion() — DELETE mutation
+
+- [ ] **Step 4:** `use-admin-whitelist.ts`
+  - useWhitelist(examId)
+  - useAddWhitelist() mutation
+  - useRemoveWhitelist() mutation
+
+- [ ] **Step 5:** `use-admin-analysis.ts`
+  - useScoreAnalysis(examId, page, size)
+  - useQuestionAnalysis(examId)
+
+- [ ] **Step 6:** `admin/exams/index.tsx` — 试卷列表页
+  - 顶部 "创建试卷" 按钮
+  - 表格：名称、状态(Badge 不同颜色)、答题人数、创建时间
+  - 操作列：编辑(draft 时) / 发布(draft 时) / 关闭(published 时) / 删除(draft 时) / 题目管理 / 白名单 / 分析
+  - 分页组件
+
+- [ ] **Step 7:** `admin/exams/create.tsx` — 创建试卷
+  - 表单：标题(input)、限时分钟(input number)、抽题数(input number)、显示答案(switch)、显示解析(switch)、最大考试次数(input number, 0=不限)、访问模式(select: open/whitelist)
+  - 提交后跳转到列表
+
+- [ ] **Step 8:** `admin/exams/$id.edit.tsx` — 编辑试卷
+  - 复用创建表单，回填数据（useQuery 获取当前试卷）
+  - 仅 draft 状态可编辑
+
+- [ ] **Step 9:** `question-form.tsx` — 题目表单组件（复用于创建和编辑）
+  - 题干(textarea)、选项A~D(input)、正确答案(radio-group: A/B/C/D)、解析(textarea)
+
+- [ ] **Step 10:** `admin/exams/$id.questions.tsx` — 题目管理页
+  - 题目列表（序号、题干截取、正确答案、操作）
+  - "添加题目" 按钮 → Dialog 弹出 question-form
+  - 编辑 → Dialog 弹出 question-form（回填）
+  - 删除 → 确认弹窗
+
+- [ ] **Step 11:** `admin/exams/$id.whitelist.tsx` — 白名单页
+  - 顶部搜索框 + 添加按钮（输入用户 ID 添加）
+  - 已添加用户列表（用户名、显示名、操作：移除）
+  - 批量移除
+
+- [ ] **Step 12:** `admin/exams/$id.analysis.tsx` — 试卷分析
+  - Tabs 切换：
+    - 得分情况 Tab：表格（姓名、分数、开始时间、结束时间、第几次），分页
+    - 题目分析 Tab：每题列表（题目内容截取、答题人数、正确人数、正答率百分比进度条）
+
+- [ ] **Step 13:** 更新 i18n zh.json / en.json 管理端文案

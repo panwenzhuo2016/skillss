@@ -1,0 +1,254 @@
+# 空间站文件转移功能优化 - 后端设计
+
+## 概述
+
+优化空间站文件转移功能，新增两个核心能力：
+1. 文件迁移时历史版本（version snapshot）一并迁移
+2. 支持多选不同源空间站的文件往指定目标空间站复制/移动
+
+后端采用**方案 A：扩展现有任务模型**，在现有 `space_node_migration_task` 表基础上新增 `batch_id` 字段，复用现有 MQ 消费者逻辑。
+
+## 影响范围
+
+### 涉及模块
+- `workspace` 模块：迁移任务创建、消费、版本快照管理
+- 数据库：`space_node_migration_task` 表加字段
+
+### 涉及文件
+- `SpaceNodeMigrationController.java` — 新增批量接口、批量进度查询接口
+- `SpaceNodeMigrationUpdateManager.java` / `Impl` — 新增批量迁移逻辑
+- `SpaceNodeMigrationQueryManager.java` / `Impl` — 新增批量进度查询逻辑
+- `SpaceNodeMigrationConsumer.java` — 迁移时追加版本快照复制逻辑
+- `SpaceNodeMigrationTaskEntity.java` — 新增 batchId 字段
+- `ISpaceNodeMigrationTaskService.java` — 新增按 batchId 查询方法
+- 新增 Liquibase changeset — 加 batch_id 列
+- 新增 RO/VO 类 — 批量迁移请求/响应
+
+### 涉及表
+- `space_node_migration_task` — 加 `batch_id` 字段
+- `collabspace_version_snapshot` — 读取 + 写入（无结构变更）
+- `collabspace_space_node` — 写入（无结构变更）
+
+## 数据模型变更
+
+### space_node_migration_task 表加字段
+
+```sql
+ALTER TABLE space_node_migration_task
+ADD COLUMN batch_id VARCHAR(64) DEFAULT NULL COMMENT '批次ID，同一批多源空间站迁移共享';
+
+CREATE INDEX idx_batch_id ON space_node_migration_task(batch_id);
+```
+
+- `batch_id` 格式：`batch-{timestamp}-{random}`
+- 单源空间站迁移（兼容旧接口）：batch_id 为 NULL
+- 多源空间站迁移：同一批次的多个子任务共享同一个 batch_id
+
+## 接口设计
+
+### 1. 新增：创建批量迁移任务
+
+```
+POST /api/v1/spaceNode/migration/createBatchMigrationTask
+```
+
+**请求体 (BatchMigrationTaskCreateRo)：**
+```json
+{
+  "items": [
+    {
+      "sourceSpaceId": "spc123",
+      "spaceNodeIds": [1, 2, 3]
+    },
+    {
+      "sourceSpaceId": "spc456",
+      "spaceNodeIds": [4, 5]
+    }
+  ],
+  "targetSpaceId": "spc789",
+  "isRemained": true
+}
+```
+
+**响应：**
+```json
+{
+  "code": 200,
+  "data": {
+    "batchId": "batch-1711929600-abc123"
+  }
+}
+```
+
+**权限：** 当前用户需对所有 sourceSpaceId 是空间站文档管理员，对 targetSpaceId 是空间站管理员。
+
+**逻辑：**
+1. 校验权限
+2. 生成 batchId
+3. 遍历 items，每个 item 调用现有 `createMigrationTask` 逻辑，并设置 batchId
+4. 每个子任务独立发送 MQ 消息
+5. 返回 batchId
+
+### 2. 新增：查询批量迁移任务进度
+
+```
+GET /api/v1/spaceNode/migration/batch/{batchId}
+```
+
+**响应 (BatchMigrationTaskVo)：**
+```json
+{
+  "code": 200,
+  "data": {
+    "batchId": "batch-xxx",
+    "tasks": [
+      {
+        "taskId": "spc123-spc789-xxx",
+        "sourceSpaceId": "spc123",
+        "sourceSpaceName": "A空间站",
+        "status": "COMPLETED",
+        "errorMessage": null
+      },
+      {
+        "taskId": "spc456-spc789-xxx",
+        "sourceSpaceId": "spc456",
+        "sourceSpaceName": "B空间站",
+        "status": "PROCESSING",
+        "errorMessage": null
+      }
+    ]
+  }
+}
+```
+
+**权限：** 无需 spaceAdmin 权限（requiredPermission = false），但只返回当前用户创建的任务。
+
+### 3. 已有接口（无需改动）
+
+- `GET /api/v1/spaceNode/migration/managedSpaces` — 获取用户管理的空间站列表
+- `GET /api/v1/spaceNode/tree` — 获取指定空间站的文件树（通过 header spaceId）
+- `GET /api/v1/spaceNode/migration/task/{taskId}` — 查询单个任务状态（保持兼容）
+
+## 核心逻辑变更
+
+### 1. 版本快照随文件迁移
+
+**触发位置：** `SpaceNodeMigrationConsumer.saveNodeAndChildren()` 方法，在保存新文件节点之后。
+
+**流程：**
+```
+saveNodeAndChildren() 保存新文件节点 newSpaceNodeEntity
+  ↓
+判断节点类型是否为文件（非文件夹）
+  ↓ 是
+查询原节点 (originalSpaceNodeId) 的 collabspace_version_snapshot
+  条件：node_id = originalSpaceNodeId AND snapshot_status = ENABLED
+  ↓ 有 snapshot
+对每个 snapshot:
+  1. 构建单节点树（snapshot 对应的底层文件）
+  2. 调用 ThirdAppMigrationChain.executeMigration() 复制底层文件
+  3. 获取 newSnapshotFileId（从 nodeIdMapping 中获取）
+  4. 创建新的 CollabspaceVersionSnapshotEntity:
+     - nodeId = newSpaceNodeEntity.id
+     - snapshotId = newSnapshotFileId
+     - snapshotName = 原 snapshot 名称
+     - snapshotStatus = ENABLED
+     - operatorId = 0
+  5. 创建对应的 SpaceNodeEntity (isSnapshot = SNAPSHOT):
+     - appSpaceNodeId = newSnapshotFileId
+     - name = snapshotName
+     - type = 原文件类型
+     - spaceId = targetSpaceId
+     - isSnapshot = SNAPSHOT
+  ↓
+保存所有新记录
+```
+
+**注意事项：**
+- 文件夹类型节点跳过版本快照处理
+- snapshot 复制失败不阻塞主文件迁移，记录错误日志
+- 复制的 snapshot 在目标空间站是独立副本，与源文件的 snapshot 无关联
+
+### 2. 批量迁移任务创建
+
+**新增方法：** `SpaceNodeMigrationUpdateManager.createBatchMigrationTask()`
+
+```
+方法签名：
+String createBatchMigrationTask(
+    List<BatchMigrationItem> items,
+    String targetSpaceId,
+    Long userId,
+    Boolean isRemained
+)
+
+逻辑：
+1. 生成 batchId = "batch-" + System.currentTimeMillis() + "-" + UUID 前6位
+2. 遍历 items:
+   a. 调用已有逻辑获取 spaceNodeTree、sourceSpaceApps
+   b. 调用 acceptMigrationTask() 创建子任务
+   c. 更新子任务的 batchId
+3. 返回 batchId
+```
+
+**SpaceNodeMigrationUpdateManager.acceptMigrationTask() 调整：**
+- 方法签名不变
+- 在 entity 构建时支持设置 batchId（通过返回 taskId 后再更新，或增加重载方法）
+
+### 3. 移动模式下源 snapshot 清理
+
+**触发位置：** `SpaceNodeMigrationConsumer.executeTask()` 方法中，删除源文件之后。
+
+现有逻辑：
+```java
+if (!task.getIsRemained() && task.getType().equals(MigrationTypeEnum.INTRA_SERVER.getValue())) {
+    for (TreeNode<SpaceNodeVo> treeNode : spaceNodeTree) {
+        spaceNodeUpdateManager.deleteSpaceNode(treeNode.getRelId(), userId);
+    }
+}
+```
+
+**新增逻辑：** 在删除源文件之前（或之后），将源文件关联的 version snapshot 标记为 DISABLED：
+
+```java
+// 在删除源文件前，清理源文件的版本快照
+if (!task.getIsRemained()) {
+    for (TreeNode<SpaceNodeVo> treeNode : spaceNodeTree) {
+        versionSnapshotService.disableByNodeId(treeNode.getRelId());
+    }
+}
+```
+
+## 新增类
+
+### RO 类
+- `BatchMigrationTaskCreateRo` — 批量迁移任务创建请求
+  - `List<BatchMigrationItem> items` — 每项包含 sourceSpaceId + spaceNodeIds
+  - `String targetSpaceId`
+  - `Boolean isRemained`
+- `BatchMigrationItem` — 批量迁移子项
+  - `String sourceSpaceId`
+  - `List<Long> spaceNodeIds`
+
+### VO 类
+- `BatchMigrationTaskVo` — 批量迁移任务进度响应
+  - `String batchId`
+  - `List<BatchMigrationSubTaskVo> tasks`
+- `BatchMigrationSubTaskVo` — 子任务进度
+  - `String taskId`
+  - `String sourceSpaceId`
+  - `String sourceSpaceName`
+  - `Integer status`
+  - `String errorMessage`
+
+## 兼容性
+
+- 旧的 `createMigrationTask` 接口保持不变，batch_id 为 NULL
+- 旧的 `getMigrationTaskInfo` 接口保持不变
+- 新增接口不影响现有功能
+
+## 错误处理
+
+- 批量迁移中某个源空间站的子任务失败，不影响其他子任务继续执行
+- 版本快照复制失败，记录错误日志，不阻塞主文件迁移
+- 前端通过批量进度查询接口感知每个子任务的状态

@@ -1,0 +1,195 @@
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-107-        self::REIMBURSEMENT_ART_OUTSOURCING_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-108-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php:109:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_ART_OUTSOURCING_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php:110:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_ART_OUTSOURCING_SUPERVISOR_TYPE, // 报销的美术外包
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-111-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-112-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-119-        self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-120-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php:121:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php:122:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE, // 报销的行政主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-123-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-124-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-125-        self::REIMBURSEMENT_FINANCE_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-126-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php:127:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php:128:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE, // 报销的财务主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-129-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ArtOutsourcingReimbursement.php-130-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-119-        self::MARKET_BUSINESS_FIRST_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-120-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:121:            Action::APPROVE => WorkflowRequestStakeholder::MARKET_BUSINESS_FIRST_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:122:            Action::REJECT => WorkflowRequestStakeholder::MARKET_BUSINESS_FIRST_SUPERVISOR_TYPE, // 报销的市场商务主管 1
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-123-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-124-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-125-        self::MARKET_BUSINESS_SECOND_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-126-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:127:            Action::APPROVE => WorkflowRequestStakeholder::MARKET_BUSINESS_SECOND_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:128:            Action::REJECT => WorkflowRequestStakeholder::MARKET_BUSINESS_SECOND_SUPERVISOR_TYPE, // 报销的市场商务主管 2
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-129-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-130-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-137-        self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-138-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:139:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:140:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE, // 报销的行政主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-141-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-142-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-143-        self::REIMBURSEMENT_FINANCE_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-144-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:145:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php:146:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE, // 报销的财务主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-147-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\MarketBusinessReimbursement.php-148-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-18-    public $actions = [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-19-        self::START => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:20:            Action::APPROVE => [self::SUPERVISOR_PENDING], // 申请人提交或者系统自动操作
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-21-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:22:        self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-23-            Action::CANCEL => [self::CANCELLED], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-24-            Action::APPROVE => [self::REIMBURSEMENT_ADMINISTRATION_PENDING], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-25-            Action::REJECT => [self::REJECTED], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:26:            Action::URGE => [self::SUPERVISOR_PENDING], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-27-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-28-        self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-66-            Action::APPROVE => WorkflowRequestStakeholder::REQUESTER_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-67-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:68:        self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-69-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:70:            Action::APPROVE => WorkflowRequestStakeholder::SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:71:            Action::REJECT => WorkflowRequestStakeholder::SUPERVISOR_TYPE, // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-72-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-73-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-74-        self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-75-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:76:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:77:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE, // 报销的行政主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-78-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-79-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-80-        self::REIMBURSEMENT_FINANCE_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-81-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:82:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php:83:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE, // 报销的财务主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-84-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementWorkflowWithoutCEO.php-85-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-74-        self::REIMBURSEMENT_TEST_EXPAT_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-75-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php:76:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_TEST_EXPAT_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php:77:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_TEST_EXPAT_SUPERVISOR_TYPE, // 报销的测试外派打车费
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-78-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-79-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-86-        self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-87-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php:88:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php:89:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE, // 报销的行政主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-90-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-91-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-92-        self::REIMBURSEMENT_FINANCE_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-93-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php:94:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php:95:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE, // 报销的财务主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-96-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TestExpatReimbursement.php-97-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\Reimbursement.php-21-
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\Reimbursement.php-22-    // 待部门主管审批
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\Reimbursement.php:23:    public const SUPERVISOR_PENDING = CommonState::SUPERVISOR_PENDING;
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\Reimbursement.php-24-
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\Reimbursement.php-25-    // 待 CEO 审批
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-18-        1 => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-19-            self::START => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:20:                Action::APPROVE => [self::SUPERVISOR_PENDING], // 申请人提交或者系统自动操作
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-21-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:22:            self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-23-                Action::CANCEL => [self::CANCELLED], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-24-                Action::APPROVE => [self::REIMBURSEMENT_ADMINISTRATION_PENDING], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-25-                Action::REJECT => [self::REJECTED], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:26:                Action::URGE => [self::SUPERVISOR_PENDING], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-27-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-28-            self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-49-        2 => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-50-            self::START => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:51:                Action::APPROVE => [self::SUPERVISOR_PENDING], // 申请人提交或者系统自动操作
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-52-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:53:            self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-54-                Action::CANCEL => [self::CANCELLED], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-55-                Action::APPROVE => [self::REIMBURSEMENT_ADMINISTRATION_PENDING], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-56-                Action::REJECT => [self::REJECTED], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:57:                Action::URGE => [self::SUPERVISOR_PENDING], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-58-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-59-            self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-96-            Action::APPROVE => WorkflowRequestStakeholder::REQUESTER_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-97-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:98:        self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-99-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:100:            Action::APPROVE => WorkflowRequestStakeholder::SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:101:            Action::REJECT => WorkflowRequestStakeholder::SUPERVISOR_TYPE, // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-102-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-103-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-104-        self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-105-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:106:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:107:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE, // 报销的行政主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-108-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-109-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-110-        self::REIMBURSEMENT_FINANCE_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-111-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:112:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php:113:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE, // 报销的财务主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-114-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\TeamBuildingReimbursement.php-115-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-15-        1 => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-16-            self::START => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:17:                Action::APPROVE => [self::SUPERVISOR_PENDING], // 申请人提交或者系统自动操作
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-18-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:19:            self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-20-                Action::CANCEL => [self::CANCELLED], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-21-                Action::APPROVE => [self::CEO_PENDING], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-22-                Action::REJECT => [self::REJECTED], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:23:                Action::URGE => [self::SUPERVISOR_PENDING], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-24-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-25-            self::CEO_PENDING => [
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-52-        2 => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-53-            self::START => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:54:                Action::APPROVE => [self::SUPERVISOR_PENDING], // 申请人提交或者系统自动操作
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-55-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:56:            self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-57-                Action::CANCEL => [self::CANCELLED], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-58-                Action::APPROVE => [self::CEO_PENDING], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-59-                Action::REJECT => [self::REJECTED], // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:60:                Action::URGE => [self::SUPERVISOR_PENDING], // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-61-            ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-62-            self::CEO_PENDING => [
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-105-            Action::APPROVE => WorkflowRequestStakeholder::REQUESTER_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-106-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:107:        self::SUPERVISOR_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-108-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:109:            Action::APPROVE => WorkflowRequestStakeholder::SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:110:            Action::REJECT => WorkflowRequestStakeholder::SUPERVISOR_TYPE, // 部门主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-111-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-112-        ],
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-119-        self::REIMBURSEMENT_ADMINISTRATION_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-120-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:121:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:122:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_ADMINISTRATION_SUPERVISOR_TYPE, // 报销的行政主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-123-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-124-        ],
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-125-        self::REIMBURSEMENT_FINANCE_PENDING => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-126-            Action::CANCEL => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:127:            Action::APPROVE => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE,
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php:128:            Action::REJECT => WorkflowRequestStakeholder::REIMBURSEMENT_FINANCE_SUPERVISOR_TYPE, // 报销的财务主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-129-            Action::URGE => WorkflowRequestStakeholder::REQUESTER_TYPE, // 申请人
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\Reimbursement\ReimbursementCommonWorkflow.php-130-        ],

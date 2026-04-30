@@ -1,0 +1,34 @@
+# Task 9: 题目管理（含批量导入）
+
+**Status:** Pending
+
+**Files:**
+- Create: `exam-system/src/main/java/com/exam/mapper/QuestionBankMapper.java`
+- Create: `exam-system/src/main/java/com/exam/dto/QuestionCreateRequest.java`
+- Create: `exam-system/src/main/java/com/exam/dto/QuestionBatchRequest.java`
+- Create: `exam-system/src/main/java/com/exam/dto/QuestionItem.java`
+- Create: `exam-system/src/main/java/com/exam/service/QuestionService.java`
+- Create: `exam-system/src/main/java/com/exam/controller/admin/AdminQuestionController.java`
+
+## Steps
+
+- [ ] **Step 1:** `QuestionBankMapper` — BaseMapper<QuestionBank>
+
+- [ ] **Step 2:** DTO 类
+  - `QuestionCreateRequest`: content(@NotBlank), optionA~D(@NotBlank), correctAnswer(@Pattern "[ABCD]"), analysis
+  - `QuestionItem`: 同字段（批量导入中的单个题目）
+  - `QuestionBatchRequest`: questions(List<@Valid QuestionItem> @NotEmpty)
+
+- [ ] **Step 3:** `QuestionService`
+  - `list(examId)` — 按 sort_order 排序
+  - `create(examId, request)` — 校验 exam 为 draft，自动设 sort_order = 当前最大值 + 1
+  - `batchCreate(examId, request)` — @Transactional，校验 exam 为 draft，批量插入，返回成功数
+  - `update(questionId, request)` — 校验关联 exam 为 draft
+  - `delete(questionId)` — 校验关联 exam 为 draft
+
+- [ ] **Step 4:** `AdminQuestionController` — @RequestMapping("/api/admin")
+  - GET /exams/{examId}/questions — 列表
+  - POST /exams/{examId}/questions — 添加
+  - POST /exams/{examId}/questions/batch — **Skill 批量导入接口**
+  - PUT /questions/{id} — 修改
+  - DELETE /questions/{id} — 删除

@@ -1,0 +1,155 @@
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-89-    @Sql("/sql/user-data.sql")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-90-    void testSelectCountByEmail() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-91-        Integer count = userMapper.selectCountByEmail("41@apitable.com");
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-92-        assertThat(count).isEqualTo(1);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-93-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-94-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-95-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-96-    @Test
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-97-    @Sql("/sql/user-data.sql")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-98-    void testSelectByEmails() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java:99:        List<UserEntity> entities = userMapper.selectByEmails(CollUtil.newArrayList("41@apitable.com"));
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-100-        assertThat(entities).isNotEmpty();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-101-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-102-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-103-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-104-    @Test
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-105-    @Sql("/sql/user-data.sql")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-106-    void testSelectIdByUuid() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-107-        Long id = userMapper.selectIdByUuid("41");
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-108-        assertThat(id).isEqualTo(41L);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\test\java\com\apitable\user\mapper\UserMapperTest.java-109-    }
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-65-        SELECT * FROM ${tablePrefix}user WHERE email = #{email} AND is_deleted = 0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-66-        LIMIT 0,1
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-67-    </select>
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-68-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-69-    <select id="selectCountByEmail" resultType="java.lang.Integer">
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-70-        SELECT COUNT(*)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-71-        FROM ${tablePrefix}user
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-72-        WHERE email = #{email} AND is_deleted = 0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-73-    </select>
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-74-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml:75:    <select id="selectByEmails" resultType="com.apitable.user.entity.UserEntity">
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-76-        SELECT *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-77-        FROM ${tablePrefix}user
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-78-        WHERE email IN
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-79-        <foreach item="item" index="index" collection="emails" open="(" separator="," close=")">
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-80-            #{item}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-81-        </foreach>
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-82-        AND is_deleted = 0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-83-    </select>
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-84-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-85-    <select id="selectIdByUuid" resultType="java.lang.Long">
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-497-            socketClientTemplate.emit(EventType.SHARE_SCOPE_CHANGE.name(), jsonMessage);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-498-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-499-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-500-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-501-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-502-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-503-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-504-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-505-        if (!CollectionUtils.isEmpty(emails) && ro.getShareOpened()) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-506-            if (isTurnOn || !CollectionUtils.isEmpty(result)) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java:507:                List<UserEntity> userEntities = userMapper.selectByEmails(emails);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-508-                if (!isTurnOn) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java:509:                    userEntities = userMapper.selectByEmails(result);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-510-                }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-511-                List<String> userIds = userEntities.stream().map(entity -> String.valueOf(entity.getId())).collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-512-                NotificationCreateRo notificationCreateRo = new NotificationCreateRo();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-513-                notificationCreateRo.setToUserId(userIds);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-514-                notificationCreateRo.setTemplateId(NotificationTemplateId.SHARE_MEMBER_SETTINGS.getValue());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-515-                JSONObject body = JSONUtil.createObj();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-516-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-517-                NodeEntity nodeEntity = iNodeService.getByNodeId(ro.getNodeId());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-518-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\workspace\controller\NodeShareController.java-519-                NodeShareSettingEntity nodeShareSettingEntity = nodeShareSettingMapper.selectById(nodeShareId);
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-273-            .collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-274-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-275-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-276-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-277-    public UserEntity getByEmail(final String email) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-278-        return baseMapper.selectByEmail(email);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-279-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-280-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-281-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-282-    public List<UserEntity> getByEmails(final Collection<String> emails) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java:283:        return baseMapper.selectByEmails(emails);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-284-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-285-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-286-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-287-    public void checkUsersInManageBack(Collection<String> emails) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-288-        if (CollectionUtils.isEmpty(emails)) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-289-            return;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-290-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-291-        Set<String> emailSet = new HashSet<>(emails);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-292-        List<UserEntity> users = getByEmails(emails);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-293-        if (CollectionUtils.isEmpty(users) || users.size() != emailSet.size()) {
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-101-     * @return count
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-102-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-103-    Integer selectCountByEmail(@Param("email") String email);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-104-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-105-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-106-     * Batch query users according to email
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-107-     *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-108-     * @param emails email list
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-109-     * @return entities
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-110-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java:111:    List<UserEntity> selectByEmails(@Param("emails") Collection<String> emails);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-112-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-113-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-114-     * Query user ID according to uuid
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-115-     *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-116-     * @param uuid External System ID
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-117-     * @return User's ID
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-118-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-119-    Long selectIdByUuid(@Param("uuid") String uuid);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-120-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-121-    /**
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-42-    private RedisTemplate<String, Object> redisTemplate;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-43-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-44-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-45-    public void createProject(AddProjectRo addProjectRo, Long userId) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-46-        String projectName =  addProjectRo.getProjectName();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-47-        List<String> managerNameList = addProjectRo.getManagerNameList();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-48-        log.info("create project projectName:{},managerNameList:{},userId:{}", projectName, managerNameList, userId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-49-        List<UserEntity> userEntities = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-50-        if (CollectionUtils.isNotEmpty(managerNameList)){
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-51-            List<String> emailList = managerNameList.stream().map(s -> s.concat("@yottastudios.com")).collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java:52:            userEntities = userMapper.selectByEmails(emailList);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-53-            List<Long> managerIdList = userEntities.stream().map(UserEntity::getId).collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-54-            if (managerIdList.contains(userId)){
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-55-                throw new BusinessException(ProjectException.UNNECESSARY_SET_ME_PROJECT_MANAGER);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-56-            }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-57-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-58-        ProjectEntity projectEntity = new ProjectEntity();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-59-        projectEntity.setProjectName(projectName);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-60-        projectEntity.setCreatedBy(userId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-61-        projectEntity.setUpdatedBy(userId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-62-        projectMapper.insert(projectEntity);
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-75-        ProjectEntity projectEntity = projectMapper.selectById(projectId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-76-        if (projectEntity == null || projectEntity.getIsDeleted() == 1) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-77-            return;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-78-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-79-        if (!projectEntity.getCreatedBy().equals(userId)){
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-80-            throw new BusinessException(ProjectException.CANNOT_OPERATE_PROJECT);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-81-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-82-        List<UserEntity> userEntities = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-83-        if (CollectionUtils.isNotEmpty(managerNameList)){
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-84-            List<String> emailList = managerNameList.stream().map(s -> s.concat("@yottastudios.com")).collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java:85:            userEntities = userMapper.selectByEmails(emailList);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-86-            List<Long> managerIdList = userEntities.stream().map(UserEntity::getId).collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-87-            if (managerIdList.contains(userId)){
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-88-                throw new BusinessException(ProjectException.UNNECESSARY_SET_ME_PROJECT_MANAGER);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-89-            }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-90-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-91-        if (!projectEntity.getProjectName().equals(projectName)){
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-92-            projectEntity.setProjectName(projectName);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-93-            projectEntity.setUpdatedBy(userId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-94-            projectMapper.updateById(projectEntity);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\project\service\impl\ProjectServiceImpl.java-95-        }

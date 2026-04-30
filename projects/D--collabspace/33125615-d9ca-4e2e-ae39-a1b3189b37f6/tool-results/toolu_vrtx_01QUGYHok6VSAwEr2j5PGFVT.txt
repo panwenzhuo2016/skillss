@@ -1,0 +1,319 @@
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1033-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1034-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1035-    public void updateNotificationExtras(Long notificationId, String status,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java:1036:                                         String approverUserId, String approverNickName) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1037-        log.info("[notification] updateNotificationExtras notificationId={} status={}",
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1038-                notificationId, status);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1039-        try {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1040-            UpdateNotificationExtrasRequest request = UpdateNotificationExtrasRequest.newBuilder()
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1041-                    .setNotificationId(notificationId)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1042-                    .setStatus(status != null ? status : "")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java:1043:                    .setApproverUserId(approverUserId != null ? approverUserId : "")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1044-                    .setApproverNickName(approverNickName != null ? approverNickName : "")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1045-                    .build();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\ApitableGrpcClientServiceImpl.java-1046-            apitableBackendStub.updateNotificationExtras(request);
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\IApitableGrpcClientService.java-181-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\IApitableGrpcClientService.java-182-     * 更新 apitable 通知的 body extras（如审批后写入 status、approver 信息）.
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\IApitableGrpcClientService.java-183-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\IApitableGrpcClientService.java:184:    void updateNotificationExtras(Long notificationId, String status, String approverUserId, String approverNickName);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\IApitableGrpcClientService.java-185-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\IApitableGrpcClientService.java-186-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\IApitableGrpcClientService.java-187-     * 标记 apitable 通知已读/未读.
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-46-     * Approve a permission request.
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-47-     *
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-48-     * @param notificationId   notification ID (apitable player_notification.id)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:49:     * @param approverUserId   approver user ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-50-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:51:    void approve(Long notificationId, Long approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-52-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-53-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-54-     * Approve by requestId (preferred - caller passes resolved requestId).
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-55-     *
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-56-     * @param requestId        permission request ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-57-     * @param notificationId   notification ID (apitable)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:58:     * @param approverUserId   approver user ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-59-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:60:    void approveByRequestId(String requestId, Long notificationId, Long approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-61-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-62-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-63-     * Reject a permission request.
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-64-     *
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-65-     * @param notificationId   notification ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:66:     * @param approverUserId   approver user ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-67-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:68:    void reject(Long notificationId, Long approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-69-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-70-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-71-     * Reject by requestId (preferred - caller passes resolved requestId).
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-72-     *
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-73-     * @param requestId        permission request ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-74-     * @param notificationId   notification ID (apitable)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:75:     * @param approverUserId   approver user ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-76-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:77:    void rejectByRequestId(String requestId, Long notificationId, Long approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-78-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-79-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-80-     * Ignore - mark notification as read.
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-82-     *
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-83-     * @param requestId        permission request ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-84-     * @param notificationId   notification ID (apitable)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:85:     * @param approverUserId   approver user ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-86-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:87:    void ignoreByRequestId(String requestId, Long notificationId, Long approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-88-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-89-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-90-     * Reapprove - mark notification as unread so admin can re-handle.
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-93-     *
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-94-     * @param requestId        permission request ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-95-     * @param notificationId   notification ID (apitable)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:96:     * @param approverUserId   approver user ID
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-97-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java:98:    void reapproveByRequestId(String requestId, Long notificationId, Long approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-99-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\IPermissionRequestService.java-100-}
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\entity\PermissionRequestEntity.java-41-    private String status;
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\entity\PermissionRequestEntity.java-42-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\entity\PermissionRequestEntity.java-43-    @TableField("approver_user_id")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\entity\PermissionRequestEntity.java:44:    private Long approverUserId;
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\entity\PermissionRequestEntity.java-45-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\entity\PermissionRequestEntity.java-46-    private LocalDateTime createdAt;
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\entity\PermissionRequestEntity.java-47-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-44-    @Operation(summary = "Approve permission request")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-45-    public ResponseData<Void> approve(@PathVariable("notificationId") Long notificationId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-46-        Long userId = SessionContext.getUserId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:47:        log.info("[1822-Approval] APPROVE entry notificationId={} approverUserId={}", notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-48-        String requestId = resolveRequestId(notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:49:        permissionRequestService.approveByRequestId(requestId, notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-50-        return ResponseData.success();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-51-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-52-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-57-    @Operation(summary = "Reject permission request")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-58-    public ResponseData<Void> reject(@PathVariable("notificationId") Long notificationId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-59-        Long userId = SessionContext.getUserId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:60:        log.info("[1822-Approval] REJECT entry notificationId={} approverUserId={}", notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-61-        String requestId = resolveRequestId(notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:62:        permissionRequestService.rejectByRequestId(requestId, notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-63-        return ResponseData.success();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-64-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-65-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-70-    @Operation(summary = "Ignore permission request")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-71-    public ResponseData<Void> ignore(@PathVariable("notificationId") Long notificationId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-72-        Long userId = SessionContext.getUserId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:73:        log.info("[1822-Approval] IGNORE entry notificationId={} approverUserId={}", notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-74-        String requestId = resolveRequestId(notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-75-        permissionRequestService.ignoreByRequestId(requestId, notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-76-        return ResponseData.success();
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-83-    @Operation(summary = "Reapprove (un-ignore) permission request")
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-84-    public ResponseData<Void> reapprove(@PathVariable("notificationId") Long notificationId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-85-        Long userId = SessionContext.getUserId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:86:        log.info("[1822-Approval] REAPPROVE entry notificationId={} approverUserId={}", notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-87-        String requestId = resolveRequestId(notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:88:        permissionRequestService.reapproveByRequestId(requestId, notificationId, userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-89-        return ResponseData.success();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-90-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-91-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-92-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-93-     * 通过 gRPC 到 apitable 查通知 body extras，取出 requestId.
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-94-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:95:    private String resolveRequestId(Long notificationId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:96:        Map<String, String> extras = apitableGrpcClientService.getNotificationExtras(notificationId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-97-        if (extras == null || extras.isEmpty()) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:98:            log.warn("[1822-Approval] resolveRequestId: getNotificationExtras returned empty notificationId={} approverUserId={}",
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java:99:                    notificationId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-100-            throw new BusinessException(
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-101-                com.yottastudios.ns.collabspace.control.enums.PermissionRequestException.NOTIFICATION_NOT_VALID);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\controller\NotificationApprovalController.java-102-        }
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\mapper\PermissionRequestMapper.java-40-    int updateStatusById(
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\mapper\PermissionRequestMapper.java-41-        @Param("id") String id,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\mapper\PermissionRequestMapper.java-42-        @Param("status") String status,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\mapper\PermissionRequestMapper.java:43:        @Param("approverUserId") Long approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\mapper\PermissionRequestMapper.java-44-}
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-356-    // ========== Legacy methods (not used - kept for interface compatibility) ==========
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-357-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-358-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:359:    public void approve(Long notificationId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:360:        throw new UnsupportedOperationException("Use approveByRequestId instead");
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-361-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-362-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-363-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:364:    public void reject(Long notificationId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:365:        throw new UnsupportedOperationException("Use rejectByRequestId instead");
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-366-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-367-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-368-    // ========== Approve / Reject (by requestId) ==========
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-369-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-370-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-371-    @Transactional(rollbackFor = Exception.class)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:372:    public void approveByRequestId(String requestId, Long notificationId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:373:        PermissionRequestEntity request = validateAndGetRequest(requestId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-374-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:375:        String approverNickName = getApproverNickName(approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-376-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-377-        // Get applicant unitId
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-378-        UnitMemberVo applicantMember = apitableGrpcClientService.findUnitMemberVo(
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-390-        // Add node role
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-391-        Long spaceNodeId = parseSpaceNodeId(request.getDocumentId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-392-        if (spaceNodeId != null) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:393:            nodeRoleUpdateManager.addNodeRole(approverUserId, request.getSpaceId(), spaceNodeId, nodeRole,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-394-                Collections.singletonList(unitId));
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-395-            log.info("[1822-PermApply] APPROVE addNodeRole ok spaceNodeId={} nodeRole={} unitId={}", spaceNodeId, nodeRole, unitId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-396-        } else {
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-399-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-400-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-401-        // Update permission request status in collabspace
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:402:        int rows = baseMapper.updateStatusById(request.getId(), STATUS_APPROVED, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:403:        log.info("[1822-PermApply] APPROVE DB updateStatus requestId={} status=APPROVED approverUserId={} rows={}",
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:404:            request.getId(), approverUserId, rows);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-405-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-406-        // Update notification extras in apitable (via gRPC) — updates shared notification record for all recipients
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-407-        apitableGrpcClientService.updateNotificationExtras(notificationId, STATUS_APPROVED,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:408:            String.valueOf(approverUserId), approverNickName);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-409-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-410-        // Mark approver's own notification as read
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:411:        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, true);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-412-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-413-        // Mark all other admin/manager recipients' notifications as read (same shared notificationId)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:414:        markOtherRecipientNotificationsRead(notificationId, request, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-415-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-416-        // Notify applicant that their request was approved
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:417:        notifyApplicantResultAsync(request, STATUS_APPROVED, approverUserId, approverNickName);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-418-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:419:        log.info("[1822-PermApply] APPROVE done requestId={} approverUserId={} applicantUserId={} documentId={} nodeRole={}",
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:420:            request.getId(), approverUserId, request.getApplicantUserId(), request.getDocumentId(), nodeRole);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-421-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-422-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-423-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-424-    @Transactional(rollbackFor = Exception.class)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:425:    public void rejectByRequestId(String requestId, Long notificationId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:426:        PermissionRequestEntity request = validateAndGetRequest(requestId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-427-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:428:        String approverNickName = getApproverNickName(approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-429-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-430-        // Update permission request status
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:431:        int rows = baseMapper.updateStatusById(request.getId(), STATUS_REJECTED, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:432:        log.info("[1822-PermApply] REJECT DB updateStatus requestId={} status=REJECTED approverUserId={} rows={}",
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:433:            request.getId(), approverUserId, rows);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-434-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-435-        // Update notification extras in apitable (via gRPC) — updates shared notification record for all recipients
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-436-        apitableGrpcClientService.updateNotificationExtras(notificationId, STATUS_REJECTED,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:437:            String.valueOf(approverUserId), approverNickName);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-438-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-439-        // Mark approver's own notification as read
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:440:        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, true);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-441-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-442-        // Mark all other admin/manager recipients' notifications as read (same shared notificationId)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:443:        markOtherRecipientNotificationsRead(notificationId, request, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-444-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-445-        // Notify applicant that their request was rejected
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:446:        notifyApplicantResultAsync(request, STATUS_REJECTED, approverUserId, approverNickName);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-447-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:448:        log.info("[1822-PermApply] REJECT done requestId={} approverUserId={} applicantUserId={} documentId={}",
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:449:            request.getId(), approverUserId, request.getApplicantUserId(), request.getDocumentId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-450-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-451-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-452-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:453:    public void ignoreByRequestId(String requestId, Long notificationId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:454:        validateRequestForApprover(requestId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:455:        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, true);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:456:        log.info("[1822-PermApply] IGNORE requestId={} notificationId={} approverUserId={}", requestId, notificationId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-457-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-458-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-459-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:460:    public void reapproveByRequestId(String requestId, Long notificationId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:461:        validateRequestForApprover(requestId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:462:        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, false);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:463:        log.info("[1822-PermApply] REAPPROVE requestId={} notificationId={} approverUserId={}", requestId, notificationId, approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-464-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-465-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-466-    // ========== Validation Helpers ==========
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-469-     * Validates requestId exists and approver is admin. Does NOT check PENDING status.
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-470-     * Used for reapprove, which can act on already-processed requests.
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-471-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:472:    private void validateRequestForApprover(String requestId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-473-        if (requestId == null || requestId.isBlank()) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-474-            ExceptionUtil.isNotBlank(requestId, PermissionRequestException.NOTIFICATION_NOT_VALID);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-475-        }
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-478-            log.warn("[1822-PermApply] validate requestNotFound requestId={}", requestId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-479-            ExceptionUtil.isNotNull(request, PermissionRequestException.PERMISSION_REQUEST_NOT_FOUND);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-480-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:481:        validateApproverIsAdmin(approverUserId, request.getSpaceId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-482-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-483-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:484:    private PermissionRequestEntity validateAndGetRequest(String requestId, Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-485-        if (requestId == null || requestId.isBlank()) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-486-            ExceptionUtil.isNotBlank(requestId, PermissionRequestException.NOTIFICATION_NOT_VALID);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-487-        }
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-495-                request.getId(), request.getStatus());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-496-            ExceptionUtil.isTrue(false, PermissionRequestException.REQUEST_ALREADY_PROCESSED);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-497-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:498:        validateApproverIsAdmin(approverUserId, request.getSpaceId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-499-        return request;
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-500-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-501-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:502:    private void validateApproverIsAdmin(Long approverUserId, String spaceId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:503:        boolean isAdmin = spaceQueryManager.isUserSpaceAdmin(approverUserId, spaceId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-504-        ExceptionUtil.isTrue(isAdmin, PermissionRequestException.INSUFFICIENT_PERMISSIONS);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-505-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-506-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:507:    private String getApproverNickName(Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-508-        try {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:509:            UserSimpleInfoVo user = apitableGrpcClientService.getUserById(approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-510-            return user != null && user.getNickName() != null ? user.getNickName() : "";
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-511-        } catch (Exception e) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-512-            return "";
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-609-     * so setNotificationRead(notificationId, otherUserId, true) marks it read for each of them individually.
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-610-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-611-    private void markOtherRecipientNotificationsRead(Long notificationId, PermissionRequestEntity request,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:612:                                                      Long approverUserId) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-613-        try {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-614-            List<Long> adminUserIds = spaceQueryManager.getAdminUsersWithWorkBenchManagePermission(request.getSpaceId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-615-            List<Long> docManagerUserIds = getDocumentManagerUserIds(request.getDocumentId(), request.getSpaceId());
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-618-            others.addAll(adminUserIds);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-619-            others.addAll(docManagerUserIds);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-620-            others.remove(request.getApplicantUserId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:621:            others.remove(approverUserId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-622-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-623-            for (Long userId : others) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-624-                apitableGrpcClientService.setNotificationRead(notificationId, userId, true);
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-652-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-653-    @Async
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-654-    public void notifyApplicantResultAsync(PermissionRequestEntity request, String status,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:655:                                            Long approverUserId, String approverNickName) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-656-        try {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-657-            String templateId = STATUS_APPROVED.equals(status) ? "permission_approved" : "permission_rejected";
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-658-            // Use documentName stored at submit time; fall back to re-query only if null/empty
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-672-            extras.put("documentId", request.getDocumentId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-673-            extras.put("documentName", documentName);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-674-            extras.put("status", status);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:675:            extras.put("approverUserId", String.valueOf(approverUserId));
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-676-            extras.put("approverNickName", approverNickName != null ? approverNickName : "");
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-677-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-678-            Map<String, Object> bodyMap = new HashMap<>();
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-681-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-682-            apitableGrpcClientService.createNotification(
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-683-                templateId,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:684:                String.valueOf(approverUserId),
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-685-                Collections.singletonList(String.valueOf(request.getApplicantUserId())),
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-686-                request.getDocumentId(),
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-687-                request.getSpaceId(),

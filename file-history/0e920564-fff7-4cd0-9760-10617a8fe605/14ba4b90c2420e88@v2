@@ -1,0 +1,620 @@
+# Dify 意图识别节点 Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 在现有 Dify「OA问答」工作流中增加意图识别层，通过 LLM 提取成员和周期两个槽位，缺失时自动反问，齐全后再执行日报查询。
+
+**Architecture:** 在 Start 和现有业务节点之间插入三个新节点：意图识别 LLM（带会话记忆）→ Python 代码节点（解析 JSON）→ IF/ELSE 分支。槽位不完整走反问回复分支，完整走原有业务流程。
+
+**Tech Stack:** Dify advanced-chat workflow, gemini-3-pro-preview, Python (Dify code node)
+
+---
+
+### Task 1: 生成新的 DSL 文件
+
+**Files:**
+- Create: `D:\project\info-gitlab\oa\bugfix\ai\dify-intent-recognition.yml`
+
+这是完整的 Dify DSL 文件，可直接导入 Dify 替换现有工作流。
+
+- [ ] **Step 1: 创建 DSL 文件**
+
+创建 `D:\project\info-gitlab\oa\bugfix\ai\dify-intent-recognition.yml`，内容如下：
+
+```yaml
+app:
+  description: 'OA日报查询助手，支持意图识别和多轮槽位补全'
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: OA问答
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.41@680b9357e6cd290ef5e8691a35286bffddb75bf30c8dacfe351d8b5e5fd87283
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: '你好！我是OA日报查询助手。请告诉我你想查谁的日报，以及查哪个时间段，我来帮你查询。'
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - '查一下张三上周的日报'
+    - '前端组这个月的日报汇总'
+    - '我的下属昨天写了什么日报'
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: start-intent-llm
+      source: '1774415900972'
+      sourceHandle: source
+      target: intent-llm
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: code
+      id: intent-llm-parse-code
+      source: intent-llm
+      sourceHandle: source
+      target: parse-code
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: code
+        targetType: if-else
+      id: parse-code-if-else
+      source: parse-code
+      sourceHandle: source
+      target: slots-check
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: if-else
+        targetType: llm
+      id: if-else-true-llm
+      source: slots-check
+      sourceHandle: 'true'
+      target: llm
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: llm-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: if-else
+        targetType: answer
+      id: if-else-false-answer
+      source: slots-check
+      sourceHandle: 'false'
+      target: ask-answer
+      targetHandle: target
+      type: custom
+    nodes:
+    # ===== Start 节点 =====
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables:
+        - hint: ''
+          label: system_prompt
+          max_length: 25600
+          options: []
+          placeholder: ''
+          required: true
+          type: paragraph
+          variable: system_prompt
+      height: 107
+      id: '1774415900972'
+      position:
+        x: 30
+        y: 280
+      positionAbsolute:
+        x: 30
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    # ===== 意图识别 LLM 节点 =====
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.3
+          mode: chat
+          name: gemini-3-pro-preview
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: intent-system-prompt
+          role: system
+          text: |
+            你是一个意图识别助手。你的任务是从用户的对话中提取两个必要信息：
+
+            1. **查询成员**（members）：用户想查谁的日报。支持以下表达方式：
+               - 具体姓名：如"张三"、"张三和李四"
+               - 工号：如"YT001"
+               - 团队/部门：如"前端组"、"设计部"
+               - 关系表达：如"我的下属"、"项目A的成员"
+
+            2. **查询周期**（period）：用户想查什么时间段的日报。支持以下表达方式：
+               - 相对时间：如"昨天"、"上周"、"这个月"、"最近3天"
+               - 绝对时间：如"3月15日到20日"、"2026年Q1"
+               - 单日：如"今天"、"3月20日"
+
+            当前日期：{{#sys.current_date#}}
+
+            ## 处理规则
+
+            1. 从用户**当前输入和历史对话**中综合提取 members 和 period。
+            2. 相对时间必须根据当前日期换算为绝对日期（YYYY-MM-DD 格式）。
+            3. 如果某个槽位缺失，将 slots_complete 设为 false，在 reply 中用自然语言反问，**只问缺失的槽位**。
+            4. 如果两个槽位都提取到了，将 slots_complete 设为 true，reply 为空字符串。
+            5. **只输出 JSON，不输出任何其他内容。**
+
+            ## 输出格式
+
+            ```json
+            {
+              "slots_complete": true或false,
+              "members": ["成员1", "成员2"],
+              "member_type": "individual或team或relation",
+              "period_start": "YYYY-MM-DD",
+              "period_end": "YYYY-MM-DD",
+              "period_raw": "用户原始时间表达",
+              "reply": "反问文案（slots_complete为true时为空字符串）"
+            }
+            ```
+
+            ## 字段说明
+
+            - slots_complete: 布尔值，两个槽位是否都已提取到
+            - members: 字符串数组，提取到的成员列表
+            - member_type: 成员类型。individual=具体个人，team=团队/部门，relation=关系表达（如"我的下属"）
+            - period_start: 起始日期，ISO 格式
+            - period_end: 结束日期，ISO 格式。若为单日则与 period_start 相同
+            - period_raw: 用户原始时间表达，保留原文
+            - reply: 当 slots_complete 为 false 时，生成自然友好的反问文案
+
+            ## 反问示例
+
+            - 缺成员：「你想查谁的日报呢？可以说具体姓名、团队名，或者说"我的下属"」
+            - 缺周期：「想查哪个时间段的？比如"上周"、"3月15日到20日"」
+            - 两个都缺：「请告诉我你想查谁的日报，以及查哪个时间段？」
+        selected: false
+        title: 意图识别
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: intent-llm
+      position:
+        x: 330
+        y: 280
+      positionAbsolute:
+        x: 330
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    # ===== 代码节点：解析 JSON =====
+    - data:
+        code: |
+          import json
+          import re
+
+          def main(text: str) -> dict:
+              # 兼容 LLM 输出 markdown 代码块包裹的情况
+              match = re.search(r'\{[\s\S]*\}', text)
+              if not match:
+                  return {
+                      "slots_complete": False,
+                      "members": "[]",
+                      "member_type": "",
+                      "period_start": "",
+                      "period_end": "",
+                      "reply": "抱歉没理解你的意思，请告诉我你想查谁的日报，以及查哪个时间段？"
+                  }
+
+              try:
+                  data = json.loads(match.group())
+              except json.JSONDecodeError:
+                  return {
+                      "slots_complete": False,
+                      "members": "[]",
+                      "member_type": "",
+                      "period_start": "",
+                      "period_end": "",
+                      "reply": "抱歉没理解你的意思，请告诉我你想查谁的日报，以及查哪个时间段？"
+                  }
+
+              return {
+                  "slots_complete": bool(data.get("slots_complete", False)),
+                  "members": json.dumps(data.get("members", []), ensure_ascii=False),
+                  "member_type": str(data.get("member_type", "")),
+                  "period_start": str(data.get("period_start", "")),
+                  "period_end": str(data.get("period_end", "")),
+                  "reply": str(data.get("reply", ""))
+              }
+        code_language: python3
+        outputs:
+          slots_complete:
+            children: null
+            type: boolean
+          members:
+            children: null
+            type: string
+          member_type:
+            children: null
+            type: string
+          period_start:
+            children: null
+            type: string
+          period_end:
+            children: null
+            type: string
+          reply:
+            children: null
+            type: string
+        selected: false
+        title: 解析槽位
+        type: code
+        variables:
+        - value_selector:
+          - intent-llm
+          - text
+          variable: text
+      height: 54
+      id: parse-code
+      position:
+        x: 630
+        y: 280
+      positionAbsolute:
+        x: 630
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    # ===== IF/ELSE 节点 =====
+    - data:
+        conditions:
+        - comparison_operator: is
+          id: condition-slots-complete
+          value: 'true'
+          variable_selector:
+          - parse-code
+          - slots_complete
+        logical_operator: and
+        selected: false
+        title: 槽位完整？
+        type: if-else
+      height: 126
+      id: slots-check
+      position:
+        x: 930
+        y: 260
+      positionAbsolute:
+        x: 930
+        y: 260
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    # ===== 原有 LLM 节点（true 分支：日报业务） =====
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gemini-3-pro-preview
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: 2e97ebfc-ee07-48e1-aacf-d21b078260e5
+          role: system
+          text: '{{#1774415900972.system_prompt#}}'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 86
+      id: llm
+      position:
+        x: 1250
+        y: 200
+      positionAbsolute:
+        x: 1250
+        y: 200
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    # ===== 直接回复节点（true 分支） =====
+    - data:
+        answer: '{{#llm.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 101
+      id: answer
+      position:
+        x: 1550
+        y: 200
+      positionAbsolute:
+        x: 1550
+        y: 200
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    # ===== 反问回复节点（false 分支） =====
+    - data:
+        answer: '{{#parse-code.reply#}}'
+        selected: false
+        title: 反问澄清
+        type: answer
+        variables: []
+      height: 101
+      id: ask-answer
+      position:
+        x: 1250
+        y: 380
+      positionAbsolute:
+        x: 1250
+        y: 380
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1.0
+  rag_pipeline_variables: []
+```
+
+- [ ] **Step 2: 验证 YAML 语法**
+
+用任意 YAML 校验工具（在线或本地）检查文件语法是否正确，确保无缩进错误。
+
+---
+
+### Task 2: 在 Dify 中导入并验证工作流
+
+- [ ] **Step 1: 备份现有工作流**
+
+在 Dify 中打开现有「OA问答」应用，点击右上角菜单 → 导出 DSL，保存为备份。
+
+- [ ] **Step 2: 导入新工作流**
+
+两种方式任选：
+
+**方式 A：新建应用导入**
+1. 回到 Dify 主页，点击「导入 DSL 文件」
+2. 选择 `dify-intent-recognition.yml` 文件导入
+3. 导入后会创建一个新的「OA问答」应用
+
+**方式 B：在现有应用中替换**
+1. 打开现有「OA问答」应用
+2. 在编排界面手动添加节点（参考 DSL 中的节点定义）
+
+推荐方式 A，导入后可以和旧版并行测试。
+
+- [ ] **Step 3: 检查节点连线**
+
+导入后在 Dify 编排界面确认节点和连线：
+- `用户输入` → `意图识别` → `解析槽位` → `槽位完整？`
+- `槽位完整？` YES → `LLM` → `直接回复`
+- `槽位完整？` NO → `反问澄清`
+
+共 7 个节点、6 条边。
+
+- [ ] **Step 4: 确认意图识别 LLM 配置**
+
+点击「意图识别」节点，逐项确认：
+- 模型：`gemini-3-pro-preview`
+- temperature：`0.3`（低温度保证 JSON 输出稳定）
+- 会话记忆：**已开启**，窗口大小 `10`
+- System prompt：包含完整的槽位提取指令和当前日期变量 `{{#sys.current_date#}}`
+
+- [ ] **Step 5: 确认代码节点配置**
+
+点击「解析槽位」节点，确认：
+- 输入变量 `text` 关联到 `意图识别.text`
+- 输出变量 6 个：`slots_complete`(bool), `members`(string), `member_type`(string), `period_start`(string), `period_end`(string), `reply`(string)
+- Python 代码逻辑正确
+
+- [ ] **Step 6: 确认 IF/ELSE 节点配置**
+
+点击「槽位完整？」节点，确认：
+- 条件：`解析槽位.slots_complete` is `true`
+- IF（true）→ 连接到 `LLM` 节点
+- ELSE（false）→ 连接到 `反问澄清` 节点
+
+---
+
+### Task 3: 功能测试
+
+在 Dify 的「调试与预览」面板中逐一测试以下场景。
+
+- [ ] **Step 1: 测试两个槽位都齐全**
+
+输入：`查一下张三上周的日报`
+
+预期：
+- 意图识别 LLM 输出 JSON，`slots_complete: true`，`members: ["张三"]`，`period_start/end` 为上周一到周日
+- 代码节点正确解析
+- IF/ELSE 走 true 分支 → 进入 LLM 节点
+
+- [ ] **Step 2: 测试缺少成员槽位**
+
+输入：`查一下上周的日报`
+
+预期：
+- 意图识别 LLM 输出 JSON，`slots_complete: false`，`reply` 包含反问成员的文案
+- IF/ELSE 走 false 分支 → 输出反问文案（如「你想查谁的日报呢？」）
+
+- [ ] **Step 3: 测试缺少周期槽位**
+
+输入：`查一下张三的日报`
+
+预期：
+- `slots_complete: false`，`reply` 包含反问周期的文案
+- 输出反问（如「想查哪个时间段的？」）
+
+- [ ] **Step 4: 测试两个槽位都缺**
+
+输入：`查日报`
+
+预期：
+- `slots_complete: false`，`reply` 同时反问两个槽位
+- 输出反问（如「请告诉我你想查谁的日报，以及查哪个时间段？」）
+
+- [ ] **Step 5: 测试多轮补全**
+
+第一轮输入：`查日报`
+预期：反问两个槽位
+
+第二轮输入：`张三的`
+预期：记住张三，反问周期
+
+第三轮输入：`上周`
+预期：`slots_complete: true`，走 true 分支
+
+- [ ] **Step 6: 测试灵活表达**
+
+依次测试：
+- `我的下属这个月写了什么` → member_type=relation
+- `前端组最近3天的日报` → member_type=team
+- `张三和李四3月15日到20日的日报` → members=["张三","李四"]，绝对日期
+
+预期：都能正确提取槽位并走 true 分支。
+
+- [ ] **Step 7: 测试容错**
+
+如果 LLM 输出了非 JSON 内容（可通过临时修改 prompt 触发），确认代码节点返回兜底反问文案。
+
+---
+
+### Task 4: 更新部署文档
+
+**Files:**
+- Modify: `D:\project\info-gitlab\oa\bugfix\ai\dify-deploy.md`
+
+- [ ] **Step 1: 更新 DSL 内容**
+
+将 `dify-deploy.md` 中「4. 导入工作流」部分的 YAML 替换为 `dify-intent-recognition.yml` 的完整内容。
+
+- [ ] **Step 2: 新增测试说明**
+
+在文档末尾「5. 获取 API 密钥」之后，新增一节：
+
+```markdown
+## 6. 功能验证
+
+导入后在「调试与预览」中测试以下场景：
+
+1. 完整输入：「查一下张三上周的日报」→ 应直接返回日报结果
+2. 缺成员：「查一下上周的日报」→ 应反问查谁的
+3. 缺周期：「查一下张三的日报」→ 应反问查哪个时间段
+4. 多轮补全：先输入「查日报」，再逐步补充成员和周期 → 补全后返回结果
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add bugfix/ai/dify-intent-recognition.yml bugfix/ai/dify-deploy.md
+git commit -m "feat: 新增意图识别工作流 DSL，支持槽位提取和多轮反问"
+```

@@ -1,0 +1,2241 @@
+5d5183587 refactor(core): 优化 offerApproval 方法查询逻辑并新增批量过滤 token 方法
+3266079c4 Merge branch '260305-bug' into 'release'
+fbecf5f24 fix(to): 调整超时天数并添加offer审批超时检查逻辑
+b2d12af7d Merge branch '260213-3月2上线' into 'release'
+5adf11cc9 refactor: 统一邮件模板获取与重复校验逻辑
+54353caa9 Merge branch '260126-offer审批通知功能更新' into 'release'
+6024d4001 fix(core): 移除offer审批状态参数 to(core): 移除offer审批状态参数
+1a584a53b Merge branch '260126-offer审批通知功能更新' into 'release'
+02b0fcd85 style: 修改日志信息格式以增强可读性
+053347770 fix(core): 修正sendOfferStatusUpdateEmail方法参数及状态更新逻辑
+33c994486 style: 修正表格内容自动换行问题
+8f24c94cb feat: 添加拒绝理由标识和处理逻辑
+a35fdabcf 0689
+43394eb3d Merge branch '260203-支持转换pdf' into 'release'
+61161948b fix(ui): 添加面试记录为空的标志变量
+e42d52e36 refactor: 修改面试通知逻辑以发送给所有符合条件的面试官
+bde684fb6 style: 表格头增加 nowrap 样式以防止内容换行
+c30d8911d fix: 修正发票识别服务地址配置
+970199f3c feat: 新增发票识别服务接口配置和控制器方法
+f3b720ca3 style: 调整薪资列样式以防止换行 style: 更新薪资信息构建方式以支持多行显示
+e39eacced feat: 新增OFFER审批开始通知模板 feat: 增加OFFER创建时的通知逻辑
+e9661f661 fix(ui): 修改构建链接参数以定位到待审批状态
+c65a0878b fix: 删除多余的换行和不必要的标签
+4ee8ddbe0 fix: 修改邮件内容链接文本
+c283d07ed fix(offerInfo): 取消offerInfo字段的加密处理
+3ae807027 refactor: 合并和优化offer状态更新的通知逻辑
+e2bc77958 fix: 修正OFFER状态更新逻辑和邮件发送条件
+0a87641ac fix: 添加新的OFFER状态更新模板并优化通知逻辑
+daaece93f fix: 修改审批状态参数以定位到已审批状态
+5133d1d22 style(app): 移除多余的空行
+dbb9c3643 feat(api): 增加OFFER审批状态更新通知模板及链接参数
+4d1a5fa63 fix(ui): 移除邮件内容中的员工姓名和部门信息，并加密薪资字段
+c8e7ab440 fix: 移除申请人姓名的加密处理
+cbc0f1cbd feat: 增加邮件内容详情和格式优化 fix: 修复邮件内容模板变量错误与增加薪资信息 refactor: 重构邮件内容生成逻辑以支持更多变量
+8f31bda8e feat: 新增OFFER状态更新邮件功能
+0134a6e09 Merge branch '260126-模板禁用的重复了直接覆盖' into 'release'
+89759f808 refactor: 在配置管理中处理已存在邮件模板的逻辑
+0a15a96f6 Merge branch '260126-模板禁用的重复了直接覆盖' into 'release'
+0422b7d16 feat(api): 添加邮件模板禁用后自动删除并创建新模板的功能
+75aaa2991 Merge branch '251212-面试逻辑修改及推送' into 'release'
+0fbe60b38 feat: 增加面试计划根据rpid筛选功能
+7859f33d0 fix: 修正简历招聘状态更新链接参数错误
+134a02ec3 fix(ui): 修改HR面试通知内容参数名
+7bb179b97 fix: 调整发送面试历史消息方法以包含rec_pro_id参数
+6aa2fad99 Merge branch '251212-面试逻辑修改及推送' into 'release'
+3d4fed772 style(core): 修改邮件发送日志信息格式
+0e847f795 feat(api): 新增发送非加密邮件功能
+501824dfc Merge branch '251212-面试逻辑修改及推送' into 'release'
+66790f7f1 feat: 增加非中国区不发通知的逻辑
+0bafc9335 Merge branch '251212-面试逻辑修改及推送' into 'release'
+561c1d04c fix: 添加面试已过90天不通知逻辑
+81f2a575b Merge branch '251212-面试逻辑修改及推送' into 'release'
+073482bbc refactor(ui): 调整面试记录信息字段名称
+a84cd4126 fix: 添加待入职邮件发送功能
+732c42eee fix: 修正面试时间比较逻辑
+959c5de47 Merge branch '251225-内推简历负责人分配' into 'release'
+ee679d544 refactor: 将返回值处理逻辑提取到新方法
+73b8770a8 feat: bb
+8e73e4ece Merge branch '251225-内推简历负责人分配' into 'release'
+9b7ca06ba feat: 增加内推简历负责人分配逻辑
+01ba33a34 fix(recruitment): 处理数据中小于0的值并设置为0
+bcaf0d8a7 fix: 修正面试日程历史评价面试官通知的逻辑错误
+5112ac353 Merge branch '251217-员工库数字有问题' into 'release'
+bf6bed5a5 fix(ui): 使用常量替换试用期天数
+b02ff287a fix(ui): 修正员工统计查询逻辑
+47e3ef66d fix(ui): 修正员工统计查询逻辑
+9f3ca28cf Merge branch '251218-查简历' into 'release'
+0a9968219 fix: 添加搜索参数 rec_id 和 resume_id
+cb141b5c3 feat: 新增过滤条件
+74c5ad5f4 fix: 修改归档状态下的entry_time显示逻辑
+d5066ece8 fix(core): 移除无效的面试结果参数并优化档案状态处理
+81b93fcd4 feat: 添加拒offer和已入职通知功能
+9d24affe6 feat: 新增发送入职待处理邮件功能
+45752321b fix: 修正offer状态更新后的通知文案和面试历史消息发送逻辑
+addd55b78 feat: 新增面试历史信息发送至SSC功能
+2572ce89a fix: 修正createOfferTime只保留日期显示
+a98902ad8 fix: 修复rejectReason获取逻辑
+d0d0252bb fix: 修复json_decode空值导致的错误
+0ab11f0e0 fix: 修正简历拒绝原因和备注字段的处理逻辑
+b5a658abc feat: 面试记录筛选功能添加 支持根据面试结果筛选面试记录
+747f7d454 Merge branch '251211-增加ip' into 'release'
+61cab23b1 fix(config): 添加公司新翻墙ip地址
+bf69b8887 Merge branch '251204-换网址' into 'release'
+3c56ac33f fix: 更新官方URL和邮件内容中的链接
+47e2ef6eb Merge branch '251119-应聘登记表里改名字手机号和邮箱' into 'release'
+9d81709e5 feat(ui): 251119-应聘登记表里改名字手机号和邮箱
+65a0b0ae2 Merge branch '251017-发送招聘进度' into 'release'
+5e565f218 feat(ui): 新增发送应聘进度记录功能
+7df4ef7e8 feat: 新增职位申请审核时间记录
+0021cff32 feat: 新增职位申请审核时间记录
+a57e42dc7 fix: 修正期望职位格式问题
+3f38ee350 fix: 修复获取简历期望职位ID的逻辑错误
+7b4ddd8a7 feat: 增加期望职位更新逻辑 feat: 新增获取职位格式的方法
+04221de7a feat: 添加笔试未通过时更新进度的功能
+f1f0db5df feat: 增加了针对不同区域的recruitment_progress表创建语句
+989020761 fix: 更新面试进度逻辑调整
+fb3df9260 fix: 添加未通过筛选时的消息处理逻辑
+489476f41 fix: 修复了删除进度记录时的模型名称错误
+2fffce672 fix: 修正删除进度任务中id_sign的访问方式
+7e55fb8e8 feat(core): 新增管理员删除进度任务类
+9b4afc5c7 fix(recruitment): 修改未通过流程状态判断逻辑
+b965fd17b fix(ui): 更新简历过滤和面试结果后的应聘进度状态
+aaebf3082 feat: 新增筛选结果后的进度更新逻辑
+0bf73c794 fix(recruitment): 修正更新进度时的数组索引错误
+15e68c1ba fix(core): 取消流转岗位限制并更新进度
+6a7165b45 feat(core): 增加返回职位名称功能
+61654b2ca fix(ui): 修正更新进度时id_sign参数格式错误
+3e87119db fix: 修复招聘流程中评审状态更新逻辑
+52d80ed09 fix(to): 修复网申未通过后自动转入初筛逻辑
+ab7752b88 fix(to): 修复网申未通过后自动转入初筛逻辑
+35253d5c1 fix(ui): 修正员工管理服务中返回值逻辑
+9967ea37a fix(to): 修复返回值错误并调整返回结构
+8e8397353 fix(staff management): 修正返回值逻辑并格式化请求调用
+5d7fbc806 refactor: 使用自定义json编码函数
+4a2d651fa fix(core): 调整RecruitmentProgressMd::create方法参数格式
+23a03f106 feat: 新增密码字段到进展令牌生成请求
+0cb617365 refactor: 删除简历拉取后发送邮件的代码并优化 expectJobIds 遍历
+36caa07b2 fix(config): 移除不必要的参数验证规则
+229ebe900 style: 移除不必要的空行
+e314cb590 refactor(staff management): 更新生成进度令牌逻辑并处理空值情况
+0d9f504ce feat(core): 251017-发送招聘进度
+d22189247 Merge branch '251009-1-8号的日期，在9.28都要发出来才对，都算提前3天' into 'release'
+a8fba9d32 fx: 251009-1-8号的日期，在9.28都要发出来才对，都算提前3天
+34a209bfa Merge branch '250716-fixbug' into 'release'
+59dfe7edc fix: 将员工转正日期查询条件从30天改为90天
+436927613 fix: 修正获取员工生活数据的日志记录逻辑
+842bed52a Merge branch '250716-fixbug' into 'release'
+7bf79216e feat: 新增修复bug的job类
+f147ea3d7 Merge branch '250709-离职邮件文案' into 'release'
+186b81541 fix: 250709-离职邮件文案
+805962e9b Merge branch '250701-简历拉取' into 'release'
+b5ba502e6 fix: 2
+f16a10ea3 fix: 2
+736a130cb fix: 2
+903107878 fix: 250701-简历拉取
+cb8f2c9e8 Merge branch '250630-log' into 'release'
+6a7fa5c25 fix: 1
+90bedbdcd Merge branch '250625-log' into 'release'
+ecb9ea22d fix: StaffInformationMd
+6a0f05f83 Merge branch '250625-log' into 'release'
+65e6a2f2c fix: StaffInformationMd
+774670408 fix: StaffInformationMd
+e17a1c1d8 Merge branch '250625-log' into 'release'
+eabbdd1c4 fix: StaffInformationMd
+c5e944b82 Merge branch '250618-员工导出新增字段' into 'release'
+8f829e310 fix: edu_school_major
+0291c611e Merge branch '250618-员工导出新增字段' into 'release'
+85b98b089 fix: 250618-员工导出新增字段
+3217e7b5a Merge branch '250606-日志' into 'release'
+add891ad5 fix: 日志
+7fc07e93e Merge branch '250604-日志' into 'release'
+b637f71c5 fix: 日志
+9f5a95fcf Merge branch '250603-日志' into 'release'
+ee009e847 fix: 日志
+5f1fa7b48 fix: 日志
+aae57a7df Merge branch '250526-入职修改' into 'release'
+29f153946 fix: 250526-入职修改
+c2900d02f Merge branch '250523-禁用的不展示' into 'release'
+efb13c3a4 fix: 250523-禁用的不展示
+d3902b48c Merge branch '250515-给直接主管发入职信息' into 'release'
+79f3de873 fix: 更新直接主管id
+709bd1bcc Merge branch '250515-给直接主管发入职信息' into 'release'
+ee44c7eb9 fix: 250515-给直接主管发入职信息
+30a680bf0 Merge branch '250423-简历搜索问题' into 'release'
+14c968e0d fix: 9
+54752573d Merge branch '250423-简历搜索问题' into 'release'
+9d47f9e76 fix: 8
+17c78ac17 fix: 8
+20bdff25c Merge branch '250422-面试token90天' into 'release'
+40e9a0e24 fix: 7
+2822f6178 fix: 7
+b07d8a5f7 fix: 6
+9b8165d9f fix: 5
+cc77a4f23 fix: 4
+bcaa62b7c fix: 3
+3c37f89cb Merge branch '250422-面试token90天' into 'release'
+9eecc44ac fix: 3
+471a083ee fix: 1111
+fa2658cb5 Merge branch '250422-面试token90天' into 'release'
+d110ca502 fix: 4
+4452e413d Merge branch '250422-面试token90天' into 'release'
+c8b1e02e9 fix: 3
+9153c20f7 Merge branch '250422-面试token90天' into 'release'
+5adfeae7f fix: 1111
+6c142c07f Merge branch '250418-内推模板问题' into 'release'
+752eb4a83 fix: 1111
+2fe31cd80 Merge branch '250328-拒信新优化' into 'release'
+11cd23504 fix: 17
+986beaa9e fix: 16
+eeca3a310 fix: 15
+519fa33ea fix: 14
+98a4c3daf fix: 13
+dae2f7d02 fix: 12
+e8fffa243 fix: 7
+9e53c4942 fix: 6
+744b8f535 Merge branch '250331-面试评价有效期90天' into 'release'
+79232613a fix: 1111
+234e3f2f0 fix: 1111
+632c84180 Merge branch '250311-hotfix-id过多导致查询超时' into 'release'
+914fb7866 fix: 3
+ede13a6e3 Merge branch '250311-hotfix-id过多导致查询超时' into release
+d32737430 fix: 3
+65fa45c3c Merge branch '250311-hotfix-id过多导致查询超时' into 'release'
+11bdbf3b4 fix: 2
+7e32d960f fix: 1
+04e62f0fa Merge branch '250220-hotfix' into 'release'
+164b6a491 fix: ->orderBy('id', 'desc')
+435cbcda7 Merge branch '250206-面谈推送有问题' into 'release'
+080350959 fix: 7
+b4812dfbb fix: 5
+3eb776ae2 fix: 250206-面谈推送有问题
+bd11d75df Merge branch 'todo/7495_HR系统员工面谈-入职面谈出现的时间' into 'release'
+8f76dbf2a fix: 3
+c840ff712 fix:init 7495
+50922539c fix:cheatReasonList
+59006498b log
+f2b1058ec Merge branch 'todo/7265_有一个简历，我看投递进系统的时间里，前后2个岗位都是开着内推的，但是记录不了前2项的奖励' into 'release'
+8facc27fd fix: bug!
+a1c992582 fix: init commit 7265
+896285a56 Merge branch 'hotfix/241017' into 'release'
+081cb94df fix: 重复发邮件的问题
+31b04520d Merge branch 'released/release-241012' into 'release'
+b4eb4b581 fix: init commit 7268
+1efa77b4a Merge branch 'todo/7163_但是我们的系统里显示“已过期' into released/release-240822
+b2b15f667 fix: init commit 7163
+df182d7f9 fix: count($conditions) !== 3
+6ca65fb66 fix: department_category_job_id2
+0cad41266 fix: department_category_job_id
+01276a535 Merge branch 'todo/7153_php项目增加统一异常日志' into released/release-240815
+d6d36fa29 Merge branch 'todo/7152_子码code为空也调用的bug' into released/release-240815
+4313b573f Merge branch 'todo/7150_虚拟内推码-奖金部分' into released/release-240815
+d1cc5c491 fix: ->where('sub_code', $one['sub_code'])
+e20f6b632 fix: report
+8567b9166 fix: init commit 7153
+eddaef158 fix: init commit 7152
+35e3bc44c fix: introducer_sub
+b8e173510 fix: Array sizes are inconsistent
+a738f6af2 fix: ['sub_code'] ?? null
+098d30af9 fix: ir.sub_code
+a763e9dc8 fix: init commit 7150
+1b1e5a2d1 Merge branch 'todo/7087_虚拟内推码' into released/release-240812
+9ee4ea517 fix: ltrim
+d95a4be2c fix: getIntroducerName
+0f1732052 fix:new git
+0f53a2089 fix:new git
+90026af2f Merge branch 'release-old3' into release
+91441c510 Merge branch 'release-old2' into release-old3
+90d879df5 fix:new git
+ffc11c2a2 fix:sub_code
+270fec7ac fix:baseq
+db7c231d9 fix:subcode
+e7dd8738e fix:sub name
+5c01764e0 fix:NextOaApiLib data
+cff2c2945 fix:real_name
+378d78854 fix:int
+86c9ccc74 fix:子码已禁用
+5aa2628b8 fix:subcode
+42acb1f0a fix:
+cba1cbcc8 fix: init commit
+0b447c6ae 更新.gitlab-ci.yml文件
+f03ac263b 更新.gitlab-ci.yml文件
+799b668aa 更新.gitlab-ci.yml文件
+64f95e895 Merge branch 'released/release-240801' into 'release'
+6192c0edb fix: init commit
+c09f0fa3b Merge branch 'released/release-240704' into 'release'
+eba566d8d Merge branch 'todo/7008_不改内容就是多了个空行' into released/release-240704
+61cee164a fix: init commit
+f6d7391a3 fix: init commit
+95de4676d Merge branch 'released/release-240627' into 'release'
+ac6f7170e fix: init commit
+22025ecd1 Merge branch 'released/release-240626' into 'release'
+cf3bb5844 fix: ok
+15b7929d9 fix: init commit
+dcf235a9f Merge branch 'release-240621' into 'release'
+1403219f5 fix: Throwable
+fc2f5acb7 fix: try catch
+8c9538770 fix: $introducer['created_at']
+8c6dd5614 fix: id
+c8326fafc fix: array
+a2c794b73 fix: init commit
+d9073ff95 Merge branch 'release-240614' into 'release'
+006103c0f fix: witness_position
+213710bd2 fix: witness_position
+254fad5c5 fix: init commit
+483e8f722 Merge branch 'release-240530' into 'release'
+4a562cd15 Merge branch 'refs/heads/6812-【HR】离职面谈导入功能&开放离职信息编辑功能' into release-240530
+82948973b fix: 多语言
+23c2406c3 Merge remote-tracking branch 'refs/remotes/origin/6829-fix-permissions' into release-240530
+119c3a299 Merge branch 'refs/heads/6812-【HR】离职面谈导入功能&开放离职信息编辑功能' into release-240530
+76830e7a5 fix: 没有离职审批的处理
+09574cf98 fix: fix api for resource fix
+4b1a0f7a1 fix: missing route
+a08952fc3 feat: add backend apis for hrmgt core to fetch and fix records
+60a7720c2 fix: 离职说明超过字数限制
+053688d56 fix: resignation_interview_content 取值错误
+ab312f46f fix: resignation_interview_content 取值错误
+e1b95e9a1 fix: inputer_user_id not correctly set
+79298d77e fix: 更新离职类型
+5d26359b8 fix: 兼容老数据，没有审批 直接编辑
+a0795d2ca fix: 兼容老数据，没有审批
+6cf1caefb fix: 按照offer时间倒序排序
+6cb9bda6a fix: start_user_id 检查
+0c9dbb41c fix: start_user_name 前端传
+b258ea7e9 fix: start_user_name
+85ad0ead5 fix: 离职面谈2
+c4e8a2f2d fix: 离职面谈
+c1028d57a fix: 离职面谈
+4f2ddf674 fix: init commit
+8cbf8d2f0 Merge branch 'release-240523' into 'release'
+9d9441624 Merge branch 'refs/heads/6429-【HR】员工库模糊搜索优化，豆芽搜索' into release-240523
+51f12ea7e fix: test
+e2962622a Merge branch 'refs/heads/6780-【HR】转正审核待审核中直接主管筛选不生效' into release-240523
+827ac80ba fix: replace_filter
+2d6e8892c fix: init commit
+286d7f550 Merge branch 'release-hotfix-240520' into 'release'
+7d0026590 fix: 手工处理空跑接口生成id2
+9254cd582 fix: 手工处理空跑接口生成id
+35e7ff197 fix: info fix
+fcfc18a28 Merge branch 'release-hotfix-240520' into 'release'
+3ea34dfee fix: mixed
+0f31f5d2a fix: 把这部分数据取出来，再推一个任务处理
+3b09868cc Merge branch 'release-hotfix-240520' into 'release'
+7976c8cf0 fix: 旧数据只记录到log表
+2782b2f81 fix: 取资源id
+1be7463a9 fix: 代码修复之前的异常数据2
+241f92fc8 fix: 代码修复之前的异常数据
+11de711e9 fix: 活水时更新直接主管
+46b322711 fix: 刷新中心服务器员工信息缓存
+1c82ffa52 Merge branch 'release-240516' into 'release'
+d396f0f66 fix: reference_name_hash_filter2
+7c6d4bb21 fix: reference_name_hash_filter
+e28d61757 fix: reference_resume_id
+790ee5aef fix: staff_id
+39c2dcb11 fix: 更新证明人信息
+46308a237 fix: reference_name_hash_filter
+0eb3de5b6 fix: npe
+d07fe0ca9 fix: 加加密接口
+0512c24a1 fix: witness_hash_filter2
+49b629eb6 fix: witness_hash_filter
+5ecc5b350 Merge branch 'refs/heads/6425-【HR】工作经历证明人信息' into 6425-【HR】工作经历证明人信息-new
+6b9ed7916 fix: 修改
+1b2496a3f fix: bug
+8768565f6 fix: 证明人更新
+99c96fa80 fix: old_data 可为空
+ec0cb3741 fix: 刷新core2
+08d83f448 fix: 刷新core
+dc82a4797 fix: 不为空
+acc9d7f82 fix: 不要空的
+823eb416f fix: process_status
+53716fbf9 fix: id
+e5772eef3 fix: id
+3bc24c2f1 fix: 加id
+1a099566e fix: 查询
+248e30c61 fix: 查询
+f411d8939 fix: 查询
+4e94e0449 fix: 异常处理
+ef88a79ea fix: 历史数据处理3
+cadbadeb4 fix: 历史数据处理2
+b88cd4639 fix: 历史数据处理
+92bd95445 fix: log
+f24425859 fix: log
+beaa695ad fix: id
+1dd1c79cd fix:    'id',
+f0a166e7c fix: npe
+9fd8a2600 fix: npe
+13301f2a1 fix: npe
+1f85754d0 fix: 不等于
+a46bd43d3 fix: npe
+be0899078 fix: 更新
+c676223f6 fix: 更新
+cad1ff84e fix: witness_hash
+1ed8d00d5 fix: 查询
+58a6937c5 Merge branch 'release-hotfix-240511' into 'release'
+6d57dc5ce fix: 多个异常
+655e80a36 fix: init commit
+946611339 fix: init commit
+aa6b168fc fix: 证明人处理
+4a664ebbc fix: curd
+10636280e fix: 加花名
+07c766ad7 fix: 加花名
+ed56487ea fix: 最大id
+bab200e40 Merge branch 'release-240509' into 'release'
+1bf9d5737 Merge branch 'refs/heads/5169-0506-fix' into release-240509
+aeb866703 Merge branch 'refs/heads/6696-【HR】转岗、活水、晋升审批的日期筛选项，改成时间范围筛选' into release-240509
+3d30e23ab fix: 是否逻辑好像反了
+5b6033fdf fix: 证明人列表  操作日志
+bc7ccfdcd fix: 发活水岗位通知数量
+2696cb7e0 fix: init commit
+ec8976d35 fix: 查询更新
+b82fd6280 fix: 查询更新
+899b70abc fix: 查询更新
+3b734d634 fix: 别的已经通过的关联这个job的需求，都要标识为更新
+650f47f3f fix: 是否红点
+068e9c978 fix: 开始时间
+f0b44ca03 fix: init commit
+31ef34612 fix: init commit
+010093c60 Merge branch 'release-240425' into 'release'
+9696a5bda Merge remote-tracking branch 'refs/remotes/origin/6719-【HR】合同续签面谈提醒优化' into release-240425
+63c9e5240 Merge remote-tracking branch 'refs/remotes/origin/5978-5981-6303-6424-人员应聘登记表-标准简历优化' into release-240425
+600825a31 fix: 应聘登记的content也对部分信息解密
+0b39438ab fix: 每天发的同步失败邮件里加下【应聘登记】
+dc83989a1 fix: test
+b013e06fb fix: 不加校验 ，数据库类型问题
+e5cf7a617 fix: array
+aef8bb03e fix: array
+9ab8f1d3c fix: 全全全
+df91d32e2 fix: 续签的60个自然日了，应该是还没续签合同，查到的可能是老合同，不发送邮件
+6816442a4 fix: address_residence
+c3e64ddc2 fix: address_residence
+78979233e fix: test
+45374dab3 fix: field
+3439d7833 Merge branch 'release-240411' into 'release'
+5fca48f62 Merge branch '6670-【HR】招聘需求记录增加操作记录场景' into release-240411
+8b7810569 fix: npe
+a75ee22b2 fix: resume_id
+3af5fbf4e Merge branch 'hotfix-0411-userid' into release-240411
+982ca7527 Merge remote-tracking branch 'origin/6670-【HR】招聘需求记录增加操作记录场景' into release-240411
+c4a9cb32e Merge remote-tracking branch 'origin/6667-【HR】员工面谈-我负责的，增加面谈HR列表字段' into release-240411
+57dae4d73 Merge remote-tracking branch 'origin/6666-接受拒绝转岗' into release-240411
+4b7c36491 fix: test
+1374d8e73 Merge branch '6694-hr-email' into release-240411
+b31eecd57 fix: convert new line to <br />
+c302ba514 fix: userid
+1b332ae9a fix: resume_extra_info
+8bd24ee13 Merge branch 'release-240410' into 'release'
+a807a6e22 feat: birthday email
+b8da1b6d6 feat: 生日周年邮件调整
+f50080dad fix: 是否续签 老数据没有isRenewContractValue字段，默认空
+a9d0130f5 fix: 是否续签 老数据没有isRenewContractValue字段，默认是
+8e5efea30 fix: 异常数据
+a81434109 fix: 覆盖简历 字段
+3d65e5dbb fix: 覆盖简历
+9364e02c1 fix: test
+95460f87b fix: 不需要新增表
+faf8f9362 fix: table
+2f6d308e1 fix: font
+7481a41ec fix: TCommonModelScope
+8b1a15f6f fix: table
+4a97f43f9 fix: 落库
+0fd3fa292 fix: 落库
+2ea047e80 fix: resume_id
+1247107d0 fix: resume_info_collect
+e1ca68e44 fix: recruitment-procession/generate-staff-token
+b09979afe fix: id
+e7d7e181c fix: init
+4ae22e3e3 fix: map
+337362df6 fix: init
+5c416ae42 fix: 需求结束了就自动关闭内推网申 5
+bfbb13c24 fix: 需求结束了就自动关闭内推网申
+866a859f3 fix: （转岗）员工接受/拒绝转岗
+76228be9b Merge branch 'release-240328' into 'release'
+23977c1d7 Merge remote-tracking branch 'origin/hotfix-0325-网申关闭了，但是内推不会关闭' into release-240328
+11d713bd0 Merge remote-tracking branch 'origin/6024-生命周期-员工访谈这里，需要加个“其它面谈”' into release-240328
+7baec0fe5 Merge remote-tracking branch 'origin/5898-【HR】员工生命周期优化' into release-240328
+6d0caa40b fix: 不要动以前的
+2f7510acd fix: bug
+3bdbc5e39 fix: 状态
+129f5f97f fix: 调用原来的方法，不要自己写
+45881db3a fix: if(isset($input['content'])){
+43b51b943 fix: $interview->type
+57895bf61 fix: 其它面谈记录
+03e9e4372 Merge branch '6024-生命周期-员工访谈这里，需要加个“其它面谈”' into 5898-6024-加其它面谈记录
+2d949ea21 fix: 面谈记录
+53c033582 fix: template_id []
+23082aa57 fix: template_id 0
+972ba43c8 fix: template_id 0
+7748b7a1d fix: template_id
+8642e3988 fix: template_id
+031a2d0e3 fix: 驳回原因
+d8fe2a905 fix: 驳回了转岗审批
+0c8ab33dc fix: 调岗申请未知操作
+4835f367c fix: 加面谈记录
+44a75d2ce fix: done
+463433919 fix: 网申关闭了，但是内推不会关闭
+091e65857 fix: commit
+bb9da6d81 Merge branch '5898-【HR】员工生命周期优化-三' into 5898-【HR】员工生命周期优化-一二四
+4ecb168a1 fix: sql
+b7760399c fix: 审批通过日期在生效日期前，达到生效日期当天修改员工属性 2 审批通过日期在生效日期后，管理员审批通过时立即修改员工属性（待增加逻辑，转岗有员工确认场景，员工确认后立即修改员工属性）
+bbe16baf4 fix: 其他面谈
+df2971a1c fix: TYPE_OTHER
+0ebbdb1cf Merge branch 'hotfix-0322-template-id' into 'release'
+78f3cb01e fix: recruitment_needs
+f7307e6a4 fix: admin_pass
+e93cf8aa2 fix: template_id is null
+f291741d6 Merge branch 'hotfix-score-config' into 'release'
+b84b58229 fix: skip check permission
+206453871 Merge branch 'hotfix-0322-notcheckPermission' into 'release'
+ba7770447 fix:  not CheckUserPermission
+b8e299a55 Merge branch 'release-240321' into 'release'
+9a72b910b Merge branch '5979-招聘需求优化' into release-240321
+2c6e39736 fix:  25
+7e6d159d1 fix:  1 审批通过日期在生效日期前，达到生效日期当天修改员工属性 2 审批通过日期在生效日期后，管理员审批通过时立即修改员工属性（待增加逻辑，转岗有员工确认场景，员工确认后立即修改员工属性）
+901ca88ea Merge remote-tracking branch 'origin/6531-候选人提交测试答卷后，这里是会自动变成“测试已回收”的标签的' into release-240321
+7ae895277 Merge remote-tracking branch 'origin/6517-【HR】拒信发送时间点更改成两个工作日' into release-240321
+d012188ed Merge remote-tracking branch 'origin/6501-【HR】社保最后缴纳月份优化' into release-240321
+2bbda0bc1 Merge remote-tracking branch 'origin/5979-招聘需求优化' into release-240321
+b9b319991 fix: code2
+01da8dbfd fix: code
+c82e6da3e fix: 5898-【HR】员工生命周期优化 see https://jira.xinyoudi.com/browse/XINXI-5898
+dae01d0ed fix: 红2
+a37e7ea53 fix: 红
+a5a35e0eb fix: 红
+b1e4edaef fix: 红
+a8399fa8b fix: 红
+8b2c48dfb fix: 红
+3796bcda4 fix: 25号
+d3003893b fix: 加红点
+ccef7e0c4 25
+3e587e58c fix:  getJobTemplateDetail
+1f857b3ff fix:  template_info
+3ca55d265 fix:  template_info
+58eb8e5f4 fix:  err
+d3e468838 fix:  import
+a7b6ea997 fix:  rrrrrrrr
+cf4fa13bb fix:  rrrrr
+d3556c3f1 fix:  jobname
+a7ebd34cd fix: 2号前不能修改
+62553d508 fix: bug
+1f73dcefd fix: bug
+b5459dff6 fix: bug
+0e7df0fe6 fix: bug
+671a566bc fix: send_time
+920bb78c9 fix: send_time
+70f5c92cc fix: only
+62ec9e359 fix: bug
+592955914 fix: 【HR】拒信发送时间点更改成两个工作日 see https://jira.xinyoudi.com/browse/XINXI-6517
+b0bde144f fix: 优化
+a127b5aae fix: bug
+d2ae4706d fix: bug
+9cef7a13d fix: 【HR】社保最后缴纳月份优化 see https://jira.xinyoudi.com/browse/XINXI-6501
+88d82032c fix: bug
+3766522e4 fix: 候选人提交测试答卷后，这里是会自动变成“测试已回收”的标签的 see https://jira.xinyoudi.com/browse/XINXI-6531
+b17826092 fix: template_info data 改造
+39e146085 fix: code
+af878eac4 fix: 今日代码提交
+6c34c74c6 Merge branch 'release-240314' into 'release'
+e7a0823dd fix: 招聘需求优化 see https://jira.xinyoudi.com/browse/XINXI-5979
+040e3afd5 Merge remote-tracking branch 'origin/noid-栗禾都发起了合同续签，为什么员工面谈里没有他们的续签面谈' into release-240314
+237a8de7b fix: 加个try
+adb89d210 Merge remote-tracking branch 'origin/6066-笔试系统对接牛客网' into release-240314
+0c46a0592 fix: 完成且有作弊信息了，就算完成了 已完成情况下，没有作弊信息，最多尝试5次，以防手工点了更新
+a3d8f1376 Merge remote-tracking branch 'origin/6066-笔试系统对接牛客网' into release-240314
+6e1f3c8b3 fix: 以上代码可以精简一点吗
+c620ece0b Merge remote-tracking branch 'origin/6066-笔试系统对接牛客网' into release-240314
+84d20fb2f fix: 状态更新后，如果作弊信息有更新，也更新下
+43c899b33 Merge remote-tracking branch 'origin/6432-面谈分配记录有效期变成30天' into release-240314
+565013b3f Merge remote-tracking branch 'origin/5862-离职相关邮件新增部门-岗位（核对下场景，有遗漏）' into release-240314
+a946f7fac fix: 【HR】生命周期-员工访谈这里，需要加个“其它面谈” see https://jira.xinyoudi.com/browse/XINXI-6024
+075737d9d fix: 定时拉取牛客网的成绩改成晚上2点半
+dda8d4d76 fix: 离职的也改
+eec302892 Revert "fix: 地址换成正式"
+b6500a3c0 fix: 暴露第二方异常
+5764d7dc9 fix: 地址换成正式
+323769ed3 fix: 【HR】离职相关邮件新增部门-岗位（核对下场景，有遗漏） see https://jira.xinyoudi.com/browse/XINXI-5862
+5e6a103e6 fix bug3
+8b9750fb9 fix bug2
+dc4018fcc fix bug
+e53d2deff fix bug2
+7ae549e18 fix bug
+7664e4724 feat:【OA】面谈分配记录有效期变成30天。 see https://jira.xinyoudi.com/browse/XINXI-6432
+96beda55b fix: bug一个
+235ae2fcd fix: bug
+2873b9940 fix: 删除 form
+9da2901d0 fix: 删除
+36efdf948 fix: 测试删除
+dd2e9bbfc fix: 返回值
+53c6a1766 fix: job
+a94e7a6c0 fix: 自测5
+cc70b0920 fix: 自测4
+f0050cc49 fix: 自测3
+1edf702d5 fix: 自测2
+b6022c109 fix: 自测
+2657ee886 fix: test
+479dca743 fix: test
+800ca0af8 fix: test
+60cd367b5 fix: code
+cb11fb253 fix: 笔试系统对接牛客网-3.14 see https://jira.xinyoudi.com/browse/XINXI-6066
+13d6f3b0c Merge branch 'release-240229' into 'release'
+441dd2d94 Merge branch 'hotfix-hide-history-import-api' into release-240229
+646dcbc28 fix: 邮件不对，没有替换，是因为走了不同的发送接口
+12860eb4e fix: add comments and skip related tests
+c6cf9849a fix: disable api
+9cecb9ddd fix: 离职相关邮件新增部门-岗位 see https://jira.xinyoudi.com/browse/XINXI-5862
+2f45a0eb9 Merge branch '6305-fix-job-duplicate-check' into 'release'
+cf2b38dc6 fix: 检查岗位名称时去除 parent_id 的校验
+391f463c3 Merge branch 'hotfix-email' into 'release'
+adf69e7f1 fix: hotfix this email
+1a271e14d Merge branch 'release-240206' into 'release'
+b5c7ec629 Merge branch '5757-daily-email' into release-240206
+58f66b27c fix: 清理用户
+798001315 fix: job执行完清理上下文
+b7e9ef619 fix: 只在中国地区发邮件
+4634deeb0 fix: knock app both on usa site
+38da245f7 fix: 是否转正，中文存储
+1b04badd0 Merge branch 'release-240201' into 'release'
+518e0854d Merge branch '5757-daily-email' into release-240201
+cb6f07a6f fix: stag 限定收件人
+ea85bc1ab fix: 数组key 提前要判断
+bde6728fb fix: 离职还是用 hrbp_ids
+4b723878b fix: 加上try catch
+6f7b38a46 fix: start_user_id 是 sr的字段
+7018c1a59 fix: 离职的hrbp 是 start_user_id
+760d57e97 fix: 低绩效面谈 时间
+c50fbad5b fix: Function endsWith not found.
+011206ecf fix: 先注释 只发特定主管 月份到秒
+e9d5ef5a3 fix: 先注释 只发特定主管
+d96485a60 fix: 合同取最新的时间 只发特定主管
+9a847635d fix: 离职审批是用bp过滤, 主管的还是主管id
+395887279 fix: 离职审批是用bp过滤
+87b0034f5 Merge branch '5157-resignation-adds-fields' into release-240201
+43b22d14f Merge branch '5757-daily-email' into release-240201
+f8175ebc4 fix: 离职日期 面谈HR加密问题
+df01c3abd fix: 复制快了，内容有变
+7a59df74e fix: 不为空的不能加判断
+25d42478f fix: 去注释
+79b259cc2 fix: 加上序号， 单条也超长的处理
+9abe3b512 fix: 58000发不出来，限制调整为50000
+c7a31ab1b fix: 复制太快了，key错了。
+24dc47375 fix: 超长后先发前面的
+5d83dfde4 fix: 拆分过后没有内容就不发了。
+df74c705d fix: 总邮件+单个邮件也可能超长
+c768195e8 fix:  拆分多封邮件,单个类型也拆
+7c17d7e50 fix:  拆分多封邮件
+91b49156c fix:  离职日期当天提醒
+ff43242a9 fix:  离职日期 和 申请离职日期 别搞错了
+bde1299fe fix: 是离职日期，不是申请离职日期
+bd9a9ba0f fix: 格式 代码里不能有空行
+b6a46a7f3 fix: 字符拼接时，table 要放外面
+a451d50f6 Merge branch '6048-support-multi-knock-org' into 'release'
+a998c5cd6 fix: 真实的业务日期才展示，
+3df3bf312 fix: 多个评价
+d28ad0cc7 fix: 格式 格式 ！！
+5075c8a4e fix: 数据结构有问题， performanceList 是数组 不是对象
+ee2ab146c fix: 代码 规范
+9f781b65f fix: 代码 规范
+3c97840ee fix: 代码 规范
+36db59a7b fix: 离职日期前1天
+fe74ffe1f fix: cf fix check
+7c1ca5f77 fix: 转正日期30个自然日  离职日期前1天
+21970bc8c fix： 低绩效面谈缺少绩效年月/分数、评价  地址有误， 日期处理strtotime使用错误，
+54383692e fix: some bugs
+f6d2eaf9f feat: update apis
+b4c17f34c fix： empty 判断有问题
+210d33072 fix： 改了方法，参数要变， 不必填的属性要检验
+f6ae5f795 fix： 面谈 我负责的没有权限
+62fd77c7a fix： 离职数据处理， 属性拷贝处理 日期30天处理
+e7e0e3b0d fix： 状态变化时的处理错误
+2306474d8 fix: multi knock notification
+aab84be9e test: set/get knock app
+1210d6de3 feat: support binding knock app
+034f665b2 fix： 权限部分默认处理，解密处理
+46ca7eecf fix： 权限部分默认处理，合同续签审核入参错误
+6456cb233 fix： bug
+aaa395188 fix： HR 端生命周期邮件之前做的时候完全没有考虑邮件的场景，历史的记录不支持通过邮件发出来 ，不能加进来，会整体解不了
+3436064d6 fix : 加入权限识别
+143adb92d Merge remote-tracking branch 'origin/5757-daily-email' into 5757-daily-email
+a0bb88f96 fix : php-cs-fixer 常量使用单引号
+9698068a5 fix : php-cs-fixer 格式
+3461757dd fix : php-cs-fixer 格式
+442cd8939 fix : 异常数据处理，bug
+1d88b935f fix : 异常数据处理，bug
+310a96b17 fix : 异常数据处理，bug
+bed30b208 fix : 异常数据处理，bug
+4f67d4755 fix : php bug2
+d94a47cf4 fix : php bug2
+3454bbaf6 fix : php bug
+82fafb1ed fix: npe
+936dd1fca fix： mail/send-plain
+62691cb36 fix： 值类型问题3
+7375184b2 Merge branch 'release-240125' into 'release'
+75d91e146 fix： 值类型问题2
+36dc3cdba fix： 值类型问题
+827446118 fix： 查询去空
+a03563fb8 fix： 加密问题
+85be1931f fix： 向中心服务器发送 不加密的mail.
+f9eb50364 Merge branch '6033-fix-wrong-job-name' into release-240125
+1c0c502f3 fix: when transfer position, department name or job name may be empty
+fa92ec233 Merge branch '5716-contract-status-active' into 'release-240125'
+442c545e4 fix: 每次跑当天 test
+3b55c09f9 Merge remote-tracking branch 'origin/5716-contract-status-active' into release-240125
+9cf57ee56 Merge remote-tracking branch 'origin/5753-direct-supervisor-name-like' into release-240125
+584b21c7d fix: 每次跑当天
+790452c02 fix： 没有token不发邮件2
+fab1cbb31 fix： 没有token不发邮件
+ecfe644c9 fix： 没有token不发邮件
+77ebe346e fix: 文件位置
+6c1e9fb2d Merge branch 'fix-resignation-data' into 5757-daily-email
+6aa857e63 fix: 每日面谈汇总邮件收件人 加密字段处理3
+4cf4055bd fix: 每日面谈汇总邮件收件人 加密字段处理2
+4dd264591 Merge branch 'release-240118' into 'release'
+7b972d097 fix: 每日面谈汇总邮件收件人 加密字段处理
+a9c7e6f50 Merge branch '5706-active-label-25' into 'release-240118'
+a7c38fe1d feat: add staff_resignation table's data update api
+61dfb42ab fix: key error
+5b0c59a5e fix: accepted data type should be mixed (string or value)
+17633411f feat: add setter also
+54da97bd7 fix: 使用兼容模式
+804fe942c fix: cast resignation_interview_content to array
+57cc4643f fix: 每日面谈汇总邮件收件人 加密字段处理
+cd079a7d3 feat: support life content re encryption
+57d9e8860 feat: update staff resignation api for core server
+ebde61c7c fix: 每日面谈汇总邮件收件人配置
+1377c9687 fix: 每日面谈汇总邮件收件人配置
+b3b861dd6 Merge remote-tracking branch 'origin/5717-fix-resignation-approval-error' into release-240118
+1b189ad14 Merge remote-tracking branch 'origin/5725-department-name' into release-240118
+ea8950f96 fix: 管理者每日面谈汇总邮件 test
+681277467 fix: 管理者每日面谈汇总邮件 test
+28cf18a71 fix: 管理者每日面谈汇总邮件 SendManagerInterviewToDoEmail
+9ef2c4b2d feat: add filter map
+97d083ed9 fix: 生命周期低绩效面谈提醒 SendBpLowInterviewToDoEmail
+373a66d00 fix: BP每日待面谈提醒 SendBpInterviewToDoEmail
+c69fc8d27 fix: BP每日待面谈提醒 SendBpInterviewToDoEmail
+1673cd715 fix: 去掉多余代码
+7b50573f3 fix: 没有数据不发邮件
+1e17b185b fix: 如果nickname 存在，is_closed 为 0， 状态不等于 resignation，返回 ['exists' => true]，其他情况下返回 ['exists' => false]
+692e5e3a3 fix: 生命周期邮件集成 see https://jira.xinyoudi.com/browse/XINXI-5757
+9e050eae0 fix: HR端员工库员工详情页新增档案编号显示 see https://jira.xinyoudi.com/browse/XINXI-5751
+2223b1312 fix: 离职加上社保最后缴纳月份
+d8315bac6 fix: department_name -> department_ids
+913e367f7 fix: 根据花名查询员工状态
+1c748a139 fix: replace_filter处理
+ceee1b8c5 fix: HR主管审批-增加直接主管筛选项 see https://jira.xinyoudi.com/browse/XINXI-5753
+920c0a5b9 Merge branch '5850-fix-smb-secret-cannot-be-updated' into 'release'
+a4ae410e3 fix: 取消招聘需求池时间限制 see https://jira.xinyoudi.com/browse/XINXI-5706
+49d714e83 fix: 合同在生效期内自动生效逻辑增加 see https://jira.xinyoudi.com/browse/XINXI-5716
+a02e914c7 fix: 去掉dump
+c13ab2016 fix: 新增筛选项：用人部门 新增列表显示：项目名称 see https://jira.xinyoudi.com/browse/XINXI-5725
+40187e8eb fix: The PHP Coding Standards Fixer
+d7f3562a5 fix: The PHP Coding Standards Fixer
+a7c87c386 fix: 离职管理-离职信息增加字段 see https://jira.xinyoudi.com/browse/XINXI-5157
+3f9f7a398 fix: BP发起离职审批时校验员工聘用状态 see https://jira.xinyoudi.com/browse/XINXI-5717
+47ccfa9d1 fix: smb client secret cannot be updated
+6cdcbd8c6 Merge branch '5792-fix' into 'release'
+529eea31c fix: `admin-living-water-list` api, see https://jira.xinyoudi.com/browse/XINXI-5792
+e81fb4d67 fix: https://jira.xinyoudi.com/browse/XINXI-5792, list api not filtered by current operation status
+97336a2b8 fix: [5792](https://jira.xinyoudi.com/browse/XINXI-5792), `transfer-management/wait-execute-list` route allows non-admin, limit by api instead of user `is_admin` prop
+2e5177482 fix: skip admin priviledges check (living water, promtion, transfer)
+b1fe89746 fix
+a07975f45 Merge branch '5682-new-transfer-mail' into 'release'
+ceb2865a4 fix
+b1b935c60 Merge branch '5682-new-transfer-mail' into 'release'
+318945fe8 fix
+cbd9442f9 fix
+302b3d773 fix
+192aa8419 fix
+50d32308a fix
+e37b973ca fix
+bb3119c18 fix
+a20492229 fix
+f806abafa Merge branch 'feat-23-12-21' into 'release'
+bf3883ace fix
+96d350948 Merge branch '5351-showmebug' into feat-23-12-21
+55878dfd3 fix
+c054dffa5 revert  send mail function
+994a99505 project changed, revert all work
+f279843f9 fix
+d2542933d add origin project && new project
+b529774de todo
+e1ff853b3 todo
+a174ddda8 todo
+ce399c0ae fix
+162f9f51e Merge branch 'feat-1214' into 'release'
+9d32d46f4 fix unit test
+7159b5315 Merge branch '4341-staff-life' into feat-1214
+9b896fa74 Merge branch '5634-concurrency-pull-resume-fix' into feat-1214
+37c83784b Merge branch '3404-resume-pull-fix' into feat-1214
+f3178350b Merge branch '5436-company-calendar-cache-life' into feat-1214
+e0e5fcba5 unit fix
+a5eca3bad fix
+9ea29b253 fix
+370cf12c1 fix concurrency resumes
+79f4f41aa fix
+172c8ce8b fix
+3cd2f9aa3 fix
+e76e0d8a7 fix
+ae8c57227 fix
+24af07f5a fix
+1e0079782 fix
+0373f1ea0 fix
+447368992 fix
+c75362412 fix
+45becbf1c fix
+9d6bc9ee0 fix
+16a79ff80 todo
+92b500fd5 fix
+289ab24fb Merge branch 'hotfix-1204' into 'release'
+9698f62dc fix
+d87f3fe51 Merge branch 'hotfix-wrong-pull' into 'release'
+c1e5b4b6f feat: add hotfix command
+415893bac Revert "fix"
+5c53604bc Merge branch '5534-resume-fix' into 'release'
+58b71d483 fix
+18f8458a4 fix
+515579bbb fix
+d679cbc57 fix
+438e2b0b3 fix
+936d55dbc fix
+870d43c56 fix
+7d042f808 fix
+22dc31652 fix
+9fd6bfdf1 fix
+4d86ae933 fix
+ba58355b2 fix
+0555ec5ea fix
+99c92ad9d fix
+6d064bc3d fix
+b1287d3fb fix
+85febf729 fix
+67012bebe fix
+f4fa55d3d fix
+153c657c6 fix
+c82aeaf3d fix
+bd20d3d0b fix
+a825fd650 Merge branch '5340-follow-up-hr' into 'release'
+ad534c0e8 fix
+82e174bf4 fix
+bb04e27d7 fix
+a3267fef4 fix
+e8d97fc78 fix
+dac809e9c fix
+632c44b7b fix
+43cd237cf fix
+d637f2531 fix
+67822c547 fix
+bb92f94be fix
+7d7f67132 fix
+c327d4813 fix
+2f20ae8b5 fix
+776851d80 fix
+6110126b1 fix
+f5164d848 Revert "direct_supervisor_nickname_hash"
+62c268955 direct_supervisor_nickname_hash
+9a607fbfa fix
+f46e1a933 todo
+ab4631aea candidate-nums
+eb53faedc fix
+35a420fe3 Merge branch '5145-campus-resume' into 'release'
+3135ae753 fix
+c481bb13f fix
+7051e83a0 fix
+cb340945b fix
+6c485401c fix
+6b19f0a3d fix
+5579d571a fix
+3130e9761 fix
+f64bf2335 fix
+c004f9e5c fix
+b441d685a fix
+501bc1c5a fix
+334251ccd Revert "fix"
+953191405 fix
+fae0826b7 fix
+a041f6baa fix
+d993679fe Revert "fix"
+23bba430c fix
+632323518 fix
+973c3f9ce fix
+ba890e366 fix
+4e08c8eae fix
+7a9e33c29 fix
+175d3ad39 fix
+a5d5c5417 fix
+8034afea1 fix
+f469f5bdf campus resume logic remove
+d3d70a03f Merge branch '4821-recruitment-needs-num' into 'release'
+c5aabafd9 fix
+073e0eb3b fix
+7e4b96ba8 fix
+b48509a36 fix
+16ed7ac3c fix
+a29d539de fix
+2906be9a9 fix
+3e880f76c fix
+3633a0f0a fix
+12d280889 fix
+86dc37f5f fix
+a6b84c59d fix
+7b4784e13 fix
+d1ffd3405 fix
+7bfc6ef97 fix
+eec510a73 fix
+5d6a9a067 fix
+ebae7609a fix
+d32aea37a fix
+a957336ee fix
+47ebc5855 test unit fix
+a16091e53 fix
+2e244a4f7 fix
+849926d5a fix
+04c8402f0 fix
+ac9246208 fix
+16a9fbdde fix
+8a6db903f fix
+6abb12019 todo
+f9bfbbdb9 fix
+b9bf5bdbc fix
+b5d54ee75 fix
+5db75178c fix
+fd21804ba Merge branch 'feat-1026' into 'release'
+56650ad6c fix
+312fcdc75 fix
+301653580 fix
+92c66b196 fix
+3e919eccf fix
+12c6b7591 fix
+c8243ec25 fix
+2ff764bc2 fix
+253f55318 Merge branch '4515-fix' into feat-1026
+ec7c2b0fe fix
+c4a58ab07 fix
+d71494a25 fix
+d10b3a882 fix
+389e3596e fix
+bc031ad2e Merge branch 'feat-1024' into 'release'
+d25702652 fix
+ccee8574e Merge branch '5028-resumes-num' into feat-1026
+d65c8e648 fix
+c28ad9b3e fix
+de877ce34 copy resignation management url
+52a1a3283 fix
+cf1e3e2e2 fix
+285cb9456 fix
+82ba2b2af Merge branch '5068-mail' into 'release'
+0975d78ec fix
+4245dc1aa fix
+924c23b67 todo
+f0c9a427c fix
+c49766c21 fix spelling
+8b7f5e7ee todo
+819e7fad2 fix
+0c327c3ff todo
+8dd107159 fix
+cf63083b6 todo
+c8714da25 fix
+4a3a4db2d fix
+3d83d7904 fix
+ec580afdf fix
+c674c9304 fix: introducer nickname cannot be decrypted
+96df19b39 fix
+4151a8e37 fix
+487b6fe0d fix
+9590b0c9e fix
+9eb576e0d fix
+6379a0f5c fix
+5c5a1aa5b fix
+386c23c09 fix
+1b2b14d4c fix living water error msg
+cb7f5cbc8 fix
+13571d83f fix
+c7a3487a7 todo
+63fd95955 fix
+56d2e42e5 fix
+6f78c3e78 fix
+c22fbc9eb fix
+1e8df1106 fix
+897715dbc fix
+fc694659a fix
+a2cd4078d fix
+91d680c5b fix
+dbd9f8da5 fix promote operate
+a208780cc todo
+a82af504f todo
+4872c3fc6 Merge branch 'feat-0927' into 'release'
+814b5919e Revert "Merge branch '4515-decrypt-username' into feat-0927"
+59de51def todo
+673bb909c Merge branch 'feat-0927' into 'release'
+8dc5f58af Merge branch '4515-decrypt-username' into feat-0927
+c7fbda814 Merge branch '4698-interview-pt-time' into feat-0927
+15fb8589d Merge branch '4245-interview-schedule' into feat-0927
+28c736621 todo
+e42bf0b58 todo
+5c5babbb7 fix
+7819adcc5 fix
+f4099f796 Merge branch 'feat-0921' into 'release'
+ca7ee8b96 fix
+06040ec91 todo
+036257be1 fix
+4e32f4fec todo
+890b45bc6 Merge branch '4779-resignation-risk-fix' into 'feat-0921'
+365905b0c Merge branch '4749-project-list' into feat-0921
+87f10484c Merge branch '4393-risk-update-fix' into feat-0921
+8d1f4b244 Merge branch '4396-repeat-resume-change' into feat-0921
+f91785d9a todo
+e89a7a2ea todo
+ecbd39ea9 todo
+46d300f86 Merge branch '4890-fix-search' into 'release'
+feb2a6064 fix: search filter by inputer user ids
+15b5f3173 todo
+dd6e0a004 fix: filter resume ids
+54f4c1e8d fix
+95385e4ce decrypt  usename with oa key
+a691fdf0f Merge branch 'feat-0914' into 'release'
+59d879a90 add bank_account_branch
+3ec23f7bb Merge branch 'search-optimization' into feat-0914
+96a7a5d31 fix: time region
+eb4fcb595 Merge branch 'search-optimization' into feat-0914
+4e9314588 feat: add run async job command
+133125dfb fix
+a22e9b565 fix
+331d65d1a fix: bug
+b789468c2 fix: only search latest record 测试：搜索最高学历的时候是包含的逻辑，不是最高学历的逻辑。 再搜索 education_experience 的时候判断了一下 status，清空 name 以保证这部分 name 不会被索引
+945881411 fix
+05b7a9d32 fix
+3cac77825 fix
+49aef2bc6 fix: 拆分接口
+2379f88f9 todo
+35d7c9d5d fix
+f1e190087 fix: 限制返回离职风险信息
+822279374 Merge branch 'feat-0907' into 'release'
+b04f0886e fix: not update old redis cache
+48293187c Merge branch '4737-written-exam-archive' into feat-0907
+757c18cf8 Merge branch '4324-create-offer-time' into feat-0907
+56806ee19 fix: filter if exists
+cede60554 fix: next replace filter supports data count
+d0833fbf1 fix: support next replace filter
+bb4a4dd73 fix: search count
+9a0f5f662 feat: support staff search
+3cbce535e fix
+73a35a22f Merge branch 'feat-0904' into 'release'
+79b7db890 feat: update core cache every 5 minutes
+f45b9cd0b fix
+1c4816222 fix: bug
+ae2993555 fix: indexes error
+78530202c feat: support redisearch
+506929a89 fix
+80ce39020 fix
+c61fd59fd Merge branch 'feat-0830' into 'release'
+53f4b33c1 fix
+4a780122e fix
+d4d2aa1ac fix
+387e2251c fix
+06b4eca78 fix
+3c5bba9de fix
+27c82439d fix
+ab6a92091 fix
+07d1c5d36 Merge branch '4577-candidate-nums-cache' into feat-0830
+de66b8b99 fix
+4c2d204d2 fix
+b1d606fc9 fix
+7b0e4f8e8 fix
+6259626ce fix
+e1e03c50c fix
+7c5cf9c39 todo
+bba5ca097 Merge branch 'feat-0824' into 'release'
+64440f76d fix
+9a1768103 fix
+f29bfd3e9 Merge branch 'hotfix-schedule' into 'release'
+6685a6d40 fix: use int
+c7e533824 fix: schedule time
+4bb600c5b Merge branch 'feat-0823' into 'release'
+f78480a4e Revert "Merge branch '3132-interview-pt-time' into feat-0823"
+27a36a8ca Merge branch '4181-recruitment-auto-close' into 'feat-0823'
+3b2addef7 fix
+11048e367 fix: update is_default => 0 只对非目标reason作用
+7109642c2 fix
+e6117f832 fix
+b9b7a1d3f fix
+767400f43 remove log
+fd4855ce8 fix
+2caa6a58b fix
+01aec6110 fix
+58c5de0ac fix
+acc717a8a Merge branch '3132-interview-pt-time' into feat-0823
+36c055300 Merge branch '4181-recruitment-auto-close' into feat-0823
+cc9fc5e32 Merge branch '3565-job-show-or-hide' into feat-0823
+2e4e83eea Merge branch '4191-recruitment-needs-two' into feat-0823
+b59b482dd Merge branch '4349-job-check' into feat-0823
+ca3b33cda fix
+57e40ef06 fix
+b0168e10f fix
+b593bc186 fix
+855efd64f fix
+666752c5d fix
+7d7a1f48f fix
+22cde7734 fix
+cbb07eb71 fix
+5923fcb5c change auto close logic
+5486ae722 fix
+6fcb8795c Merge branch '4099-auto-close-recruitment-needs' into 4181-recruitment-auto-close
+7817a3489 Merge branch 'release' into 4099-auto-close-recruitment-needs
+089fc0157 fix: other cdn links from yottagames.com.cn to yotta-hr.com
+bc1fec02e feat: change email address
+d0ffcef30 fix
+d879d7635 merge 4099
+9dba282d7 fix
+4b52b7d84 fix
+126cdd5fc fix
+5b840025a fix
+922599a3b fix
+2759ad1a7 fix
+3520e8fb2 fix
+728f66d94 fix
+08fa008fa fix
+1bcfb211a fix
+37c40a172 fix;
+8136688fb fix
+25c232372 fix
+4dc608cc4 fix
+b429ae2c8 fix
+5a2065623 fix
+d5cda698a fix
+b84a48fd6 fix: 显示is_default
+bdf4777fe fix
+bfea71610 fix
+521bd3e2f fix
+b8d5df1e4 fix
+84f8f22a8 fix
+516a89d14 fix
+fb5902c6a fix
+2c7367b1c Merge branch '4192-change-email-logo' into 'release'
+9fd3fb7d2 fix
+b1a4a5a12 fix
+af18d58b0 fix
+cf9d93aa1 Merge branch 'feat-0816' into 'release'
+97c097a0b fix
+3cef82bd7 fix
+a4e593262 fix
+b7673f3c3 todo
+1872f094b todo
+4e31815f5 fix
+6675edfce todo
+5b75524b8 todo
+8ee666f4c Merge branch '4395-get-smb-result' into feat-0816
+dd1ae0010 Merge branch '4259-cancel-offer' into feat-0816
+eaf3c61ab Merge branch '4406-exam-end-time' into feat-0815
+aff9e9ce6 todo
+4e4605826 fix
+0e8fb5bb3 fix
+cb5899451 fix
+fba702262 fix
+743f88836 fix
+8a4dc8beb fix
+811499206 fix
+ba7943a49 fix
+ff4ed1dd5 fix
+c83f9dafa fix
+4a41b82a0 todo
+9757d6fbe fix
+0903daf1f fix
+034315400 todo
+7a46e3635 Merge branch '4259-cancel-offer' into 4191-recruitment-needs-two
+cbd76b05a fix
+b0543a7ef fix
+40e605132 change
+0b6adf437 fix
+cf57bad00 add all user sites
+5c2c75330 todo
+04154ff70 fix
+206b17a85 fix
+699da75e8 fix
+47acff9ba fix
+e3720c0f2 fix
+94341e208 fix
+bb05ceda6 Merge branch 'feat-0809' into 'release'
+b3ec7ab4f fix
+506260910 fix
+587a6860d fix;
+6835db172 fix
+e5f4b0204 fix
+fda3eba93 fix
+bbadfaae3 fix
+59d12efa3 fix
+4a98d0ebd fix
+454be9753 fix
+5e8d2aa2f auto close recruitment needs
+375a710f0 fix
+fc3cb5390 fix
+440b3c4af fix
+d0e84bb5b Merge branch 'feat-0802' into 'release'
+8d5167b61 fix
+a9559e993 fix
+06f28aa0e add token
+dbce8fe7f fix
+826b9ddf0 remove log
+aaa2e1ce2 fix
+e4bb046e9 Merge branch '4354-interview-knock-bug' into feat-0802
+c8a92b55f Merge branch 'dev/showmebug' into feat-0802
+b995cfae3 fix
+1f9f1fb3a fix
+d5b1ff2a3 fix
+2de045911 add  archive operation log
+66eb5b79c fix
+42152ba23 fix: 已入职
+4ecdd3224 fix
+28c3b4702 fix unit test
+7391ff7b7 add delete exam log
+c2229fe18 remove exam delete limit
+a64653032 fix: add route
+8fb449770 fix
+a571b4977 fix
+dc73e9c9d fix
+c7f67c1b0 fix
+6ac64e4b2 fix
+23b4f3438 fix
+62c4a59d7 fix
+23f452e65 fix
+035a45ed7 fix
+7f87a2980 fix
+bfdab89a7 add log
+d1e59abab add log
+ddf88451f fix
+779ad79b4 fix
+4e50b585d fix
+c307f4253 fix
+8da0d9c32 add log
+dd8dcf658 add log
+f9486df7b Merge branch 'feat-0726' into 'release'
+ff7517380 sync job
+a978636a3 sync job
+82ab394a4 sync job
+f33830e58 Merge branch 'feat-0726' into 'release'
+c502f6b22 fix
+95e7ae17b fix
+7b5f33dc6 fix
+71c17af59 Merge branch '3574-cancel-interview-notification' into feat-0726
+4f5d7e7aa fix: remove log:
+f776bb1ef Merge branch '3574-cancel-interview-notification' into feat-0726
+1f5d556f8 Merge branch '4194-mail' into feat-0726
+25027e587 Merge branch '4089-staff-email' into feat-0726
+74e25a6a3 fix
+7f8126c62 fix
+b9e29461d fix
+85cbca8fe fix
+92341fd94 fix
+02b0956da fix
+08950915e fix
+f8c05ad2e fix
+620fb75e8 add job_name_en
+4b24cb1c1 todo
+28b492bf9 fix
+d3d915a3b fix
+86ef94474 fix
+fcdd0bf12 fix
+ec35a349f fix
+77b796151 fix
+65527c51b fix
+ce814e694 fix
+e67e9ff8f fix
+447031438 fix
+0a8528eac todo
+221ea1dde todo
+6a067df88 fix
+abde99aaf fix
+8209178b0 fix
+a48c02fe0 fix
+4c7e8d1cb fix
+623de5945 fix
+dd9ebe1e2 todo
+361e2d764 todo
+3e8591e60 fix
+c7c7e00b1 fix
+69bea8441 fix
+8e5fd1adc todo
+e6a0c2d5b remove log && add cloumn
+446004af9 add log
+17497094d add log
+04d77f121 fix
+e1f6880a6 fix
+7a5de685e fix
+4991b5ab4 fix
+68276c7a2 fix
+04cfd911c Merge branch 'feat-0719' into 'release'
+3bb1add1e fix
+335446717 test
+41c506db0 fix
+c18bcb67d change
+809733b88 Merge branch '3564-resignation-email' into feat-0719
+bdbcc4406 Merge branch '3988-risk-dispute' into feat-0719
+e56a65a50 fix
+3c91700e8 fix: other cdn links from yottagames.com.cn to yotta-hr.com
+e64933567 feat: change email address
+1a9b0cb88 fix
+00458db49 fix
+2704ab165 fix
+3da1fb14c fix
+0d6c4a767 fix
+596572082 fix
+9a89fc3f6 fix
+fe878cfd7 fix
+484dc7307 fix
+c22e3d83f fix
+aabe4b95a fix unit test
+e597ca19c todo
+b53943aca todo
+753d9df96 fix
+7b49fd198 Merge branch '4166-recruitment-progress-email' into 'release'
+786d48132 fix
+307d40c81 fix
+3a55a3811 fix
+4b3f8b95a fix
+85453abf2 fix
+8999fadd8 todo
+9a0afe9bf remove log
+edc9ca747 add log
+4088fac61 todo
+5f8ef903a fix
+7d876fd9c add log
+7ae8654d0 recritment progress mail
+e4bdd763e fix
+316ae9116 add limit
+ffbc1d747 add written exam recruitment procession
+6f055b8ef todo
+d8bddb274 fix
+29d162810 面试评价归档删除
+495e44946 todo
+175a8cec0 fix
+aad41fb6e fix
+48a04c20d 归档，删除无评价等级记录
+37ef1ceed new mail
+bacf4a513 todo
+cde54be80 todo
+fc2cfa77b todo
+0f6f60ed8 fix: updateOrInsert -> updateOrCreate
+07bf1b80a log
+588d97d1c log
+b68488c5f loag
+a9e6b559f fix
+32e5a9068 fix
+5a92e709a fix
+9b24dc979 fix: 拆分
+47a9b4de8 fix: set-resignation-interview
+7165db0a0 fix: check input
+8a6ec3b23 fix
+5bd5d1895 fix
+bf7099810 Merge branch 'feat-0705' into 'release'
+472e3db18 todo
+08b633c36 feat: 风险纠纷
+a7db4f962 feat: 风险纠纷
+5b5b40699 Merge branch '3809-recruit-ending-remark' into 'feat-0705'
+2d3bd3891 fix: 终止招聘时报错文案
+022fe5172 fix
+7d84fa8b2 fix
+cd75b6913 add log
+43e61c5a6 fix
+25cd5322b fix: 长度不限制
+af2c9b36a fix
+f1c6f633b fix: config_name add end_reasons
+f3d9252c4 fix: ConfigurationService getRecruitmentNeedsEndReason no param
+a3ff00eae fix: get-end-reason to get-config
+51b662dc6 fix
+2598f6693 fix
+61078e53e fix
+f5db8f740 todo
+f87d46777 fix: 从user_info取花名
+caac76dcd fix: 返回花名
+a671a2162 fix
+d18780357 fix
+5c86ac875 fix
+e90eeb57c fix
+5504ca874 新增招聘需求结束原因及其配置
+fbf528dd8 Merge branch 'feat-06-14' into 'release'
+d0bb90610 fix
+f12832afb fix
+ccebffa1c fix
+f12150df2 test
+16dffc746 fix
+df3260352 test
+31c217ecb test
+e04a8839a test
+a9e25e913 fix
+2489cc924 Merge branch 'feat-06-14' into 'release'
+31f1bd49f Merge branch '3890-nickname-cache' into feat-06-14
+b145a722e Merge branch '1638-home-page' into feat-06-14
+22ec41ea0 fix
+63ff08793 fix
+a606ff7cd fix
+59f258789 fix
+afec6c56c fix
+c26443bb1 fix
+7dbad3362 fix
+a6d27a676 fix
+e8d7e520a fix
+9df73b7b3 fix
+67e621187 fix
+e95de7b5c fix
+44bebe0a4 fix
+5cec02abb fix
+ee4a4e6c9 fix
+2e22c0397 fix
+074c37494 Merge branch '3701-WaitRenewedStaffList' into 'release'
+895c6b0bb fix
+af945cb79 fix
+66d04982c fix
+eeb58d442 fix
+55dc093d3 fix
+b51af9d55 add log
+0295f0448 fix
+313f33d7c fix
+78b24551f fix
+ba66ff80f fix
+9e09c3984 fix
+f7ca528fd add log
+21b01e7a5 fix
+1b7e3fbbf fix
+f99598a24 fix
+84800c4eb fix
+50d96c9f1 fix
+a02116d59 fix
+dc504a13f fix
+1dff0bbb7 fix
+fe488fcf6 fix
+e17e28062 cs-fix
+7326dc276 fix
+91033fed4 fix
+ad7e23656 fix
+16551c400 todo
+51f966b5b fix
+1c4b7272d fix
+83bb037cd fix
+592ba8f1f todo
+28f1c958e fix
+519d810aa fix
+bd390c3d1 fix
+800e52e11 fix
+9a39a54c8 Merge branch '3656-resignation-list-sort' into 'release'
+5d4f242bf fix
+b9a63d1dc fix
+737afed77 fix
+8992b7f98 fix
+f20c39f00 fix
+74e3d1e57 fix
+7f22087cd fix
+1f31145fd fix
+dc4b77cf0 fix
+dac4c73d7 fix
+8c7d98224 fix
+c55928a36 todo
+1c01c244b fix
+a924baa76 fix
+7fa6a6d80 fix
+5ace65757 fix
+3fcfb6a25 fix
+7c440c626 fix
+d2cea537f fix
+8ee5e12a0 fix
+da7bf4313 fix
+8b52cad65 todo
+a8c98d9a2 add resume apply log
+b8bff24b7 deal history data
+4aeddd23a todo
+89d1ff8cb todo
+facb8eed7 todo
+0bee3fc9b todo
+03ffc65bc add type
+b28cbf917 Merge branch 'feat-0517' into 'release'
+749f6fac5 todo
+7637ff563 todo
+2974c8485 fix
+49f81ff86 fix
+a417905c1 fix
+6e11a42ea todo
+c3c097ce5 todo
+4ca1d19f1 todo
+3f41874db Merge branch '3601-knock-optimize' into feat-0517 # Please enter a commit message to explain why this merge is necessary, # especially if it merges an updated upstream into a topic branch. # # Lines starting with '#' will be ignored, and an empty message aborts # the commit.
+7faf933ca fix: 把自己写的正确代码改成了简短的错误代码，返回的只是更新的那些，拿不到event_id
+566f75e68 fix
+6a5b63d2e fix: 修复测试
+aebc32b08 fix
+701ec24fe fix
+eae3c36b0 fix
+d374bbb86 fix: 区分多地区knock id限制
+a9642489f fix: 区分多地区knock id限制
+356a31d29 fix
+c93c142f5 todo
+3584fd891 fix
+424c54505 Merge branch 'feat-0509' into 'release'
+3106a3e8e Merge branch 'feat-0509' into 'release'
+ce26860cc fix: url
+6e00f9d00 add job_id
+65b8e8acb fix: url
+3b9194612 fix: url
+6cb28bf66 fix: decode
+3978c816b fix
+b25765d13 fix: 去掉可能重复的nickname
+2046fba25 fix: 非阻断性提示
+7ae555e35 fix
+a7c7503dd todo
+22fe5623c todo
+b5a44b777 add log
+3e8f616ff fix: log
+0ae682fe5 fix: log
+113f06746 fix: 修改knock代码位置到最后
+207505dcc fix: （）
+74c38882d cs-fix
+0e968ddfc todo
+46169b44e Merge branch '3526-auto-approval-email' into feat-0509
+7169ba970 Merge branch '3394-interview-knock' into feat-0509
+36c3e5f52 todo
+f655cc515 fix: job
+c37958cb9 fix: 修改面试时，是否同步knock与创建时一致
+951eb3a3f fix: 更新sponsr_id
+88c27f81b fix: hrId
+31709bb7f fix: 发起人为简历负责人，更换建立负责人时修改面试的逻辑
+ff7b2e42d fix: Arr:wrap in updateEvent
+ba50f7b92 fix: filter_map, filter
+3e758ecc0 fix: tokens
+ca6fa1d9d fix: type token
+197c0b1bb fix
+965fa710a fix
+e505aec42 fix: unique receiverIds
+ba6227777 fix: content解密，现场面试文本
+7bbf1f874 fix: type->user
+e9ca1a6d5 fix: my_master_api
+bc08202d5 fix
+6d9d901c0 fix
+74cd1a48d fix
+366ef96aa fix: authorized_token
+4327eea8f fix: add receivers & decrypt_config
+d98a8453b fix
+9228c7b6f fix: marcEncr & deleteInterviewProcession
+b40aa4b09 fix: sfuser->user
+a63022a99 fix: empty
+b563d0ae6 fix: comment out
+8f0fb1e7d feat: sync knock
+1241a38d9 Merge branch 'feat-0426' into 'release'
+25ec7d298 fix
+fe6e3f376 Merge branch '3464-resignation-list' into feat-0426
+97a24f955 fix
+115ee41eb fix
+e0205354f fix
+f1967005c Merge branch 'feat-0419' into 'release'
+0010ccec8 fix
+139fc144a fix
+8ae4dc593 fix
+89a81f537 Merge branch '3427-in_service-date-change' into feat-0419
+df8994352 Merge branch '3440-introduce-recommand-search' into feat-0419
+6e39e7147 Merge branch '3330-resignation-optimization-2' into feat-0419
+5645d717e Merge branch '3120-staff-positive-optimization' into feat-0419
+3dcf84d32 Merge branch '3346-3328-3390-recruitment-needs-second-optimization' into feat-0419
+26cec4881 fix
+b9930c945 fix
+b0b15abce fix
+387109bbd fix
+25d8aadc2 fix
+2e262b347 unit-fix
+89a6ab207 fix
+8395c6e91 fix
+8cfdb7d39 cs-fix
+a8efa8497 fix
+6471ed2b9 Merge branch 'feat-0412' into 'release'
+2adf402f9 fix
+a1c635020 Merge branch 'feat-0411' into 'release'
+cae62726a Merge branch '3256-resignation-optimization-second' into feat-0412
+b5877b11e fix
+654fe4069 fix
+90c6ee030 Merge branch '3386-fix-sfusers-nickname-hash' into feat-0412
+f442fdecb Merge branch '3337-hr-role-list' into feat-0412
+866d7f358 Merge branch '3256-resignation-optimization-second' into feat-0412
+9e2b2eca8 Merge branch '3402-fix-data' into feat-0411
+32048eba4 fix
+4ff7ccb1c fix
+fb6064a18 fix: quotes
+3ba8b9fd4 fix: 简历数据因为并发导致的脏数据修复
+8d4ba4f35 fix
+a8de5828c fix
+2bba2fd3a fix
+d861dd844 fix
+853cb2b45 todo
+51aced567 fix
+d00272420 fix
+390a0cb30 fix
+58de103ca Merge branch 'feat/sync-multiple-sfusers-command' into 3386-fix-sfusers-nickname-hash
+8c2a47b8d fix
+aee002ec6 fix
+011a710ca fix
+229d751a3 fix
+3ed2146a3 fix
+7e7ccfcfa Merge branch 'feat-0406' into 'release'
+4cebea1b0 add deal job reward template data job
+b99593d66 todo
+a30743f01 fix
+2bc0491e3 add is_hr
+4466b5076 Merge branch 'dev/1632-introduce-recommend' into feat-0406
+a0d0d4d07 Merge branch '2991-2643-nickname-interview-cache' into feat-0406
+ff0b0f24b fix
+125ad9bd1 fix
+051dbd611 fix
+c0fbd143f fix
+98f1a453a fix
+24e16793e fix
+dd1bcd2c5 fix
+036f6cce8 Merge branch 'feat-0329' into 'release'
+9147246f6 fix
+6b8b0dada fix
+fc0bea7fd fix
+5c6e4378d fix
+920bfc696 fix
+a98648b96 fix
+6b8e14d29 fix
+73df18820 fix
+726f1bec2 fix
+a332787bc fix
+04b4fa4f2 add log
+4dcca908c remove log
+956844059 add log
+9acd83fe1 Merge branch 'dev/3285-open-resume' into feat-0329
+648abe8be Merge branch 'dev/2510-compare-reward-template' into feat-0329
+b0cf2dde2 fix
+77a8e58db add log
+307610251 fix
+cff9b24a7 fix
+eabcf3b3c fix
+54113ca96 fix
+5863b8418 fix
+690b6bd1c fix
+04309c0c7 fix
+57c388b5c fix
+3948c4ed1 fix
+11d3438bc fix
+e70cc8e86 fix
+b8715417c fix
+0bd13a2a6 fix
+4f40c7df2 todo
+7731aae66 fix
+5007e4379 fix
+b286015a3 fix
+9a8eecc66 fix
+f4b87350e Merge branch 'dev/3298-recruitment-needs-token-change' into 'release'
+13d28c357 interview time changed
+08294e235 token expire time changed
+2283acee2 fix
+ded45c57e fix
+5e7f1b592 fix
+d862dd7fa todo
+b7b1eb10c fix
+7f9d992f8 fix
+796bfb76b Merge branch 'feat-0322' into 'release'
+1901f1a14 fix
+1b3523765 fix
+4756b3eb7 Merge branch 'dev/2582-written-exam-records' into feat-0322
+36ddf3ccf todo
+45014553d feat: add --all option to sync all sfusers nickname hash
+e7ff899b2 Merge branch 'dev/3031-introduce-num-repeat' into feat-0322
+3efb4ae14 todo
+fee2dbb30 fix
+c1d656e49 fix
+474482949 fix
+4ee6f5996 fix
+aef6efaaf fix
+66470b248 fix
+a00e27322 fix
+b9593ce8b fix
+45b4510e9 fix
+185eb8d39 nickname cache shared
+f1a9e24f2 fix
+31bb24f89 fix
+302f8ac03 fix
+15083e7bb fix
+185239050 fix
+8b267848d Merge branch 'dev/3237-recruitment-needs' into 'release'
+0f27e8c50 fix deal unapproved recruitment needs script
+f7d3e8c1e Merge branch 'dev/3233-recruitment-needs-01' into 'release'
+617f90eaa fix
+e727f0a94 fix
+025487b85 add route
+263cdb577 fix
+774095295 fix
+055b3e323 fix
+4f03f66f7 Merge branch 'dev/feat-0315' into 'release'
+9d378ca18 Merge branch 'ci-fix' into 'dev/feat-0315'
+70b4b79ee ci: fix
+7cfcfbe17 fix
+43ae274cc fix
+aa2525239 fix
+f2a8acca6 fix
+4d820e556 fix
+cb76cb8b0 cs-fix
+fef2501c0 cs-fix
+9477c21cf fix
+462eace3d add log
+b2a1534b6 Merge branch '2393-add-update-cache-job' into dev/feat-0315
+bf447b4f9 Merge branch 'dev/2957-resignation-fix' into dev/feat-0315
+06c3e8375 Merge branch 'dev/2776-wait-renew-list-change' into dev/feat-0315
+05be81626 Merge branch 'dev/642-information-collect' into dev/feat-0315
+ecc2de048 fix
+ec3a68f1a fix
+9478446c4 add route
+2173648cc fix
+fc297ac84 feat: add update core cache schedule job (refresh resume's username), twice daily
+c815e6234 remove local test
+10f818b5b fix
+77aa1defa add route: resignation-management/bp-set-resignation-interview
+9efb7b09d Merge branch 'dev/recruitment-needs' into 'release'
+d0fa4d1bc Merge branch 'dev/1130-fix-rescreening-mail' into dev/recruitment-needs
+9048ec3fa fix
+86806dfe5 fix
+90fb169e0 todo
+fb649fdb3 todo
+64e9a3dec fix
+4f879a4aa fix
+afa638a37 fix
+3aed7cc06 fix
+0197286ea fix
+72f9ef69c add route:  recruitment-procession/talent-pool-exam-records
+66cf691ce fix
+72a10ed83 fix
+ecfe0c8a5 fix
+da21ec523 needs to add route
+f4e175df7 fix
+b6037bcf2 fix
+7fcc76eb3 todo
+b94686bc5 fix
+62a0aea9a fix
+a093005a0 fix
+e66beca68 fix
+bff6a6e44 fix
+f1b6914e1 cs-fix
+d5ce49547 cs-fix
+dad183ab7 fix
+ec4c5dba5 fix
+0970e7256 remove log
+39010a351 fix
+56f85404b fix
+b141c936e fix
+120dfa0c3 fix
+276f6ce17 cancel passiveTag
+70eccc5b4 fix
+6cc2ec049 todo
+e27fc50ce fix
+d8fad21af fix
+f76ff52d2 fix
+41eb7c7fb fix
+c7325f283 fix
+60bcacc64 fix
+1d59e655f fix
+ed51fb839 fix
+6c8c4d7d3 fix
+27adaaef2 filter introduce resume repeat nums
+c1dc32f65 fix
+dee6681fa fix
+32672a662 fix
+20ab56424 fix
+37334c157 fix
+6a8d7b4e0 fix
+2e44005d3 fix
+77978e090 fix
+3d5e89786 add log
+cabaaf946 fix
+1fb260d7d fix
+794aef394 fix
+0b04fa976 fix
+6ea6a4e42 fix
+a73dd6ecc fix
+e5e69085d fix
+8073fc3a5 fix
+4ec288430 empty merge
+899b94b46 fix
+86eac86d9 fix
+52b73e426 fix
+40ba188fd fix
+73e73a7ee Merge remote-tracking branch 'origin/release-sgp' into release
+661ee2596 Merge remote-tracking branch 'origin/release-usa' into release
+1a22548e7 Merge remote-tracking branch 'origin/release-chn' into release
+6e32cfc15 Merge branch 'dev/feat-0221' into 'release-usa'
+decd3340a Merge branch 'dev/feat-0221' into 'release-sgp'
+dc111e440 Merge branch 'dev/feat-0221' into 'release-chn'
+d16dd817a fix
+9bc767f60 cs-fix
+3e1d483d9 fix
+e148ea09c fix
+61ed64cf4 fix
+78464ec27 fix
+5847f930c fix
+b22cd7728 fix
+90f571728 Merge branch 'dev/2888-update-resume-fix' into dev/feat-0221
+89d38256b filter closed data
+ce8405d68 fix
+add84e3db fix
+9eb173e63 fix
+83bc004a5 fix
+395e334fa fix
+29c31ca73 tmp change
+8735689ed fix
+cac58c231 fix
+95fe43794 fix
+636a2c5d1 Merge branch 'release-usa' into release
+b2fc232fd Merge branch 'release-sgp' into release
+73376aec5 fix
+332eb6965 fix
+87260c694 fix
+284091cc1 fix
+a5a33ddc9 fix
+005e89c58 fix
+77eac657b add needs_status return
+d58c22406 fix
+feeb433cc fix
+ca630f8a9 fix
+c90733265 fix
+7d37f33e1 unit fix
+cf8d963ba fix
+f664e93ae fix
+44bf6320f fix
+841f2ce26 fix
+d3af9f13f fix
+7940f344b fix
+c914589ec fix
+436cbc955 resignation fix
+a67c9c579 remove dump
+fd3b380ff todo
+2d7635a96 todo
+1d0b6e424 todo
+c1d603f2e todo
+ad01cd3c4 todo
+26e4c2e25 todo
+67f27363f Merge branch 'dev/2917-resignation-management' into 'release-usa'
+0503beef9 Merge branch 'dev/2917-resignation-management' into 'release-sgp'
+cfb53f456 Merge branch 'dev/2917-resignation-management' into 'release-chn'
+8fe2fdaa0 fix
+47726fa54 todo
+25cdbb8da fix
+856141cc8 add route
+d367f9202 todo
+e7de321db todo
+d532a2d6a Merge branch 'release-chn' into dev/recruitment-needs
+e6c32ae81 fix
+3ab195040 Merge branch 'dev/staff-resignation-with-hrbp' into 'release-chn'
+4a3228c9c Merge branch 'dev/staff-resignation-with-hrbp' into 'release-sgp'
+ce001fcd3 Merge branch 'dev/staff-resignation-with-hrbp' into 'release-usa'
+e29d27649 fix
+dff19026c todo
+612bdefea todo
+4870ed68f todo
+72c58f3b5 todo
+d625f1dd3 Merge branch 'dev/2854-add-operation-log' into dev/staff-resignation-with-hrbp
+c861d688b todo
+32bd07d4d todo
+fcb1e9f07 add reason english
+519bbb6d0 todo
+aa4597ec8 todo
+c56cdd483 todo
+623d98c82 fix
+050023af1 todo
+fbe19584c todo
+088c9d452 alter table `hrmgt_chn`.`staff_information` add `bank_account_branch` varchar(1024) NOT NULL COMMENT '开户支行信息' after bank_account;
+d3bfc8d89 fix
+4ba6df2d8 cs-fix
+4a0420cbc fix
+7eb07dd77 fix
+ea589830b fix
+42cee3f9e fix
+1b6ee11fd fix
+e17870dc2 fix
+12e35457e fix
+996954c91 fix
+aa0fbb39b fix
+04a371c6e fix
+da1b88483 fix
+35cc1813b unit test fix
+ee354367f fix
+1ab31015e fix
+d6d949c4d fix
+4faf106df fix
+b2ae667e8 fix
+819134ad8 fix
+50ea806bd fix
+219b2a14a fix
+8c6a1f0e8 fix
+d3b624e81 cs-fix
+ee66472da fix
+2d193e7db add default hrbp
+7b2b36955 add apply_resignation_date return
+d4d6a58bb fix
+1f9c4ed58 fix
+81ed7ea1c add job_id
+30653abf0 Merge branch 'dev/send_turn_over_email_fix' into 'release-usa'
+a4c9390f5 Merge branch 'dev/send_turn_over_email_fix' into 'release-sgp'
+3b7735ea5 Merge branch 'dev/send_turn_over_email_fix' into 'release-chn'
+58f8dbee9 fix
+55606bdc1 fix
+c5e150c3f fix
+ca302363a fix
+298ae0ec3 fix
+e45911abc Merge branch 'dev/2725-hrbp_branch' into dev/staff-resignation-with-hrbp
+a38b367c2 Merge branch 'dev/staff-resignation' into dev/staff-resignation-with-hrbp
+71ef79f41 fix
+fbdf6375d todo
+a31b770c2 fix
+0c4947398 fix
+7012e058a unit test fix
+8161aae13 fix
+b95f09588 fix
+6c1a37dc7 fix
+252774687 fix
+162852964 fix
+a6c9d6771 fix
+82e662dd3 send turn over email fix
+d247c71e6 fix
+af7dce317 change param
+29d9473b6 todo
+fe3edcc73 fix
+e2408b8d5 add cancel_reason
+58a72bd96 todo
+c466b1b64 fix
+355f89dd5 todo
+5475ba19e todo
+6b1b4da91 fix
+a216e3433 fix get on null
+725110582 fix
+418f18ee2 csfix
+479c0eb3d resignation Management unit test
+3e115a3be Merge branch 'dev/feat-0112' into 'release-chn'
+6db8adffa Merge branch 'dev/feat-0112' into 'release-sgp'
+fa6a77219 Merge branch 'dev/feat-0112' into 'release-usa'
+d268a838a fix
+cddf9abd3 fix introducerScoreAdd with empty resume
+ffad80d2a resignation management
+0ea56d69f Merge branch 'feat-0111' into 'release-chn'
+afe5ce317 Merge branch 'feat-0111' into 'release-sgp'
+95720a079 Merge branch 'feat-0111' into 'release-usa'
+4091c1147 resignation-management api
+bdf648f0f Merge branch 'dev/sync-onboard-review-file' into feat-0111
+355c983a8 Merge branch 'dev/staffinformation-update-1214' into feat-0111
+d1b8e8989 get company calendar
+7c0a02a95 todo
+5155409d8 add resignation remark
+962726291 todo
+e6a5c79b9 Merge branch 'dev/migrate-staff' into 'release-usa'
+94f02fd37 Merge branch 'dev/migrate-staff' into 'release-sgp'
+16012630a Merge branch 'dev/migrate-staff' into 'release-chn'
+597001365 fix
+7c57e6317 fix
+5dc00ebe2 fix
+5183e44c3 fix
+b6507afd6 fix
+fbc3eb980 fix
+ff5e1b8ad fix
+a31396ae6 fix
+2b8924b9a fix
+ae0314a21 fix
+80becf634 fix
+4c2224ba4 fix
+b62048ba6 cs-fix
+3ba6565cb fix
+17ebb8e2f not delete onboarding review file
+bbca4e8e5 fix
+6d177ef8b cs-fix
+73cbea402 fix
+f60caacc7 fix
+a0b752f4f todo
+8925c322b todo
+460037304 todo
+2521abef9 Merge branch 'dev/feat-1228' into 'release-chn'
+1624c70a5 Merge branch 'dev/feat-1228' into 'release-sgp'
+4f8636fbd Merge branch 'dev/feat-1228' into 'release-usa'
+dce4d1ea8 todo
+5272bdad3 cs-fix
+3ece0ad93 需要配置 staff-management/resume-mark 和 resume-search/resume-mark
+47031c19a resume_detail api add rec_pro_id
+c28d39e29 cs-fix
+4ef10fe2b 需要配置 staff-management/resume-mark 和 resume-search/resume-mark
+8fef267d2 fix
+787f72cc0 Merge branch 'dev/feat-1216' into 'release-usa'
+66e570eb5 Merge branch 'dev/feat-1216' into 'release-sgp'
+a7d507315 Merge branch 'dev/feat-1216' into 'release-chn'
+67fc96329 fix send turn over email
+00fff9974 Merge branch 'dev/staff-unusual-num' into 'release-chn'
+aca9f12ab Merge branch 'dev/staff-unusual-num' into 'release-sgp'
+84aff2cb0 Merge branch 'dev/staff-unusual-num' into 'release-usa'
+cee64d9a3 fix
+18c947356 fix unit test
+709c85561 fix
+5bbf48425 cs-fix
+43c9aac46 fix
+fe531e6dd fix
+9f52c489d fix
+f417400a5 fix
+1298421c8 staffinformation update contract
+73887c5f0 Merge branch 'dev/feat-1207' into 'release-chn'
+470aed3b5 Merge branch 'dev/feat-1207' into 'release-sgp'
+a4adc7ac3 Merge branch 'dev/feat-1207' into 'release-usa'
+a4d6508f5 fix
+9540e91a8 fix
+3060584cc fix
+92ace5f63 fix
+a0577a6cb fix
+17c961fee Merge branch 'dev/staffinformation-unusual' into dev/feat-1207
+c842e225f Merge branch 'dev/resume-job-apply-time' into dev/feat-1207
+20abd32f8 fix
+4e53ef8d3 Merge branch 'dev/feat-1206' into 'release-chn'
+eb1c67195 Merge branch 'dev/feat-1206' into 'release-sgp'
+6d2eb734b Merge branch 'dev/feat-1206' into 'release-usa'
+d91156bc3 fix
+1c5fe912d fix
+f16c4356b fix
+a789d90da fix
+fc88cd94a fix
+1a1d65e01 resume apply job time change
+d51ca628f fix
+17298aec8 staff-management mark high level resume
+27155267d normal_tag fix
+e0a45a260 Merge branch 'dev/feat-1130' into 'release-usa'
+2812e72cd Merge branch 'dev/feat-1130' into 'release-sgp'
+9cd669166 Merge branch 'dev/feat-1130' into 'release-chn'
+ad10112dc Merge branch 'dev/urgent-job' into dev/feat-1130
+2320c14ae Merge branch 'dev/nickname-repeat' into dev/feat-1130
+61fa6f417 fix
+caa148ec8 Merge branch 'dev/nickname-repeat' of https://pt-gitlab.yottastudios.com/info/hr/next_hrmgt into dev/nickname-repeat
+b4dc860fc cs-fix
+aa47d03db fix nickname_py
+91a59044c add route
+13d18c7d7 fix
+d8ed59bc5 fix nickname_py
+48f7671b8 fix
+8a3327348 fix
+ce127253a fix unit test
+937304319 fix
+04b34a5bc fix
+0a752e173 add nickname_py replace filter
+02f22b81a fix
+ea639f736 Merge branch 'dev/feat-1127' into 'release-chn'
+b87078e4b Merge branch 'dev/feat-1127' into 'release-sgp'
+e0a213235 Merge branch 'dev/feat-1127' into 'release-usa'
+6987e60ec Merge branch 'dev/change-encrypted-key' into dev/feat-1127
+37ec20f5e test: fix returned data
+c5a6ab807 Merge branch 'dev/change-encrypted-key' into dev/feat-1127
+226c1e067 fix: should decrypt sfuser nicknames
+07fe4a922 fix
+f994540fc fix addNicknamePy
+277fda1ad Merge branch 'dev/nickname-repeat' of https://pt-gitlab.yottastudios.com/info/hr/next_hrmgt into dev/nickname-repeat
+b083d323f fix
+8b1a7d5a9 fix: should decrypt introducer nicknames
+9f35acd3f fix phpunit
+69271d53a add backend controllers for nickname_py
+7c91d5c7a Merge branch 'dev/feat-1123' into 'release-usa'
+ff190f48d Merge branch 'dev/feat-1123' into 'release-sgp'
+8fd1d5cce Merge branch 'dev/feat-1123' into 'release-chn'
+064370609 fix
+865e0c6c8 staff information update judge department and job
+b2879bd88 fix
+3be739069 test: fix
+00b153cc6 feat: 使用 OA 密钥解密
+491be8a6d job is urgent
+e58d5cab1 Merge branch 'dev/nickname-repeat' of https://pt-gitlab.yottastudios.com/info/hr/next_hrmgt into dev/nickname-repeat
+54b06bd63 nickname repeat
+bf7e35069 fix nickname-cnki
+70bcfdf4c fix
+da18a38b3 cs-fix
+861c6fdb8 fix normal tag search
+743bfee46 todo
+862272218 Merge branch 'dev/feat-1121' into 'release-usa'
+f12c883bb Merge branch 'dev/feat-1121' into 'release-sgp'
+ecdddcc1f Merge branch 'dev/feat-1121' into 'release-chn'
+d1b75e127 send staff positive email token fix
+d633d6171 nickname repeat
+ddf9d1689 Merge branch 'release-chn' into dev/feat-1123
+3baf6afea staff information unusual
+9628f429d fix import contract phpunit
+66afa4cbf fix import staff contract
+23c709b28 Merge branch 'dev/fix-1117' into 'release-sgp'
+1eab31735 Merge branch 'dev/fix-1117' into 'release-usa'
+3f75cac68 Merge branch 'dev/fix-1117' into 'release-chn'
+e0727af24 fix update contract
+62114b0df fix template
+6f742ce6a fix template
+560957d3d feat 合同模板
+3b13f2208 Merge branch 'dev/feat-1109' into 'release-usa'
+6e3793e4d Merge branch 'dev/feat-1109' into 'release-sgp'
+1b6f1e47b Merge branch 'dev/feat-1109' into 'release-chn'
+e846e6136 remove check admin for contract
+9a20d2fcc Merge branch 'dev/feat-1104' into 'release-usa'
+634c542f2 Merge branch 'dev/feat-1104' into 'release-chn'
+8f65d6ded Merge branch 'dev/feat-1104' into 'release-sgp'
+16e439898 Merge branch 'dev/job-optimization' into dev/feat-1104
+4b41fa446 fix contract search end_date
+1a10dc97b fix contract phpunit
+54dd9dfb6 fix contract unusual
+3010bf8f8 fix contract
+bb39172ca remove log
+a4bb6c559 fix
+9d488515e log
+2db25f46a details api add project_name
+a90cc8bb9 fix contract
+aba9beee0 fix
+dd25b9f31 fix
+f091b96de fix
+d52d3ef65 fix contract phpunit
+832cbbd12 fix batch renew contract
+a51501aae staff-management/staff-onboard-review-status
+e0acb71a3 fix
+6eae73065 fix
+1dafb436d fix
+abe9cccf0 fix
+f84f6aa97 fix
+b93ad7c0d fix
+d03cbeb77 Merge branch 'release-chn' into dev/contract-management
+d5057f128 Merge branch 'dev/feat-1026' into 'release-sgp'
+b3232d9fb Merge branch 'dev/feat-1026' into 'release-usa'
+108e28dbc Merge branch 'dev/feat-1026' into 'release-chn'
+0d239c31c fix refuse letter
+de5fa7066 fix refuse letter
+34a88b465 fix
+71203c339 fix
+19f9f6f5d fix
+874eaae63 unit test fix
+ae797b21a fix
+c4161bbba cs-fix
+ff6fcc3fc job optimization
+c4b118fce Merge branch 'dev/mail-1019' into dev/feat-1026
+c74ed746d Merge branch 'dev/feat-1021' into dev/feat-1026
+df6c7fb6c fix
+a5aeeb7dd fix
+e6fca942c fix
+a4ba1eba4 fix 合同管理
+328e5957a fix 合同管理
+95a462c3b todo
+b455aa4e0 feat 合同管理
+78710b22c todo
+5a131ea2f wip 合同管理
+1d1e52651 todo
+fd8220582 todo
+f82c2d6f3 todo
+2f5fbd288 todo
+f71e976d1 fix
+846953985 todo
+420287133 fix introducer-score-detail rank time
+5904029c6 todo
+ba931d5d7 Merge branch 'release-chn' into dev/contract-management
+3a8b93e81 wip 合同管理
+9edffa6a8 add route
+4cb0a7463 Merge branch 'dev/feat-1019' into 'release-usa'
+f95b5de26 Merge branch 'dev/feat-1019' into 'release-sgp'
+6001ac89c Merge branch 'dev/feat-1019' into 'release-chn'
+00afb0c34 Merge branch 'fix/notification' into 'release-usa'
+cf6f2debb Merge branch 'fix/notification' into 'release-sgp'
+05f68cb2c Merge branch 'fix/notification' into 'release-chn'
+453521507 fix: put back template
+772ddc8c7 put back jobs to avoid job failure
+e53af1289 fix
+854a6d250 log
+b9cd78c48 log
+ffea0e600 Merge branch 'dev/feat-1014' into 'release-chn'
+d43178f1d Merge branch 'dev/feat-1014' into 'release-sgp'
+792facf9c Merge branch 'dev/feat-1014' into 'release-usa'
+357785471 fix: filter non-authorized users
+f9ec80458 Merge branch 'dev/ci' into 'dev/feat-1014'
+2a6d37bbd Merge branch 'dev/bdd-operation-record' into 'dev/feat-1014'
+1ab6c42ad Merge branch 'dev/interview-notification-2' into 'dev/feat-1014'
+4e9262f5e Merge branch 'dev/bdd-part-time-staff' into dev/feat-1014
+ce6f145ef Merge branch 'dev/multi-language-2' into dev/feat-1014
+271c64dbb chore: allow sgp
+12a450eb6 fix
+149caed6f mail content change
+3696ca433 bdd-part-time-staff
+dc6ef80be week report optimization
+2a16f0829 fix
+75a821ce6 fix
+e51297552 fix
+6e867986d candidate nums fix
+d2a50230a fix: test ips
+50218cc1c Merge branch 'dev/feat-0928' into 'release-chn'
+bbc8f53f1 Merge branch 'dev/feat-0928' into 'release-sgp'
+2ddfce852 Merge branch 'dev/feat-0928' into 'release-usa'
+f7729a089 fix
+82b809c0f Merge branch 'dev/show-recruiter-nicknames' into 'dev/feat-0928'
+8898a42d5 fix: add conditions to take all required recIds
+fe061a417 fix: phpunit
+612b2831c Merge branch 'dev/show-recruiter-nicknames' into 'dev/feat-0928'
+8b08204c1 fix:add filtered resumeIds from Table resumes according to column updated_at
+3586f54e6 Merge branch 'dev/staff-renew-contract-fix' into dev/feat-0928
+c0f83ffb2 fix
+fe2ac1400 ci: memory limit, env modification
+82a82ab3b ci: 允许美国站点拉取简历和发送通知
+773dae74e ci: use docker runner instead of 63 runner
+89a88cb73 ci: deploy usa instead of sgp
+8776440aa feat: add usa
+ef12658d0 Merge branch 'dev/show-recruiter-nicknames' into 'dev/feat-0928'
+69732e677 fix:去除无用变量
+2786cdf3e cs-fix
+961419bda Merge branch 'dev/interview-notification-2' of https://pt-gitlab.yottastudios.com/info/hr/next_hrmgt into dev/interview-notification-2
+4f07ddf7b fix
+5b9e02c88 fix:注释、格式、变量名称修改v2
+9e4844270 fix:注释、格式、变量名称修改
+c58920ab9 bdd-operation-record
+3946d4f00 bdd-operation-record
+2ba16ac93 fix:跳转链接修改，格式修改，代码整合
+ccbb8c603 fix
+3e53607cc fix:修单元测试
+c48630c24 fix:info()调用修改
+312cf7d49 fix
+19f8beefc cs-fix
+c9d01a60b bdd-operation-record
+67b64c565 feat:新增简历负责人花名
+0de03f280 bdd-operation-record
+eada5a39b Merge branch 'dev/feat-0921' into 'release-usa'
+4c6fc079f Merge branch 'dev/feat-0921' into 'release-sgp'
+c250e870f Merge branch 'dev/feat-0921' into 'release-chn'
+b34ddc3c5 sync department fix
+a4215b377 Merge branch 'dev/feat-0916' into 'release-sgp'
+68fa6e517 Merge branch 'dev/feat-0916' into 'release-usa'
+7778016e7 Merge branch 'dev/feat-0916' into 'release-chn'
+586262640 Merge branch 'dev/fix-resume-operation-extra-info' into dev/feat-0916
+330c1a546 fix
+9d7bfb515 resume_operation extrainfo json format script
+ef1edba13 Merge branch 'dev/update-offer-status' into 'dev/feat-0916'
+6fccfd80c update offer expire status fix
+e0b5d22d8 Merge branch 'dev/bdd-introduction-sync-time' into 'dev/feat-0916'
+4e5aefd33 bdd-sync-time
+ed4ac4125 bdd-sync-time
+8b7e36125 Merge branch 'dev/feat-0907' into 'release-chn'
+b317d6140 Merge branch 'dev/feat-0907' into 'release-sgp'
+823dc3b19 Merge branch 'dev/feat-0907' into 'release-usa'
+f28c90fdb fix job name
+2cc5fefbe fix recent apply time sort
+e793ff405 Merge branch 'dev/feat-0907' into 'release-chn'
+e3079f641 Merge branch 'dev/feat-0907' into 'release-sgp'
+4edc3feb3 Merge branch 'dev/feat-0907' into 'release-usa'
+36a504bec fix
+fb3a21d6c fix
+f2c1727a5 fix
+3580cca51 fix
+6cd924cde Merge branch 'dev/staff-email-0907' into dev/feat-0907
+1e938913a Merge branch 'dev/resume-recent-apply-time' into dev/feat-0907
+a9fab1be8 fix
+97282c15a fix
+aeda11856 Merge branch 'dev/multisite' into 'release-sgp'
+126f49556 Merge branch 'dev/multisite' into 'release-usa'
+034ed7021 Merge branch 'dev/multisite' into 'release-chn'
+661946bc7 ci: deploy staging
+b3ac2ebf5 fix: use zh-CN instead of zh_CN
+f8ddbec4b fix: link
+edc8036f8 fix: resume-search api
+791260d11 fix: 链接返回 site key
+30846c416 fix: share link add current site
+3dc1ff630 fix: share link fix
+61ce157aa fix: should allow some params pass
+bcab70147 fix: migrate writtern exam
+ebf5930ea feat: wrap with transaction
+dffab56c3 feat: support resume migration
+2550e0b69 feat: add apis for core server to call
+82a53f9e1 feat: update migration script
+bc881a253 fix: 拦截非中国站点的官网请求
+2beacd4ae refactor: wrap site method
+74b16a764 fix: add SiteService
+385641c29 fix
+9bf4f7832 feat(staff migration): authority tokens
+27c11cd0f recent apply time
+8cec292f4 Merge branch 'master' into dev/multisite
+0bd451358 转正审批日报提醒
+4f2b3dd13 Merge branch 'master' into dev/multisite
+aea827f1f feat: 测试服部署多站点（新增一个新加坡站点）
+9d917403a staff detail adjust

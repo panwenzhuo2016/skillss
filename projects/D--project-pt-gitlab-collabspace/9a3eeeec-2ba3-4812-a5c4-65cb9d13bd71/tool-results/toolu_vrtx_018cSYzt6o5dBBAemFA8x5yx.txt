@@ -1,0 +1,182 @@
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-67-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-68-    @Resource
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-69-    private IUserService userService;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-70-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-71-    @Resource
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-72-    private IUserHistoryService userHistoryService;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-73-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-74-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-75-     * Check whether logged in.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-76-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java:77:    @GetResource(name = "check whether logged in", path = "/user/session", requiredLogin = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-78-    @Operation(summary = "check whether logged in", description = "get the necessary information")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-79-    public ResponseData<Boolean> meSession() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-80-        HttpSession session = HttpContextUtil.getSession(false);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-81-        return ResponseData.success(
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-82-            session != null && session.getAttribute(SessionAttrConstants.LOGIN_USER_ID) != null);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-83-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-84-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-85-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-86-     * Get the necessary information.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-87-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java:88:    @GetResource(name = "get the necessary information", path = "/user/get/me",
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-89-        requiredPermission = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-90-    @Operation(summary = "get the necessary information", description = "get the necessary "
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-91-        + "information")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-92-    public ResponseData<UserBaseInfoVo> userBaseInfo() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-93-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-94-        // query basic user information
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-95-        LoginUserDto loginUserDto = LoginContext.me().getLoginUser();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-96-        UserBaseInfoVo baseInfo = UserBaseInfoVo.builder()
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-97-            .userId(userId)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-98-            .uuid(loginUserDto.getUuid())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-99-            .build();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-100-        return ResponseData.success(baseInfo);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-101-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-102-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-103-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-104-     * Get the necessary information.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-105-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java:106:    @GetResource(name = "get the necessary information", path = "/user/get/me/detail",
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-107-        requiredPermission = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-108-    @Operation(summary = "get the necessary information", description = "get the necessary "
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-109-        + "information")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-110-    public ResponseData<UserDetailInfoVo> userDetailInfo(HttpServletRequest request) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-111-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-112-        // query basic user information
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-113-        LoginUserDto loginUserDto = LoginContext.me().getLoginUser();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-114-        String spaceId = request.getHeader(ParamsConstants.SPACE_ID);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-115-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-116-        UserInfoVo currentUserInfo =
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-122-        userDetailInfoVo.setUserName(currentUserInfo.getNickName());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-123-        userDetailInfoVo.setMemberName(currentUserInfo.getMemberName());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-124-        userDetailInfoVo.setMemberId(currentUserInfo.getMemberId());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-125-        userDetailInfoVo.setUnitId(currentUserInfo.getUnitId());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-126-        return ResponseData.success(userDetailInfoVo);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-127-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-128-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-129-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-130-     * Get cooling off users.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-131-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java:132:    @GetResource(name = "get cooling off users", path = "/users/paused", requiredPermission =
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-133-        false, requiredLogin = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-134-    @Operation(summary = "get cooling off users", description = "get cooling off users")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-135-    public ResponseData<List<UserInPausedDto>> getPausedUsers() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-136-        List<UserInPausedDto> pausedUserDtos = userService.getPausedUserDtos(null);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-137-        return ResponseData.success(pausedUserDtos);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-138-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-139-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-140-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-141-     * Get the cooling-off period user operation record.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\internal\controller\InternalUserController.java-142-     */
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-199-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-200-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-201-     * Get personal information.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-202-     *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-203-     * @param spaceId space id
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-204-     * @param nodeId  node id
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-205-     * @param filter  filter
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-206-     * @param request HttpServletRequest
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-207-     * @return Get personal information
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-208-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java:209:    @GetResource(name = "get personal information", path = "/me",
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-210-        requiredPermission = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-211-    @Operation(summary = "get personal information", description = "get personal "
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-212-        + "information")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-213-    @Parameters({
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-214-        @Parameter(name = "spaceId", description = "space id",
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-215-            schema = @Schema(type = "string"), in = ParameterIn.QUERY, example =
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-216-            "spc8mXUeiXyVo"),
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-217-        @Parameter(name = "nodeId", description = "node id", schema =
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-218-            @Schema(type = "string"), in = ParameterIn.QUERY, example = "dstS94qPZFXjC1LKns"),
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-219-        @Parameter(name = "filter", description = "whether to filter space "
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-315-                    false);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-316-            }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-317-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-318-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-319-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-320-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-321-     * Query whether users bind mail.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-322-     *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-323-     * @return {@link ResponseData}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-324-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java:325:    @GetResource(name = "Query whether user bind mail", path = "/email/bind",
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-326-        requiredPermission = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-327-    @Operation(summary = "Query whether users bind mail", description = "Query "
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-328-        + "whether users bind mail")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-329-    public ResponseData<Boolean> validBindEmail() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-330-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-331-        Boolean exist = iUserService.checkUserHasBindEmail(userId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-332-        return ResponseData.success(exist);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-333-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-334-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-335-    /**
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-649-        // Destroy user cookies and maintain sessions
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-650-        iUserService.closeMultiSession(userId, true);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-651-        return ResponseData.success();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-652-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-653-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-654-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-655-     * Verify whether the account can be cancelled.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-656-     *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-657-     * @return {@link ResponseData}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-658-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java:659:    @GetResource(name = "Verify whether the account can be cancelled", path =
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-660-        "/checkForClosing", requiredPermission = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-661-    @Operation(summary = "Verify whether the account can be cancelled",
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-662-        description = "Unregistered users verify whether the account meets the "
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-663-            + "cancellation conditions")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-664-    public ResponseData<Void> checkForClosing() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-665-        // Get the current login user
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-666-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-667-        // Judge whether the current user meets the account cancellation
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-668-        // conditions
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-669-        boolean isAllowedToBeClosed =
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-696-        iUserService.cancelClosingAccount(user);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-697-        return ResponseData.success();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-698-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-699-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-700-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-701-     * Get the enabled experimental functions.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-702-     *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-703-     * @param spaceId space id
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-704-     * @return {@link ResponseData}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-705-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java:706:    @GetResource(name = "Get the enabled experimental functions", path =
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-707-        "/labs/features", requiredPermission = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-708-    @Operation(summary = "Get the enabled experimental functions", description =
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-709-        "Get the enabled experimental functions")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-710-    public ResponseData<LabsFeatureVo> getEnabledLabFeatures(
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-711-        @RequestParam final String spaceId) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-712-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-713-        List<String> applicants = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-714-        if (StrUtil.isNotBlank(spaceId)) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-715-            applicants.add(spaceId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-716-        }
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-759-            iLabsApplicantService.disableLabsFeature(applicant, featureKey);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-760-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-761-        return ResponseData.success();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-762-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-763-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-764-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-765-     * Delete active space cache.
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-766-     *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-767-     * @return {@link ResponseData}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-768-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java:769:    @PostResource(path = "/delActiveSpaceCache", method = {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-770-        RequestMethod.GET}, requiredPermission = false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-771-    @Operation(summary = "Delete Active Space Cache")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-772-    public ResponseData<Void> delActiveSpaceCache() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-773-        // Fill in the invitation code and reward integral
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-774-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-775-        userActiveSpaceCacheService.delete(userId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-776-        return ResponseData.success();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-777-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-778-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\controller\UserController.java-779-    /**

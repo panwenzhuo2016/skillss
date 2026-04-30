@@ -1,0 +1,1645 @@
+diff --git a/docs/ai-reference.md b/docs/ai-reference.md
+deleted file mode 100644
+index b1097d2a..00000000
+--- a/docs/ai-reference.md
++++ /dev/null
+@@ -1,353 +0,0 @@
+-# AI 引用功能 - 前端接口文档
+-
+-> 批量设置ai引用：https://mastergo.com/goto/R7WFOSl0?page_id=15:4413&file=184384335204737
+-
+-## 概述
+-
+-本文档描述 AI 引用（Insight 知识库）相关的后端接口，供前端调用以实现：
+-- 批量 / 单个设置文档允许 / 禁止被 AI 引用
+-- 设置文件夹 AI 引用（允许 / 禁止 / 跟随）
+-- 查询节点 AI 引用状态及有效状态
+-- Insight 收录状态回调
+-
+----
+-
+-## 数据模型
+-
+-### 字段说明
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| aiQuoted | Boolean | 是否允许被 AI 引用（文档） |
+-| aiReferenceStatus | Integer | 0=跟随文档设置, 1=允许, 2=禁止（文件夹） |
+-| aiActuallyIndexed | Boolean | 是否已被 Insight 收录（文档） |
+-| effectiveAllowAICitation | Boolean | 有效 AI 引用允许状态（考虑父级覆盖） |
+-| overriddenByParent | Boolean | 是否被父级文件夹覆盖 |
+-
+-### 有效状态计算规则
+-
+-- **文档**：若任一祖先文件夹 `aiReferenceStatus=1` → 有效允许；任一为 `2` → 有效禁止；否则取文档自身 `aiQuoted`
+-- **文件夹**：`aiReferenceStatus=1` 即有效允许
+-
+----
+-
+-## 接口列表
+-
+-### 1. 批量设置文档允许 / 禁止被 AI 引用
+-
+-**场景**：空间站列表选中多个文档，右键「批量设置文档允许被AI引用」或「批量设置文档禁止被AI引用」。
+-
+-| 项目 | 说明 |
+-|------|------|
+-| 方法 | POST |
+-| 路径 | `/node/batchUpdateAICitation` |
+-| 鉴权 | 需要登录 + space_id header + 节点 AI_ENABLE 权限 |
+-| Header | `space_id`: 空间 ID（必填） |
+-
+-**请求体**
+-
+-```json
+-{
+-  "nodeIds": [123, 456, 789],
+-  "allowAICitation": true
+-}
+-```
+-
+-**请求示例（curl）**
+-
+-```bash
+-curl -X POST "https://your-domain.com/node/batchUpdateAICitation" ^
+-  -H "Content-Type: application/json" ^
+-  -H "space_id: spc_xxx" ^
+-  -H "Authorization: Bearer <token>" ^
+-  -d "{
+-    \"nodeIds\": [123, 456, 789],
+-    \"allowAICitation\": true
+-  }"
+-```
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| nodeIds | Long[] | 是 | SpaceNode id 列表（仅文档） |
+-| allowAICitation | Boolean | 是 | true=允许, false=禁止 |
+-
+-**成功响应**
+-
+-```json
+-{
+-  "code": 200,
+-  "success": true,
+-  "data": null
+-}
+-```
+-
+-**错误码**
+-
+-| code | 说明 |
+-|------|------|
+-| 610 | AI_REFERENCE_OVERRIDDEN_BY_PARENT - 父文件夹已设置，当前文档设置不生效，需移出或修改父文件夹 |
+-| 608 | AI_REFERENCE_INVALID_NODE_TYPE - 仅文档可设置，不能传入文件夹 id |
+-| 609 | AI_REFERENCE_NODE_NOT_FOUND - 节点不存在 |
+-
+----
+-
+-### 2. 单个文档设置 AI 引用
+-
+-**场景**：点击文档 AI 标识弹窗，勾选「设置当前文档内容不允许被 insight 的知识库收录」后点击确定。
+-
+-| 项目 | 说明 |
+-|------|------|
+-| 方法 | POST |
+-| 路径 | `/node/{id}/aiCitation` |
+-| 鉴权 | 需要登录 + space_id header + 节点 AI_ENABLE 权限 |
+-| Header | `space_id`: 空间 ID（必填） |
+-| 路径参数 | `id`: SpaceNode id（文档） |
+-
+-**请求体**
+-
+-```json
+-{
+-  "allowAICitation": false
+-}
+-```
+-
+-**请求示例（curl）**
+-
+-```bash
+-curl -X POST "https://your-domain.com/node/123/aiCitation" ^
+-  -H "Content-Type: application/json" ^
+-  -H "space_id: spc_xxx" ^
+-  -H "Authorization: Bearer <token>" ^
+-  -d "{
+-    \"allowAICitation\": false
+-  }"
+-```
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| allowAICitation | Boolean | 是 | true=允许, false=禁止 |
+-
+-**成功响应**
+-
+-```json
+-{
+-  "code": 200,
+-  "success": true,
+-  "data": {
+-    "id": "123",
+-    "aiQuoted": false,
+-    "aiReferenceStatus": null,
+-    "aiActuallyIndexed": false,
+-    "effectiveAllowAICitation": false,
+-    "overriddenByParent": false,
+-    "name": "文档名",
+-    "type": 8
+-  }
+-}
+-```
+-
+-**错误码**：同 1
+-
+----
+-
+-### 3. 查询节点 AI 引用状态
+-
+-**场景**：点击文档 / 文件夹 AI 标识时，拉取当前状态用于弹窗展示。
+-
+-| 项目 | 说明 |
+-|------|------|
+-| 方法 | GET |
+-| 路径 | `/node/{id}/aiReferenceStatus` |
+-| 鉴权 | 无需登录 / 权限 |
+-| 路径参数 | `id`: SpaceNode id |
+-
+-**请求示例（curl）**
+-
+-```bash
+-curl -X GET "https://your-domain.com/node/123/aiReferenceStatus"
+-```
+-
+-**成功响应**
+-
+-```json
+-{
+-  "code": 200,
+-  "success": true,
+-  "data": {
+-    "id": "123",
+-    "aiQuoted": true,
+-    "aiActuallyIndexed": true,
+-    "aiReferenceStatus": 0,
+-    "effectiveAllowAICitation": true,
+-    "overriddenByParent": false
+-  }
+-}
+-```
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| id | Long/String | 节点 id |
+-| aiQuoted | Boolean | 是否允许被 AI 引用 |
+-| aiActuallyIndexed | Boolean | 是否已被 Insight 收录 |
+-| aiReferenceStatus | Integer | 0 跟随 1 允许 2 禁止（文件夹） |
+-| effectiveAllowAICitation | Boolean | 有效 AI 引用允许状态 |
+-| overriddenByParent | Boolean | 是否被父级覆盖 |
+-
+----
+-
+-### 4. 设置文件夹 AI 引用
+-
+-**场景**：右键父节点 → AI引用设置 → 允许被引用 / 不允许被引用 / 跟随文档设置。
+-
+-| 项目 | 说明 |
+-|------|------|
+-| 方法 | POST |
+-| 路径 | `/node/{id}/aiReferenceStatus` |
+-| 鉴权 | 需要登录 + space_id header + 节点 AI_ENABLE 权限 |
+-| Header | `space_id`: 空间 ID（必填） |
+-| 路径参数 | `id`: SpaceNode id（必须为文件夹） |
+-
+-**请求体**
+-
+-```json
+-{
+-  "aiReferenceStatus": 1
+-}
+-```
+-
+-**请求示例（curl）**
+-
+-```bash
+-curl -X POST "https://your-domain.com/node/456/aiReferenceStatus" ^
+-  -H "Content-Type: application/json" ^
+-  -H "space_id: spc_xxx" ^
+-  -H "Authorization: Bearer <token>" ^
+-  -d "{
+-    \"aiReferenceStatus\": 1
+-  }"
+-```
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| aiReferenceStatus | Integer | 是 | 0=跟随文档设置, 1=允许, 2=禁止 |
+-
+-**成功响应**
+-
+-```json
+-{
+-  "code": 200,
+-  "success": true,
+-  "data": { /* SpaceNodeVo */ }
+-}
+-```
+-
+-**错误码**
+-
+-| code | 说明 |
+-|------|------|
+-| 608 | 仅文件夹可设置，不能传入文档 id |
+-| 609 | 节点不存在 |
+-
+----
+-
+-### 5. 列表 / 树返回中的 AI 相关字段
+-
+-**接口**：`getSpaceNodeTree`、`getSpaceNodeInfo`、`filterSpaceNode` 等返回的 `SpaceNodeVo` 中已包含：
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| aiEnable | Boolean | AI 启用 |
+-| aiQuoted | Boolean | 是否允许被 AI 引用 |
+-| aiReferenceStatus | Integer | 0 跟随 1 允许 2 禁止 |
+-| aiActuallyIndexed | Boolean | 是否已被 Insight 收录 |
+-| effectiveAllowAICitation | Boolean | 有效 AI 引用允许状态 |
+-| overriddenByParent | Boolean | 是否被父级覆盖 |
+-
+-**展示规则**
+-
+-- **文档 AI 标识**：`effectiveAllowAICitation && aiActuallyIndexed` 为 true 时展示
+-- **文件夹 AI 标识**：`effectiveAllowAICitation` 为 true 时展示（即 `aiReferenceStatus=1`）
+-
+----
+-
+-### 6. 更新 Insight 收录状态（Insight 回调）
+-
+-**场景**：Insight 完成 / 取消收录后回调，更新 `aiActuallyIndexed`。
+-
+-| 项目 | 说明 |
+-|------|------|
+-| 方法 | POST |
+-| 路径 | `/node/{id}/aiActuallyIndexed` |
+-| 鉴权 | 无需登录（供内部 Insight 服务调用） |
+-| 路径参数 | `id`: SpaceNode id（文档） |
+-
+-**请求体**
+-
+-```json
+-{
+-  "aiActuallyIndexed": true
+-}
+-```
+-
+-**请求示例（curl）**
+-
+-```bash
+-curl -X POST "https://your-domain.com/node/123/aiActuallyIndexed" ^
+-  -H "Content-Type: application/json" ^
+-  -d "{
+-    \"aiActuallyIndexed\": true
+-  }"
+-```
+-
+----
+-
+-## 前端交互流程建议
+-
+-### 批量设置文档
+-
+-1. 用户选中多文档 → 右键 →「批量设置文档允许/禁止被AI引用」
+-2. 调用 `POST /node/batchUpdateAICitation`
+-3. 若返回 610：弹出「AI引用说明」提示用户移出文件夹或修改父级为「跟随文档设置」
+-
+-### 文档 AI 标识弹窗
+-
+-1. 点击文档 AI 标识 → 调用 `GET /node/{id}/aiReferenceStatus` 获取状态
+-2. 若 `overriddenByParent` 为 true：展示说明弹窗（引导移出或修改父级）
+-3. 若为 false：展示可编辑弹窗，勾选后调用 `POST /node/{id}/aiCitation`
+-
+-### 文件夹 AI 标识弹窗
+-
+-1. 点击文件夹 AI 标识：展示只读说明（该文件夹内在线文档均允许被 AI 学习）
+-2. 引导用户通过右键 →「AI引用设置」修改
+-
+-### 父节点右键 AI 引用设置
+-
+-1. 右键父节点 →「AI引用设置」→ 三个选项
+-2. 选择后调用 `POST /node/{id}/aiReferenceStatus` 并传入对应 `aiReferenceStatus`
+-
+----
+-
+-## 前端页面操作与接口对应关系
+-
+-| 前端入口 / 页面 | 具体操作 | 调用接口 | 备注 |
+-|------------------|----------|----------|------|
+-| 空间站列表 / 树 | 多选文档 → 右键菜单「批量设置文档允许/禁止被AI引用」 | `POST /node/batchUpdateAICitation` | 仅对文档生效，父级若已设置会返回 610 |
+-| 文档详情页（标题区 / 工具栏） | 点击文档 AI 标识，打开弹窗 | `GET /node/{id}/aiReferenceStatus` | 用于获取当前文档有效状态及是否被父级覆盖 |
+-| 文档详情页弹窗 | 勾选 / 取消「不允许被 Insight 收录」后点击确定 | `POST /node/{id}/aiCitation` | 仅当 `overriddenByParent=false` 时允许修改 |
+-| 空间树中文件夹节点 | 悬停 / 展示文件夹 AI 标识 | 列表 / 树接口返回 `SpaceNodeVo` 字段 | 使用 `aiReferenceStatus`、`effectiveAllowAICitation` 直接渲染，不额外请求 |
+-| 空间树中文件夹节点 | 右键菜单「AI 引用设置」→ 选择允许 / 不允许 / 跟随 | `POST /node/{id}/aiReferenceStatus` | 仅文件夹可设置，设置后会影响子文档有效状态 |
+-| 空间树 / 列表通用 | 节点行展示 AI 图标 | `getSpaceNodeTree` / `getSpaceNodeInfo` / `filterSpaceNode` 等 | 依据 `aiEnable` + `effectiveAllowAICitation` + `aiActuallyIndexed` 决定是否展示 |
+-| Insight 服务（非前端） | Insight 收录或取消后回调 | `POST /node/{id}/aiActuallyIndexed` | 内部调用，前端不直接触达，仅依赖返回字段 |
+-
+-> **说明**：结合以上接口与交互，前端完整链路包括「列表/树渲染 → 文档/文件夹标识展示 → 批量/单个设置 → 文件夹策略覆盖 → Insight 收录状态回写」，逻辑已闭环，无需额外接口即可支撑当前产品形态。
+-
+----
+-
+-## 错误码汇总
+-
+-| code | 常量 | 说明 |
+-|------|------|------|
+-| 610 | AI_REFERENCE_OVERRIDDEN_BY_PARENT | 父文件夹已设置，当前文档设置不生效 |
+-| 608 | AI_REFERENCE_INVALID_NODE_TYPE | 节点类型不合法 |
+-| 609 | AI_REFERENCE_NODE_NOT_FOUND | 节点不存在 |
+-
+diff --git a/docs/api-workspace-apply.md b/docs/api-workspace-apply.md
+deleted file mode 100644
+index ee508a5b..00000000
+--- a/docs/api-workspace-apply.md
++++ /dev/null
+@@ -1,75 +0,0 @@
+-# 空间站成员申请 - 前端接口文档
+-
+-> 供前端开发使用。空间站由 collabspace 管理，本接口由 **collabspace-server** 提供。  
+-> 文档权限申请与审批 https://xcollabspace.yottastudios.com/#/view-node/spcnnvamyuv0x/2018963952445878274  
+-> 消息通知增加分类 https://mastergo.com/goto/R7WKVEPM?page_id=1:04055&file=184384335204737
+-
+-## BaseURL 与路径说明
+-
+-| 项目 | 说明 |
+-|------|------|
+-| **baseURL** | `/api/v1` |
+-| **完整路径** | 前端请求为 `POST /api/v1/workspaces/{workspaceId}/applyMembership`，无需额外前缀 |
+-| **代理配置** | collabspace-web 的 vite 将 `/api/v1` 代理到 collabspace-server |
+-| **与 apitable 区分** | apitable 接口使用 `/apitable/api/v1` 前缀，本接口无该前缀 |
+-
+-**相关接口**：文档权限申请、通知中心、审批等由 apitable 提供，使用 baseURL `/apitable/api/v1`，详见 `apitable/docs/api-permission-apply.md`。
+-
+----
+-
+-## 一、申请成为空间站成员
+-
+-用户在「无空间站权限」页面点击「申请成为该空间站成员」时调用。
+-
+-### 请求
+-
+-```
+-POST /api/v1/workspaces/{workspaceId}/applyMembership
+-```
+-
+-| 参数 | 类型 | 位置 | 必填 | 说明 |
+-|------|------|------|------|------|
+-| workspaceId | string | path | 是 | 空间站 ID |
+-
+-### 请求示例（curl）
+-
+-```bash
+-curl -X POST "https://your-domain.com/api/v1/workspaces/spc_xxx/applyMembership" ^
+-  -H "Authorization: Bearer <token>"
+-```
+-
+-### 请求体
+-
+-```json
+-{}
+-```
+-
+-无需 body，或传空对象。
+-
+-### 响应
+-
+-```json
+-{
+-  "success": true,
+-  "data": null,
+-  "message": "申请已发送"
+-}
+-```
+-
+-### 错误码
+-
+-| code | 说明 |
+-|------|------|
+-| 201/403 | 未登录或 token 无效 |
+-| 400 | workspaceId 无效 |
+-| 404 | 空间站不存在 |
+-| 500 | 已是该空间站成员（"您已是该空间站成员"） |
+-
+----
+-
+-## 二、前端页面操作与接口对应关系
+-
+-| 前端页面/操作 | 对应接口 | 方法 | 说明 |
+-|---------------|----------|------|------|
+-| 无空间站权限页 | — | — | 根据错误码 201/403 展示 |
+-| 点击「申请成为该空间站成员」 | `/api/v1/workspaces/{workspaceId}/applyMembership` | POST | 空间站成员申请（collabspace-server） |
+diff --git a/docs/app-center-api.md b/docs/app-center-api.md
+deleted file mode 100644
+index 9a85efda..00000000
+--- a/docs/app-center-api.md
++++ /dev/null
+@@ -1,273 +0,0 @@
+-# 应用中心配置接口文档
+-
+----
+-
+-## 一、查询接口
+-
+-### 1. 获取应用配置列表
+-
+-**说明**：获取所有应用配置，返回按排序序号升序排列的配置列表。管理端和用户端共用此接口。
+-
+-**地址**：`GET /api/v1/app-center/list`
+-
+-**入参**：无
+-
+-**结果**：
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| id | String | 配置ID |
+-| appName | String | 应用名称 |
+-| appDescription | String | 应用描述 |
+-| appIconUrl | String | 应用图标URL |
+-| accessType | Integer | 访问方式(1:跳转链接, 2:下载) |
+-| linkUrl | String | 跳转链接URL(单条时返回，与linkUrls互斥) |
+-| linkUrls | Array | 跳转链接列表(多条时返回，与linkUrl互斥，每项含 name、url) |
+-| enableLinkOptions | Boolean | 是否多个链接(由linkUrls数量推断，true表示多条，供前端展示用) |
+-| enableOptions | Boolean | 是否启用下载选项 |
+-| downloadFileUrl | String | 直接下载文件URL |
+-| downloadOptions | Array | 下载选项列表 |
+-| sortOrder | Integer | 排序序号 |
+-| createdAt | String | 创建时间 |
+-| updatedAt | String | 更新时间 |
+-
+-**示例**：
+-
+-```
+-GET /api/v1/app-center/list
+-```
+-
+-```json
+-{
+-  "success": true,
+-  "code": 200,
+-  "data": [
+-    {
+-      "id": "1234567890",
+-      "appName": "COLLABSPACE",
+-      "appDescription": "协作空间",
+-      "appIconUrl": "http://example.com/icon.png",
+-      "accessType": 1,
+-      "linkUrl": "/#/aio",
+-      "linkUrls": null,
+-      "enableLinkOptions": false,
+-      "enableOptions": false,
+-      "downloadFileUrl": null,
+-      "downloadOptions": [],
+-      "sortOrder": 1,
+-      "createdAt": "2026-02-28 10:00:00",
+-      "updatedAt": "2026-02-28 10:00:00"
+-    }
+-  ]
+-}
+-```
+-
+----
+-
+-## 二、管理后台接口
+-
+-### 2. 添加应用配置
+-
+-**说明**：添加一个应用配置。访问方式分为跳转链接和下载两种；跳转链接支持单条 linkUrl 或多条 linkUrls（最多3个），由数据推断；下载由 enableOptions 控制：false 使用 downloadFileUrl，true 使用 downloadOptions（最多3个）。
+-
+-**地址**：`POST /api/v1/management/app-center/add`
+-
+-**入参**：
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| appName | String | 是 | 应用名称(≤20字符) |
+-| appDescription | String | 否 | 应用描述(≤100字符) |
+-| appIconUrl | String | 是 | 应用图标URL |
+-| accessType | Integer | 是 | 访问方式(1:跳转链接, 2:下载) |
+-| linkUrl | String | 条件 | 跳转链接URL(单条，accessType=1时与linkUrls二选一必填) |
+-| linkUrls | Array | 条件 | 跳转链接列表(accessType=1时与linkUrl二选一必填，最多3个，每项含name、url) |
+-| enableOptions | Boolean | 否 | 是否启用下载选项(默认false) |
+-| downloadFileUrl | String | 条件 | 直接下载文件URL(accessType=2且enableOptions=false时必填) |
+-| downloadOptions | Array | 条件 | 下载选项列表(accessType=2且enableOptions=true时必填，最多3个) |
+-
+-**linkUrls 子项**：
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| name | String | 否 | 链接名称(≤50字符) |
+-| url | String | 是 | 链接URL |
+-
+-**downloadOptions 子项**：
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| optionName | String | 是 | 选项名称(≤50字符) |
+-| fileUrl | String | 是 | 文件下载URL |
+-| sortOrder | Integer | 否 | 排序序号 |
+-
+-**结果**：
+-
+-```json
+-{
+-  "success": true,
+-  "code": 200,
+-  "data": null
+-}
+-```
+-
+-**示例1 - 跳转链接(单条)**：
+-
+-```json
+-{
+-  "appName": "企业微信",
+-  "appDescription": "企业通讯工具",
+-  "appIconUrl": "http://example.com/icon.png",
+-  "accessType": 1,
+-  "linkUrl": "https://work.weixin.qq.com"
+-}
+-```
+-
+-**示例1b - 跳转链接(多条)**：
+-
+-```json
+-{
+-  "appName": "多入口应用",
+-  "appIconUrl": "http://example.com/icon.png",
+-  "accessType": 1,
+-  "linkUrls": [
+-    {"name": "页面1", "url": "https://example.com/page1"},
+-    {"name": "页面2", "url": "https://example.com/page2"},
+-    {"name": "页面3", "url": "https://example.com/page3"}
+-  ]
+-}
+-```
+-
+-**示例2 - 直接下载**：
+-
+-```json
+-{
+-  "appName": "客户端",
+-  "appIconUrl": "http://example.com/icon.png",
+-  "accessType": 2,
+-  "enableOptions": false,
+-  "downloadFileUrl": "http://example.com/client.exe"
+-}
+-```
+-
+-**示例3 - 多选项下载**：
+-
+-```json
+-{
+-  "appName": "客户端",
+-  "appDescription": "支持多平台",
+-  "appIconUrl": "http://example.com/icon.png",
+-  "accessType": 2,
+-  "enableOptions": true,
+-  "downloadOptions": [
+-    { "optionName": "Windows版", "fileUrl": "http://example.com/win.exe", "sortOrder": 1 },
+-    { "optionName": "Mac版", "fileUrl": "http://example.com/mac.dmg", "sortOrder": 2 },
+-    { "optionName": "Linux版", "fileUrl": "http://example.com/linux.tar.gz", "sortOrder": 3 }
+-  ]
+-}
+-```
+-
+----
+-
+-### 3. 更新应用配置
+-
+-**说明**：更新指定的应用配置。只传需要更新的字段，下载选项会全量替换。
+-
+-**地址**：`POST /api/v1/management/app-center/update`
+-
+-**入参**：
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| id | Long | 是 | 配置ID |
+-| appName | String | 否 | 应用名称(≤20字符) |
+-| appDescription | String | 否 | 应用描述(≤100字符) |
+-| appIconUrl | String | 否 | 应用图标URL |
+-| accessType | Integer | 否 | 访问方式(1:跳转链接, 2:下载) |
+-| linkUrl | String | 否 | 跳转链接URL(单条，向前兼容) |
+-| linkUrls | Array | 否 | 跳转链接列表(最多3个，每项含name、url) |
+-| enableOptions | Boolean | 否 | 是否启用下载选项 |
+-| downloadFileUrl | String | 否 | 直接下载文件URL |
+-| downloadOptions | Array | 否 | 下载选项列表(全量替换，最多3个) |
+-
+-**结果**：
+-
+-```json
+-{
+-  "success": true,
+-  "code": 200,
+-  "data": null
+-}
+-```
+-
+-**示例**：
+-
+-```json
+-{
+-  "id": 1234567890,
+-  "appName": "新名称",
+-  "appDescription": "新描述"
+-}
+-```
+-
+----
+-
+-### 4. 删除应用配置
+-
+-**说明**：删除指定的应用配置及其关联的下载选项。
+-
+-**地址**：`POST /api/v1/management/app-center/delete`
+-
+-**入参**：
+-
+-| 参数 | 类型 | 必填 | 说明 |
+-|------|------|------|------|
+-| id | Long | 是 | 配置ID |
+-
+-**结果**：
+-
+-```json
+-{
+-  "success": true,
+-  "code": 200,
+-  "data": null
+-}
+-```
+-
+-**示例**：
+-
+-```json
+-{
+-  "id": 1234567890
+-}
+-```
+-
+----
+-
+-## 三、前端注意事项
+-
+-### appIconUrl 处理
+-
+-初始化数据中 `appIconUrl` 为空，需要管理员通过后台上传图标后才会有值。
+-
+-**前端处理逻辑**：
+-- 如果 `appIconUrl` 为空或 `null`，显示默认占位图标
+-- 如果 `appIconUrl` 有值，使用该 URL 加载图标
+-
+-```javascript
+-// 示例
+-const iconSrc = item.appIconUrl || '/path/to/default-icon.png';
+-```
+-
+----
+-
+-## 四、错误码
+-
+-| 错误信息 | 说明 |
+-|---------|------|
+-| 应用配置不存在 | 配置ID无效或已删除 |
+-| 跳转链接模式下，链接URL不能为空 | accessType=1时 linkUrl 或 linkUrls 必填 |
+-| 跳转链接最多配置3个 | linkUrls 数量超过3个 |
+-| 未启用下载选项时，直接下载文件URL不能为空 | accessType=2且enableOptions=false时downloadFileUrl必填 |
+-| 启用下载选项时，至少需要配置一个选项 | accessType=2且enableOptions=true时downloadOptions不能为空 |
+-| 下载选项最多配置3个 | downloadOptions数量超过3个 |
+diff --git a/docs/tree-node-websocket-reference.md b/docs/tree-node-websocket-reference.md
+deleted file mode 100644
+index cacf41e3..00000000
+--- a/docs/tree-node-websocket-reference.md
++++ /dev/null
+@@ -1,265 +0,0 @@
+-# 树节点变更 WebSocket 推送 - 前端接口文档
+-
+-> 需求背景：监听树结构相关的新增 / 批量移动 / 删除事件后，后端通过 WebSocket 向前端推送通知，用于实时更新空间树 UI。
+-
+-## 概述
+-
+-本文档描述「空间树节点变更」相关的 **WebSocket 推送协议**，供前端消费以实现：
+-
+-- 新建节点后，空间树实时插入新节点
+-- 批量移动节点后，空间树实时更新父子关系 / 顺序
+-- 删除节点后，空间树实时移除对应节点
+-
+-后端实现基于现有 `WebSocketHandler` 广播能力，推送统一的 `WebSocketResponseModel`，前端只需在连接建立后监听并处理 `type = "TREE_NODE_CHANGED"` 的消息。
+-
+----
+-
+-## 消息模型
+-
+-### WebSocketResponseModel 外层结构
+-
+-所有树节点变更消息统一使用已有的 `WebSocketResponseModel` 封装，字段说明如下：
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| type | String | 消息类型，本需求固定为 `"TREE_NODE_CHANGED"` |
+-| status | Integer | 状态码，成功时为 `200` |
+-| message | String | 文本描述，例如 `"tree node changed"` |
+-| data | Object | 业务数据，本需求为 `TreeNodeWsChangeData` |
+-
+-**树节点变更推送示例：**
+-
+-```json
+-{
+-  "type": "TREE_NODE_CHANGED",
+-  "status": 200,
+-  "message": "tree node changed",
+-  "data": {
+-    "action": "ADDED",
+-    "treeId": "aio_file_tree:spc_xxx",
+-    "traceId": "f2d1b50b-9a4f-4b0a-9b02-xxxx",
+-    "operatorId": 123456,
+-    "eventTriggerSource": "WEB",
+-    "timestamp": 1710000000000,
+-    "payload": {
+-      "nodeId": 1001,
+-      "parentId": 200,
+-      "relId": 3001
+-    }
+-  }
+-}
+-```
+-
+-> 说明：`traceId` / `operatorId` / `eventTriggerSource` 均来自现有事件总线公共字段，便于排查问题和关联后端日志。
+-
+-### TreeNodeWsChangeData 字段说明
+-
+-`data` 字段对应服务端的 `TreeNodeWsChangeData`，字段说明如下：
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| action | String | 变更动作：`"ADDED"` / `"BATCH_MOVED"` / `"DELETED"` |
+-| treeId | String | 树标识，对应事件里的 `TreeNodeEvent.treeId`（空间树通常包含 spaceId 信息） |
+-| traceId | String | 事件 traceId，可用于串联后端日志 |
+-| operatorId | Long | 触发操作的用户 id（若有登录态） |
+-| eventTriggerSource | String | 事件触发来源，例如 `WEB` / `API` 等 |
+-| timestamp | Long | 推送时间（毫秒时间戳） |
+-| payload | Object | 不同 `action` 下的具体业务数据，见下文三种场景 |
+-
+----
+-
+-## 三种变更场景
+-
+-### 1. 节点新增（ADDED）
+-
+-**后端触发时机**
+-
+-- 监听到 `TreeNodeAddedEvent`，并确认是 **空间文件树（AIO_FILE_TREE） + SpaceNodeEntity** 相关的事件后推送。
+-
+-**判定条件（仅供参考）**
+-
+-- `event.nodeKey == NodeKeyType.AIO_FILE_TREE.getValue()`
+-- `event.entityClassName == SpaceNodeEntity.class.getName()`
+-
+-**payload 结构**
+-
+-```json
+-{
+-  "nodeId": 1001,
+-  "parentId": 200,
+-  "relId": 3001
+-}
+-```
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| nodeId | Long | 树节点 id（用于树结构） |
+-| parentId | Long | 父节点 id |
+-| relId | Long | 关联的 `SpaceNodeEntity.id`，可与现有列表 / 详情接口联动 |
+-
+-**前端处理建议**
+-
+-1. 根据 `treeId` 判断是否为当前空间树。
+-2. 若当前页面维护了完整树结构，可：
+-   - 通过 `parentId` 找到父节点；
+-   - 通过接口（如 `getSpaceNodeInfo`）补齐节点详情，或在已有上下文中创建占位节点；
+-   - 在对应位置插入新子节点。
+-
+----
+-
+-### 2. 批量移动节点（BATCH_MOVED）
+-
+-**后端触发时机**
+-
+-- 监听到 `TreeNodeBatchMovedEvent`，并确认是空间文件树相关事件后推送。
+-
+-**payload 结构**
+-
+-```json
+-{
+-  "newParentId": 200,
+-  "movedNodes": [
+-    {
+-      "nodeId": 1001,
+-      "relId": 3001,
+-      "oldParentId": 101
+-    },
+-    {
+-      "nodeId": 1002,
+-      "relId": 3002,
+-      "oldParentId": 101
+-    }
+-  ]
+-}
+-```
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| newParentId | Long | 批量移动后的新父节点 id |
+-| movedNodes | MovedNodeInfo[] | 被移动的节点列表 |
+-| movedNodes[].nodeId | Long | 树节点 id |
+-| movedNodes[].relId | Long | 关联的 `SpaceNodeEntity.id` |
+-| movedNodes[].oldParentId | Long | 移动前的父节点 id |
+-
+-**前端处理建议**
+-
+-1. 根据 `treeId` 筛选当前空间树。
+-2. 遍历 `movedNodes`：
+-   - 在树中找到对应 `nodeId`，从旧父节点下移除；
+-   - 插入到 `newParentId` 对应父节点下；
+-   - 若树结构维护有排序 / `preId`，可根据当前实现做适配（本次推送不带顺序信息，如有需要可结合后端重新拉取该父节点子列表）。
+-
+-> 说明：本次为最小变更实现，未单独推送精确顺序；在前端已有“拖拽后本地更新顺序”的情况下通常已足够，如需强一致可在 UI 上必要时重新拉取。
+-
+----
+-
+-### 3. 节点删除（DELETED）
+-
+-**后端触发时机**
+-
+-- 监听到 `TreeNodeDeletedEvent`，并确认是空间文件树相关事件后推送。
+-
+-**payload 结构**
+-
+-```json
+-{
+-  "nodeId": 1001,
+-  "parentId": 200,
+-  "nodeName": "被删除的节点名",
+-  "relId": 3001
+-}
+-```
+-
+-| 字段 | 类型 | 说明 |
+-|------|------|------|
+-| nodeId | Long | 被删除的树节点 id |
+-| parentId | Long | 删除前的父节点 id |
+-| nodeName | String | 节点名称（仅用于展示或降级处理） |
+-| relId | Long | 关联的 `SpaceNodeEntity.id` |
+-
+-**前端处理建议**
+-
+-1. 如果当前空间树中存在该 `nodeId`，直接从父节点的 children 中移除即可。
+-2. 若当前正在查看的节点被删除，可：
+-   - 弹出提示「当前文档已被删除」；
+-   - 跳转回上一级或根空间列表。
+-
+----
+-
+-## 前端接入方式
+-
+-### WebSocket 连接与心跳
+-
+-后端使用 `WebSocketConfig` 注册了统一的 WebSocket 入口（path 由配置 `socketio.server.path` 决定），并在 `WebSocketHandler` 中处理：
+-
+-- 文本消息
+-- 心跳（`ping` / `pong` 或 `type = "heartbeat"`）
+-
+-在现有接入的基础上，前端只需在消息回调中增加对 `TREE_NODE_CHANGED` 的分发逻辑，无需调整连接方式。
+-
+-### 前端消息处理伪代码
+-
+-```ts
+-ws.onmessage = (event) => {
+-  const resp = JSON.parse(event.data);
+-
+-  if (resp.type !== "TREE_NODE_CHANGED") {
+-    // 保持原有其他类型处理逻辑（UPDATE_FILE_INFO、ADD_ANNOUNCEMENT 等）
+-    return;
+-  }
+-
+-  const data = resp.data;
+-  const payload = data?.payload || {};
+-
+-  switch (data.action) {
+-    case "ADDED":
+-      handleTreeNodeAdded(data.treeId, payload);
+-      break;
+-    case "BATCH_MOVED":
+-      handleTreeNodeBatchMoved(data.treeId, payload);
+-      break;
+-    case "DELETED":
+-      handleTreeNodeDeleted(data.treeId, payload);
+-      break;
+-    default:
+-      // 兼容未来扩展，未知 action 可以先忽略
+-      break;
+-  }
+-};
+-```
+-
+-### 与 HTTP 接口的搭配使用建议
+-
+-- **首次进入空间树页面**：通过现有 HTTP 接口拉取完整树（例如 `getSpaceNodeTree`），再启动 WebSocket。
+-- **实时更新**：依赖本次文档定义的 `TREE_NODE_CHANGED` 推送，对前端本地树做增删改。
+-- **强一致需求**（例如拖拽排序后列表顺序异常）：前端可在关键操作完成后，重新请求一次对应父节点的子列表，将 WebSocket 视为「增量通知」。
+-
+----
+-
+-## 后端行为补充说明
+-
+-1. **推送范围**
+-   - 当前实现使用 `webSocketHandler.sendAllUserToWebSocketClient` 广播给所有在线连接。
+-   - 前端需要根据当前 spaceId / 页面上下文自行决定是否消费该消息。
+-
+-2. **过滤条件**
+-   - 仅当事件满足以下条件时才会推送：
+-     - `event.nodeKey == AIO_FILE_TREE`
+-     - `event.entityClassName == SpaceNodeEntity`
+-   - 其它业务树（若未来有）不会收到本类型推送。
+-
+-3. **容错策略**
+-   - 如果 WebSocket 推送失败（例如没有在线用户 / 网络异常），后端只记录错误日志，不会影响原有的路径同步和权限同步逻辑。
+-
+----
+-
+-## 前端页面与本协议的关系
+-
+-| 前端入口 / 页面 | 具体操作 | WebSocket 消息 | 备注 |
+-|------------------|----------|----------------|------|
+-| 空间树 / 文件列表 | 新建文件 / 文件夹 | `action = "ADDED"` | 用于在 UI 中实时插入新节点 |
+-| 空间树 | 拖拽批量移动节点 | `action = "BATCH_MOVED"` | 用于实时更新父子关系，顺序如有需要可额外拉取 |
+-| 空间树 / 回收站操作 | 删除节点 | `action = "DELETED"` | 用于实时移除节点；若当前查看节点被删需提示用户 |
+-
+-> **说明**：本协议只负责「通知有变更」，不强制前端如何渲染。前端可根据自身状态管理方案决定是直接基于 payload 更新本地状态，还是收到通知后重新发起一次 HTTP 请求刷新数据。
+-
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java b/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java
+index 076ab1a7..eac9dc83 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/infrastructure/ControlTemplate.java
+@@ -5,17 +5,17 @@ import com.github.benmanes.caffeine.cache.Caffeine;
+ import com.yottastudios.ns.collabspace.control.infrastructure.ControlIdBuilder.ControlId;
+ import com.yottastudios.ns.collabspace.control.infrastructure.PrincipalBuilder.Principal;
+ import com.yottastudios.ns.collabspace.control.infrastructure.exception.UnknownControlTypeException;
++import com.yottastudios.ns.collabspace.control.infrastructure.exception.UnknownPrincipalTypeException;
+ import com.yottastudios.ns.collabspace.control.infrastructure.permission.NodePermission;
+ import com.yottastudios.ns.collabspace.control.infrastructure.policy.SpacePermissionPolicy;
+ import com.yottastudios.ns.collabspace.control.infrastructure.request.*;
+-import com.yottastudios.ns.collabspace.control.infrastructure.exception.UnknownPrincipalTypeException;
+ import com.yottastudios.ns.collabspace.control.infrastructure.role.*;
+-import com.yottastudios.ns.collabspace.space.enums.SpaceException;
+-import com.yottastudios.ns.collabspace.space.manager.query.SpacePermissionPolicyQueryManager;
+ import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+ import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+ import com.yottastudios.ns.collabspace.shared.config.properties.ConstProperties;
+ import com.yottastudios.ns.collabspace.space.entity.SpaceEntity;
++import com.yottastudios.ns.collabspace.space.enums.SpaceException;
++import com.yottastudios.ns.collabspace.space.manager.query.SpacePermissionPolicyQueryManager;
+ import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeUserRoleCacheEntity;
+ import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeException;
+@@ -29,12 +29,11 @@ import org.apache.commons.collections4.CollectionUtils;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Component;
+ 
++import java.nio.charset.StandardCharsets;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
+ import java.time.Duration;
+-import java.util.ArrayList;
+-import java.util.HashMap;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Set;
++import java.util.*;
+ import java.util.stream.Collectors;
+ 
+ import static com.yottastudios.ns.collabspace.core.support.tree.v2.DefaultTreeBuildFactory.ROOT_PARENT_ID;
+@@ -78,13 +77,24 @@ public class ControlTemplate {
+             .build();
+ 
+     private String buildExecuteCacheKey(Principal principal, ControlId controlId, ControlRequestOption requestOption) {
+-        String principalPart = principal.getPrincipalType() + ":" + principal.getPrincipal();
+-        String typePart = String.valueOf(controlId.getControlType());
+-        List<String> ids = new ArrayList<>(controlId.getControlIds());
+-        ids.sort(String::compareTo);
+-        String idsPart = String.join(",", ids);
+-        String optPart = requestOption == null ? "" : requestOption.cacheKey();
+-        return principalPart + "|" + typePart + "|" + idsPart + "|" + optPart;
++        try {
++            MessageDigest md = MessageDigest.getInstance("MD5");
++            // 逐段 update，避免拼接 ~1MB 中间字符串
++            md.update((principal.getPrincipalType() + ":" + principal.getPrincipal() + "|"
++                    + controlId.getControlType() + "|").getBytes(StandardCharsets.UTF_8));
++            List<String> ids = new ArrayList<>(controlId.getControlIds());
++            ids.sort(String::compareTo);
++            for (String id : ids) {
++                md.update(id.getBytes(StandardCharsets.UTF_8));
++                md.update((byte) ',');
++            }
++            String optPart = requestOption == null ? "" : requestOption.cacheKey();
++            md.update(("|" + optPart).getBytes(StandardCharsets.UTF_8));
++            return HexFormat.of().formatHex(md.digest());
++        } catch (NoSuchAlgorithmException e) {
++            // MD5 is guaranteed by JVM spec, should never happen
++            throw new IllegalStateException("MD5 not available", e);
++        }
+     }
+ 
+     private record DefaultControlRequestWrapper(ControlRequestOption requestOption) implements ControlRequestWrapper {
+@@ -110,7 +120,9 @@ public class ControlTemplate {
+     }
+ 
+     public ControlRoleDict fetchSpaceNodeRoleCached(Long userId, List<Long> spaceNodeIds) {
++        long t0 = System.currentTimeMillis();
+         ControlRoleDict result = spaceNodeUserRoleCacheQueryManager.fetchSpaceNodeRoleCached(userId, spaceNodeIds);
++        log.info("[2009-perf][fetchSpaceNodeRoleCached] cacheQuery={}ms userId={} nodeCount={} hitCount={}", System.currentTimeMillis() - t0, userId, spaceNodeIds.size(), result == null ? 0 : result.size());
+         if (result == null) {
+             result = ControlRoleDict.create();
+         }
+@@ -130,37 +142,40 @@ public class ControlTemplate {
+     }
+ 
+     public ControlRoleDict fetchSpaceNodeRoleExecuteWithCache(Long userId, List<Long> spaceNodeIds) {
++        long t0 = System.currentTimeMillis();
+         ControlRoleDict result = executeWithCache(
+                 PrincipalBuilder.userId(userId),
+                 ControlIdBuilder.spaceNodeIds(spaceNodeIds),
+                 ControlRequestOption.create().setNodeTreeRoleBuilding(false)
+         );
++        log.info("[2009-perf][fetchSpaceNodeRoleExecuteWithCache] executeWithCache={}ms userId={} nodeCount={}", System.currentTimeMillis() - t0, userId, spaceNodeIds.size());
++
+         if (result == null) {
+             result = ControlRoleDict.create();
+         }
+-        result = resetPermissionsBySpacePolicy(result, ControlIdBuilder.spaceNodeIds(spaceNodeIds));
+         if (constProperties.isMirror()) {
+-            // 内网只读外网镜像把所有权限设置为只读
+             result.replaceAll((k, v) -> new MirrorNodeReaderRole());
+         }
+         return result;
+     }
+ 
+-    public ControlRoleDict fetchRubbishNodeRole(Long userId,  List<Long> spaceNodeIds) {
++    public ControlRoleDict fetchRubbishNodeRole(Long userId, List<Long> spaceNodeIds) {
+         ControlRoleDict result = executeWithCache(PrincipalBuilder.userId(userId), ControlIdBuilder.spaceNodeIds(spaceNodeIds), ControlRequestOption.create().setRubbishRoleBuilding(true));
+-        result = resetPermissionsBySpacePolicy(result, ControlIdBuilder.spaceNodeIds(spaceNodeIds));
++        if (result == null) {
++            result = ControlRoleDict.create();
++        }
+         if (constProperties.isMirror()) {
+-            // 内网只读外网镜像把所有权限设置为只读
+             result.replaceAll((k, v) -> new MirrorNodeReaderRole());
+         }
+         return result;
+     }
+ 
+-    public ControlRoleDict fetchInternalNodeRole(Long userId,  List<Long> spaceNodeIds) {
++    public ControlRoleDict fetchInternalNodeRole(Long userId, List<Long> spaceNodeIds) {
+         ControlRoleDict result = executeWithCache(PrincipalBuilder.userId(userId), ControlIdBuilder.spaceNodeIds(spaceNodeIds), ControlRequestOption.create().setInternalBuilding(true));
+-        result = resetPermissionsBySpacePolicy(result, ControlIdBuilder.spaceNodeIds(spaceNodeIds));
++        if (result == null) {
++            result = ControlRoleDict.create();
++        }
+         if (constProperties.isMirror()) {
+-            // 内网只读外网镜像把所有权限设置为只读
+             result.replaceAll((k, v) -> new MirrorNodeReaderRole());
+         }
+         return result;
+@@ -168,9 +183,10 @@ public class ControlTemplate {
+ 
+     public ControlRoleDict fetchNodeTreeNode(Long userId, List<Long> spaceNodeIds) {
+         ControlRoleDict result = executeWithCache(PrincipalBuilder.userId(userId), ControlIdBuilder.spaceNodeIds(spaceNodeIds), ControlRequestOption.create().setNodeTreeRoleBuilding(true));
+-        result = resetPermissionsBySpacePolicy(result, ControlIdBuilder.spaceNodeIds(spaceNodeIds));
++        if (result == null) {
++            result = ControlRoleDict.create();
++        }
+         if (constProperties.isMirror()) {
+-            // 内网只读外网镜像把所有权限设置为只读
+             result.replaceAll((k, v) -> new MirrorNodeReaderRole());
+         }
+         return result;
+@@ -296,7 +312,19 @@ public class ControlTemplate {
+ 
+     protected ControlRoleDict executeWithCache(Principal principal, ControlId controlId, ControlRequestOption requestOption) {
+         String key = buildExecuteCacheKey(principal, controlId, requestOption);
+-        ControlRoleDict cached = executeCache.get(key, k -> doExecute(principal, controlId, new DefaultControlRequestWrapper(requestOption)));
++        boolean[] cacheHit = {true};
++        // capturedSpaceMap 由 doExecute 内部填充（USER_ID+SPACE_NODE 分支），用于避免 resetPermissions 重复查询 DB
++        Map<String, List<Long>> capturedSpaceMap = new HashMap<>();
++        ControlRoleDict cached = executeCache.get(key, k -> {
++            cacheHit[0] = false;
++            ControlRoleDict dict = doExecute(principal, controlId, new DefaultControlRequestWrapper(requestOption), capturedSpaceMap);
++            // policy 重置纳入缓存，cache hit 时不再重复执行
++            if (!capturedSpaceMap.isEmpty()) {
++                return resetPermissionsBySpacePolicy(dict, capturedSpaceMap, controlId.getControlType().getVal());
++            }
++            return resetPermissionsBySpacePolicy(dict, controlId);
++        });
++        log.info("[2009-perf][executeWithCache] cacheHit={} principal={}:{}", cacheHit[0], principal.getPrincipalType(), principal.getPrincipal());
+         return cached == null ? null : cached.clone();
+     }
+ 
+@@ -305,18 +333,38 @@ public class ControlTemplate {
+     }
+ 
+     protected ControlRoleDict doExecute(Principal principal, ControlId controlId, ControlRequestWrapper requestWrapper) {
++        return doExecute(principal, controlId, requestWrapper, null);
++    }
++
++    /**
++     * @param outSpaceMap 若非null，USER_ID+SPACE_NODE 分支会将完整的 spaceId→nodeIds 映射写入此Map，
++     *                    供调用方复用，避免重复 DB 查询。
++     */
++    protected ControlRoleDict doExecute(Principal principal, ControlId controlId, ControlRequestWrapper requestWrapper, Map<String, List<Long>> outSpaceMap) {
+         if (principal.getPrincipalType() == PrincipalType.UNIT_ID) {
+             return this.doExecute(List.of(principal.getPrincipal()), controlId, requestWrapper);
+         } else if (principal.getPrincipalType() == PrincipalType.USER_ID) {
+             ControlRoleDict controlRoleDict = ControlRoleDict.create();
+             if (controlId.getControlType() == ControlType.SPACE_NODE) {
++                long td0 = System.currentTimeMillis();
+                 List<Long> spaceNodeIds = controlId.getControlIds().stream().map(Long::parseLong).toList();
+                 Long userId = principal.getPrincipal();
+                 Map<Long, String> snapshotNodeToSpaceMap = spaceNodeService.getSnapshotNodeIdToSpaceIdMap(spaceNodeIds);
+                 // find space-spaceNode relation
+                 Map<String, List<Long>> spaceIdToSpaceNodeIdMap = spaceNodeQueryManager.getSpaceIdToSpaceNodeIdMap(spaceNodeIds);
++                long td1 = System.currentTimeMillis();
++                log.info("[2009-perf][doExecute] getSpaceIdToSpaceNodeIdMap={}ms userId={} spaceCount={}", td1 - td0, userId, spaceIdToSpaceNodeIdMap.size());
++
++                // 暴露给调用方复用（在 managed space remove 之前捕获完整映射）
++                if (outSpaceMap != null) {
++                    outSpaceMap.putAll(spaceIdToSpaceNodeIdMap);
++                }
++
+                 // filter managed nodes and set top role
+                 List<SpaceEntity> managedSpaces = spaceQueryManager.getMemberManagedSpace(userId);
++                long td2 = System.currentTimeMillis();
++                log.info("[2009-perf][doExecute] getMemberManagedSpace={}ms userId={} managedSpaceCount={}", td2 - td1, userId, managedSpaces.size());
++
+                 for (SpaceEntity space : managedSpaces) {
+                     List<Long> managedSpaceNodeIds = spaceIdToSpaceNodeIdMap.get(space.getSpaceId());
+                     if (CollectionUtils.isNotEmpty(managedSpaceNodeIds)) {
+@@ -329,16 +377,19 @@ public class ControlTemplate {
+                 List<Long> allUnitIds = new ArrayList<>();
+                 List<Long> noManagedSpaceNodeIds = new ArrayList<>();
+                 Set<String> userInSpaceIds = managedSpaces.stream().map(SpaceEntity::getSpaceId).collect(Collectors.toSet());
++                log.info("[2009-perf][doExecute] nonManagedSpaceCount={} userId={}", spaceIdToSpaceNodeIdMap.size(), userId);
+                 for (Map.Entry<String, List<Long>> entry : spaceIdToSpaceNodeIdMap.entrySet()) {
+                     String spaceId = entry.getKey();
++                    long tg0 = System.currentTimeMillis();
+                     List<Long> userUnitsInSpace = apitableGrpcClientService.getUnitsByMember(userId, spaceId);// todo batch&&cache
++                    log.info("[2009-perf][doExecute] getUnitsByMember={}ms userId={} spaceId={} unitCount={}", System.currentTimeMillis() - tg0, userId, spaceId, userUnitsInSpace == null ? 0 : userUnitsInSpace.size());
+                     boolean isUserInSpace = CollectionUtils.isNotEmpty(userUnitsInSpace);
+-                    
++
+                     // only process nodes if user is a member of the space
+                     if (isUserInSpace) {
+                         userInSpaceIds.add(spaceId);
+                         allUnitIds.addAll(userUnitsInSpace);
+-                        
++
+                         List<Long> nodeIdsInSpace = entry.getValue();
+                         if (CollectionUtils.isNotEmpty(nodeIdsInSpace)) {
+                             noManagedSpaceNodeIds.addAll(nodeIdsInSpace);
+@@ -355,7 +406,10 @@ public class ControlTemplate {
+                     }
+                 }
+                 // execute noManagedSpaceNodes
++                long td3 = System.currentTimeMillis();
+                 ControlRoleDict excutedControlRoleDict = doExecute(allUnitIds, ControlIdBuilder.spaceNodeIds(noManagedSpaceNodeIds), requestWrapper);
++                log.info("[2009-perf][doExecute] aclCompute={}ms noManagedNodeCount={}", System.currentTimeMillis() - td3, noManagedSpaceNodeIds.size());
++
+                 // merge dict
+                 return controlRoleDict.merge(excutedControlRoleDict);
+             }
+@@ -381,9 +435,21 @@ public class ControlTemplate {
+         if (dict == null) {
+             return null;
+         }
++        long tr0 = System.currentTimeMillis();
+         List<Long> spaceNodeIds = controlId.getControlIds().stream().map(Long::parseLong).toList();
+         Map<String, List<Long>> spaceMap = spaceNodeQueryManager.getSpaceIdToSpaceNodeIdMap(spaceNodeIds);
+-        Map<String, SpacePermissionPolicy> policyMap = spacePermissionPolicyQueryManager.getPolicyMapBySpaceIdsCached(controlId.getControlType().getVal(), spaceMap.keySet());
++        log.info("[2009-perf][resetPermissionsBySpacePolicy] queryPolicy={}ms spaceCount={}", System.currentTimeMillis() - tr0, spaceMap.size());
++        return resetPermissionsBySpacePolicy(dict, spaceMap, controlId.getControlType().getVal());
++    }
++
++    /**
++     * 使用预计算的 spaceMap 重置权限，避免重复 DB 查询。
++     */
++    private ControlRoleDict resetPermissionsBySpacePolicy(ControlRoleDict dict, Map<String, List<Long>> spaceMap, int controlTypeVal) {
++        if (dict == null) {
++            return null;
++        }
++        Map<String, SpacePermissionPolicy> policyMap = spacePermissionPolicyQueryManager.getPolicyMapBySpaceIdsCached(controlTypeVal, spaceMap.keySet());
+         for (Map.Entry<String, List<Long>> e : spaceMap.entrySet()) {
+             String spaceId = e.getKey();
+             List<Long> nodeIds = e.getValue();
+@@ -392,8 +458,7 @@ public class ControlTemplate {
+             for (Long nodeId : nodeIds) {
+                 ControlRole base = dict.get(nodeId.toString());
+                 if (base == null) continue;
+-                ControlRole decorated = new SpacePolicyEnforcedControlRole(base, policy);
+-                dict.put(nodeId.toString(), decorated);
++                dict.put(nodeId.toString(), new SpacePolicyEnforcedControlRole(base, policy));
+             }
+         }
+         return dict;
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/core/support/tree/v2/DefaultTreeBuildFactory.java b/src/main/java/com/yottastudios/ns/collabspace/core/support/tree/v2/DefaultTreeBuildFactory.java
+index 89d8fa98..319d9eb1 100755
+--- a/src/main/java/com/yottastudios/ns/collabspace/core/support/tree/v2/DefaultTreeBuildFactory.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/core/support/tree/v2/DefaultTreeBuildFactory.java
+@@ -3,10 +3,7 @@ package com.yottastudios.ns.collabspace.core.support.tree.v2;
+ import cn.hutool.core.collection.CollUtil;
+ import cn.hutool.core.util.ObjectUtil;
+ 
+-import java.util.ArrayList;
+-import java.util.LinkedHashMap;
+-import java.util.List;
+-import java.util.Map;
++import java.util.*;
+ 
+ /**
+  * <p>
+@@ -97,29 +94,34 @@ public class DefaultTreeBuildFactory<T extends Tree> extends AbstractTreeBuildFa
+      * @return the sorted list of nodes
+      */
+     private List<T> sortNodesByPreId(List<T> nodes) {
+-        List<T> sortedNodes = new ArrayList<>();
+-        Map<Long, T> nodeMap = new LinkedHashMap<>();
++        if (nodes == null || nodes.isEmpty()) {
++            return nodes;
++        }
++        List<T> sortedNodes = new ArrayList<>(nodes.size());
+ 
++        // preId → node 索引，O(1) 查找后继节点，整体 O(n) 替代原来的 O(n²) stream 扫描
++        Map<Long, T> preIdIndex = new HashMap<>(nodes.size());
+         for (T node : nodes) {
+-            nodeMap.put(node.getId(), node);
++            preIdIndex.put(node.getPreId(), node);
+         }
+ 
+-        T currentNode = nodeMap.values().stream()
+-                .filter(node -> node.getPreId().equals(ROOT_PRE_ID))
+-                .findFirst()
+-                .orElse(null);
+-
++        T currentNode = preIdIndex.get(ROOT_PRE_ID);
+         while (currentNode != null) {
+             sortedNodes.add(currentNode);
+-            T nextNode = nodeMap.remove(currentNode.getId());
+-            currentNode = nodeMap.values().stream()
+-                    .filter(node -> node.getPreId().equals(nextNode != null ? nextNode.getId() : null))
+-                    .findFirst()
+-                    .orElse(null);
++            currentNode = preIdIndex.get(currentNode.getId());
+         }
+ 
+-        if (!nodeMap.isEmpty()) {
+-            sortedNodes.addAll(nodeMap.values());
++        // preId 链断裂的孤儿节点（数据异常兜底）
++        if (sortedNodes.size() < nodes.size()) {
++            Set<Long> sortedIds = new HashSet<>(sortedNodes.size());
++            for (T node : sortedNodes) {
++                sortedIds.add(node.getId());
++            }
++            for (T node : nodes) {
++                if (!sortedIds.contains(node.getId())) {
++                    sortedNodes.add(node);
++                }
++            }
+         }
+ 
+         for (T node : sortedNodes) {
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/dto/SpaceNodeWithNodeDto.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/dto/SpaceNodeWithNodeDto.java
+new file mode 100644
+index 00000000..df81ecf8
+--- /dev/null
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/dto/SpaceNodeWithNodeDto.java
+@@ -0,0 +1,42 @@
++package com.yottastudios.ns.collabspace.workspace.dto;
++
++import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
++import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
++import lombok.Data;
++import lombok.EqualsAndHashCode;
++import lombok.NoArgsConstructor;
++
++/**
++ * JOIN result combining space_node and node table fields.
++ * Used by listBySpaceIdJoinNode to avoid a second listByRelIds query when building the tree.
++ */
++@Data
++@EqualsAndHashCode(callSuper = true)
++@NoArgsConstructor
++public class SpaceNodeWithNodeDto extends SpaceNodeEntity {
++
++    /** node.id (aliased to avoid conflict with space_node.id) */
++    private Long nodeId;
++    /** node.parent_id */
++    private Long parentId;
++    /** node.pre_id */
++    private Long preId;
++    /** node.tree_id */
++    private String treeId;
++    /** node.node_key */
++    private Integer nodeKey;
++    /** node.node_type */
++    private String nodeType;
++
++    public NodeEntity toNodeEntity() {
++        NodeEntity entity = new NodeEntity();
++        entity.setId(this.nodeId);
++        entity.setRelId(this.getId());   // node.rel_id = space_node.id
++        entity.setParentId(this.parentId);
++        entity.setPreId(this.preId);
++        entity.setTreeId(this.treeId);
++        entity.setNodeKey(this.nodeKey);
++        entity.setNodeType(this.nodeType);
++        return entity;
++    }
++}
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java
+index 264e34ae..3217990e 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/filter/NodeRoleFilter.java
+@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
+ import org.apache.commons.collections4.CollectionUtils;
+ import org.springframework.stereotype.Service;
+ 
++import java.util.HashMap;
+ import java.util.List;
++import java.util.Map;
+ import java.util.stream.Collectors;
+ 
+ @Service
+@@ -23,10 +25,16 @@ public class NodeRoleFilter {
+     public List<SpaceNodeVo> filterAndSetRole(Long userId, List<SpaceNodeVo> vos) {
+         if (userId == null || CollectionUtils.isEmpty(vos)) return vos;
+ 
++        long t0 = System.currentTimeMillis();
+         List<Long> spaceNodeIds = vos.stream().map(SpaceNodeVo::getId).collect(Collectors.toList());
+         ControlRoleDict controlRoleDict = controlTemplate.fetchSpaceNodeRole(userId, spaceNodeIds);
++        long t1 = System.currentTimeMillis();
++        log.info("[2009-perf][filterAndSetRole] fetchSpaceNodeRole={}ms userId={} nodeCount={}", t1 - t0, userId, spaceNodeIds.size());
+ 
+-        return vos.stream()
++        // 同一批请求中相同 bits 的角色 permissionToBean 结果完全一样，缓存复用避免重复反射
++        Map<Long, NodePermissionView> permissionViewCache = new HashMap<>();
++
++        List<SpaceNodeVo> result = vos.stream()
+                 .filter(vo -> {
+                     ControlRole controlRole = controlRoleDict.get(vo.getId().toString());
+ 
+@@ -35,11 +43,19 @@ public class NodeRoleFilter {
+                         return false;
+                     } else {
+                         vo.setRole(controlRole.getRoleTag());
+-                        vo.setPermissions(controlRole.permissionToBean(NodePermissionView.class));
++                        NodePermissionView permissions = permissionViewCache.computeIfAbsent(
++                                controlRole.getBits(),
++                                bits -> controlRole.permissionToBean(NodePermissionView.class)
++                        );
++                        vo.setPermissions(permissions);
+                         return true;
+                     }
+                 })
+                 .toList();
++        long t2 = System.currentTimeMillis();
++        log.info("[2009-perf][filterAndSetRole] roleMapping={}ms visibleCount={} permissionViewKinds={}", t2 - t1, result.size(), permissionViewCache.size());
++
++        return result;
+     }
+ 
+     public List<SpaceNodeVo> filterAndSetRole(List<SpaceNodeVo> vos) {
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java
+index 43044dd2..f14d9496 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeQueryManagerImpl.java
+@@ -15,17 +15,18 @@ import com.yottastudios.ns.collabspace.control.infrastructure.role.ControlRoleMa
+ import com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants;
+ import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+ import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+-import com.yottastudios.ns.collabspace.shared.config.properties.ConstProperties;
+ import com.yottastudios.ns.collabspace.shared.context.SessionContext;
+ import com.yottastudios.ns.collabspace.shared.util.CollectionUtil;
+-import com.yottastudios.ns.collabspace.space.dto.SpaceAcrossConfigDto;
+ import com.yottastudios.ns.collabspace.shared.util.NameValidateUtil;
++import com.yottastudios.ns.collabspace.space.dto.SpaceAcrossConfigDto;
+ import com.yottastudios.ns.collabspace.space.entity.SpaceEntity;
+ import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
+ import com.yottastudios.ns.collabspace.space.mapper.SpaceMapper;
+ import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeRecycleBinEntity;
++import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeException;
+ import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeTypeEnum;
+ import com.yottastudios.ns.collabspace.workspace.manager.query.SpaceNodeQueryManager;
+ import com.yottastudios.ns.collabspace.workspace.ro.SpaceNodeFilterRo;
+@@ -33,12 +34,7 @@ import com.yottastudios.ns.collabspace.workspace.service.DataCheckService;
+ import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeRecycleBinService;
+ import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
+ import com.yottastudios.ns.collabspace.workspace.transfer.SpaceNodeTransfer;
+-import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeException;
+-import com.yottastudios.ns.collabspace.workspace.vo.AiReferenceStatusVo;
+-import com.yottastudios.ns.collabspace.workspace.vo.RecycleBinTrashVo;
+-import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeFilterVo;
+-import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeVo;
+-import com.yottastudios.ns.collabspace.workspace.vo.SpaceWithNodeVo;
++import com.yottastudios.ns.collabspace.workspace.vo.*;
+ import jakarta.annotation.Resource;
+ import lombok.extern.slf4j.Slf4j;
+ import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
+@@ -50,6 +46,8 @@ import java.io.Serializable;
+ import java.util.*;
+ import java.util.stream.Collectors;
+ 
++import static com.yottastudios.ns.collabspace.core.support.tree.v2.DefaultTreeBuildFactory.ROOT_PARENT_ID;
++
+ @Slf4j
+ @Service
+ public class SpaceNodeQueryManagerImpl implements SpaceNodeQueryManager {
+@@ -84,9 +82,30 @@ public class SpaceNodeQueryManagerImpl implements SpaceNodeQueryManager {
+ 
+     @Override
+     public List<TreeNode<SpaceNodeVo>> getSpaceNodeTree(String spaceId) {
+-        List<SpaceNodeEntity> spaceNodeEntities = spaceNodeService.listBySpaceId(spaceId, false);
+-        List<SpaceNodeVo> vos = spaceNodeTransfer.toSpaceNodeVoWithRole(spaceNodeEntities);
+-        return treeNodeTemplate.buildNodeTree(vos);
++        long t0 = System.currentTimeMillis();
++
++        // 联表查询：一次 DB 同时取 space_node 数据 + node 树结构，省去 buildNodeTree 内部的 listByRelIds 二次查询
++        List<SpaceNodeWithNodeDto> combined = spaceNodeService.listBySpaceIdWithNodeInfo(spaceId, false);
++        long t1 = System.currentTimeMillis();
++        log.info("[2009-perf][getSpaceNodeTree] spaceId={} nodeCount={} listBySpaceIdJoinNode={}ms", spaceId, combined.size(), t1 - t0);
++
++        List<SpaceNodeEntity> entities = new ArrayList<>(combined.size());
++        List<NodeEntity> nodeEntities = new ArrayList<>(combined.size());
++        for (SpaceNodeWithNodeDto dto : combined) {
++            entities.add(dto);
++            nodeEntities.add(dto.toNodeEntity());
++        }
++
++        List<SpaceNodeVo> vos = spaceNodeTransfer.toSpaceNodeVoWithRole(entities);
++        long t2 = System.currentTimeMillis();
++        log.info("[2009-perf][getSpaceNodeTree] spaceId={} toSpaceNodeVoWithRole={}ms", spaceId, t2 - t1);
++
++        // 使用预取的 nodeEntities，跳过 buildNodeTree 内部的 listByRelIds
++        List<TreeNode<SpaceNodeVo>> result = treeNodeTemplate.buildNodeTree(vos, nodeEntities, ROOT_PARENT_ID);
++        long t3 = System.currentTimeMillis();
++        log.info("[2009-perf][getSpaceNodeTree] spaceId={} buildNodeTree={}ms total={}ms", spaceId, t3 - t2, t3 - t0);
++
++        return result;
+     }
+ 
+     @Override
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java
+index d565717e..a3f1cc41 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/SpaceNodeMapper.java
+@@ -1,6 +1,7 @@
+ package com.yottastudios.ns.collabspace.workspace.mapper;
+ 
+ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.dto.TypeCountDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import org.apache.ibatis.annotations.Param;
+@@ -45,6 +46,23 @@ public interface SpaceNodeMapper extends BaseMapper<SpaceNodeEntity> {
+     List<SpaceNodeEntity> listByIdsIncludeDeleted(@Param("ids") Collection<? extends Serializable> ids);
+ 
+ 
++    /**
++     * 联表查询 space_node + node，一次 DB 往返同时获取节点数据和树结构信息，
++     * 避免 buildNodeTree 内部再发起 listByRelIds 二次查询。
++     */
++    @Select("SELECT " +
++            "  sn.id, sn.space_id, sn.name, sn.description, sn.app_space_node_id, " +
++            "  sn.type, sn.icon, sn.is_snapshot, sn.ai_enable, sn.ai_quoted, sn.ai_reference_status, " +
++            "  sn.created_by, sn.updated_by, sn.created_at, sn.updated_at, sn.is_deleted, " +
++            "  n.id AS node_id, n.parent_id, n.pre_id, n.tree_id, n.node_key, n.node_type " +
++            "FROM ${tablePrefix}space_node sn " +
++            "INNER JOIN ${tablePrefix}node n ON n.rel_id = sn.id AND n.is_deleted = 0 " +
++            "WHERE sn.space_id = #{spaceId} " +
++            "  AND sn.is_snapshot = #{isSnapshot} " +
++            "  AND sn.is_deleted = 0")
++    List<SpaceNodeWithNodeDto> listBySpaceIdJoinNode(@Param("spaceId") String spaceId,
++                                                     @Param("isSnapshot") boolean isSnapshot);
++
+     @Select("SELECT type AS spaceNodeType, COUNT(1) AS count FROM ${tablePrefix}space_node WHERE created_at >= #{startAt} AND created_at < #{endAt} AND is_deleted = 0 GROUP BY type ORDER BY type")
+     List<TypeCountDto> countCreatedNodesGroupByType(@Param("startAt") LocalDateTime startAt,
+                                                     @Param("endAt") LocalDateTime endAt);
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java
+index 962dc308..aca01ea2 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/ISpaceNodeService.java
+@@ -1,6 +1,7 @@
+ package com.yottastudios.ns.collabspace.workspace.service;
+ 
+ import com.baomidou.mybatisplus.extension.service.IService;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ 
+ import java.io.Serializable;
+@@ -32,4 +33,9 @@ public interface ISpaceNodeService extends IService<SpaceNodeEntity> {
+     List<SpaceNodeEntity> getSpaceNodeByAppIds(List<String> appSpaceNodeIds);
+ 
+     Map<Long, String> getSnapshotNodeIdToSpaceIdMap(Collection<? extends Serializable> nodeIds);
++
++    /**
++     * 联表查询 space_node + node，一次 DB 往返同时返回节点数据和树结构信息。
++     */
++    List<SpaceNodeWithNodeDto> listBySpaceIdWithNodeInfo(String spaceId, boolean isSnapshot);
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java
+index 9f87bba9..6bb88246 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/SpaceNodeServiceImpl.java
+@@ -3,6 +3,7 @@ package com.yottastudios.ns.collabspace.workspace.service.impl;
+ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+ import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
++import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeWithNodeDto;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeException;
+ import com.yottastudios.ns.collabspace.workspace.mapper.SpaceNodeMapper;
+@@ -11,11 +12,7 @@ import org.apache.commons.collections4.CollectionUtils;
+ import org.springframework.stereotype.Service;
+ 
+ import java.io.Serializable;
+-import java.util.ArrayList;
+-import java.util.Collection;
+-import java.util.HashMap;
+-import java.util.List;
+-import java.util.Map;
++import java.util.*;
+ import java.util.stream.Collectors;
+ 
+ @Service
+@@ -104,6 +101,11 @@ public class SpaceNodeServiceImpl extends ServiceImpl<SpaceNodeMapper, SpaceNode
+         return list(queryWrapper);
+     }
+ 
++    @Override
++    public List<SpaceNodeWithNodeDto> listBySpaceIdWithNodeInfo(String spaceId, boolean isSnapshot) {
++        return baseMapper.listBySpaceIdJoinNode(spaceId, isSnapshot);
++    }
++
+     @Override
+     public Map<Long, String> getSnapshotNodeIdToSpaceIdMap(Collection<? extends Serializable> nodeIds) {
+         if (CollectionUtils.isEmpty(nodeIds)) {
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java
+index a687f62d..993d26f4 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/transfer/SpaceNodeTransfer.java
+@@ -42,13 +42,21 @@ public class SpaceNodeTransfer {
+     public List<SpaceNodeVo> toSpaceNodeVo(List<SpaceNodeEntity> entities) {
+         if(CollectionUtils.isEmpty(entities)) return List.of();
+ 
++        long t0 = System.currentTimeMillis();
++
+         Long userId = UserHolder.get();
+         Set<Long> starredSpaceNodeSet = getStarredSpaceNodeSet(userId);
++        long t1 = System.currentTimeMillis();
++        log.info("[2009-perf][toSpaceNodeVo] getStarredSpaceNodeSet={}ms userId={}", t1 - t0, userId);
++
+         List<String> spaceIds = entities.stream().map(SpaceNodeEntity::getSpaceId).toList().stream().distinct().toList();
+         List<SpaceAppRelEntity> spaceAppRelEntities = spaceAppRelService.listBySpaceIds(spaceIds);
++        long t2 = System.currentTimeMillis();
++        log.info("[2009-perf][toSpaceNodeVo] listBySpaceIds={}ms spaceCount={}", t2 - t1, spaceIds.size());
++
+         Map<String, Map<Integer, List<SpaceAppRelEntity>>> thirdAppGroupMap= spaceAppRelEntities.stream().collect(Collectors.groupingBy(SpaceAppRelEntity::getSpaceId, Collectors.groupingBy(SpaceAppRelEntity::getAppType)));
+ 
+-        return entities.stream()
++        List<SpaceNodeVo> result = entities.stream()
+                 .map(e -> {
+                     Boolean isStarred = starredSpaceNodeSet.contains(e.getId());
+                     String creatorName = userCacheService.getNicknameByUserId(e.getCreatedBy());
+@@ -62,6 +70,10 @@ public class SpaceNodeTransfer {
+                     return new SpaceNodeVo(e, creatorName, isStarred, appSpaceId, e.getIcon());
+                 })
+                 .toList();
++        long t3 = System.currentTimeMillis();
++        log.info("[2009-perf][toSpaceNodeVo] streamMapping(nicknames)={}ms entityCount={}", t3 - t2, entities.size());
++
++        return result;
+     }
+ 
+     public List<SpaceNodeVo> toSpaceNodeVoWithRole(List<SpaceNodeEntity> entities) {

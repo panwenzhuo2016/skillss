@@ -1,0 +1,816 @@
+diff --git a/app/Console/Kernel.php b/app/Console/Kernel.php
+index fd7c9d6a9..4d68181ba 100644
+--- a/app/Console/Kernel.php
++++ b/app/Console/Kernel.php
+@@ -54,6 +54,7 @@ class Kernel extends ConsoleKernel
+         $schedule->job(new \App\Jobs\Notification\DailyApprovalJob())->dailyAt('08:28');
+         $schedule->job(new \App\Jobs\Notification\DailyWorkOvertimeJob())->dailyAt('08:33');
+         $schedule->job(new \App\Jobs\Notification\DailyReportJob())->dailyAt('08:48');
++        $schedule->job(new \App\Jobs\Notification\DailyReportAiEmailJob())->everyMinute();
+         $schedule->job(new \App\Jobs\Notification\CacheNotifyNumbers())->twiceDailyAt(6, 17, 30); // 每日 06:30 和 17:30
+         $schedule->job(new \App\Jobs\Notification\CacheNotifyNumbers())->dailyAt('11:10'); // 12:30
+         $schedule->job(new \App\Jobs\Notification\CacheNotifyNumbers())->dailyAt('12:30'); // 12:30
+diff --git a/app/Http/Controllers/Oa/DailyReportAiController.php b/app/Http/Controllers/Oa/DailyReportAiController.php
+index 5c222e67f..fd2850852 100644
+--- a/app/Http/Controllers/Oa/DailyReportAiController.php
++++ b/app/Http/Controllers/Oa/DailyReportAiController.php
+@@ -470,10 +470,6 @@ PROMPT;
+         $previousContext = $request->input('previous_context');
+         $hasExistingContext = $request->boolean('has_existing_context', false);
+ 
+-        $difyBaseUrl = env('DIFY_BASE_URL', 'http://10.61.0.11:10880/v1');
+-        $difyApiKey = env('DIFY_API_KEY', 'app-vfZMS4mxMLlWkoyb88PmGDfv');
+-        $difyUrl = rtrim($difyBaseUrl, '/').'/chat-messages';
+-
+         // 将可用分组和成员列表格式化为 prompt 中的列表
+         $groupList = !empty($availableGroups)
+             ? implode("\n", array_map(fn ($g) => "   - {$g}", $availableGroups))
+@@ -492,71 +488,37 @@ PROMPT;
+         $hasContextLabel = $hasExistingContext ? '是' : '否';
+         $systemPrompt = sprintf(self::SLOT_EXTRACTION_PROMPT, $hasContextLabel, $groupList, $memberList, now()->toDateString(), $prevCtx);
+ 
+-        $payload = json_encode([
+-            'inputs' => ['system_prompt' => $systemPrompt],
+-            'query' => $message,
+-            'response_mode' => 'blocking',
+-            'conversation_id' => $conversationId ?: '',
+-            'user' => 'oa-slots-'.$sfuserId,
+-        ], JSON_UNESCAPED_UNICODE);
+-
+-        \Log::info('[DifySlots] request', [
++        \Log::info('[AiSlots] request', [
+             'sfuser_id' => $sfuserId,
+             'message' => $message,
+-            'conversation_id' => $conversationId,
+             'previous_context' => $previousContext,
+             'available_groups' => $availableGroups,
+             'member_count' => count($availableMembers),
+         ]);
+ 
+-        $ch = curl_init($difyUrl);
+-        curl_setopt_array($ch, [
+-            CURLOPT_POST => true,
+-            CURLOPT_POSTFIELDS => $payload,
+-            CURLOPT_HTTPHEADER => [
+-                'Content-Type: application/json',
+-                'Authorization: Bearer '.$difyApiKey,
+-            ],
+-            CURLOPT_RETURNTRANSFER => true,
+-            CURLOPT_TIMEOUT => 120,
+-        ]);
+-
+-        $response = curl_exec($ch);
+-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+-        $curlError = $response === false ? curl_error($ch) : '';
+-        curl_close($ch);
+-
+-        if ($curlError) {
+-            \Log::error('[DifySlots] curl error', ['error' => $curlError]);
+-            return $this->responseJsonFail('AI 接口请求失败：'.$curlError);
+-        }
+-
+-        $difyResult = json_decode($response, true);
+-        if (!is_array($difyResult)) {
+-            \Log::error('[DifySlots] invalid response', ['raw' => mb_substr($response, 0, 1000)]);
+-            return $this->responseJsonFail('AI 接口返回异常');
+-        }
+-
+-        // Dify 错误响应
+-        if (isset($difyResult['message']) && !isset($difyResult['answer'])) {
+-            \Log::error('[DifySlots] dify error', ['result' => $difyResult]);
+-            return $this->responseJsonFail('AI 接口错误：'.$difyResult['message']);
++        // 调用 oa-core AI 接口（替代 Dify）
++        try {
++            $aiResponse = \App\Lib\Facade\CoreApiLib::sendRequest('master-api/ai/chat', [
++                'system_prompt' => $systemPrompt,
++                'message' => $message,
++                'response_mode' => 'blocking',
++            ]);
++        } catch (\Throwable $e) {
++            \Log::error('[AiSlots] oa-core AI request failed', ['error' => $e->getMessage()]);
++            return $this->responseJsonFail('AI 接口请求失败：'.$e->getMessage());
+         }
+ 
+-        $newConversationId = $difyResult['conversation_id'] ?? '';
+-        $answer = $difyResult['answer'] ?? '';
++        $answer = $aiResponse['data']['answer'] ?? '';
+ 
+-        \Log::info('[DifySlots] response', [
++        \Log::info('[AiSlots] response', [
+             'sfuser_id' => $sfuserId,
+-            'conversation_id' => $newConversationId,
+             'answer_raw' => mb_substr($answer, 0, 1000),
+-            'http_code' => $httpCode,
+         ]);
+ 
+         // 解析 LLM 输出的 JSON
+         $slots = $this->parseSlotJson($answer);
+ 
+-        \Log::info('[DifySlots] parsed', [
++        \Log::info('[AiSlots] parsed', [
+             'sfuser_id' => $sfuserId,
+             'intent' => $slots['intent'],
+             'slots_complete' => $slots['slots_complete'],
+@@ -575,7 +537,7 @@ PROMPT;
+             'period_end' => $slots['period_end'],
+             'period_raw' => $slots['period_raw'],
+             'reply' => $slots['reply'],
+-            'conversation_id' => $newConversationId,
++            'conversation_id' => '',
+         ]);
+     }
+ 
+@@ -603,7 +565,7 @@ PROMPT;
+         }
+         // 去除多余空白（连续空行压缩为单空行），减少发给 AI 的 token
+         $reportContext = preg_replace('/\n{3,}/', "\n\n", trim($reportContext));
+-        \Log::info('[DifyAsk] report_context size', [
++        \Log::info('[AiAsk] report_context size', [
+             'bytes' => strlen($reportContext),
+             'chars' => mb_strlen($reportContext),
+         ]);
+@@ -620,7 +582,6 @@ PROMPT;
+         }
+ 
+         // 创建或复用会话
+-        $difyConversationId = '';
+         if (!$sessionId) {
+             $title = mb_substr($message, 0, 20);
+             $sessionId = DB::table('daily_report_ai_sessions')->insertGetId([
+@@ -631,7 +592,6 @@ PROMPT;
+                 'updated_at' => now(),
+             ]);
+         } else {
+-            // 校验会话归属并取出 dify_conversation_id
+             $sessionRow = DB::table('daily_report_ai_sessions')
+                 ->where('id', $sessionId)
+                 ->where('sfuser_id', $sfuserId)
+@@ -640,7 +600,6 @@ PROMPT;
+             if (!$sessionRow) {
+                 return $this->sseError('会话不存在');
+             }
+-            $difyConversationId = $sessionRow->dify_conversation_id ?? '';
+         }
+ 
+         // 解压 report_context_raw（与 report_context 相同的 gzip+base64 压缩格式）
+@@ -681,7 +640,7 @@ PROMPT;
+             $reportContext,
+             $systemPrompt,
+             $capturedSessionId,
+-            $difyConversationId
++            $history
+         ) {
+             // 客户端断开后继续执行，确保 AI 回答能写入数据库
+             ignore_user_abort(true);
+@@ -689,9 +648,7 @@ PROMPT;
+             // 首帧：发送 session_id
+             $this->echoData(0, '', ['type' => 'session_id', 'session_id' => $capturedSessionId]);
+ 
+-            // 构建发送给 Dify 的 query
+-            // system_prompt 通过 inputs 传给 Dify 工作流变量，不拼入 query
+-            // report_context 作为上下文附带在 query 中
++            // 构建发送给 AI 的内容
+             $queryParts = [];
+             if (!empty($reportContext)) {
+                 $queryParts[] = "[日报数据]\n{$reportContext}";
+@@ -699,47 +656,45 @@ PROMPT;
+             $queryParts[] = $message;
+             $query = implode("\n\n---\n\n", $queryParts);
+ 
+-            // Dify 接口配置（测试地址和 key 已内置，生产环境通过 .env 覆盖）
+-            $difyBaseUrl = env('DIFY_BASE_URL', 'http://10.61.0.11:10880/v1');
+-            $difyApiKey = env('DIFY_API_KEY', 'app-vfZMS4mxMLlWkoyb88PmGDfv');
+-            $difyUrl = rtrim($difyBaseUrl, '/').'/chat-messages';
++            \Log::info('[AiAsk] request', [
++                'session' => $capturedSessionId,
++                'query_len' => mb_strlen($query),
++            ]);
++
++            // 通过 oa-core AI 接口进行流式调用（替代 Dify）
++            $coreBaseUrl = rtrim(config('my_project.core_url', ''), '/');
++            $aiUrl = $coreBaseUrl.'/master-api/ai/chat';
+ 
+-            $payload = json_encode([
+-                'inputs' => ['system_prompt' => $systemPrompt ?: ' '],
+-                'query' => $query,
++            // 构建带签名的请求参数（与 CoreApiLib 签名逻辑一致）
++            $coreApiSecret = config('my_project.core_api_secret');
++            $requestParams = [
++                'system_prompt' => $systemPrompt ?: ' ',
++                'message' => $query,
+                 'response_mode' => 'streaming',
+-                'conversation_id' => $difyConversationId ?: '',
+-                'user' => 'oa-session-'.$capturedSessionId,
+-            ], JSON_UNESCAPED_UNICODE);
++                'sys_site' => config('my_project.site_key'),
++            ];
++            if (!empty($history)) {
++                $requestParams['history'] = $history;
++            }
++            $requestParams['sign'] = get_sign(['api_secret' => $coreApiSecret] + $requestParams, true);
++
++            $payload = json_encode($requestParams, JSON_UNESCAPED_UNICODE);
+ 
+             $fullReply = '';
+-            $newDifyConversationId = '';
+             $buffer = '';
+ 
+-            \Log::info('[DifyAsk] request', [
+-                'url' => $difyUrl,
+-                'session' => $capturedSessionId,
+-                'user' => 'oa-session-'.$capturedSessionId,
+-            ]);
+-
+-            $rawResponse = '';
+-
+-            $ch = curl_init($difyUrl);
++            $ch = curl_init($aiUrl);
+             curl_setopt_array($ch, [
+                 CURLOPT_POST => true,
+                 CURLOPT_POSTFIELDS => $payload,
+                 CURLOPT_HTTPHEADER => [
+                     'Content-Type: application/json',
+-                    'Authorization: Bearer '.$difyApiKey,
+                 ],
+                 CURLOPT_RETURNTRANSFER => false,
+                 CURLOPT_TIMEOUT => 300,
+-                CURLOPT_WRITEFUNCTION => function ($curl, $data) use (&$fullReply, &$newDifyConversationId, &$buffer, &$rawResponse, $capturedSessionId) {
+-                    $rawResponse .= $data;
+-//                     \Log::info('[DifyAsk] raw chunk', ['session' => $capturedSessionId, 'bytes' => strlen($data), 'data' => mb_substr($data, 0, 500)]);
++                CURLOPT_WRITEFUNCTION => function ($curl, $data) use (&$fullReply, &$buffer) {
+                     $buffer .= $data;
+ 
+-                    // 按行处理，保证 SSE 事件完整性
+                     while (($pos = strpos($buffer, "\n")) !== false) {
+                         $line = rtrim(substr($buffer, 0, $pos), "\r");
+                         $buffer = substr($buffer, $pos + 1);
+@@ -753,51 +708,16 @@ PROMPT;
+                             continue;
+                         }
+ 
+-                        // 保存 conversation_id（首次或每帧均可能携带）
+-                        if (!empty($decoded['conversation_id'])) {
+-                            $newDifyConversationId = $decoded['conversation_id'];
+-                        }
+-
+                         $event = $decoded['event'] ?? '';
+ 
+                         if ($event === 'message') {
+-                            // Chatbot 模式：流式 chunk
+                             $chunk = $decoded['answer'] ?? '';
+                             if ($chunk !== '') {
+                                 $fullReply .= $chunk;
+                                 $this->echoData(0, '', ['type' => 'chat', 'is_finished' => false, 'finish_reason' => '', 'content' => $chunk]);
+                             }
+-                        } elseif ($event === 'text_chunk') {
+-                            // Workflow 流式模式：chunk 在 data.text
+-                            $chunk = $decoded['data']['text'] ?? '';
+-                            if ($chunk !== '') {
+-                                $fullReply .= $chunk;
+-                                $this->echoData(0, '', ['type' => 'chat', 'is_finished' => false, 'finish_reason' => '', 'content' => $chunk]);
+-                            }
+-                        } elseif ($event === 'workflow_finished') {
+-                            // Workflow 非流式模式兜底：整段答案在 outputs.answer
+-                            if (empty($fullReply)) {
+-                                $answer = $decoded['data']['outputs']['answer'] ?? '';
+-                                if ($answer !== '') {
+-                                    $fullReply = $answer;
+-                                    $this->echoData(0, '', ['type' => 'chat', 'is_finished' => false, 'finish_reason' => '', 'content' => $answer]);
+-                                }
+-                            }
+-                        } elseif ($event === 'error') {
+-                            \Log::error('[DifyAsk] dify error event', [
+-                                'session' => $capturedSessionId,
+-                                'event' => $decoded,
+-                            ]);
+-                        } elseif (!in_array($event, [
+-                            'message_end', 'ping',
+-                            'workflow_started', 'node_started', 'node_finished',  // workflow 过程事件，无需处理
+-                        ])) {
+-                            \Log::info('[DifyAsk] unhandled event', [
+-                                'session' => $capturedSessionId,
+-                                'event' => $event,
+-                                'payload' => $decoded,
+-                            ]);
+                         }
++                        // message_end 表示流结束，无需处理
+                     }
+ 
+                     return strlen($data);
+@@ -809,17 +729,15 @@ PROMPT;
+             $curlError = $success ? '' : curl_error($ch);
+             curl_close($ch);
+ 
+-            \Log::info('[DifyAsk] done', [
++            \Log::info('[AiAsk] done', [
+                 'session' => $capturedSessionId,
+                 'http_code' => $httpCode,
+                 'curl_error' => $curlError,
+                 'reply_len' => strlen($fullReply),
+-                'buffer_left' => $buffer,
+-                'raw_response_len' => strlen($rawResponse),
+             ]);
+ 
+-            // 错误回复落库的辅助闭包
+-            $saveErrorReply = function (string $errMsg) use ($capturedSessionId) {
++            if ($curlError || empty($fullReply)) {
++                $errMsg = $curlError ? 'AI 接口请求失败，请稍后重试' : 'AI 未返回任何内容，请稍后重试';
+                 try {
+                     DB::reconnect();
+                     DB::table('daily_report_ai_messages')->insert([
+@@ -829,90 +747,25 @@ PROMPT;
+                         'created_at' => now(),
+                     ]);
+                 } catch (\Throwable $e) {
+-                    \Log::error('[DifyAsk] save error reply failed', ['session' => $capturedSessionId, 'error' => $e->getMessage()]);
+-                }
+-            };
+-
+-            if ($curlError) {
+-                \Log::error('[DifyAsk] curl error', [
+-                    'session' => $capturedSessionId,
+-                    'error' => $curlError,
+-                    'raw_response' => mb_substr($rawResponse, 0, 2000),
+-                ]);
+-                // dify_conversation_id 失效时，清除并提示重试
+-                if (!empty($rawResponse) && str_contains($rawResponse, 'not found')) {
+-                    DB::table('daily_report_ai_sessions')
+-                        ->where('id', $capturedSessionId)
+-                        ->update(['dify_conversation_id' => '']);
+-                    $errMsg = '会话状态异常，已自动修复，请重新发送';
+-                    $saveErrorReply($errMsg);
+-                    $this->echoData(1, $errMsg, []);
+-                } else {
+-                    $errMsg = 'AI 接口请求失败，请稍后重试';
+-                    $saveErrorReply($errMsg);
+-                    $this->echoData(1, $errMsg, []);
++                    \Log::error('[AiAsk] save error reply failed', ['session' => $capturedSessionId, 'error' => $e->getMessage()]);
+                 }
+-                return;
+-            }
+-
+-            // Dify 返回了数据但未解析出任何回复内容时，记录原始响应以便排查
+-            if (empty($fullReply) && !empty($rawResponse)) {
+-                \Log::error('[DifyAsk] empty reply but got raw response', [
+-                    'session' => $capturedSessionId,
+-                    'raw_response' => mb_substr($rawResponse, 0, 2000),
+-                ]);
+-                // 尝试解析为 JSON 错误响应（Dify 某些错误以普通 JSON 返回而非 SSE）
+-                $jsonErr = json_decode($rawResponse, true);
+-                if (is_array($jsonErr) && isset($jsonErr['message'])) {
+-                    $errMsg = 'AI 接口错误：'.$jsonErr['message'];
+-                    $saveErrorReply($errMsg);
+-                    $this->echoData(1, $errMsg, []);
+-                    return;
+-                }
+-            }
+-
+-            // Dify 返回 200 但响应体完全为空
+-            if (empty($fullReply) && empty($rawResponse)) {
+-                \Log::error('[DifyAsk] dify returned empty response', [
+-                    'session' => $capturedSessionId,
+-                    'http_code' => $httpCode,
+-                ]);
+-                $errMsg = 'AI 未返回任何内容，请稍后重试';
+-                $saveErrorReply($errMsg);
+                 $this->echoData(1, $errMsg, []);
+                 return;
+             }
+ 
+             // 保存 AI 回答
+-            \Log::info('[DifyAsk] before db save', [
+-                'session' => $capturedSessionId,
+-                'reply_empty' => empty($fullReply),
+-                'reply_len' => strlen($fullReply),
+-            ]);
+             try {
+-                if (!empty($fullReply)) {
+-                    DB::reconnect();
+-                    DB::statement('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
+-                    DB::table('daily_report_ai_messages')->insert([
+-                        'session_id' => $capturedSessionId,
+-                        'role' => 'assistant',
+-                        'content' => $fullReply,
+-                        'created_at' => now(),
+-                    ]);
+-                    \Log::info('[DifyAsk] db save ok', ['session' => $capturedSessionId]);
+-                }
+-
+-                // 持久化 dify_conversation_id（仅首轮或有变化时写入）
+-                if (!empty($newDifyConversationId) && $newDifyConversationId !== $difyConversationId) {
+-                    DB::table('daily_report_ai_sessions')
+-                        ->where('id', $capturedSessionId)
+-                        ->update(['dify_conversation_id' => $newDifyConversationId]);
+-                }
+-            } catch (\Throwable $e) {
+-                \Log::error('[DifyAsk] db save failed', [
+-                    'session' => $capturedSessionId,
+-                    'error' => $e->getMessage(),
++                DB::reconnect();
++                DB::statement('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
++                DB::table('daily_report_ai_messages')->insert([
++                    'session_id' => $capturedSessionId,
++                    'role' => 'assistant',
++                    'content' => $fullReply,
++                    'created_at' => now(),
+                 ]);
++                \Log::info('[AiAsk] db save ok', ['session' => $capturedSessionId]);
++            } catch (\Throwable $e) {
++                \Log::error('[AiAsk] db save failed', ['session' => $capturedSessionId, 'error' => $e->getMessage()]);
+             }
+ 
+             $this->echoData(0, '', ['type' => 'chat', 'is_finished' => true, 'finish_reason' => 'stop', 'content' => '']);
+@@ -940,13 +793,13 @@ PROMPT;
+         ];
+ 
+         if (!preg_match('/\{[\s\S]*\}/', $text, $matches)) {
+-            \Log::warning('[DifySlots] no JSON found in answer', ['text' => mb_substr($text, 0, 500)]);
++            \Log::warning('[AiSlots] no JSON found in answer', ['text' => mb_substr($text, 0, 500)]);
+             return $fallback;
+         }
+ 
+         $data = json_decode($matches[0], true);
+         if (!is_array($data)) {
+-            \Log::warning('[DifySlots] JSON parse failed', ['text' => mb_substr($matches[0], 0, 500)]);
++            \Log::warning('[AiSlots] JSON parse failed', ['text' => mb_substr($matches[0], 0, 500)]);
+             return $fallback;
+         }
+ 
+diff --git a/app/Http/Controllers/Oa/DailyReportAiEmailController.php b/app/Http/Controllers/Oa/DailyReportAiEmailController.php
+new file mode 100644
+index 000000000..cd0a2b9ad
+--- /dev/null
++++ b/app/Http/Controllers/Oa/DailyReportAiEmailController.php
+@@ -0,0 +1,118 @@
++<?php
++
++namespace App\Http\Controllers\Oa;
++
++use App\Http\Controllers\Controller;
++use Illuminate\Http\JsonResponse;
++use Illuminate\Http\Request;
++use Illuminate\Support\Arr;
++use Illuminate\Support\Facades\DB;
++
++class DailyReportAiEmailController extends Controller
++{
++    // 白名单用户 ID
++    private const WHITELIST_IDS = [85091, 232753];
++
++    public function taskList(Request $request): JsonResponse
++    {
++        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
++        if (!$this->inWhitelist($sfuserId)) {
++            return $this->responseJsonFail('无权限');
++        }
++
++        $list = DB::table('daily_report_ai_email_tasks')
++            ->where('sfuser_id', $sfuserId)
++            ->whereNull('deleted_at')
++            ->orderByDesc('created_at')
++            ->get(['id', 'name', 'dimension', 'report_range', 'send_cycle', 'send_time', 'system_prompt', 'is_on', 'created_at']);
++
++        return $this->responseJsonSuccess(['list' => $list]);
++    }
++
++    public function taskCreate(Request $request): JsonResponse
++    {
++        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
++        if (!$this->inWhitelist($sfuserId)) {
++            return $this->responseJsonFail('无权限');
++        }
++
++        $input = Arr::only($request->all(), ['name', 'dimension', 'report_range', 'send_cycle', 'send_time', 'system_prompt']);
++
++        $id = DB::table('daily_report_ai_email_tasks')->insertGetId([
++            'sfuser_id' => $sfuserId,
++            'name' => $input['name'],
++            'dimension' => $input['dimension'] ?? 'department',
++            'report_range' => $input['report_range'] ?? 'today',
++            'send_cycle' => $input['send_cycle'] ?? 'daily',
++            'send_time' => $input['send_time'] ?? '09:00',
++            'system_prompt' => $input['system_prompt'] ?? '',
++            'is_on' => 1,
++            'created_at' => now(),
++            'updated_at' => now(),
++        ]);
++
++        return $this->responseJsonSuccess(['id' => $id]);
++    }
++
++    public function taskUpdate(Request $request): JsonResponse
++    {
++        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
++        if (!$this->inWhitelist($sfuserId)) {
++            return $this->responseJsonFail('无权限');
++        }
++
++        $id = $request->input('id');
++        $input = Arr::only($request->all(), ['name', 'dimension', 'report_range', 'send_cycle', 'send_time', 'system_prompt']);
++
++        $affected = DB::table('daily_report_ai_email_tasks')
++            ->where('id', $id)
++            ->where('sfuser_id', $sfuserId)
++            ->whereNull('deleted_at')
++            ->update(array_merge(
++                array_filter($input, fn ($v) => $v !== null),
++                ['updated_at' => now()]
++            ));
++
++        return $this->responseJsonSuccess(['affected' => $affected]);
++    }
++
++    public function taskDelete(Request $request): JsonResponse
++    {
++        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
++        if (!$this->inWhitelist($sfuserId)) {
++            return $this->responseJsonFail('无权限');
++        }
++
++        DB::table('daily_report_ai_email_tasks')
++            ->where('id', $request->input('id'))
++            ->where('sfuser_id', $sfuserId)
++            ->whereNull('deleted_at')
++            ->update(['deleted_at' => now()]);
++
++        return $this->responseJsonSuccess();
++    }
++
++    public function taskToggle(Request $request): JsonResponse
++    {
++        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
++        if (!$this->inWhitelist($sfuserId)) {
++            return $this->responseJsonFail('无权限');
++        }
++
++        $id = $request->input('id');
++        $isOn = $request->input('is_on');
++
++        DB::table('daily_report_ai_email_tasks')
++            ->where('id', $id)
++            ->where('sfuser_id', $sfuserId)
++            ->whereNull('deleted_at')
++            ->update(['is_on' => $isOn, 'updated_at' => now()]);
++
++        return $this->responseJsonSuccess();
++    }
++
++    private function inWhitelist(int $sfuserId): bool
++    {
++        return in_array($sfuserId, self::WHITELIST_IDS);
++    }
++}
+diff --git a/app/Jobs/Notification/DailyReportAiEmailJob.php b/app/Jobs/Notification/DailyReportAiEmailJob.php
+new file mode 100644
+index 000000000..0a4eee492
+--- /dev/null
++++ b/app/Jobs/Notification/DailyReportAiEmailJob.php
+@@ -0,0 +1,147 @@
++<?php
++
++namespace App\Jobs\Notification;
++
++use App\Jobs\MyJob;
++use App\Models\MailConfig;
++use App\Service\DailyReportService;
++use App\Service\EncryptService;
++use App\Support\CoreApiLib;
++use Illuminate\Support\Arr;
++use Illuminate\Support\Facades\DB;
++
++class DailyReportAiEmailJob extends MyJob
++{
++    public function handle(): bool
++    {
++        $now = now();
++        $currentTime = $now->format('H:i');
++        $currentDayOfWeek = $now->dayOfWeekIso; // 1=Monday, 7=Sunday
++        $currentDayOfMonth = $now->day;
++
++        $tasks = DB::table('daily_report_ai_email_tasks')
++            ->where('is_on', 1)
++            ->whereNull('deleted_at')
++            ->where('send_time', $currentTime)
++            ->get();
++
++        if ($tasks->isEmpty()) {
++            return true;
++        }
++
++        foreach ($tasks as $task) {
++            if (!$this->shouldSendNow($task->send_cycle, $currentDayOfWeek, $currentDayOfMonth)) {
++                continue;
++            }
++
++            try {
++                $this->processTask($task);
++            } catch (\Throwable $e) {
++                info("[DailyReportAiEmailJob] task={$task->id} failed: {$e->getMessage()}".$e->getTraceAsString());
++            }
++        }
++
++        info('[DailyReportAiEmailJob] finished');
++        return true;
++    }
++
++    private function shouldSendNow(string $sendCycle, int $dayOfWeek, int $dayOfMonth): bool
++    {
++        return match ($sendCycle) {
++            'daily' => true,
++            'weekly_monday' => $dayOfWeek === 1,
++            'weekly_friday' => $dayOfWeek === 5,
++            'monthly_first' => $dayOfMonth === 1,
++            default => false,
++        };
++    }
++
++    private function processTask(object $task): void
++    {
++        $sfuserId = $task->sfuser_id;
++
++        // 读取邮箱配置
++        $mc = MailConfig::where('type', "daily_report_{$sfuserId}")->first();
++        if (!$mc || empty(Arr::get($mc->config, 'to_email'))) {
++            info("[DailyReportAiEmailJob] task={$task->id} no email config, skip");
++            return;
++        }
++
++        $toEmails = Arr::get($mc->config, 'to_email');
++        $sfuserToken = Arr::get($mc->config, 'sfuser_authorized_token', '');
++        if (!$sfuserToken) {
++            info("[DailyReportAiEmailJob] task={$task->id} no sfuser_token, skip");
++            return;
++        }
++
++        // 确定日报日期范围
++        [$startDate, $endDate] = $this->getDateRange($task->report_range);
++
++        // 拉取日报数据
++        $dailyService = app(DailyReportService::class);
++        $focusUserIds = $dailyService->getSubordinates($sfuserId);
++        $data = $dailyService->getOthersDailyReportListEnable(
++            $startDate,
++            $endDate,
++            $sfuserId,
++            $focusUserIds['focus_users'],
++            10000
++        );
++
++        if (empty($data) || empty($data['reports']) || empty($data['reports']['report_list'])) {
++            info("[DailyReportAiEmailJob] task={$task->id} no report data, skip");
++            return;
++        }
++
++        // 构建邮件内容（加密格式，由 oa-core 解密）
++        $content = '';
++        $no = 0;
++        foreach ($data['reports']['report_list'] as $report) {
++            $nickname = $report['data']['nickname'] ?? '';
++            if (empty($nickname)) {
++                continue;
++            }
++            $nickname = EncryptService::app()->markEncrString($nickname);
++            $reportContent = EncryptService::app()->markEncrString($report['content']);
++            ++$no;
++            $content .= '<p><b>'.$no.'、 '.$nickname.'</b></p>';
++            $content .= '<div style="border:1px solid #eee;padding:8px;margin-bottom:12px;">'.$reportContent.'</div>';
++        }
++
++        $subject = "【{$startDate}】 {$task->name} - AI 分析";
++
++        // 构建邮件参数（手动构建以支持 ai_analysis_config）
++        $params = [
++            'decrypt_config' => [
++                'obj' => '$this',
++                'decrypt_columns' => [],
++                'partly_decrypt_columns' => ['content', 'subject'],
++            ],
++            'receivers' => [[
++                'type' => 'token',
++                'tokens' => [$sfuserToken],
++                'filter' => 'emails',
++                'filter_map' => ['emails' => $toEmails],
++            ]],
++            'content' => $content,
++            'subject' => $subject,
++            'ai_analysis_config' => [
++                'system_prompt' => $task->system_prompt,
++            ],
++        ];
++
++        info("[DailyReportAiEmailJob] task={$task->id} sending email to ".implode(',', $toEmails));
++        CoreApiLib::sendRequest('master-api/mail/send-decr', $params);
++        info("[DailyReportAiEmailJob] task={$task->id} email sent");
++    }
++
++    private function getDateRange(string $reportRange): array
++    {
++        $today = now()->toDateString();
++        return match ($reportRange) {
++            'today' => [$today, $today],
++            'yesterday' => [now()->subDay()->toDateString(), now()->subDay()->toDateString()],
++            default => [$today, $today],
++        };
++    }
++}
+diff --git a/config/sfuser_apis/daily_report_ai_email.php b/config/sfuser_apis/daily_report_ai_email.php
+new file mode 100644
+index 000000000..a7a021a12
+--- /dev/null
++++ b/config/sfuser_apis/daily_report_ai_email.php
+@@ -0,0 +1,60 @@
++<?php
++
++use App\Http\Controllers\Oa\DailyReportAiEmailController;
++
++return [
++    'daily-report/ai-email/task/list' => [
++        'params' => [
++            'sfuser_info' => 'required|array',
++        ],
++        'route' => [DailyReportAiEmailController::class, 'taskList'],
++    ],
++
++    'daily-report/ai-email/task/create' => [
++        'params' => [
++            'sfuser_info' => 'required|array',
++            'name' => 'required|string|max:100',
++            'system_prompt' => 'required|string',
++            'dimension' => 'filled|string|max:20',
++            'report_range' => 'filled|string|max:20',
++            'send_cycle' => 'filled|string|max:20',
++            'send_time' => 'filled|string|max:5',
++        ],
++        'route' => [DailyReportAiEmailController::class, 'taskCreate'],
++        'methods' => ['post'],
++    ],
++
++    'daily-report/ai-email/task/update' => [
++        'params' => [
++            'sfuser_info' => 'required|array',
++            'id' => 'required|integer',
++            'name' => 'filled|string|max:100',
++            'system_prompt' => 'filled|string',
++            'dimension' => 'filled|string|max:20',
++            'report_range' => 'filled|string|max:20',
++            'send_cycle' => 'filled|string|max:20',
++            'send_time' => 'filled|string|max:5',
++        ],
++        'route' => [DailyReportAiEmailController::class, 'taskUpdate'],
++        'methods' => ['post'],
++    ],
++
++    'daily-report/ai-email/task/delete' => [
++        'params' => [
++            'sfuser_info' => 'required|array',
++            'id' => 'required|integer',
++        ],
++        'route' => [DailyReportAiEmailController::class, 'taskDelete'],
++        'methods' => ['post'],
++    ],
++
++    'daily-report/ai-email/task/toggle' => [
++        'params' => [
++            'sfuser_info' => 'required|array',
++            'id' => 'required|integer',
++            'is_on' => 'required|integer|in:0,1',
++        ],
++        'route' => [DailyReportAiEmailController::class, 'taskToggle'],
++        'methods' => ['post'],
++    ],
++];
+diff --git a/database/migrations/2026_04_16_100000_create_daily_report_ai_email_tasks_table.php b/database/migrations/2026_04_16_100000_create_daily_report_ai_email_tasks_table.php
+new file mode 100644
+index 000000000..5a6dc3e95
+--- /dev/null
++++ b/database/migrations/2026_04_16_100000_create_daily_report_ai_email_tasks_table.php
+@@ -0,0 +1,29 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class() extends Migration {
++    public function up(): void
++    {
++        Schema::create('daily_report_ai_email_tasks', function (Blueprint $table) {
++            $table->id();
++            $table->integer('sfuser_id')->index();
++            $table->string('name', 100);
++            $table->string('dimension', 20)->default('department');
++            $table->string('report_range', 20)->default('today');
++            $table->string('send_cycle', 20)->default('daily');
++            $table->string('send_time', 5)->default('09:00');
++            $table->text('system_prompt');
++            $table->tinyInteger('is_on')->default(1);
++            $table->timestamps();
++            $table->softDeletes();
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::dropIfExists('daily_report_ai_email_tasks');
++    }
++};

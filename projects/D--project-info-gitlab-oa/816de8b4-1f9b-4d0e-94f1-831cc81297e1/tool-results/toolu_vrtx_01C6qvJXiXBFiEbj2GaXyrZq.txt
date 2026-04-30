@@ -1,0 +1,402 @@
+D:\project\info-gitlab\oa\oa-server\init\elderly_care_leave.sql:7:-- 1. 陪护假白名单表
+D:\project\info-gitlab\oa\oa-server\init\elderly_care_leave.sql:8:CREATE TABLE IF NOT EXISTS `elderly_care_leave_whitelist` (
+D:\project\info-gitlab\oa\oa-server\init\elderly_care_leave.sql:20:) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='陪护假白名单';
+D:\project\info-gitlab\oa\oa-server\init\elderly_care_leave.sql:60:    `operation_type` varchar(50) NOT NULL COMMENT '操作类型：add-添加白名单，delete-删除白名单，update-更新独生子女状态',
+D:\project\info-gitlab\oa\oa-server\init\elderly_care_leave.sql:104:    (155, '【陪护假配置】获取白名单列表', '{}', 'elderly-care-leave/get-whitelist', 1, '【陪护假配置】获取白名单列表', NOW(), NOW()),
+D:\project\info-gitlab\oa\oa-server\init\elderly_care_leave.sql:105:    (156, '【陪护假配置】添加白名单', '{}', 'elderly-care-leave/add-whitelist', 1, '【陪护假配置】添加白名单', NOW(), NOW()),
+D:\project\info-gitlab\oa\oa-server\init\elderly_care_leave.sql:106:    (157, '【陪护假配置】删除白名单', '{}', 'elderly-care-leave/delete-whitelist', 1, '【陪护假配置】删除白名单', NOW(), NOW()),
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:2:-- 1. 陪护假白名单表
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:3:CREATE TABLE IF NOT EXISTS `elderly_care_leave_whitelist` (
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:15:) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='陪护假白名单';
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:55:                                                                  `operation_type` varchar(50) NOT NULL COMMENT '操作类型：add-添加白名单，delete-删除白名单，update-更新独生子女状态',
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:75:-- 1. 陪护假白名单表
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:76:CREATE TABLE IF NOT EXISTS `elderly_care_leave_whitelist` (
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:88:) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='陪护假白名单';
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:128:                                                                  `operation_type` varchar(50) NOT NULL COMMENT '操作类型：add-添加白名单，delete-删除白名单，update-更新独生子女状态',
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:148:-- 1. 陪护假白名单表
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:149:CREATE TABLE IF NOT EXISTS `elderly_care_leave_whitelist` (
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:161:) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='陪护假白名单';
+D:\project\info-gitlab\oa\oa-server\init\260213.sql:201:                                                                  `operation_type` varchar(50) NOT NULL COMMENT '操作类型：add-添加白名单，delete-删除白名单，update-更新独生子女状态',
+D:\project\info-gitlab\oa\oa-server\docs\released\240809.txt:36:操作名称： 是否有异常监控白名单
+D:\project\info-gitlab\oa\oa-server\docs\released\240809.txt:39:描述信息：是否有异常监控白名单
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php:7:use App\Models\ElderlyCareLeaveWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php:184:        return ElderlyCareLeaveWhitelist::isInWhitelist($sfuserId);
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php:190:    public static function getWhitelistInfo(int $sfuserId): ?ElderlyCareLeaveWhitelist
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php:192:        return ElderlyCareLeaveWhitelist::getByUser($sfuserId);
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php:463:        $whitelist = ElderlyCareLeaveWhitelist::getByUser($sfuserId);
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php:464:        if (!$whitelist) {
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:5:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:8:class WhiteListControllerTest extends TestCase
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:11:        OverseaWhiteList::class,
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:14:    public function test_editwhitelist()
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:16:        // 编辑白名单
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:33:        $res = $this->action('Admin\Common\OverseaController@editwhitelist', $input)->getData(true);
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:38:        // 获取白名单
+D:\project\info-gitlab\oa\oa-server\tests\Unit\Http\Controllers\WhiteListControllerTest.php:43:        $res = $this->action('Admin\Common\OverseaController@getwhitelist', $input)->getData(true);
+D:\project\info-gitlab\oa\oa-server\app\Lr\Utils\ReversalUserList.php:10: * 冲账白名单人缓存.
+D:\project\info-gitlab\oa\oa-server\app\Lr\Utils\ReversalUserList.php:21:     * 判断 sfuser_id 是否在白名单.
+D:\project\info-gitlab\oa\oa-server\app\Lr\Utils\LoanUserList.php:10: * 借款白名单人缓存.
+D:\project\info-gitlab\oa\oa-server\app\Lr\Utils\LoanUserList.php:21:     * 判断 sfuser_id 是否在白名单.
+D:\project\info-gitlab\oa\oa-server\app\Lr\Utils\CheckWorkflowInput.php:43:        // 发起人只能来自中国站点，同一数据库，应该没问题。 海外地区白名单用户只审批，不发起。
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\LoanService.php:604:        // 抄送人 - 从白名单里取
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\ResignationControllerTest.php:110:    public function testResignationPermissionWhitelistIndex()
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\ResignationControllerTest.php:114:        $this->postWithCredentials('web-api/resignation/index-resignation-permission-whitelist')
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\ResignationControllerTest.php:129:    public function testResignationPermissionWhitelistEdit()
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\ResignationControllerTest.php:133:        $this->postWithCredentials('web-api/resignation/edit-resignation-permission-whitelist', [
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\ReversalApprovalManagementController.php:34:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\ReversalApprovalManagementController.php:95:                || OverseaWhiteList::whereItemType(OverseaWhiteList::ITEM_TYPE_LOAN_AND_REVERSAL)->whereSfuserId($sfuser->id)->whereIsClosed(0)->exists();
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\ReversalAccountController.php:12: * ReversalAccountController 冲账白名单.
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\ReversalAccountController.php:17:     * @apiName 【冲账】 获取白名单列表
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\ReversalAccountController.php:45:     * @apiName 【冲账】 新增白名单
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\ReversalAccountController.php:91:     * @apiName 【冲账】 删除白名单
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\LoanApprovalManagementController.php:31:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\LoanApprovalManagementController.php:65:                || OverseaWhiteList::whereItemType(OverseaWhiteList::ITEM_TYPE_LOAN_AND_REVERSAL)->whereSfuserId($sfuser->id)->whereIsClosed(0)->exists();
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\LoanAccountController.php:15: * LoanAccountController 借款白名单.
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\LoanAccountController.php:21:     * @apiName 【借款申请】 获取借款白名单列表
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\LoanAccountController.php:49:     * @apiName 【借款申请】 新增借款白名单
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\LoanAccountController.php:74:     * @apiName 【借款申请】 更新借款白名单
+D:\project\info-gitlab\oa\oa-server\app\Lr\Controllers\LoanAccountController.php:94:     * @apiName 【借款申请】 删除借款白名单
+D:\project\info-gitlab\oa\oa-server\app\Http\Middleware\CheckStampUser.php:15:     * 检查当前登陆人是否在本地区有盖章系统白名单.
+D:\project\info-gitlab\oa\oa-server\app\Http\Middleware\CheckResignationPermissionUser.php:15:     * 检查当前登陆人是否在离职权限管理白名单.
+D:\project\info-gitlab\oa\oa-server\app\Http\Middleware\CheckOcUser.php:15:     * 检查当前登陆人是否在本地区有 OC 系统白名单.
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:6:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:12:        OverseaWhiteList::class,
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:15:    public function testWebApiOverseaWhitelistEditWhiteList()
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:17:        $this->postWithCredentials('web-api/oversea-whitelist/edit-white-list', [
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:24:            'item_type' => OverseaWhiteList::ITEM_TYPE_PERFORMANCE,
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:28:        $this->postWithCredentials('web-api/oversea-whitelist/edit-white-list', [
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:34:        $this->assertDatabaseHas(OverseaWhiteList::class, $payload + ['is_closed' => 0]);
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:36:        $this->postWithCredentials('web-api/oversea-whitelist/edit-white-list', [
+D:\project\info-gitlab\oa\oa-server\tests\Feature\Controllers\Admin\Common\OverseaControllerTest.php:41:        $this->assertDatabaseHas(OverseaWhiteList::class, $payload + ['is_closed' => 1]);
+D:\project\info-gitlab\oa\oa-server\app\Http\Middleware\CheckLoanUser.php:8:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Http\Middleware\CheckLoanUser.php:9:use App\Service\Permission\OverseaWhiteListService;
+D:\project\info-gitlab\oa\oa-server\app\Http\Middleware\CheckLoanUser.php:24:        // $overseaWhiteList = app(OverseaWhiteListService::class)->userGetWhiteList(Auth::id()) ?? [];
+D:\project\info-gitlab\oa\oa-server\app\Http\Middleware\CheckLoanUser.php:25:        // && !in_array(OverseaWhiteList::ITEM_TYPE_LOAN_AND_REVERSAL, $overseaWhiteList)
+D:\project\info-gitlab\oa\oa-server\database\migrations\2026_01_15_100000_create_elderly_care_leave_whitelist.php:7:class CreateElderlyCareLeaveWhitelist extends Migration
+D:\project\info-gitlab\oa\oa-server\database\migrations\2026_01_15_100000_create_elderly_care_leave_whitelist.php:16:        Schema::create('elderly_care_leave_whitelist', function (Blueprint $table) {
+D:\project\info-gitlab\oa\oa-server\database\migrations\2026_01_15_100000_create_elderly_care_leave_whitelist.php:36:        Schema::dropIfExists('elderly_care_leave_whitelist');
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\ThirdAppController.php:72:        $whiteList = config('my_third_app.private_jira_grts');
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\ThirdAppController.php:73:        if (empty($whiteList)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\ThirdAppController.php:76:        if (!in_array($input['group_robot_token'], $whiteList)) {
+D:\project\info-gitlab\oa\oa-server\app\Console\Kernel.php:66:        $schedule->job(new \App\Jobs\OverseaWhiteListCacheJob())->hourly();
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:6:use App\Service\Permission\OverseaWhiteListService;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:12:    /** @var OverseaWhiteListService */
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:13:    private OverseaWhiteListService $service;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:17:        $this->service = app(OverseaWhiteListService::class);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:21:     * @apiName 【海外白名单配置】员工端返回白名单
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:26:    public function userGetWhiteList(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:29:        $whitelist = $this->service->userGetWhiteList($sfuserId);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Staff\Common\OverseaController.php:31:        return $this->responseJsonSuccess($whitelist);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:19:    private const AI_EMAIL_ALLOWED_IDS = [171514];
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:23:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:39:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:67:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:91:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:110:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:134:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:162:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:337:    private function inWhitelist(int $sfuserId): bool
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:339:        return in_array($sfuserId, self::AI_EMAIL_ALLOWED_IDS);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:164:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:181:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:200:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:221:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:242:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:258:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:277:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:297:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:316:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:359:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:399:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:461:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:522:        if (!$this->inWhitelist($sfuserId)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:675:    private function inWhitelist(int $sfuserId): bool
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiController.php:680:            \Log::info('[lbl][0416-AI日报][Whitelist] denied', [
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Common\SfhomeController.php:5:use App\Asset\AssetConfigApplyWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Common\SfhomeController.php:21:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Common\SfhomeController.php:324:     * 能够看到的申请入口，付款盖章白名单。
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Common\SfhomeController.php:340:            $asset = AssetConfigApplyWhitelist::where('sfuser_id', Auth::id())->first();
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Common\SfhomeController.php:368:            'loan_request' => LoanUserList::userExists($sfuserId) || OverseaWhiteList::whereItemType(OverseaWhiteList::ITEM_TYPE_LOAN_AND_REVERSAL)->whereSfuserId($sfuserId)->whereIsClosed(0)->exists(),
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Common\SfhomeController.php:369:            'reversal_request' => ReversalUserList::userExists($sfuserId) || OverseaWhiteList::whereItemType(OverseaWhiteList::ITEM_TYPE_LOAN_AND_REVERSAL)->whereSfuserId($sfuserId)->whereIsClosed(0)->exists(),
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Common\SfhomeController.php:370:            'living_water' => OverseaWhiteList::whereItemType(OverseaWhiteList::ITEM_TYPE_LIVING_WATER)->whereSfuserId($sfuserId)->whereIsClosed(0)->exists() || (SiteService::app()->is(SiteService::CHN) && Sfuser::whereId($sfuserId)->exists()),
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php:384:    // 用于导入 OC 付款系统的白名单 [供脚本使用]
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:23:     * 获取白名单列表.
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:25:    public function getWhitelist(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:28:        $result = $this->service->getWhitelist($params);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:33:     * 添加白名单.
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:35:    public function addWhitelist(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:38:        info('[陪护假] 管理端添加白名单', ['count' => count($data), 'sfuser_ids' => array_column($data, 'sfuser_id')]);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:39:        $results = $this->service->addWhitelist($data);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:44:     * 删除白名单.
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:46:    public function deleteWhitelist(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:55:        info('[陪护假] 管理端删除白名单', ['sfuser_ids' => $sfuserIds, 'operator_sfuser_id' => $operatorSfuserId]);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:56:        $count = $this->service->deleteWhitelist($sfuserIds, $operatorSfuserId, $operatorNickname, $operatorNicknameHash);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\ElderlyCareLeaveController.php:57:        info('[陪护假] 管理端删除白名单完成', ['deleted_count' => $count]);
+D:\project\info-gitlab\oa\oa-server\app\Cache\ResignationCache.php:25:     * 判断 sfuser_id 是否在白名单.
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php:291:                        ->where('name', 'AI日报助手')
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php:297:                            'name' => 'AI日报助手',
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:6:use App\Service\Permission\OverseaWhiteListService;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:13:    /** @var OverseaWhiteListService */
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:14:    private OverseaWhiteListService $service;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:18:        $this->service = app(OverseaWhiteListService::class);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:26:     * @apiName 【海外白名单配置】管理端编辑白名单
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:31:    public function editWhiteList(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:34:        $flag = $this->service->editWhiteListUser($input);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:39:     * @apiName 【海外白名单配置】管理端获取白名单
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:44:    public function getWhiteList(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:47:        $whitelist = $this->service->getWhiteListUser($input);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Common\OverseaController.php:49:        return $this->responseJsonSuccess($whitelist);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Resignation\ResignationController.php:45:    public function indexResignationPermissionWhitelist(): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Resignation\ResignationController.php:87:    public function editResignationPermissionWhitelist(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Jobs\LackDailyReportUserJob.php:7:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\LackDailyReportUserJob.php:61:            $tempUids = OverseaWhiteList::where('item_type', 1)->where('is_closed', 0)->pluck('sfuser_id')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\initLackDailyReport.php:6:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\initLackDailyReport.php:48:            $tempUids = OverseaWhiteList::where('item_type', 1)->where('is_closed', 0)->pluck('sfuser_id')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Asset\Utils\AssetUserList.php:5:use App\Asset\AssetConfigApplyWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Utils\AssetUserList.php:10: * 白名单人缓存.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Utils\AssetUserList.php:21:     * 判断 sfuser_id 是否在白名单.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Utils\AssetUserList.php:35:                $sfuserIds = AssetConfigApplyWhitelist::alias('aw')->pluck('sfuser_id')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\CourseUserJob.php:30:        $whiteListUser = [];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\CourseUserJob.php:41:                $whiteListUser[] = $lv;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\CourseUserJob.php:49:            $whiteListUser[] = $cv;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\CourseUserJob.php:51:        $sfsuerIds = array_column($whiteListUser, 'sfuser_id');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\CourseUserJob.php:60:        foreach ($whiteListUser as $sfuser) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\SfuserJob.php:42:        $this->sfuser_id('asset_config_apply_whitelist');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\OverseaWhiteListCacheJob.php:5:use App\Service\Permission\OverseaWhiteListService;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\OverseaWhiteListCacheJob.php:7:class OverseaWhiteListCacheJob extends MyJob
+D:\project\info-gitlab\oa\oa-server\app\Jobs\OverseaWhiteListCacheJob.php:25:        app(OverseaWhiteListService::class)->OverseaWhiteListCache(6);
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:5:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:16:class OverseaWhiteListService
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:18:    // 编辑白名单
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:19:    public function editWhiteListUser(array $input): bool
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:26:                OverseaWhiteList::updateOrCreate(
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:31:                OverseaWhiteList::where('item_type', $inp['item_type'])->where('sfuser_id', $inp['sfuser_id'])->where('nickname', $inp['nickname'])->update(['is_closed' => 1, 'updated_at' => date('Y-m-d H:i:s', time())]);
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:36:    // 获取白名单
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:37:    public function getWhiteListUser(array $input): array
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:42:        $query = OverseaWhiteList::query();
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:49:        // 缓存培训课程通知白名单
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:50:        $this->OverseaWhiteListCache(6);
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:54:    // 员工端返回白名单
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:55:    public function userGetWhiteList($inputId): array
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:57:        return OverseaWhiteList::where('sfuser_id', $inputId)->where('is_closed', 0)->pluck('item_type')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:61:    public function OverseaWhiteListCache(int $itemType): bool
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OverseaWhiteListService.php:64:        $list = OverseaWhiteList::alias('ow')->join('sfusers', 'sfusers.id', '=', 'ow.sfuser_id')
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendDailyReportNotification.php:8:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendDailyReportNotification.php:63:        // 判断不是中国站点的时候， 取白名单里的所有日报功能的sfuserId,然后和$uids取交集
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendDailyReportNotification.php:65:            $tempUids = OverseaWhiteList::where('item_type', 1)->where('is_closed', 0)->pluck('sfuser_id')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Service\Oc\StampService.php:485:        // 抄送人 - 从白名单里取
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetsControllerTest.php:5:use App\Asset\AssetConfigApplyWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetsControllerTest.php:31:        AssetConfigApplyWhitelist::class,
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetsControllerTest.php:50:        AssetConfigApplyWhitelist::class,
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetsControllerTest.php:78:        AssetConfigApplyWhitelist::create(['sfuser_id' => 1, 'category_id' => 1]);
+D:\project\info-gitlab\oa\oa-server\app\Service\Oc\OcService.php:574:        // 抄送人 - 从白名单里取
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:5:use App\Asset\AssetConfigApplyWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:9:class AssetConfigApplyWhitelistControllerTest extends TestCase
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:12:        AssetConfigApplyWhitelist::class,
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:16:        AssetConfigApplyWhitelist::class,
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:24:        AssetConfigApplyWhitelist::create(['id' => 1,            'sfuser_id' => '792', // 花名
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:27:        AssetConfigApplyWhitelist::create(['id' => 2,            'sfuser_id' => '805', // 花名
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:30:        AssetConfigApplyWhitelist::create(['id' => 3,            'sfuser_id' => '408', // 花名
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:33:        AssetConfigApplyWhitelist::create(['id' => 4,            'sfuser_id' => '770', // 花名
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:36:        AssetConfigApplyWhitelist::create(['id' => 5,            'sfuser_id' => '384', // 花名
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:42:    public function test_assetConfigApplyWhitelistCurd()
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:51:        $data = $this->postWithCredentials('web-api/assetConfigApplyWhitelist/add', $input)->getData(true);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:55:        $data = $this->postWithCredentials('web-api/assetConfigApplyWhitelist/index')->getData(true);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:63:        $data = $this->postWithCredentials('web-api/assetConfigApplyWhitelist/update', $input2)->getData(true);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:66:        $data = $this->postWithCredentials('web-api/assetConfigApplyWhitelist/detail', ['id' => 1, // Primary key
+D:\project\info-gitlab\oa\oa-server\app\Asset\Tests\AssetConfigApplyWhitelistControllerTest.php:71:        $data = $this->postWithCredentials('web-api/assetConfigApplyWhitelist/delete', ['id' => 1, // Primary key
+D:\project\info-gitlab\oa\oa-server\app\Service\HrApprovalService.php:1279:            // 审批通过后（小兰执行），系统自动添加到白名单，已有的权限就不用管，没有的权限就新增配置
+D:\project\info-gitlab\oa\oa-server\app\Service\HrApprovalService.php:1281:                info('通过后，自动调用AI接口，添加白名单 '.$wr->id);
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:7:use App\Models\ElderlyCareLeaveWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:14:     * 获取白名单列表（管理端）.
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:16:    public function getWhitelist(array $params): array
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:23:        $query = ElderlyCareLeaveWhitelist::active();
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:46:     * 添加白名单.
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:48:    public function addWhitelist(array $data): array
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:61:            $exists = ElderlyCareLeaveWhitelist::where('sfuser_id', $sfuserId)->active()->exists();
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:63:                info('[陪护假] 添加白名单跳过：该员工已在白名单中', ['sfuser_id' => $sfuserId]);
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:67:                    'msg' => '该员工已在白名单中',
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:72:            // 创建或恢复白名单记录
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:73:            ElderlyCareLeaveWhitelist::updateOrCreate(
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:92:            info('[陪护假] 添加白名单成功', ['sfuser_id' => $sfuserId, 'operator_sfuser_id' => $operator_info_sfuserId]);
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:104:     * 删除白名单（软删除）.
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:106:    public function deleteWhitelist(array $sfuserIds, int $operatorSfuserId, string $operatorNickname, ?string $operatorNicknameHash = null): int
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:111:            $whitelist = ElderlyCareLeaveWhitelist::where('sfuser_id', $sfuserId)->active()->first();
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:112:            if ($whitelist) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:113:                $whitelist->is_closed = 1;
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:114:                $whitelist->save();
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:121:                    $whitelist->nickname,
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:124:                    $whitelist->nickname_hash
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:127:                info('[陪护假] 删除白名单成功', ['sfuser_id' => $sfuserId, 'operator_sfuser_id' => $operatorSfuserId]);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:17:     * 查询资产管理-二维码白名单配置列表.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:59:     *   新增资产管理-二维码白名单配置.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:75:     * @apiName 删除资产管理-二维码白名单配置
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:81:            throw new ServerException('资产管理-二维码白名单配置不存在');
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:87:     * @apiName 更新资产管理-二维码白名单配置
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:93:            throw new ServerException('资产管理-二维码白名单配置不存在');
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:100:     * @apiName 查询资产管理-二维码白名单配置
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigQrcodeService.php:106:            throw new ServerException('资产管理-二维码白名单配置不存在');
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:5:use App\Asset\AssetConfigApplyWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:11:class AssetConfigApplyWhitelistService
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:18:     * 查询资产管理-采购申请白名单列表.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:22:        $query = AssetConfigApplyWhitelist::query();
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:69:     *   新增资产管理-采购申请白名单.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:73:        AssetConfigApplyWhitelist::check($input);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:75:        $datas = AssetConfigApplyWhitelist::where('sfuser_id', $input['sfuser_id'])->first();
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:77:            throw new ServerException($input['sfuser_id'].'花名已存在白名单');
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:81:        return (bool)AssetConfigApplyWhitelist::create([
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:87:     * @apiName 删除资产管理-采购申请白名单
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:91:        $datas = AssetConfigApplyWhitelist::find($input['id']);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:93:            throw new ServerException('资产管理-采购申请白名单不存在');
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:99:     * @apiName 更新资产管理-采购申请白名单
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:103:        $datas = AssetConfigApplyWhitelist::find($input['id']);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:105:            throw new ServerException('资产管理-采购申请白名单不存在');
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:107:        AssetConfigApplyWhitelist::check($input);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:113:     * @apiName 查询资产管理-采购申请白名单
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:117:        $datas = AssetConfigApplyWhitelist::find($input['id']);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\AssetConfigApplyWhitelistService.php:119:            throw new ServerException('资产管理-采购申请白名单不存在');
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:11: * App\Models\AssetConfigApplyWhitelist.
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:18: * @method static \App\Asset\Infra\Database\Factories\AssetConfigApplyWhitelistFactory factory(...$parameters)
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:19: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist newModelQuery()
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:20: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist newQuery()
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:21: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist query()
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:22: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist whereCreatedAt($value)
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:23: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist whereUpdatedAt($value)
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:24: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist whereId($value)
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:25: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist whereSfuserId($value)
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:26: * @method static \Illuminate\Database\Eloquent\Builder|AssetConfigApplyWhitelist whereCategoryId($value)
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:29:class AssetConfigApplyWhitelist extends MyModel
+D:\project\info-gitlab\oa\oa-server\app\Asset\AssetConfigApplyWhitelist.php:33:    protected $table = 'asset_config_apply_whitelist';
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:3:use App\Asset\Http\Controllers\AssetConfigApplyWhitelistController;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:6:    /** 资产管理-采购申请白名单列表 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:7:    'assetConfigApplyWhitelist/index' => [
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:9:        'route' => [AssetConfigApplyWhitelistController::class, 'index'],
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:12:    /** 添加资产管理-采购申请白名单 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:13:    'assetConfigApplyWhitelist/add' => [
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:15:        'route' => [AssetConfigApplyWhitelistController::class, 'add'],
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:18:    /** 删除资产管理-采购申请白名单 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:19:    'assetConfigApplyWhitelist/delete' => [
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:23:        'route' => [AssetConfigApplyWhitelistController::class, 'delete'],
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:26:    /** 更新资产管理-采购申请白名单 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:27:    'assetConfigApplyWhitelist/update' => [
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:31:        'route' => [AssetConfigApplyWhitelistController::class, 'update'],
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:34:    /** 查看资产管理-采购申请白名单详情 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:35:    'assetConfigApplyWhitelist/detail' => [
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigApplyWhitelist.php:39:        'route' => [AssetConfigApplyWhitelistController::class, 'detail'],
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigQrcode.php:6:    /** 资产管理-二维码白名单配置列表 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigQrcode.php:12:    /** 添加资产管理-二维码白名单配置 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigQrcode.php:18:    /** 删除资产管理-二维码白名单配置 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigQrcode.php:26:    /** 更新资产管理-二维码白名单配置 */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Routes\web_api\assetConfigQrcode.php:34:    /** 查看资产管理-二维码白名单配置详情 */
+D:\project\info-gitlab\oa\oa-server\config\my_backend_api.php:212:    // 用于导入 OC 付款系统的白名单, 供中心服务器脚本使用
+D:\project\info-gitlab\oa\oa-server\app\Asset\Models\CommonSpecialStakeholder.php:48:    public const CC_WHITELIST = 'cc_whitelist';
+D:\project\info-gitlab\oa\oa-server\app\Asset\Models\CommonSpecialStakeholder.php:107:        self::CC_WHITELIST,
+D:\project\info-gitlab\oa\oa-server\app\Asset\Models\CommonSpecialStakeholder.php:113:        self::CC_WHITELIST,
+D:\project\info-gitlab\oa\oa-server\app\Asset\Models\CommonSpecialStakeholder.php:128:        self::CC_WHITELIST => '抄送人白名单',
+D:\project\info-gitlab\oa\oa-server\config\my_web_api.php:21:$ret = array_merge($ret, include $configDir.'/app/Asset/Routes/web_api/assetConfigApplyWhitelist.php');
+D:\project\info-gitlab\oa\oa-server\config\web_apis\resignation.php:10:    'resignation/index-resignation-permission-whitelist' => [
+D:\project\info-gitlab\oa\oa-server\config\web_apis\resignation.php:12:        'route' => [ResignationController::class, 'indexResignationPermissionWhitelist'],
+D:\project\info-gitlab\oa\oa-server\config\web_apis\resignation.php:17:    'resignation/edit-resignation-permission-whitelist' => [
+D:\project\info-gitlab\oa\oa-server\config\web_apis\resignation.php:22:        'route' => [ResignationController::class, 'editResignationPermissionWhitelist'],
+D:\project\info-gitlab\oa\oa-server\config\web_apis\oversea_whitelist.php:5:// 海外日报、审批、报销、借款冲账、培训、活水白名单配置
+D:\project\info-gitlab\oa\oa-server\config\web_apis\oversea_whitelist.php:7:    'oversea-whitelist/edit-white-list' => [
+D:\project\info-gitlab\oa\oa-server\config\web_apis\oversea_whitelist.php:13:                \Illuminate\Validation\Rule::in(array_keys(\App\Models\OverseaWhiteList::ITEM_TYPES)),
+D:\project\info-gitlab\oa\oa-server\config\web_apis\oversea_whitelist.php:19:        'route' => [OverseaController::class, 'editWhiteList'],
+D:\project\info-gitlab\oa\oa-server\config\web_apis\oversea_whitelist.php:21:    'oversea-whitelist/get-white-list' => [
+D:\project\info-gitlab\oa\oa-server\config\web_apis\oversea_whitelist.php:26:        'route' => [OverseaController::class, 'getWhiteList'],
+D:\project\info-gitlab\oa\oa-server\config\sfuser_apis\oversea_whitelist.php:6:    // 获取员工所在的白名单
+D:\project\info-gitlab\oa\oa-server\config\sfuser_apis\oversea_whitelist.php:7:    'oversea-whitelist/user-get-white-list' => [
+D:\project\info-gitlab\oa\oa-server\config\sfuser_apis\oversea_whitelist.php:11:        'route' => [OverseaController::class, 'userGetWhiteList'],
+D:\project\info-gitlab\oa\oa-server\app\Asset\Infra\Database\Migrations\2024_04_08_171052_create_asset_config_qrcode_table.php:8: *   资产管理-二维码白名单配置.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Infra\Database\Migrations\2024_04_08_171049_create_asset_config_apply_whitelist_table.php:8: *   资产管理-采购申请白名单.
+D:\project\info-gitlab\oa\oa-server\app\Asset\Infra\Database\Migrations\2024_04_08_171049_create_asset_config_apply_whitelist_table.php:18:        Schema::create('asset_config_apply_whitelist', function (Blueprint $table) {
+D:\project\info-gitlab\oa\oa-server\app\Asset\Infra\Database\Migrations\2024_04_08_171049_create_asset_config_apply_whitelist_table.php:33:        Schema::dropIfExists('asset_config_apply_whitelist');
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:7:    // 获取白名单列表
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:8:    'elderly-care-leave/get-whitelist' => [
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:13:        'route' => [ElderlyCareLeaveController::class, 'getWhitelist'],
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:16:    // 添加白名单
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:17:    'elderly-care-leave/add-whitelist' => [
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:21:        'route' => [ElderlyCareLeaveController::class, 'addWhitelist'],
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:24:    // 删除白名单
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:25:    'elderly-care-leave/delete-whitelist' => [
+D:\project\info-gitlab\oa\oa-server\config\web_apis\elderly_care_leave.php:33:        'route' => [ElderlyCareLeaveController::class, 'deleteWhitelist'],
+D:\project\info-gitlab\oa\oa-server\app\Asset\Infra\Database\Factories\AssetConfigApplyWhitelistFactory.php:8: * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Asset\AssetConfigApplyWhitelist>
+D:\project\info-gitlab\oa\oa-server\app\Asset\Infra\Database\Factories\AssetConfigApplyWhitelistFactory.php:10:class AssetConfigApplyWhitelistFactory extends Factory
+D:\project\info-gitlab\oa\oa-server\app\Asset\Infra\Database\Factories\AssetConfigApplyWhitelistFactory.php:12:    protected $model = \App\Asset\AssetConfigApplyWhitelist::class;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Middlewares\CanViewAsset.php:30:            info('没有配置白名单，不能扫码访问'.json_encode($context));
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Middlewares\CanViewAsset.php:35:            info('不在白名单内，不能扫码访问'.json_encode($context));
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Middlewares\CanIssuedAsset.php:5:use App\Asset\AssetConfigApplyWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Middlewares\CanIssuedAsset.php:32:        $sfuser_ids = AssetConfigApplyWhitelist::where('category_id', $context['category_id'])->pluck('sfuser_id')
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Middlewares\CanIssuedAsset.php:35:            info('没有配置白名单，不能发起采购'.json_encode($context));
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Middlewares\CanIssuedAsset.php:40:            info('不在白名单内，不能发起采购'.json_encode($context));
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:8: * App\Models\ElderlyCareLeaveWhitelist.
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:18: * @method static \Illuminate\Database\Eloquent\Builder|ElderlyCareLeaveWhitelist newModelQuery()
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:19: * @method static \Illuminate\Database\Eloquent\Builder|ElderlyCareLeaveWhitelist newQuery()
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:20: * @method static \Illuminate\Database\Eloquent\Builder|ElderlyCareLeaveWhitelist query()
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:21: * @method static \Illuminate\Database\Eloquent\Builder|ElderlyCareLeaveWhitelist whereSfuserId($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:22: * @method static \Illuminate\Database\Eloquent\Builder|ElderlyCareLeaveWhitelist whereNickname($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:23: * @method static \Illuminate\Database\Eloquent\Builder|ElderlyCareLeaveWhitelist whereIsOnlyChild($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:24: * @method static \Illuminate\Database\Eloquent\Builder|ElderlyCareLeaveWhitelist whereIsClosed($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:27:class ElderlyCareLeaveWhitelist extends MyModel
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:33:    protected $table = 'elderly_care_leave_whitelist';
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:45:     * 检查员工是否在白名单中.
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:47:    public static function isInWhitelist(int $sfuserId): bool
+D:\project\info-gitlab\oa\oa-server\app\Models\ElderlyCareLeaveWhitelist.php:53:     * 获取员工的白名单信息.
+D:\project\info-gitlab\oa\oa-server\app\Models\OaSetting.php:42:        'error_monitor_white_list' => ['kind' => 'error_monitor_white_list', 'name' => '异常监控白名单'],
+D:\project\info-gitlab\oa\oa-server\app\Models\OaSetting.php:48:        'daily_report_ai' => ['kind' => 'daily_report_ai', 'name' => '日报AI助手白名单'],
+D:\project\info-gitlab\oa\oa-server\app\Models\OaSetting.php:49:        'daily_report_group' => ['kind' => 'daily_report_group', 'name' => '日报分组白名单'],
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:6: * App\Models\OverseaWhiteList.
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:16: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList newModelQuery()
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:17: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList newQuery()
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:18: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList query()
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:19: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList whereCreatedAt($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:20: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList whereId($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:21: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList whereIsClosed($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:22: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList whereItemType($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:23: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList whereNickname($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:24: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList whereSfuserId($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:25: * @method static \Illuminate\Database\Eloquent\Builder|OverseaWhiteList whereUpdatedAt($value)
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:27:class OverseaWhiteList extends MyModel
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:41:        OverseaWhiteList::ITEM_TYPE_DAILY_REPORT => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:46:        OverseaWhiteList::ITEM_TYPE_WORKFLOW_REQUEST => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:51:        OverseaWhiteList::ITEM_TYPE_WORKFLOW_REQUEST_EB => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:56:        OverseaWhiteList::ITEM_TYPE_WORKFLOW_REQUEST_YA => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:61:        OverseaWhiteList::ITEM_TYPE_REIMBURSEMENT => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:66:        OverseaWhiteList::ITEM_TYPE_PERFORMANCE => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:71:        OverseaWhiteList::ITEM_TYPE_LOAN_AND_REVERSAL => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:76:        OverseaWhiteList::ITEM_TYPE_TRAINING_COURSE => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:81:        OverseaWhiteList::ITEM_TYPE_LIVING_WATER => [
+D:\project\info-gitlab\oa\oa-server\app\Models\OverseaWhiteList.php:86:        OverseaWhiteList::ITEM_TYPE_ASSET => [
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetsController.php:5:use App\Asset\AssetConfigApplyWhitelist;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetsController.php:24:use App\Models\OverseaWhiteList;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetsController.php:854:        $category_id = AssetConfigApplyWhitelist::whereSfuserId($sfuserId)->first()->category_id;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetsController.php:923:                || CommonSpecialStakeholder::where('type', 'cc_whitelist')->whereRaw("JSON_CONTAINS(ids, '".$sfuser_id."')")->exists()
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetsController.php:924:                || OverseaWhiteList::whereItemType(OverseaWhiteList::ITEM_TYPE_ASSET)->whereSfuserId($sfuser_id)->whereIsClosed(0)->exists();
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigQrcodeController.php:22:     * @apiName 查询资产管理-二维码白名单配置列表
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigQrcodeController.php:38:     * @apiName 新增资产管理-二维码白名单配置
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigQrcodeController.php:53:     * @apiName 删除资产管理-二维码白名单配置
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigQrcodeController.php:67:     * @apiName 更新资产管理-二维码白名单配置
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigQrcodeController.php:82:     * @apiName 查询资产管理-二维码白名单配置
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:5:use App\Asset\Services\AssetConfigApplyWhitelistService;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:11:class AssetConfigApplyWhitelistController extends Controller
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:13:    /** @var AssetConfigApplyWhitelistService */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:14:    private AssetConfigApplyWhitelistService $service;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:18:        $this->service = app(AssetConfigApplyWhitelistService::class);
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:22:     * @apiName 查询资产管理-采购申请白名单列表
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:41:     * @apiName 新增资产管理-采购申请白名单
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:57:     * @apiName 删除资产管理-采购申请白名单
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:71:     * @apiName 更新资产管理-采购申请白名单
+D:\project\info-gitlab\oa\oa-server\app\Asset\Http\Controllers\AssetConfigApplyWhitelistController.php:87:     * @apiName 查询资产管理-采购申请白名单
+D:\project\info-gitlab\oa\oa-server\app\Oc\Utils\StampUserList.php:10: * Oc 盖章白名单人缓存.
+D:\project\info-gitlab\oa\oa-server\app\Oc\Utils\StampUserList.php:21:     * 判断 sfuser_id 是否在白名单.
+D:\project\info-gitlab\oa\oa-server\app\Oc\Utils\OcUserList.php:10: * Oc 付款白名单人缓存.
+D:\project\info-gitlab\oa\oa-server\app\Oc\Utils\OcUserList.php:21:     * 判断 sfuser_id 是否在白名单.
+D:\project\info-gitlab\oa\oa-server\app\Oc\OcAccountController.php:12: * OcAccountController OC 白名单.
+D:\project\info-gitlab\oa\oa-server\app\Oc\OcAccountController.php:17:     * @apiName 【OC系统】 获取白名单列表
+D:\project\info-gitlab\oa\oa-server\app\Oc\OcAccountController.php:45:     * @apiName 【OC系统】 新增白名单
+D:\project\info-gitlab\oa\oa-server\app\Oc\OcAccountController.php:91:     * @apiName 【OC系统】 更新白名单
+D:\project\info-gitlab\oa\oa-server\app\Oc\OcAccountController.php:107:     * @apiName 【OC系统】 删除白名单
+D:\project\info-gitlab\oa\oa-server\app\Oc\StampAccountController.php:12: * StampAccountController 盖章白名单.
+D:\project\info-gitlab\oa\oa-server\app\Oc\StampAccountController.php:17:     * @apiName 【盖章】 获取白名单列表
+D:\project\info-gitlab\oa\oa-server\app\Oc\StampAccountController.php:45:     * @apiName 【盖章】 新增白名单
+D:\project\info-gitlab\oa\oa-server\app\Oc\StampAccountController.php:93:     * @apiName 【盖章】 删除白名单

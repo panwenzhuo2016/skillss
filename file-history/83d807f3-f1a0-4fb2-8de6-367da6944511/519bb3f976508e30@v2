@@ -1,0 +1,41 @@
+package com.yottastudios.ns.collabspace.control.infrastructure.role;
+
+import java.util.Map;
+
+public interface RoleConstants {
+
+    /** 角色码 -> 中文展示名称 */
+    Map<String, String> ROLE_DISPLAY_MAP = Map.of(
+            "manager", "可管理",
+            "editor", "可编辑",
+            "reader", "可阅读"
+    );
+
+    interface SpaceNode {
+
+        String READER = "reader";
+
+        String EDITOR = "editor";
+
+        String MANAGER = "manager";
+
+        String ANONYMOUS = "anonymous";
+
+        String TEMPLATE_VISITOR = "templateVisitor";
+
+        String DEFAULT_ROLE = EDITOR;
+    }
+
+    /**
+     * Node role constants (used in permission request approval flow).
+     * Maps to the role codes stored in collabspace_control_role.role_code.
+     */
+    interface Node {
+
+        String READER = "reader";
+
+        String EDITOR = "editor";
+
+        String MANAGER = "manager";
+    }
+}

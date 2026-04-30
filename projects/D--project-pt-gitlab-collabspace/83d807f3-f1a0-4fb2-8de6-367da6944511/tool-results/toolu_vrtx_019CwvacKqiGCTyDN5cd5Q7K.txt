@@ -1,0 +1,920 @@
+     1→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/NodeRoleController.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/NodeRoleController.java
+     2→index 3e67ff96..5ff9e131 100644
+     3→--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/NodeRoleController.java
+     4→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/NodeRoleController.java
+     5→@@ -13,7 +13,14 @@ import com.yottastudios.ns.collabspace.shared.holder.SpaceHolder;
+     6→ import com.yottastudios.ns.collabspace.workspace.manager.query.NodeRoleQueryManager;
+     7→ import com.yottastudios.ns.collabspace.workspace.manager.update.NodeRoleUpdateManager;
+     8→ import com.yottastudios.ns.collabspace.workspace.ro.*;
+     9→+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+    10→+import com.yottastudios.ns.collabspace.workspace.ro.PageSearchRo;
+    11→+import com.yottastudios.ns.collabspace.workspace.service.INodePermissionLogService;
+    12→+import com.yottastudios.ns.collabspace.workspace.vo.EditRoleResultVo;
+    13→ import com.yottastudios.ns.collabspace.workspace.vo.NodeCollaboratorsVo;
+    14→+import com.yottastudios.ns.collabspace.workspace.vo.NodePermissionLogVo;
+    15→+import com.yottastudios.ns.collabspace.workspace.vo.NodeRoleUnit;
+    16→+import com.yottastudios.ns.collabspace.workspace.vo.TeamRoleTreeVo;
+    17→ import io.swagger.v3.oas.annotations.Operation;
+    18→ import io.swagger.v3.oas.annotations.Parameter;
+    19→ import io.swagger.v3.oas.annotations.Parameters;
+    20→@@ -46,6 +53,9 @@ public class NodeRoleController {
+    21→     @Resource
+    22→     private PermissionChecker permissionChecker;
+    23→ 
+    24→+    @Resource
+    25→+    private INodePermissionLogService nodePermissionLogService;
+    26→+
+    27→     @GetResource(path = "/{spaceNodeId}/listRole")
+    28→     @Parameters({
+    29→             @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+    30→@@ -83,14 +93,14 @@ public class NodeRoleController {
+    31→                     schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+    32→     })
+    33→     @Operation(summary = "Edit node role")
+    34→-    public ResponseData<Void> editRole(@RequestBody @Valid ModifyNodeRoleRo ro) {
+    35→+    public ResponseData<EditRoleResultVo> editRole(@RequestBody @Valid ModifyNodeRoleRo ro) {
+    36→         String spaceId = SpaceHolder.get();
+    37→         Long userId = SessionContext.getUserId();
+    38→         //pre-check current operator has permission and unit ids in current space
+    39→         nodeRoleQueryManager.checkInSpace(spaceId, List.of(ro.getUnitId()));
+    40→         permissionChecker.requireUser(userId).onNode(ro.getSpaceNodeId()).needRole(RoleConstants.SpaceNode.MANAGER);
+    41→-        nodeRoleUpdateManager.updateNodeRole(userId, spaceId, ro.getSpaceNodeId(), ro.getRole(), List.of(ro.getUnitId()));
+    42→-        return ResponseData.success();
+    43→+        EditRoleResultVo result = nodeRoleUpdateManager.updateNodeRole(userId, spaceId, ro.getSpaceNodeId(), ro.getRole(), List.of(ro.getUnitId()));
+    44→+        return ResponseData.success(result);
+    45→     }
+    46→ 
+    47→     @PostResource(path = "/batchEditRole", externalOnly = true)
+    48→@@ -99,14 +109,14 @@ public class NodeRoleController {
+    49→                     schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+    50→     })
+    51→     @Operation(summary = "Batch edit node role")
+    52→-    public ResponseData<Void> batchEditRole(@RequestBody @Valid BatchModifyNodeRoleRo ro) {
+    53→+    public ResponseData<EditRoleResultVo> batchEditRole(@RequestBody @Valid BatchModifyNodeRoleRo ro) {
+    54→         String spaceId = SpaceHolder.get();
+    55→         Long userId = SessionContext.getUserId();
+    56→         //pre-check current operator has permission and unit ids in current space
+    57→         nodeRoleQueryManager.checkInSpace(spaceId, ro.getUnitIds());
+    58→         permissionChecker.requireUser(userId).onNode(ro.getSpaceNodeId()).needRole(RoleConstants.SpaceNode.MANAGER);
+    59→-        nodeRoleUpdateManager.updateNodeRole(userId, spaceId, ro.getSpaceNodeId(), ro.getRole(), ro.getUnitIds());
+    60→-        return ResponseData.success();
+    61→+        EditRoleResultVo result = nodeRoleUpdateManager.updateNodeRole(userId, spaceId, ro.getSpaceNodeId(), ro.getRole(), ro.getUnitIds());
+    62→+        return ResponseData.success(result);
+    63→     }
+    64→ 
+    65→     @PostResource(path = "/deleteRole", externalOnly = true)
+    66→@@ -171,6 +181,48 @@ public class NodeRoleController {
+    67→         return ResponseData.success();
+    68→     }
+    69→ 
+    70→+    @GetResource(path = "/{spaceNodeId}/listTeamRoles")
+    71→+    @Parameters({
+    72→+            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+    73→+                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+    74→+    })
+    75→+    @Operation(summary = "List team roles for a node (tree structure with pagination)")
+    76→+    public ResponseData<PageInfo<TeamRoleTreeVo>> listTeamRoles(
+    77→+            @PathVariable Long spaceNodeId,
+    78→+            @Valid PageSearchRo ro) {
+    79→+        Long userId = SessionContext.getUserId();
+    80→+        String spaceId = SpaceHolder.get();
+    81→+        return ResponseData.success(nodeRoleQueryManager.listTeamRoles(userId, spaceId, spaceNodeId,
+    82→+                ro.getKeyword(), ro.getPageNo(), ro.getPageSize()));
+    83→+    }
+    84→+
+    85→+    @GetResource(path = "/{spaceNodeId}/listMemberRoles")
+    86→+    @Parameters({
+    87→+            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+    88→+                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+    89→+    })
+    90→+    @Operation(summary = "List member roles for a node (only manually set, with pagination)")
+    91→+    public ResponseData<PageInfo<NodeRoleUnit>> listMemberRoles(
+    92→+            @PathVariable Long spaceNodeId,
+    93→+            @Valid PageSearchRo ro) {
+    94→+        String spaceId = SpaceHolder.get();
+    95→+        return ResponseData.success(nodeRoleQueryManager.listMemberRoles(spaceId, spaceNodeId,
+    96→+                ro.getKeyword(), ro.getPageNo(), ro.getPageSize()));
+    97→+    }
+    98→+
+    99→+    @GetResource(path = "/{spaceNodeId}/permissionLogs")
+   100→+    @Parameters({
+   101→+            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+   102→+                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+   103→+    })
+   104→+    @Operation(summary = "List permission change logs for a node")
+   105→+    public ResponseData<PageInfo<NodePermissionLogVo>> listPermissionLogs(
+   106→+            @PathVariable Long spaceNodeId,
+   107→+            @Valid PageSearchRo ro) {
+   108→+        return ResponseData.success(nodePermissionLogService.pageBySpaceNodeId(spaceNodeId,
+   109→+                ro.getKeyword(), ro.getPageNo(), ro.getPageSize()));
+   110→+    }
+   111→+
+   112→     @PostResource(path = "/getAppNodesRole", requiredPermission = false)
+   113→     @Operation(summary = "Get Third App nodes role")
+   114→     public ResponseData<ControlRoleDict> getAppNodesRole(@RequestBody @Valid GetAppNodesRoleRo ro) {
+   115→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/entity/NodePermissionLogEntity.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/entity/NodePermissionLogEntity.java
+   116→new file mode 100644
+   117→index 00000000..14eb671d
+   118→--- /dev/null
+   119→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/entity/NodePermissionLogEntity.java
+   120→@@ -0,0 +1,46 @@
+   121→+package com.yottastudios.ns.collabspace.workspace.entity;
+   122→+
+   123→+import com.baomidou.mybatisplus.annotation.IdType;
+   124→+import com.baomidou.mybatisplus.annotation.TableId;
+   125→+import com.baomidou.mybatisplus.annotation.TableName;
+   126→+import com.fasterxml.jackson.annotation.JsonFormat;
+   127→+import lombok.AllArgsConstructor;
+   128→+import lombok.Builder;
+   129→+import lombok.Data;
+   130→+import lombok.NoArgsConstructor;
+   131→+
+   132→+import java.time.LocalDateTime;
+   133→+
+   134→+@Data
+   135→+@Builder
+   136→+@NoArgsConstructor
+   137→+@AllArgsConstructor
+   138→+@TableName(keepGlobalPrefix = true, value = "node_permission_log")
+   139→+public class NodePermissionLogEntity {
+   140→+
+   141→+    @TableId(value = "id", type = IdType.ASSIGN_ID)
+   142→+    private Long id;
+   143→+
+   144→+    private Long spaceNodeId;
+   145→+
+   146→+    private String spaceId;
+   147→+
+   148→+    private Long operatorId;
+   149→+
+   150→+    private String operatorName;
+   151→+
+   152→+    private String targetName;
+   153→+
+   154→+    /** 类型: 1=小组(team), 3=成员(member) */
+   155→+    private Integer targetType;
+   156→+
+   157→+    /** 操作类型: set / remove */
+   158→+    private String action;
+   159→+
+   160→+    private String oldRole;
+   161→+
+   162→+    private String newRole;
+   163→+
+   164→+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+   165→+    private LocalDateTime createdAt;
+   166→+}
+   167→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/NodeRoleQueryManager.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/NodeRoleQueryManager.java
+   168→index 72c26373..4cc33ab8 100644
+   169→--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/NodeRoleQueryManager.java
+   170→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/NodeRoleQueryManager.java
+   171→@@ -1,9 +1,12 @@
+   172→ package com.yottastudios.ns.collabspace.workspace.manager.query;
+   173→ 
+   174→ import com.yottastudios.ns.collabspace.control.infrastructure.ControlRoleDict;
+   175→+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+   176→ import com.yottastudios.ns.collabspace.workspace.dto.SimpleNodeInfo;
+   177→ import com.yottastudios.ns.collabspace.workspace.ro.GetAppNodesRoleRo;
+   178→ import com.yottastudios.ns.collabspace.workspace.vo.NodeCollaboratorsVo;
+   179→+import com.yottastudios.ns.collabspace.workspace.vo.NodeRoleUnit;
+   180→+import com.yottastudios.ns.collabspace.workspace.vo.TeamRoleTreeVo;
+   181→ 
+   182→ import java.util.List;
+   183→ 
+   184→@@ -26,4 +29,14 @@ public interface NodeRoleQueryManager {
+   185→     ControlRoleDict getAppNodesRole(GetAppNodesRoleRo ro, Long userId);
+   186→ 
+   187→     ControlRoleDict getShareRole(String shareId, Long userId);
+   188→+
+   189→+    /**
+   190→+     * 查询小组权限树（支持搜索和分页）
+   191→+     */
+   192→+    PageInfo<TeamRoleTreeVo> listTeamRoles(Long userId, String spaceId, Long spaceNodeId, String keyword, int pageNo, int pageSize);
+   193→+
+   194→+    /**
+   195→+     * 分页查询成员权限（仅手动设置过的）
+   196→+     */
+   197→+    PageInfo<NodeRoleUnit> listMemberRoles(String spaceId, Long spaceNodeId, String keyword, int pageNo, int pageSize);
+   198→ }
+   199→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/NodeRoleQueryManagerImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/NodeRoleQueryManagerImpl.java
+   200→index 479cf4cd..49dbde9f 100644
+   201→--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/NodeRoleQueryManagerImpl.java
+   202→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/NodeRoleQueryManagerImpl.java
+   203→@@ -1,5 +1,6 @@
+   204→ package com.yottastudios.ns.collabspace.workspace.manager.query.impl;
+   205→ 
+   206→+import cn.hutool.core.util.StrUtil;
+   207→ import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
+   208→ import com.yottastudios.ns.collabspace.base.manager.TreeNodeTemplate;
+   209→ import com.yottastudios.ns.collabspace.control.entity.ControlEntity;
+   210→@@ -12,9 +13,12 @@ import com.yottastudios.ns.collabspace.control.service.IControlService;
+   211→ import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+   212→ import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
+   213→ import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+   214→+import com.yottastudios.ns.collabspace.shared.util.page.PageHelper;
+   215→+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+   216→ import com.yottastudios.ns.collabspace.space.enums.SpaceException;
+   217→ import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
+   218→ import com.yottastudios.ns.collabspace.space.service.ISpaceAppRelService;
+   219→+import com.yottastudios.ns.collabspace.space.vo.TeamMemberVo;
+   220→ import com.yottastudios.ns.collabspace.workspace.dto.NodeShareProps;
+   221→ import com.yottastudios.ns.collabspace.workspace.dto.SimpleNodeInfo;
+   222→ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+   223→@@ -25,11 +29,14 @@ import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
+   224→ import com.yottastudios.ns.collabspace.workspace.transfer.NodeRoleTransfer;
+   225→ import com.yottastudios.ns.collabspace.workspace.vo.NodeCollaboratorsVo;
+   226→ import com.yottastudios.ns.collabspace.workspace.vo.NodeRoleUnit;
+   227→+import com.yottastudios.ns.collabspace.workspace.vo.TeamRoleTreeVo;
+   228→ import jakarta.annotation.Resource;
+   229→ import lombok.extern.slf4j.Slf4j;
+   230→ import org.apache.commons.collections4.CollectionUtils;
+   231→ import org.springframework.stereotype.Service;
+   232→ 
+   233→+import java.util.ArrayList;
+   234→+import java.util.HashMap;
+   235→ import java.util.List;
+   236→ import java.util.Map;
+   237→ import java.util.Objects;
+   238→@@ -233,4 +240,161 @@ public class NodeRoleQueryManagerImpl implements NodeRoleQueryManager {
+   239→         log.error("props not contains role, shareId: {}, props: {}", shareId, props);
+   240→         return result;
+   241→     }
+   242→+
+   243→+    @Override
+   244→+    public PageInfo<TeamRoleTreeVo> listTeamRoles(Long userId, String spaceId, Long spaceNodeId, String keyword, int pageNo, int pageSize) {
+   245→+        // 1. 获取空间站小组树
+   246→+        List<TeamMemberVo> teamTree = apitableGrpcClientService.getTeamMembers(spaceId, userId);
+   247→+
+   248→+        // 2. 获取当前节点的权限数据（考虑继承）
+   249→+        Map<Long, String> teamIdToRole = getTeamRoleMap(spaceId, spaceNodeId);
+   250→+
+   251→+        // 3. 转换为 TeamRoleTreeVo
+   252→+        List<TeamRoleTreeVo> tree = convertToTeamRoleTree(teamTree, teamIdToRole);
+   253→+
+   254→+        // 4. 搜索过滤
+   255→+        List<TeamRoleTreeVo> result;
+   256→+        if (StrUtil.isNotBlank(keyword)) {
+   257→+            result = flattenAndFilter(tree, keyword);
+   258→+        } else {
+   259→+            result = flattenTree(tree);
+   260→+        }
+   261→+
+   262→+        // 5. 内存分页
+   263→+        int total = result.size();
+   264→+        int fromIndex = Math.min((pageNo - 1) * pageSize, total);
+   265→+        int toIndex = Math.min(fromIndex + pageSize, total);
+   266→+        List<TeamRoleTreeVo> pageRecords = result.subList(fromIndex, toIndex);
+   267→+
+   268→+        return PageHelper.build(pageNo, pageSize, total, pageRecords);
+   269→+    }
+   270→+
+   271→+    /**
+   272→+     * 获取节点的小组权限映射 (teamId -> roleCode)
+   273→+     */
+   274→+    private Map<Long, String> getTeamRoleMap(String spaceId, Long spaceNodeId) {
+   275→+        String controlId;
+   276→+        if (controlService.existsByControlId(spaceNodeId.toString())) {
+   277→+            controlId = spaceNodeId.toString();
+   278→+        } else {
+   279→+            Long extendNodeId = getNodeExtendNodeId(spaceNodeId);
+   280→+            controlId = extendNodeId != null ? extendNodeId.toString() : null;
+   281→+        }
+   282→+
+   283→+        if (controlId == null) {
+   284→+            return Map.of();
+   285→+        }
+   286→+
+   287→+        List<ControlRoleEntity> controlRoles = controlRoleService.getByControlId(controlId);
+   288→+        if (CollectionUtils.isEmpty(controlRoles)) {
+   289→+            return Map.of();
+   290→+        }
+   291→+
+   292→+        List<Long> unitIds = controlRoles.stream().map(ControlRoleEntity::getUnitId).toList();
+   293→+        List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+   294→+
+   295→+        // unitType=1 means Department/Team
+   296→+        Map<Long, Long> unitIdToRefId = unitInfos.stream()
+   297→+                .filter(u -> u.getUnitType() != null && u.getUnitType() == 1)
+   298→+                .collect(Collectors.toMap(NodeRoleUnit::getUnitId, NodeRoleUnit::getUnitRefId, (a, b) -> a));
+   299→+
+   300→+        Map<Long, String> unitIdToRole = controlRoles.stream()
+   301→+                .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+   302→+
+   303→+        // teamId(unitRefId) -> roleCode
+   304→+        Map<Long, String> teamIdToRole = new HashMap<>();
+   305→+        unitIdToRefId.forEach((unitId, teamId) -> {
+   306→+            String role = unitIdToRole.get(unitId);
+   307→+            if (role != null) {
+   308→+                teamIdToRole.put(teamId, role);
+   309→+            }
+   310→+        });
+   311→+        return teamIdToRole;
+   312→+    }
+   313→+
+   314→+    private List<TeamRoleTreeVo> convertToTeamRoleTree(List<TeamMemberVo> teamTree, Map<Long, String> teamIdToRole) {
+   315→+        List<TeamRoleTreeVo> result = new ArrayList<>();
+   316→+        for (TeamMemberVo team : teamTree) {
+   317→+            TeamRoleTreeVo vo = new TeamRoleTreeVo();
+   318→+            vo.setTeamId(team.getTeamId());
+   319→+            vo.setTeamName(team.getTeamName());
+   320→+            vo.setParentId(team.getParentTeamId());
+   321→+            vo.setMemberCount(team.getMemberCount());
+   322→+            vo.setRole(teamIdToRole.get(team.getTeamId()));
+   323→+            if (CollectionUtils.isNotEmpty(team.getChildrenList())) {
+   324→+                vo.setChildren(convertToTeamRoleTree(team.getChildrenList(), teamIdToRole));
+   325→+            } else {
+   326→+                vo.setChildren(List.of());
+   327→+            }
+   328→+            result.add(vo);
+   329→+        }
+   330→+        return result;
+   331→+    }
+   332→+
+   333→+    /** 平铺树为列表（前序遍历） */
+   334→+    private List<TeamRoleTreeVo> flattenTree(List<TeamRoleTreeVo> tree) {
+   335→+        List<TeamRoleTreeVo> result = new ArrayList<>();
+   336→+        for (TeamRoleTreeVo node : tree) {
+   337→+            result.add(node);
+   338→+            if (CollectionUtils.isNotEmpty(node.getChildren())) {
+   339→+                result.addAll(flattenTree(node.getChildren()));
+   340→+            }
+   341→+        }
+   342→+        return result;
+   343→+    }
+   344→+
+   345→+    /** 搜索过滤：按 teamName 模糊匹配，平铺返回 */
+   346→+    private List<TeamRoleTreeVo> flattenAndFilter(List<TeamRoleTreeVo> tree, String keyword) {
+   347→+        List<TeamRoleTreeVo> result = new ArrayList<>();
+   348→+        String lowerKeyword = keyword.toLowerCase();
+   349→+        for (TeamRoleTreeVo node : tree) {
+   350→+            if (node.getTeamName() != null && node.getTeamName().toLowerCase().contains(lowerKeyword)) {
+   351→+                result.add(node);
+   352→+            }
+   353→+            if (CollectionUtils.isNotEmpty(node.getChildren())) {
+   354→+                result.addAll(flattenAndFilter(node.getChildren(), keyword));
+   355→+            }
+   356→+        }
+   357→+        return result;
+   358→+    }
+   359→+
+   360→+    @Override
+   361→+    public PageInfo<NodeRoleUnit> listMemberRoles(String spaceId, Long spaceNodeId, String keyword, int pageNo, int pageSize) {
+   362→+        // 只查当前节点手动设置的权限（不含继承）
+   363→+        String controlId = spaceNodeId.toString();
+   364→+        List<ControlRoleEntity> controlRoles = controlRoleService.getByControlId(controlId);
+   365→+        if (CollectionUtils.isEmpty(controlRoles)) {
+   366→+            return PageHelper.build(pageNo, pageSize, 0, List.of());
+   367→+        }
+   368→+
+   369→+        List<Long> unitIds = controlRoles.stream().map(ControlRoleEntity::getUnitId).toList();
+   370→+        List<NodeRoleUnit> allUnits = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+   371→+
+   372→+        // unitType=3 means Member
+   373→+        Map<Long, String> unitIdToRole = controlRoles.stream()
+   374→+                .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+   375→+
+   376→+        List<NodeRoleUnit> memberUnits = allUnits.stream()
+   377→+                .filter(u -> u.getUnitType() != null && u.getUnitType() == 3)
+   378→+                .peek(u -> u.setRole(unitIdToRole.get(u.getUnitId())))
+   379→+                .toList();
+   380→+
+   381→+        // 搜索过滤
+   382→+        List<NodeRoleUnit> filtered = memberUnits;
+   383→+        if (StrUtil.isNotBlank(keyword)) {
+   384→+            String lowerKeyword = keyword.toLowerCase();
+   385→+            filtered = memberUnits.stream()
+   386→+                    .filter(u -> (u.getUnitName() != null && u.getUnitName().toLowerCase().contains(lowerKeyword))
+   387→+                            || (u.getNickName() != null && u.getNickName().toLowerCase().contains(lowerKeyword)))
+   388→+                    .toList();
+   389→+        }
+   390→+
+   391→+        // 内存分页
+   392→+        int total = filtered.size();
+   393→+        int fromIndex = Math.min((pageNo - 1) * pageSize, total);
+   394→+        int toIndex = Math.min(fromIndex + pageSize, total);
+   395→+        List<NodeRoleUnit> pageRecords = filtered.subList(fromIndex, toIndex);
+   396→+
+   397→+        return PageHelper.build(pageNo, pageSize, total, pageRecords);
+   398→+    }
+   399→ }
+   400→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/NodeRoleUpdateManager.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/NodeRoleUpdateManager.java
+   401→index 64a38e70..ac581fe0 100644
+   402→--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/NodeRoleUpdateManager.java
+   403→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/NodeRoleUpdateManager.java
+   404→@@ -1,5 +1,7 @@
+   405→ package com.yottastudios.ns.collabspace.workspace.manager.update;
+   406→ 
+   407→+import com.yottastudios.ns.collabspace.workspace.vo.EditRoleResultVo;
+   408→+
+   409→ import java.util.List;
+   410→ 
+   411→ public interface NodeRoleUpdateManager {
+   412→@@ -23,7 +25,7 @@ public interface NodeRoleUpdateManager {
+   413→      * @param role    role
+   414→      * @param unitIds unitIds
+   415→      */
+   416→-    void updateNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds);
+   417→+    EditRoleResultVo updateNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds);
+   418→ 
+   419→     /**
+   420→      * Enable node to specify permissions and set organizational unit roles
+   421→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/NodeRoleUpdateManagerImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/NodeRoleUpdateManagerImpl.java
+   422→index dfe03266..a5b7ddb2 100644
+   423→--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/NodeRoleUpdateManagerImpl.java
+   424→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/NodeRoleUpdateManagerImpl.java
+   425→@@ -2,6 +2,7 @@ package com.yottastudios.ns.collabspace.workspace.manager.update.impl;
+   426→ 
+   427→ import com.yottastudios.ns.collabspace.control.entity.ControlRoleEntity;
+   428→ import com.yottastudios.ns.collabspace.control.infrastructure.ControlType;
+   429→+import com.yottastudios.ns.collabspace.control.infrastructure.role.NodeRoleLevel;
+   430→ import com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.SpaceNode;
+   431→ import com.yottastudios.ns.collabspace.control.service.IControlRoleService;
+   432→ import com.yottastudios.ns.collabspace.control.service.IControlService;
+   433→@@ -9,12 +10,17 @@ import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+   434→ import com.yottastudios.ns.collabspace.interfaces.eventbus.facade.EventBusFacade;
+   435→ import com.yottastudios.ns.collabspace.interfaces.eventbus.model.permission.NodePolicyChangeEvent;
+   436→ import com.yottastudios.ns.collabspace.organization.vo.UnitMemberVo;
+   437→+import com.yottastudios.ns.collabspace.shared.context.SessionContext;
+   438→ import com.yottastudios.ns.collabspace.workspace.manager.query.NodeRoleQueryManager;
+   439→ import com.yottastudios.ns.collabspace.workspace.manager.update.NodeRoleUpdateManager;
+   440→+import com.yottastudios.ns.collabspace.workspace.service.INodePermissionLogService;
+   441→ import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
+   442→ import com.yottastudios.ns.collabspace.workspace.transfer.NodeRoleTransfer;
+   443→+import com.yottastudios.ns.collabspace.workspace.vo.EditRoleResultVo;
+   444→+import com.yottastudios.ns.collabspace.workspace.vo.NodeRoleUnit;
+   445→ import jakarta.annotation.Resource;
+   446→ import lombok.extern.slf4j.Slf4j;
+   447→+import org.apache.commons.collections4.CollectionUtils;
+   448→ import org.springframework.stereotype.Service;
+   449→ import org.springframework.transaction.annotation.Transactional;
+   450→ 
+   451→@@ -22,6 +28,7 @@ import java.util.ArrayList;
+   452→ import java.util.List;
+   453→ import java.util.Map;
+   454→ import java.util.Set;
+   455→+import java.util.stream.Collectors;
+   456→ 
+   457→ import static com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.SpaceNode.MANAGER;
+   458→ import static java.util.stream.Collectors.groupingBy;
+   459→@@ -53,6 +60,15 @@ public class NodeRoleUpdateManagerImpl implements NodeRoleUpdateManager {
+   460→     @Resource
+   461→     private NodeRoleTransfer nodeRoleTransfer;
+   462→ 
+   463→+    @Resource
+   464→+    private INodePermissionLogService nodePermissionLogService;
+   465→+
+   466→+    private static final Map<String, String> ROLE_DISPLAY_MAP = Map.of(
+   467→+            "manager", "可管理",
+   468→+            "editor", "可编辑",
+   469→+            "reader", "可阅读"
+   470→+    );
+   471→+
+   472→     @Override
+   473→     @Transactional
+   474→     public void addNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds) {
+   475→@@ -62,15 +78,29 @@ public class NodeRoleUpdateManagerImpl implements NodeRoleUpdateManager {
+   476→         controlRoleService.saveOrUpdateControlRole(userId, spaceNodeId.toString(), unitIds, role);
+   477→         publishNodePolicyChangeEvent(spaceId, spaceNodeId, unitIds, role);
+   478→         log.info("[1822-PermApply] addNodeRole done spaceNodeId={} role={} unitIds={}", spaceNodeId, role, unitIds);
+   479→+        // 记录权限变更日志
+   480→+        logPermissionChange(userId, spaceId, spaceNodeId, unitIds, "set", null, role);
+   481→     }
+   482→ 
+   483→     @Override
+   484→     @Transactional
+   485→-    public void updateNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds) {
+   486→+    public EditRoleResultVo updateNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds) {
+   487→         spaceNodeService.checkSpaceNodeExist(spaceNodeId);
+   488→         enableNodeRoleIfNotExist(userId, spaceId, spaceNodeId, false);
+   489→+
+   490→+        // 记录旧角色用于日志
+   491→+        List<ControlRoleEntity> oldRoles = controlRoleService.getByControlIdAndUnitIds(spaceNodeId.toString(), unitIds);
+   492→+        Map<Long, String> oldRoleMap = oldRoles.stream()
+   493→+                .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+   494→+
+   495→         controlRoleService.saveOrUpdateControlRole(userId, spaceNodeId.toString(), unitIds, role);
+   496→         publishNodePolicyChangeEvent(spaceId, spaceNodeId, unitIds, role);
+   497→+
+   498→+        // 记录权限变更日志
+   499→+        logPermissionChangeWithOldRoles(userId, spaceId, spaceNodeId, unitIds, role, oldRoleMap);
+   500→+
+   501→+        // 权限冲突校验
+   502→+        return checkMemberTeamConflict(spaceId, spaceNodeId, role, unitIds);
+   503→     }
+   504→ 
+   505→     @Override
+   506→@@ -100,8 +130,17 @@ public class NodeRoleUpdateManagerImpl implements NodeRoleUpdateManager {
+   507→ 
+   508→     @Override
+   509→     public void deleteNodeRoles(String spaceId, Long spaceNodeId, List<Long> unitIds) {
+   510→+        // 记录旧角色用于日志
+   511→+        List<ControlRoleEntity> oldRoles = controlRoleService.getByControlIdAndUnitIds(spaceNodeId.toString(), unitIds);
+   512→+        Map<Long, String> oldRoleMap = oldRoles.stream()
+   513→+                .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+   514→+
+   515→         controlRoleService.removeByControlIdAndUnitIds(spaceNodeId.toString(), unitIds);
+   516→         publishNodePolicyChangeEvent(spaceId, spaceNodeId, unitIds, null);
+   517→+
+   518→+        // 记录权限变更日志
+   519→+        Long userId = SessionContext.getUserId();
+   520→+        logPermissionRemove(userId, spaceId, spaceNodeId, unitIds, oldRoleMap);
+   521→     }
+   522→ 
+   523→     private Map<String, Set<Long>> getParentRoleToUnitIds(String spaceId, Long spaceNodeId) {
+   524→@@ -142,6 +181,86 @@ public class NodeRoleUpdateManagerImpl implements NodeRoleUpdateManager {
+   525→         addNodeRole(userId,spaceId,spaceNodeId,MANAGER,List.of(unitMemberVo.getUnitId()));
+   526→     }
+   527→ 
+   528→+    /**
+   529→+     * 权限冲突校验：检查成员所在小组权限是否高于成员本身被设置的权限
+   530→+     */
+   531→+    private EditRoleResultVo checkMemberTeamConflict(String spaceId, Long spaceNodeId, String newRole, List<Long> unitIds) {
+   532→+        List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+   533→+        List<NodeRoleUnit> memberUnits = unitInfos.stream()
+   534→+                .filter(u -> u.getUnitType() != null && u.getUnitType() == 3)
+   535→+                .toList();
+   536→+
+   537→+        if (memberUnits.isEmpty()) {
+   538→+            return EditRoleResultVo.noConflict();
+   539→+        }
+   540→+
+   541→+        NodeRoleLevel newLevel = NodeRoleLevel.fromRoleTag(newRole);
+   542→+
+   543→+        for (NodeRoleUnit memberUnit : memberUnits) {
+   544→+            Long memberUserId = memberUnit.getUnitRefId();
+   545→+            List<Long> memberAllUnitIds = apitableGrpcClientService.getUnitsByMember(memberUserId, spaceId);
+   546→+
+   547→+            if (CollectionUtils.isEmpty(memberAllUnitIds)) continue;
+   548→+            List<ControlRoleEntity> teamRoles = controlRoleService.getByControlIdAndUnitIds(spaceNodeId.toString(), memberAllUnitIds);
+   549→ 
+   550→+            for (ControlRoleEntity teamRole : teamRoles) {
+   551→+                if (unitIds.contains(teamRole.getUnitId())) continue;
+   552→+                NodeRoleLevel teamLevel = NodeRoleLevel.fromRoleTag(teamRole.getRoleCode());
+   553→+                if (teamLevel.getLevel() > newLevel.getLevel()) {
+   554→+                    List<NodeRoleUnit> teamInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, List.of(teamRole.getUnitId()));
+   555→+                    String teamName = CollectionUtils.isNotEmpty(teamInfos) ? teamInfos.getFirst().getUnitName() : "未知小组";
+   556→+                    String teamRoleDisplay = ROLE_DISPLAY_MAP.getOrDefault(teamRole.getRoleCode(), teamRole.getRoleCode());
+   557→ 
+   558→+                    return EditRoleResultVo.builder()
+   559→+                            .hasConflict(true)
+   560→+                            .conflictTeamName(teamName)
+   561→+                            .conflictTeamRole(teamRole.getRoleCode())
+   562→+                            .conflictMessage("因为用户所处的组对文档有" + teamRoleDisplay + "权限，所以本次操作后用户依旧对文档有"
+   563→+                                    + teamRoleDisplay + "权限，如果想要彻底改变用户权限，请将用户移出所在组，或改变其所在组权限")
+   564→+                            .build();
+   565→+                }
+   566→+            }
+   567→+        }
+   568→+        return EditRoleResultVo.noConflict();
+   569→+    }
+   570→+
+   571→+    /** 记录权限变更日志（新增场景） */
+   572→+    private void logPermissionChange(Long userId, String spaceId, Long spaceNodeId, List<Long> unitIds,
+   573→+                                      String action, String oldRole, String newRole) {
+   574→+        String operatorName = getOperatorName(userId, spaceId);
+   575→+        List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+   576→+        for (NodeRoleUnit unit : unitInfos) {
+   577→+            nodePermissionLogService.log(spaceNodeId, spaceId, userId, operatorName,
+   578→+                    unit.getUnitName(), unit.getUnitType(), action, oldRole, newRole);
+   579→+        }
+   580→+    }
+   581→+
+   582→+    /** 记录权限变更日志（编辑场景，带旧角色映射） */
+   583→+    private void logPermissionChangeWithOldRoles(Long userId, String spaceId, Long spaceNodeId,
+   584→+                                                  List<Long> unitIds, String newRole, Map<Long, String> oldRoleMap) {
+   585→+        String operatorName = getOperatorName(userId, spaceId);
+   586→+        List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+   587→+        for (NodeRoleUnit unit : unitInfos) {
+   588→+            String oldRole = oldRoleMap.get(unit.getUnitId());
+   589→+            nodePermissionLogService.log(spaceNodeId, spaceId, userId, operatorName,
+   590→+                    unit.getUnitName(), unit.getUnitType(), "set", oldRole, newRole);
+   591→+        }
+   592→+    }
+   593→+
+   594→+    /** 记录权限移除日志 */
+   595→+    private void logPermissionRemove(Long userId, String spaceId, Long spaceNodeId,
+   596→+                                      List<Long> unitIds, Map<Long, String> oldRoleMap) {
+   597→+        String operatorName = getOperatorName(userId, spaceId);
+   598→+        List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+   599→+        for (NodeRoleUnit unit : unitInfos) {
+   600→+            String oldRole = oldRoleMap.get(unit.getUnitId());
+   601→+            nodePermissionLogService.log(spaceNodeId, spaceId, userId, operatorName,
+   602→+                    unit.getUnitName(), unit.getUnitType(), "remove", oldRole, null);
+   603→+        }
+   604→+    }
+   605→+
+   606→+    private String getOperatorName(Long userId, String spaceId) {
+   607→+        UnitMemberVo memberVo = nodeRoleTransfer.toUnitMemberVo(userId, spaceId);
+   608→+        return memberVo.getMemberName() != null ? memberVo.getMemberName() : memberVo.getNickName();
+   609→+    }
+   610→ }
+   611→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/NodePermissionLogMapper.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/NodePermissionLogMapper.java
+   612→new file mode 100644
+   613→index 00000000..3ada7c79
+   614→--- /dev/null
+   615→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/mapper/NodePermissionLogMapper.java
+   616→@@ -0,0 +1,7 @@
+   617→+package com.yottastudios.ns.collabspace.workspace.mapper;
+   618→+
+   619→+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+   620→+import com.yottastudios.ns.collabspace.workspace.entity.NodePermissionLogEntity;
+   621→+
+   622→+public interface NodePermissionLogMapper extends BaseMapper<NodePermissionLogEntity> {
+   623→+}
+   624→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/ro/PageSearchRo.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/ro/PageSearchRo.java
+   625→new file mode 100644
+   626→index 00000000..3e0f444b
+   627→--- /dev/null
+   628→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/ro/PageSearchRo.java
+   629→@@ -0,0 +1,23 @@
+   630→+package com.yottastudios.ns.collabspace.workspace.ro;
+   631→+
+   632→+import io.swagger.v3.oas.annotations.media.Schema;
+   633→+import jakarta.validation.constraints.Max;
+   634→+import jakarta.validation.constraints.Min;
+   635→+import lombok.Data;
+   636→+
+   637→+@Data
+   638→+@Schema(description = "通用分页搜索请求")
+   639→+public class PageSearchRo {
+   640→+
+   641→+    @Schema(description = "搜索关键词")
+   642→+    private String keyword;
+   643→+
+   644→+    @Schema(description = "页码", example = "1")
+   645→+    @Min(value = 1, message = "页码最小为1")
+   646→+    private Integer pageNo = 1;
+   647→+
+   648→+    @Schema(description = "每页条数", example = "20")
+   649→+    @Min(value = 1, message = "每页最少1条")
+   650→+    @Max(value = 100, message = "每页最多100条")
+   651→+    private Integer pageSize = 20;
+   652→+}
+   653→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/INodePermissionLogService.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/INodePermissionLogService.java
+   654→new file mode 100644
+   655→index 00000000..fedb67e7
+   656→--- /dev/null
+   657→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/INodePermissionLogService.java
+   658→@@ -0,0 +1,14 @@
+   659→+package com.yottastudios.ns.collabspace.workspace.service;
+   660→+
+   661→+import com.baomidou.mybatisplus.extension.service.IService;
+   662→+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+   663→+import com.yottastudios.ns.collabspace.workspace.entity.NodePermissionLogEntity;
+   664→+import com.yottastudios.ns.collabspace.workspace.vo.NodePermissionLogVo;
+   665→+
+   666→+public interface INodePermissionLogService extends IService<NodePermissionLogEntity> {
+   667→+
+   668→+    PageInfo<NodePermissionLogVo> pageBySpaceNodeId(Long spaceNodeId, String keyword, int pageNo, int pageSize);
+   669→+
+   670→+    void log(Long spaceNodeId, String spaceId, Long operatorId, String operatorName,
+   671→+             String targetName, Integer targetType, String action, String oldRole, String newRole);
+   672→+}
+   673→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/NodePermissionLogServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/NodePermissionLogServiceImpl.java
+   674→new file mode 100644
+   675→index 00000000..0ffbeacd
+   676→--- /dev/null
+   677→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/service/impl/NodePermissionLogServiceImpl.java
+   678→@@ -0,0 +1,82 @@
+   679→+package com.yottastudios.ns.collabspace.workspace.service.impl;
+   680→+
+   681→+import cn.hutool.core.util.StrUtil;
+   682→+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+   683→+import com.baomidou.mybatisplus.core.metadata.IPage;
+   684→+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+   685→+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+   686→+import com.yottastudios.ns.collabspace.shared.util.page.PageHelper;
+   687→+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+   688→+import com.yottastudios.ns.collabspace.workspace.entity.NodePermissionLogEntity;
+   689→+import com.yottastudios.ns.collabspace.workspace.mapper.NodePermissionLogMapper;
+   690→+import com.yottastudios.ns.collabspace.workspace.service.INodePermissionLogService;
+   691→+import com.yottastudios.ns.collabspace.workspace.vo.NodePermissionLogVo;
+   692→+import org.springframework.stereotype.Service;
+   693→+
+   694→+import java.util.Map;
+   695→+
+   696→+@Service
+   697→+public class NodePermissionLogServiceImpl
+   698→+        extends ServiceImpl<NodePermissionLogMapper, NodePermissionLogEntity>
+   699→+        implements INodePermissionLogService {
+   700→+
+   701→+    private static final Map<String, String> ROLE_DISPLAY_MAP = Map.of(
+   702→+            "manager", "可管理",
+   703→+            "editor", "可编辑",
+   704→+            "reader", "可阅读"
+   705→+    );
+   706→+
+   707→+    @Override
+   708→+    public PageInfo<NodePermissionLogVo> pageBySpaceNodeId(Long spaceNodeId, String keyword, int pageNo, int pageSize) {
+   709→+        LambdaQueryWrapper<NodePermissionLogEntity> wrapper = new LambdaQueryWrapper<>();
+   710→+        wrapper.eq(NodePermissionLogEntity::getSpaceNodeId, spaceNodeId);
+   711→+        if (StrUtil.isNotBlank(keyword)) {
+   712→+            wrapper.and(w -> w
+   713→+                    .like(NodePermissionLogEntity::getOperatorName, keyword)
+   714→+                    .or().like(NodePermissionLogEntity::getTargetName, keyword)
+   715→+                    .or().like(NodePermissionLogEntity::getNewRole, keyword)
+   716→+                    .or().like(NodePermissionLogEntity::getOldRole, keyword)
+   717→+            );
+   718→+        }
+   719→+        wrapper.orderByDesc(NodePermissionLogEntity::getCreatedAt);
+   720→+
+   721→+        IPage<NodePermissionLogEntity> page = page(new Page<>(pageNo, pageSize), wrapper);
+   722→+        IPage<NodePermissionLogVo> voPage = page.convert(this::toVo);
+   723→+        return PageHelper.build(voPage);
+   724→+    }
+   725→+
+   726→+    @Override
+   727→+    public void log(Long spaceNodeId, String spaceId, Long operatorId, String operatorName,
+   728→+                    String targetName, Integer targetType, String action, String oldRole, String newRole) {
+   729→+        NodePermissionLogEntity entity = NodePermissionLogEntity.builder()
+   730→+                .spaceNodeId(spaceNodeId)
+   731→+                .spaceId(spaceId)
+   732→+                .operatorId(operatorId)
+   733→+                .operatorName(operatorName)
+   734→+                .targetName(targetName)
+   735→+                .targetType(targetType)
+   736→+                .action(action)
+   737→+                .oldRole(oldRole)
+   738→+                .newRole(newRole)
+   739→+                .build();
+   740→+        save(entity);
+   741→+    }
+   742→+
+   743→+    private NodePermissionLogVo toVo(NodePermissionLogEntity entity) {
+   744→+        NodePermissionLogVo vo = new NodePermissionLogVo();
+   745→+        vo.setOperatorName(entity.getOperatorName());
+   746→+        vo.setCreatedAt(entity.getCreatedAt());
+   747→+        vo.setTargetName(entity.getTargetName());
+   748→+
+   749→+        String action = entity.getAction();
+   750→+        if ("remove".equals(action)) {
+   751→+            vo.setDescription("将 " + entity.getTargetName() + " 权限改为 移除所有权限");
+   752→+            vo.setNewRoleDisplay("移除所有权限");
+   753→+        } else {
+   754→+            String roleDisplay = ROLE_DISPLAY_MAP.getOrDefault(entity.getNewRole(), entity.getNewRole());
+   755→+            vo.setDescription("将 " + entity.getTargetName() + " 权限改为 " + roleDisplay);
+   756→+            vo.setNewRoleDisplay(roleDisplay);
+   757→+        }
+   758→+        return vo;
+   759→+    }
+   760→+}
+   761→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/EditRoleResultVo.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/EditRoleResultVo.java
+   762→new file mode 100644
+   763→index 00000000..3de73c33
+   764→--- /dev/null
+   765→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/EditRoleResultVo.java
+   766→@@ -0,0 +1,31 @@
+   767→+package com.yottastudios.ns.collabspace.workspace.vo;
+   768→+
+   769→+import io.swagger.v3.oas.annotations.media.Schema;
+   770→+import lombok.AllArgsConstructor;
+   771→+import lombok.Builder;
+   772→+import lombok.Data;
+   773→+import lombok.NoArgsConstructor;
+   774→+
+   775→+@Data
+   776→+@Builder
+   777→+@NoArgsConstructor
+   778→+@AllArgsConstructor
+   779→+@Schema(description = "编辑权限结果")
+   780→+public class EditRoleResultVo {
+   781→+
+   782→+    @Schema(description = "是否存在权限冲突（成员所在小组权限更高）")
+   783→+    private Boolean hasConflict;
+   784→+
+   785→+    @Schema(description = "冲突提示信息")
+   786→+    private String conflictMessage;
+   787→+
+   788→+    @Schema(description = "冲突的小组名称")
+   789→+    private String conflictTeamName;
+   790→+
+   791→+    @Schema(description = "冲突的小组权限角色码")
+   792→+    private String conflictTeamRole;
+   793→+
+   794→+    public static EditRoleResultVo noConflict() {
+   795→+        return EditRoleResultVo.builder().hasConflict(false).build();
+   796→+    }
+   797→+}
+   798→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/NodePermissionLogVo.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/NodePermissionLogVo.java
+   799→new file mode 100644
+   800→index 00000000..82b91e9e
+   801→--- /dev/null
+   802→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/NodePermissionLogVo.java
+   803→@@ -0,0 +1,28 @@
+   804→+package com.yottastudios.ns.collabspace.workspace.vo;
+   805→+
+   806→+import com.fasterxml.jackson.annotation.JsonFormat;
+   807→+import io.swagger.v3.oas.annotations.media.Schema;
+   808→+import lombok.Data;
+   809→+
+   810→+import java.time.LocalDateTime;
+   811→+
+   812→+@Data
+   813→+@Schema(description = "权限变更日志")
+   814→+public class NodePermissionLogVo {
+   815→+
+   816→+    @Schema(description = "操作人名称")
+   817→+    private String operatorName;
+   818→+
+   819→+    @Schema(description = "操作时间")
+   820→+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+   821→+    private LocalDateTime createdAt;
+   822→+
+   823→+    @Schema(description = "被操作对象名称")
+   824→+    private String targetName;
+   825→+
+   826→+    @Schema(description = "变更描述, 如: '将 技术部 权限改为 可编辑'")
+   827→+    private String description;
+   828→+
+   829→+    @Schema(description = "变更后角色展示文本: 可管理/可编辑/可阅读/移除所有权限")
+   830→+    private String newRoleDisplay;
+   831→+}
+   832→diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/TeamRoleTreeVo.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/TeamRoleTreeVo.java
+   833→new file mode 100644
+   834→index 00000000..0fbe4c2f
+   835→--- /dev/null
+   836→+++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/vo/TeamRoleTreeVo.java
+   837→@@ -0,0 +1,37 @@
+   838→+package com.yottastudios.ns.collabspace.workspace.vo;
+   839→+
+   840→+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+   841→+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+   842→+import io.swagger.v3.oas.annotations.media.Schema;
+   843→+import lombok.Data;
+   844→+
+   845→+import java.util.List;
+   846→+
+   847→+@Data
+   848→+@Schema(description = "小组权限树节点")
+   849→+public class TeamRoleTreeVo {
+   850→+
+   851→+    @Schema(description = "小组ID")
+   852→+    @JsonSerialize(using = ToStringSerializer.class)
+   853→+    private Long teamId;
+   854→+
+   855→+    @Schema(description = "小组对应的 unitId")
+   856→+    @JsonSerialize(using = ToStringSerializer.class)
+   857→+    private Long unitId;
+   858→+
+   859→+    @Schema(description = "小组名称")
+   860→+    private String teamName;
+   861→+
+   862→+    @Schema(description = "父级小组ID, 0=根")
+   863→+    @JsonSerialize(using = ToStringSerializer.class)
+   864→+    private Long parentId;
+   865→+
+   866→+    @Schema(description = "成员数量")
+   867→+    private Integer memberCount;
+   868→+
+   869→+    @Schema(description = "当前权限角色: reader/editor/manager, null=对文档不可见")
+   870→+    private String role;
+   871→+
+   872→+    @Schema(description = "子小组列表")
+   873→+    private List<TeamRoleTreeVo> children;
+   874→+}
+   875→diff --git a/src/main/resources/db/changelog/005_node_permission_log.xml b/src/main/resources/db/changelog/005_node_permission_log.xml
+   876→new file mode 100644
+   877→index 00000000..194c3fa1
+   878→--- /dev/null
+   879→+++ b/src/main/resources/db/changelog/005_node_permission_log.xml
+   880→@@ -0,0 +1,28 @@
+   881→+<?xml version="1.0" encoding="UTF-8"?>
+   882→+<databaseChangeLog
+   883→+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+   884→+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   885→+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+   886→+
+   887→+    <changeSet id="005-1" author="collabspace">
+   888→+        <sql>
+   889→+            CREATE TABLE collabspace_node_permission_log (
+   890→+                id            BIGINT UNSIGNED NOT NULL COMMENT 'Primary Key' PRIMARY KEY,
+   891→+                space_node_id BIGINT UNSIGNED NOT NULL COMMENT '文档节点ID',
+   892→+                space_id      VARCHAR(50)     NOT NULL COMMENT '空间站ID',
+   893→+                operator_id   BIGINT UNSIGNED NOT NULL COMMENT '操作人用户ID',
+   894→+                operator_name VARCHAR(100)    NOT NULL COMMENT '操作人名称',
+   895→+                target_name   VARCHAR(200)    NOT NULL COMMENT '被操作对象名称(小组名/成员名)',
+   896→+                target_type   TINYINT UNSIGNED NOT NULL COMMENT '类型: 1=小组, 3=成员',
+   897→+                action        VARCHAR(20)     NOT NULL COMMENT '操作类型: set/remove',
+   898→+                old_role      VARCHAR(50)     NULL     COMMENT '变更前角色',
+   899→+                new_role      VARCHAR(50)     NULL     COMMENT '变更后角色',
+   900→+                created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间'
+   901→+            ) COMMENT '节点权限变更日志表' COLLATE = utf8mb4_unicode_ci;
+   902→+
+   903→+            CREATE INDEX idx_npl_space_node_id ON collabspace_node_permission_log (space_node_id);
+   904→+            CREATE INDEX idx_npl_created_at ON collabspace_node_permission_log (created_at);
+   905→+        </sql>
+   906→+    </changeSet>
+   907→+
+   908→+</databaseChangeLog>
+   909→diff --git a/src/main/resources/db/changelog/db.changelog-master.xml b/src/main/resources/db/changelog/db.changelog-master.xml
+   910→index f304833b..ef5b4e68 100644
+   911→--- a/src/main/resources/db/changelog/db.changelog-master.xml
+   912→+++ b/src/main/resources/db/changelog/db.changelog-master.xml
+   913→@@ -8,5 +8,6 @@
+   914→     <include file="classpath:db/changelog/002_init_table_data.xml" relativeToChangelogFile="false" />
+   915→     <include file="classpath:db/changelog/003_app_center.xml" relativeToChangelogFile="false" />
+   916→     <include file="classpath:db/changelog/004_permission_request.xml" relativeToChangelogFile="false" />
+   917→+    <include file="classpath:db/changelog/005_node_permission_log.xml" relativeToChangelogFile="false" />
+   918→ 
+   919→ </databaseChangeLog>
+   920→

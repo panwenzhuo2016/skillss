@@ -1,0 +1,1181 @@
+     1→<?php
+     2→
+     3→namespace App\Oc;
+     4→
+     5→use App\Exceptions\ExceptionCode;
+     6→use App\Http\Controllers\Controller;
+     7→use App\Http\Controllers\Oa\ApprovalManagementController;
+     8→use App\Jobs\UpdateCommonRequestNextReplaceCache;
+     9→use App\Oc\Builders\ActionerQueryBuilder;
+    10→use App\Oc\Builders\OcQueryBuilder;
+    11→use App\Oc\Builders\PaymentStakeholderQueryBuilder;
+    12→use App\Oc\Builders\StakeholderQueryBuilder;
+    13→use App\Oc\Common\Action;
+    14→use App\Oc\Common\CommonConst;
+    15→use App\Oc\Common\Helper;
+    16→use App\Oc\Common\PaymentConst;
+    17→use App\Oc\Common\Registry;
+    18→use App\Oc\Common\SpecialAction;
+    19→use App\Oc\Common\Stakeholder;
+    20→use App\Oc\Common\State;
+    21→use App\Oc\Exceptions\WorkflowException;
+    22→use App\Oc\Models\AdvanceChargeDetail;
+    23→use App\Oc\Models\CommonFileStorePath;
+    24→use App\Oc\Models\CommonRequest;
+    25→use App\Oc\Models\CommonRequestAction;
+    26→use App\Oc\Models\CommonRequestLockDetail;
+    27→use App\Oc\Models\CommonRequestStakeholder;
+    28→use App\Oc\Models\CommonSpecialStakeholder;
+    29→use App\Oc\Models\OcMessageForum;
+    30→use App\Oc\Models\OcUser;
+    31→use App\Oc\Models\OcUserData;
+    32→use App\Oc\Models\StrikeBalanceDetail;
+    33→use App\Oc\Models\SupplierInfo;
+    34→use App\Oc\States\Payment;
+    35→use App\Service\NotifyNumberService;
+    36→use App\Service\OcMailService;
+    37→use Illuminate\Http\JsonResponse;
+    38→use Illuminate\Http\Request;
+    39→use Illuminate\Support\Arr;
+    40→
+    41→class OcApprovalManagementController extends Controller
+    42→{
+    43→    /**
+    44→     * @apiName 【费用分摊主体】获取业务组-业务分支表
+    45→     *
+    46→     * @return JsonResponse
+    47→     */
+    48→    public function getDepartmentBranchMap()
+    49→    {
+    50→        $data = Payment::getDepartmentBranchMap();
+    51→        return $this->responseJsonSuccess($data);
+    52→    }
+    53→
+    54→    /**
+    55→     * 检查用户花名是否在本地区.
+    56→     *
+    57→     * @param Request $request
+    58→     * @return JsonResponse
+    59→     */
+    60→    public function userExists(Request $request): JsonResponse
+    61→    {
+    62→        $input = $request->only(['sfuser_info', 'nickname_hash_filter']);
+    63→
+    64→        $exists = OcUser::whereIn('nickname_hash', $input['nickname_hash_filter'])->active()->exists();
+    65→
+    66→        return $this->responseJsonSuccess(['exists' => $exists]);
+    67→    }
+    68→
+    69→    /**
+    70→     * 待办事项.（数目统计）.
+    71→     *
+    72→     * @param Request $request
+    73→     * @return JsonResponse
+    74→     */
+    75→    public function todoList(Request $request): JsonResponse
+    76→    {
+    77→        $sfuserId = $request->input('sfuser_info.id');
+    78→        $disableCache = $request->input('disable_cache', false);
+    79→
+    80→        $issuedButNotCompleted = 0; // 我发起的（待审批）的数目
+    81→        $issuedStrikeBalancePending = 0; // 我发起的（已付款，待冲账）
+    82→        $issuedButRejected = 0; // 我发起的（已付款，已驳回）
+    83→        $toBeApprovedByMe = 0; // 待我审批数目
+    84→        $cc2Me = 0; // 抄送我的并且未读的数目
+    85→
+    86→        if ($disableCache) {    // 不走缓存
+    87→            $issuedButNotCompleted = (new StakeholderQueryBuilder('oc'))->filterByRequesterIds($sfuserId)->approving()->asRequester()->unlocked()->count();
+    88→            $issuedStrikeBalancePending = (new StakeholderQueryBuilder('oc'))->filterByRequesterIds($sfuserId)->stateIn(State::STRIKE_BALANCE_PENDING)->asRequester()->unlocked()->count();
+    89→            $issuedButRejected = (new StakeholderQueryBuilder('oc'))->filterByRequesterIds($sfuserId)->stateIn(State::REJECTED)->asRequester()->unlocked()->count();
+    90→            $toBeApprovedByMe = (new ActionerQueryBuilder('oc'))->filterByUserId($sfuserId)->toBeApprovedByMe()->unlocked()->count();
+    91→            $cc2Me = (new StakeholderQueryBuilder('oc'))->filterByUserId($sfuserId)->asCCer()->unread()->count();
+    92→        } else {                        // 走缓存
+    93→            $data = NotifyNumberService::app()->getIndividual($sfuserId);
+    94→            $issuedButNotCompleted = $data['oc_issued'] ?? 0;
+    95→            $issuedStrikeBalancePending = $data['oc_issued_strike_balance_pending'] ?? 0;
+    96→            $issuedButRejected = $data['oc_issued_rejected'] ?? 0;
+    97→            $toBeApprovedByMe = $data['oc_to_be_approved'] ?? 0;
+    98→            $cc2Me = $data['oc_cc'] ?? 0;
+    99→        }
+   100→
+   101→        // 查询个人数据
+   102→        $userData = OcUserData::firstOrCreate(['sfuser_id' => $sfuserId], [
+   103→            'sfuser_id' => $sfuserId, 'to_be_approved_by_me' => 0, 'cc_to_me' => 0,
+   104→        ]);
+   105→
+   106→        // 更新个人数据
+   107→        $update = [];
+   108→        if (!$userData->to_be_approved_by_me && $toBeApprovedByMe) {
+   109→            $update['to_be_approved_by_me'] = 1;
+   110→        }
+   111→        if (!$userData->cc_to_me && $cc2Me) {
+   112→            $update['cc_to_me'] = 1;
+   113→        }
+   114→        if (!empty($update)) {
+   115→            $userData->update($update);
+   116→        }
+   117→
+   118→        // 如果从来没有过就不返回（待我审批、抄送给我）
+   119→        $ret = [
+   120→            'countingIssuedButNotCompleted' => $issuedButNotCompleted,
+   121→            'countingIssuedButRejected' => $issuedButRejected,
+   122→            'countingIssuedStrikeBalancePending' => $issuedStrikeBalancePending,
+   123→        ];
+   124→        if ($userData->to_be_approved_by_me) {
+   125→            $ret['countingToBeApprovedByMe'] = $toBeApprovedByMe;
+   126→        }
+   127→        if ($userData->cc_to_me) {
+   128→            $ret['countingCc2Me'] = $cc2Me;
+   129→        }
+   130→        $ret = ApprovalManagementController::dealLessThan0($ret);
+   131→        return $this->responseJsonSuccess($ret);
+   132→    }
+   133→
+   134→    /**
+   135→     * 加密文件名.
+   136→     *
+   137→     * @param Request $request
+   138→     * @return JsonResponse
+   139→     */
+   140→    public function echoFileName(Request $request): JsonResponse
+   141→    {
+   142→        $fileNames = $request->input('file_names', []);
+   143→
+   144→        return $this->responseJsonSuccess([
+   145→            'file_names' => $fileNames,
+   146→        ]);
+   147→    }
+   148→
+   149→    /**
+   150→     * 开启一个审批流程。
+   151→     *
+   152→     * @param Request $request
+   153→     * @return JsonResponse
+   154→     */
+   155→    public function startProcess(Request $request): JsonResponse
+   156→    {
+   157→        $input = Arr::only($request->all(), [
+   158→            'sfuser_info', 'process_key', 'oc_request_id', 'start', 'context', 'files',
+   159→            'cc_nickname_hash_filter', 'info',
+   160→        ]);
+   161→
+   162→        if (Arr::has($input, 'cc_nickname_hash_filter')) {
+   163→            $input['cc_ids'] = OcUser::whereIn('nickname_hash', $input['cc_nickname_hash_filter'])->active()->pluck('sfuser_id')->toArray();
+   164→        }
+   165→
+   166→        $wr = RequestService::make(
+   167→            'oc',
+   168→            $input['process_key'],
+   169→            $input['sfuser_info']['id'],
+   170→            $input['oc_request_id'],
+   171→            (bool)$input['start'] ?? false,
+   172→            $input['cc_ids'] ?? [],
+   173→            $input['context'] ?? [],
+   174→            $input['files'] ?? [],
+   175→            $input['info'] ?? [],
+   176→        );
+   177→        $msg = implode('', $wr->messageBag);
+   178→
+   179→        UpdateCommonRequestNextReplaceCache::dispatch('oc', CommonRequest::STRATEGY_REPLACE);
+   180→
+   181→        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'request_id' => $wr->getRequest()->id, 'msg' => $msg]);
+   182→    }
+   183→
+   184→    /**
+   185→     * 对一个审批授权.
+   186→     *
+   187→     * @param Request $request
+   188→     * @return JsonResponse
+   189→     */
+   190→    public function authorizeRequestToken(Request $request): JsonResponse
+   191→    {
+   192→        $sfuserId = $request->input('sfuser_info.id');
+   193→        $requestId = $request->input('oc_request_id');
+   194→        $token = $request->input('authorized_token');
+   195→
+   196→        // 提醒审批人审批
+   197→        $sendEmail = function ($wr) {
+   198→            $requestAction = (new CommonRequestAction())->setConnection('oc')
+   199→                ->where(['request_id' => $wr->id, 'state_id' => $wr->current_state_id, 'is_active' => 1])
+   200→                ->where('side', CommonRequestAction::EMPLOYEE_SIDE)->where('operator_type', '<>', 'requester')
+   201→                ->first();
+   202→            if ($requestAction != null) {
+   203→                // 审批人花名
+   204→                $operatorNickname = '';
+   205→                foreach ($wr->info['initNodes'] as $one) {
+   206→                    if ($one['operator_type'] == $requestAction->operator_type) {
+   207→                        $operatorNickname = Arr::get($one['operator'], 0, '');
+   208→                        break;
+   209→                    }
+   210→                }
+   211→                OcMailService::app()->sendOcOperatorEmail('oc', $wr->process_key, $requestAction->operator_id, $operatorNickname, $wr);
+   212→            }
+   213→        };
+   214→
+   215→        $succ = false;
+   216→        $wr = (new CommonRequest())->setConnection('oc')->where([
+   217→            'id' => $requestId, 'user_id' => $sfuserId,
+   218→        ])->first();
+   219→
+   220→        if ($wr != null) {
+   221→            // 如果 token 为空则需要发送邮件通知审批人
+   222→            if ($wr->token == '') {
+   223→                $succ = $wr->update(['token' => $token]);
+   224→                register_shutdown_function($sendEmail, $wr);
+   225→            } else {
+   226→                $succ = $wr->update(['token' => $token]);
+   227→            }
+   228→        }
+   229→
+   230→        return $this->responseJsonSuccess(['success' => $succ]);
+   231→    }
+   232→
+   233→    /**
+   234→     * 对一个流程进行预检，对参数进行必要的检查，生成流程图 nodes.
+   235→     *
+   236→     * @param Request $request
+   237→     * @return JsonResponse
+   238→     */
+   239→    public function preflightProcess(Request $request): JsonResponse
+   240→    {
+   241→        $input = Arr::only($request->all(), [
+   242→            'sfuser_info', 'process_key', 'context', 'version',
+   243→        ]);
+   244→
+   245→        $sfuserId = $input['sfuser_info']['id'];
+   246→
+   247→        $data = RequestService::preflightProcess('oc', $input['process_key'], $sfuserId, $input['context'], $input['version'] ?? 0);
+   248→        Arr::forget($data, 'context.supplier_info.supplier_company_hash');
+   249→
+   250→        return $this->responseJsonSuccess($data);
+   251→    }
+   252→
+   253→    /**
+   254→     * 获取审批元数据.
+   255→     *
+   256→     * @param Request $request
+   257→     * @return JsonResponse
+   258→     */
+   259→    public function metaData(Request $request): JsonResponse
+   260→    {
+   261→        $data = Helper::metaData() + [
+   262→            'processes' => Registry::OC_PROCESSES,
+   263→            'pay_department_list' => CommonConst::PAY_STAMP_DEPARTMENT_LIST,
+   264→            'pay_company_list' => PaymentConst::PAY_COMPANY_LIST,
+   265→            // 'department_branch_map' => Payment::getDepartmentBranchMap(),
+   266→            'invoice_type_list' => PaymentConst::INVOICE_TYPE_LIST,
+   267→            'apply_payment_reason_list' => PaymentConst::APPLY_PAYMENT_REASON_LIST,
+   268→            'currency_type_list' => PaymentConst::CURRENCY_TYPE_LIST,
+   269→            'recipient' => PaymentConst::RECIPIENT,
+   270→            'payment_method' => PaymentConst::PAYMENT_METHOD,
+   271→        ];
+   272→
+   273→        return $this->responseJsonSuccess($data);
+   274→    }
+   275→
+   276→    /**
+   277→     * 每个站点特殊的数据.
+   278→     *
+   279→     * @param Request $request
+   280→     * @return JsonResponse
+   281→     */
+   282→    public function siteSpecificData(Request $request): JsonResponse
+   283→    {
+   284→        $sfuserId = $request->input('sfuser_info.id');
+   285→
+   286→        $user = OcUser::where('sfuser_id', $sfuserId)->active()->first();
+   287→
+   288→        if ($user == null) {
+   289→            return $this->responseJsonSuccess(['department' => [], 'pay_company' => []]);
+   290→        }
+   291→
+   292→        $departments = array_filter(CommonConst::PAY_STAMP_DEPARTMENT_LIST, function ($one) use ($user) {
+   293→            return in_array($one['value'], $user->departments);
+   294→        });
+   295→
+   296→        $data = [
+   297→            'department' => array_values($departments),
+   298→            'pay_company' => PaymentConst::getPayCompanyList(),
+   299→        ];
+   300→
+   301→        return $this->responseJsonSuccess($data);
+   302→    }
+   303→
+   304→    /**
+   305→     * 获取请求列表.
+   306→     *
+   307→     * @param string $connection
+   308→     * @param string $type
+   309→     * @param array $input
+   310→     * @return JsonResponse
+   311→     */
+   312→    public function getRequests(string $connection, string $type, array $input): JsonResponse
+   313→    {
+   314→        $input = Arr::only($input, [
+   315→            'sfuser_info', 'per_page', 'no', 'approval_statuses', 'lack_supplements', 'nickname_hash_filter', 'lock_status', 'receive_money_company_hash_filter',
+   316→            'pay_company', 'apply_reason', 'priority', 'invoice_type', 'pay_date_start', 'pay_date_end', 'actual_money',
+   317→            'launch_date_start', 'launch_date_end', 'submitted_before', 'submitted_after', 'current_approver_nickname', 'next_replace_filter',
+   318→        ]) + ['per_page' => 50];
+   319→
+   320→        $sfuserId = $input['sfuser_info']['id'];
+   321→
+   322→        $sq = new PaymentStakeholderQueryBuilder($connection);
+   323→        $aq = new ActionerQueryBuilder($connection);
+   324→
+   325→        switch ($type) {
+   326→            case 'issued':
+   327→                $sq->asRequester()->notCCer()->filterByUserId($sfuserId);
+   328→                break;
+   329→            case 'approving':
+   330→                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+   331→                $aq->toBeApprovedByMe()->filterByUserId($sfuserId);
+   332→                break;
+   333→            case 'resolved':
+   334→                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+   335→                $aq->resolved()->filterByUserId($sfuserId);
+   336→                break;
+   337→            case 'cc':
+   338→                $sq->asCCer()->filterByUserId($sfuserId);
+   339→                break;
+   340→            case 'approvingOrResolved':
+   341→                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+   342→                break;
+   343→            default:
+   344→                throw new WorkflowException('Invalid type given');
+   345→        }
+   346→
+   347→        $queryBuilder = $sq->orderBy('requests.created_at', 'desc');
+   348→
+   349→        // 按申请人进行过滤
+   350→        if (Arr::has($input, 'nickname_hash_filter')) {
+   351→            $userIds = OcUser::whereIn('nickname_hash', $input['nickname_hash_filter'])->pluck('sfuser_id')->toArray();
+   352→            $queryBuilder->filterByRequesterIds($userIds);
+   353→        }
+   354→
+   355→        // 按编号筛选
+   356→        if ($no = Arr::get($input, 'no')) {
+   357→            $queryBuilder->filterByNo($no);
+   358→        }
+   359→
+   360→        // 按关键字搜索筛选
+   361→        if (($nextReplaceFilterIds = Arr::get($input, 'next_replace_filter')) !== null) {
+   362→            $queryBuilder->filterByRequestIds($nextReplaceFilterIds);
+   363→        }
+   364→
+   365→        // 按审批状态筛选
+   366→        $approvalStatuses = Arr::wrap(Arr::get($input, 'approval_statuses', []));
+   367→        if ($approvalStatuses) {
+   368→            $queryBuilder->stateIn($approvalStatuses);
+   369→        }
+   370→
+   371→        // 按当前审批人花名筛选
+   372→        if ($currentApprover = Arr::get($input, 'current_approver_nickname')) {
+   373→            if ($currentApproverId = Arr::get(Stakeholder::getApproverNickname2Id('oc'), $currentApprover, -1)) {
+   374→                $queryBuilder->filterByCurrentApproverId($currentApproverId);
+   375→            }
+   376→        }
+   377→
+   378→        $lackSupplements = Arr::get($input, 'lack_supplements', -1);
+   379→        if ($lackSupplements != -1) {
+   380→            /** lack_supplements: 1 缺少材料，2 材料齐全 */
+   381→            $lack = $lackSupplements == 1; // 不搜时，不传该参数，因此不用判断是否为 2 了
+   382→            $queryBuilder->filterByLackSupplements($lack);
+   383→        }
+   384→
+   385→        $processKey = Arr::wrap(Arr::get($input, 'process_key', []));
+   386→        if ($processKey) {
+   387→            $queryBuilder->filterByProcessKey($processKey);
+   388→        }
+   389→
+   390→        $lockStatus = Arr::get($input, 'lock_status', -1);
+   391→        if ($lockStatus == 0) {
+   392→            $queryBuilder->unlocked();
+   393→        } elseif ($lockStatus == 1) {
+   394→            $queryBuilder->locked();
+   395→        }
+   396→
+   397→        // 按最新发起申请的时间搜索
+   398→        $queryBuilder->submittedBefore(Arr::get($input, 'submitted_before', ''))->submittedAfter(Arr::get($input, 'submitted_after', ''));
+   399→
+   400→        // 按照收款公司查找
+   401→        if ($receiveMoneyCompany = Arr::get($input, 'receive_money_company_hash_filter', [])) {
+   402→            $queryBuilder->filterByReceiveCompany($receiveMoneyCompany);
+   403→        }
+   404→
+   405→        // 按照付款公司查询
+   406→        if ($payCompany = Arr::get($input, 'pay_company')) {
+   407→            $queryBuilder->filterByPayCompany($payCompany);
+   408→        }
+   409→
+   410→        // 按照请款原因查询
+   411→        if ($applyReason = Arr::get($input, 'apply_reason')) {
+   412→            $queryBuilder->filterByApplyReason($applyReason);
+   413→        }
+   414→
+   415→        // 按照优先级查询
+   416→        if ($priority = Arr::get($input, 'priority')) {
+   417→            $queryBuilder->filterByPriority($priority);
+   418→        }
+   419→
+   420→        // 按照发票类型查询
+   421→        if ($invoiceType = Arr::get($input, 'invoice_type')) {
+   422→            $queryBuilder->filterByInvoiceType($invoiceType);
+   423→        }
+   424→
+   425→        // 按照付款金额筛选
+   426→        if ($requestMoney = Arr::get($input, 'actual_money')) {
+   427→            $queryBuilder->filterByActualMoney($requestMoney);
+   428→        }
+   429→
+   430→        // 按照实际付款时间搜索
+   431→        $queryBuilder->payDateAfter(Arr::get($input, 'pay_date_start', ''))
+   432→            ->payDateBefore(Arr::get($input, 'pay_date_end', ''));
+   433→
+   434→        // 按照发起时间搜索
+   435→        $queryBuilder->launchDateAfter(Arr::get($input, 'launch_date_start', ''))
+   436→            ->launchDateBefore(Arr::get($input, 'launch_date_end', ''));
+   437→
+   438→        $requests = [];
+   439→        switch ($type) {
+   440→            case 'issued':
+   441→            case 'cc':
+   442→                /** @phpstan-ignore-next-line */
+   443→                $columns = '`requests`.`id`, `requests`.`user_id`, `is_locked`, `version`, `request_stakeholders`.`type`, `is_read`, `requests`.`submitted_at`, `requests`.`created_at`,
+   444→                    `process_key`, `no`, `current_state_id`, `need_supplements`, `has_supplements`, `info`, `token`, `data`->"$.detailed_reason" as detailed_reason,
+   445→                    `receive_money_company`, `pay_company`, `apply_reason`, `total_money`, `actual_money`, `currency`, `invoice_type`, `pay_date`, `pay_type`, `data`->"$.printed" as printed ';
+   446→                $requests = $queryBuilder->queryBuilder()->selectRaw($columns)->paginate($input['per_page'])->toArray();
+   447→                break;
+   448→            case 'approving':
+   449→            case 'resolved':
+   450→                $columns = '`requests`.`user_id`, `requests`.`id`, `requests`.`is_locked`, `requests`.`version`, GROUP_CONCAT(`request_stakeholders`.`type` SEPARATOR ",") as type,
+   451→                    `is_read`, `requests`.`submitted_at`, `requests`.`created_at`, `process_key`, `no`, `current_state_id`, `need_supplements`, `has_supplements`, `info`, `token`,
+   452→                    `receive_money_company`, `pay_company`, `apply_reason`, `total_money`, `actual_money`, `currency`, `invoice_type`, `pay_date`, `pay_type`,
+   453→                    `data`->"$.detailed_reason" as detailed_reason, `data`->"$.printed" as printed ';
+   454→                $idsQuery = $aq->queryBuilder()->groupBy('requests.id')->select('requests.id');
+   455→                $requests = $queryBuilder->queryBuilder()->whereIn('requests.id', $idsQuery)->selectRaw($columns)
+   456→                    ->groupBy('requests.id') // 保证申请记录唯一
+   457→                    ->paginate($input['per_page'])->toArray();
+   458→                break;
+   459→            case 'approvingOrResolved':
+   460→                $columns = '`requests`.`user_id`, `requests`.`id`, `requests`.`is_locked`, `requests`.`version`, GROUP_CONCAT(`request_stakeholders`.`type` SEPARATOR ",") as type,
+   461→                    `is_read`, `requests`.`submitted_at`, `requests`.`created_at`, `process_key`, `no`, `current_state_id`, `need_supplements`, `has_supplements`, `info`, `token`,
+   462→                    `receive_money_company`, `pay_company`, `apply_reason`, `total_money`, `actual_money`, `currency`, `invoice_type`, `pay_date`, `pay_type`,
+   463→                    `data`->"$.detailed_reason" as detailed_reason, `data`->"$.printed" as printed ';
+   464→                $resolved = (clone $queryBuilder->queryBuilder())->whereIn(
+   465→                    'requests.id',
+   466→                    (new ActionerQueryBuilder($connection))->resolved()->filterByUserId($sfuserId)->queryBuilder()->select('requests.id')
+   467→                )
+   468→                    ->selectRaw($columns.', 2 as status')->groupBy('requests.id');
+   469→                $requests = $queryBuilder->queryBuilder()->whereIn(
+   470→                    'requests.id',
+   471→                    (new ActionerQueryBuilder($connection))->toBeApprovedByMe()->filterByUserId($sfuserId)->queryBuilder()->select('requests.id')
+   472→                )
+   473→                    ->selectRaw($columns.', 1 as status')->groupBy('requests.id')
+   474→                    ->union($resolved)->orderBy('status')->orderBy('created_at', 'desc')
+   475→                    ->paginate($input['per_page'])->toArray();
+   476→                break;
+   477→        }
+   478→
+   479→        $items = $requests['data'];
+   480→
+   481→        // 因为 QueryBuilder 走的是 DB 而不是 Model，因此需要手动 cast
+   482→        foreach ($items as &$item) {
+   483→            $item = CommonRequest::normalizeWorkflowRequest($item);
+   484→        }
+   485→        unset($item);
+   486→
+   487→        $itemIds = Arr::pluck($items, 'id');
+   488→        $actions = Action::validActions($connection, $sfuserId, $itemIds);
+   489→        $operatorTypes = Action::currentToBeApprovedOperatorTypes($connection, $itemIds);
+   490→
+   491→        foreach ($items as &$item) {
+   492→            $types = explode(',', $item['type']);
+   493→            $item['type'] = array_pop($types);
+   494→            // 不返回 data 和 files
+   495→            $item['actions'] = ($item['is_locked']) ? [] : Arr::get($actions, $item['id'], []);
+   496→            // 只有审批中的才有审批人
+   497→            $item['curr_operator_type'] = in_array($item['current_state_id'], State::COMMON_TYPES) ? 0 : Arr::get($operatorTypes, $item['id'], []);
+   498→        }
+   499→        unset($item);
+   500→
+   501→        // 已冲账金额
+   502→        $needStrikeBalance = StrikeBalanceDetail::whereIn('request_id', array_column($items, 'id'))->where('is_closed', 0)->groupBy('request_id')
+   503→            ->selectRaw('request_id, SUM(strike_balance_money) as sum')->pluck('sum', 'request_id')->toArray();
+   504→
+   505→        $tokens = [];
+   506→        foreach ($items as &$item) {
+   507→            $item['info'] = is_string($item['info']) ? my_json_decode($item['info']) : $item['info'];
+   508→            if (!empty($item['token'])) {
+   509→                $tokens[] = $item['token'];
+   510→            }
+   511→            unset($item['token']);
+   512→
+   513→            $processKey = $item['process_key'];
+   514→            $stateClassName = Registry::PROCESS_MAPS[$processKey]['class'];
+   515→            /** @phpstan-ignore-next-line */
+   516→            $stateClass = new $stateClassName($item['version']);
+   517→            $specialActions = Arr::get($stateClass->specialActions, $item['current_state_id'].'.'.$item['type'], []);
+   518→            if ($item['is_locked']) {
+   519→                $specialActions = array_diff($specialActions, SpecialAction::BANNED_WHEN_LOCKED_TYPE);
+   520→            }
+   521→
+   522→            $item['special_actions'] = $specialActions;
+   523→
+   524→            // 未冲账金额
+   525→            $strikeBalance = Arr::get($needStrikeBalance, $item['id'], 0);
+   526→            if ($item['pay_type'] == AdvanceChargeDetail::TELEGRAPHIC && $item['current_state_id'] === State::COMPLETED) {
+   527→                $item['need_strike_balance'] = '0.00';
+   528→            } else {
+   529→                $item['need_strike_balance'] = bcsub($item['actual_money'], $strikeBalance, 2);
+   530→            }
+   531→        }
+   532→        unset($item);
+   533→
+   534→        $res = [
+   535→            'current_page' => $requests['current_page'],
+   536→            'per_page' => $requests['per_page'],
+   537→            'total' => $requests['total'],
+   538→            'requests' => $items,
+   539→        ];
+   540→
+   541→        if ($type != 'issued' && count($tokens)) { // 不是我发起的，并且存在 token，则通过 Token 解密。
+   542→            $res['decrypt_config'] = [
+   543→                'tokens' => $tokens,
+   544→            ];
+   545→        }
+   546→
+   547→        return $this->responseJsonSuccess($res);
+   548→    }
+   549→
+   550→    /**
+   551→     * 获取供应商数据.
+   552→     *
+   553→     * @param Request $request
+   554→     * @return JsonResponse
+   555→     */
+   556→    public function getSupplierInfo(Request $request): JsonResponse
+   557→    {
+   558→        $sfuserId = $request->input('sfuser_info.id');
+   559→
+   560→        $user = OcUser::where('sfuser_id', $sfuserId)->active()->first();
+   561→
+   562→        $data = [
+   563→            'all_supplier' => SupplierInfo::pluck('supplier_company')->unique()->values()->toArray(),
+   564→            'supplier_list' => empty($user) ? [] : SupplierInfo::where('is_closed', 0)->whereIn('department_id', $user->departments)->get()->toArray(),
+   565→        ];
+   566→
+   567→        return $this->responseJsonSuccess($data);
+   568→    }
+   569→
+   570→    /**
+   571→     * 我发起的.
+   572→     */
+   573→    public function issuedRequests(Request $request)
+   574→    {
+   575→        return $this->getRequests('oc', 'issued', $request->all());
+   576→    }
+   577→    public function deleteRequests(Request $request)
+   578→    {
+   579→        // 1
+   580→        $input = Arr::only($request->all(), [
+   581→            'oc_request_id',
+   582→        ]);
+   583→        $request = (new CommonRequest())->setConnection('oc')->where(['id' => $input['oc_request_id']])->first();
+   584→        if (!$request) {
+   585→            return $this->responseJsonFail('审批不存在');
+   586→        }
+   587→        if ($request->is_locked) {
+   588→            return $this->responseJsonFail('审批已锁定，无法删除');
+   589→        }
+   590→        if ($request->current_state_id != State::START && $request->current_state_id != State::CANCELLED) {
+   591→            return $this->responseJsonFail('审批状态非草稿或已撤销，无法删除');
+   592→        }
+   593→        info('delete oc request'.my_json_encode($request));
+   594→        $request->delete();
+   595→        return $this->responseJsonSuccess('success');
+   596→    }
+   597→
+   598→    /**
+   599→     * 待我审批.
+   600→     */
+   601→    public function approvingRequests(Request $request)
+   602→    {
+   603→        return $this->getRequests('oc', 'approving', $request->all());
+   604→    }
+   605→
+   606→    /**
+   607→     * 我已审批.
+   608→     */
+   609→    public function resolvedRequests(Request $request)
+   610→    {
+   611→        return $this->getRequests('oc', 'resolved', $request->all());
+   612→    }
+   613→
+   614→    /**
+   615→     * 我的审批.
+   616→     */
+   617→    public function myRequests(Request $request)
+   618→    {
+   619→        return $this->getRequests('oc', 'approvingOrResolved', $request->all());
+   620→    }
+   621→
+   622→    /**
+   623→     * 抄送我的.
+   624→     */
+   625→    public function ccRequests(Request $request)
+   626→    {
+   627→        return $this->getRequests('oc', 'cc', $request->all());
+   628→    }
+   629→
+   630→    /**
+   631→     * 一键已读.
+   632→     *
+   633→     * @param Request $request
+   634→     * @return JsonResponse
+   635→     */
+   636→    public function readAllCCRequests(Request $request)
+   637→    {
+   638→        $input = Arr::only($request->all(), [
+   639→            'sfuser_info', 'per_page', 'no', 'approval_statuses', 'lack_supplements', 'nickname_hash_filter',
+   640→            'receive_money_company_hash_filter', 'pay_company', 'apply_reason', 'invoice_type',
+   641→            'pay_date_start', 'pay_date_end', 'next_replace_filter',
+   642→        ]);
+   643→
+   644→        $sfuserId = $input['sfuser_info']['id'];
+   645→
+   646→        $queryBuilder = (new PaymentStakeholderQueryBuilder('oc'))->asCCer()->filterByUserId($sfuserId);
+   647→
+   648→        // 按申请人进行过滤
+   649→        if (Arr::has($input, 'nickname_hash_filter')) {
+   650→            $userIds = OcUser::whereIn('nickname_hash', $input['nickname_hash_filter'])->pluck('sfuser_id')->toArray();
+   651→            $queryBuilder->filterByRequesterIds($userIds);
+   652→        }
+   653→
+   654→        // 按编号筛选
+   655→        if ($no = Arr::get($input, 'no')) {
+   656→            $queryBuilder->filterByNo($no);
+   657→        }
+   658→
+   659→        // 按关键字搜索筛选
+   660→        if (($nextReplaceFilterIds = Arr::get($input, 'next_replace_filter')) !== null) {
+   661→            $queryBuilder->filterByRequestIds($nextReplaceFilterIds);
+   662→        }
+   663→
+   664→        // 按审批状态筛选
+   665→        $approvalStatuses = Arr::wrap(Arr::get($input, 'approval_statuses', []));
+   666→        if ($approvalStatuses) {
+   667→            $queryBuilder->stateIn($approvalStatuses);
+   668→        }
+   669→
+   670→        $lackSupplements = Arr::get($input, 'lack_supplements', -1);
+   671→        if ($lackSupplements != -1) {
+   672→            /** lack_supplements: 1 缺少材料，2 材料齐全 */
+   673→            $lack = $lackSupplements == 1; // 不搜时，不传该参数，因此不用判断是否为 2 了
+   674→            $queryBuilder->filterByLackSupplements($lack);
+   675→        }
+   676→
+   677→        $processKey = Arr::get($input, 'process_key', []);
+   678→        if ($processKey) {
+   679→            $queryBuilder->filterByProcessKey($processKey);
+   680→        }
+   681→
+   682→        // 按照收款公司查找
+   683→        if ($receiveMoneyCompany = Arr::get($input, 'receive_money_company_hash_filter', [])) {
+   684→            $queryBuilder->filterByReceiveCompany($receiveMoneyCompany);
+   685→        }
+   686→
+   687→        // 按照付款公司查询
+   688→        if ($payCompany = Arr::get($input, 'pay_company')) {
+   689→            $queryBuilder->filterByPayCompany($payCompany);
+   690→        }
+   691→
+   692→        // 按照请款原因查询
+   693→        if ($applyReason = Arr::get($input, 'apply_reason')) {
+   694→            $queryBuilder->filterByApplyReason($applyReason);
+   695→        }
+   696→
+   697→        // 按照发票类型查询
+   698→        if ($invoiceType = Arr::get($input, 'invoice_type')) {
+   699→            $queryBuilder->filterByInvoiceType($invoiceType);
+   700→        }
+   701→
+   702→        // 按照实际付款时间搜索
+   703→        $queryBuilder->payDateAfter(Arr::get($input, 'pay_date_start', ''))
+   704→            ->payDateBefore(Arr::get($input, 'pay_date_end', ''));
+   705→
+   706→        $cnt = $queryBuilder->queryBuilder()->update(['is_read' => 1]);
+   707→
+   708→        // 更新付款抄送未读
+   709→        NotifyNumberService::app()->modifyIndividual($sfuserId, 'oc_cc', -1 * $cnt);
+   710→
+   711→        return $this->responseJsonSuccess(['count' => $cnt]);
+   712→    }
+   713→
+   714→    /**
+   715→     * 我发起的一键导出.
+   716→     *
+   717→     * @param Request $request
+   718→     * @return JsonResponse
+   719→     */
+   720→    public function exportIssuedRequests(Request $request)
+   721→    {
+   722→        $input = Arr::only($request->all(), [
+   723→            'sfuser_info', 'per_page', 'no', 'approval_statuses', 'lack_supplements', 'lock_status', 'receive_money_company_hash_filter',
+   724→            'pay_company', 'apply_reason', 'invoice_type', 'pay_date_start', 'pay_date_end', 'launch_date_start', 'launch_date_end',
+   725→            'next_replace_filter',
+   726→        ]) + ['per_page' => 50];
+   727→
+   728→        $sfuserId = $input['sfuser_info']['id'];
+   729→
+   730→        $queryBuilder = (new OcQueryBuilder())->filterByRequestUsers($sfuserId);
+   731→
+   732→        // 按编号筛选
+   733→        if ($no = Arr::get($input, 'no')) {
+   734→            $queryBuilder->filterByNo($no);
+   735→        }
+   736→
+   737→        // 按关键字搜索筛选
+   738→        if (($nextReplaceFilterIds = Arr::get($input, 'next_replace_filter')) !== null) {
+   739→            $queryBuilder->filterByRequestIds($nextReplaceFilterIds);
+   740→        }
+   741→
+   742→        // 按审批状态筛选
+   743→        $approvalStatuses = Arr::wrap(Arr::get($input, 'approval_statuses', []));
+   744→        if ($approvalStatuses) {
+   745→            $queryBuilder->stateIn($approvalStatuses);
+   746→        }
+   747→
+   748→        $lackSupplements = Arr::get($input, 'lack_supplements', -1);
+   749→        if ($lackSupplements != -1) {
+   750→            /** lack_supplements: 1 缺少材料，2 材料齐全 */
+   751→            $lack = $lackSupplements == 1; // 不搜时，不传该参数，因此不用判断是否为 2 了
+   752→            $queryBuilder->filterByLackSupplements($lack);
+   753→        }
+   754→
+   755→        $processKey = Arr::get($input, 'process_key', []);
+   756→        if ($processKey) {
+   757→            $queryBuilder->filterByProcessKey($processKey);
+   758→        }
+   759→
+   760→        $lockStatus = Arr::get($input, 'lock_status', -1);
+   761→        if ($lockStatus == 0) {
+   762→            $queryBuilder->unlocked();
+   763→        } elseif ($lockStatus == 1) {
+   764→            $queryBuilder->locked();
+   765→        }
+   766→
+   767→        // 按照收款公司查找
+   768→        if ($receiveMoneyCompany = Arr::get($input, 'receive_money_company_hash_filter', [])) {
+   769→            $queryBuilder->filterByReceiveCompany($receiveMoneyCompany);
+   770→        }
+   771→
+   772→        // 按照付款公司查询
+   773→        if ($payCompany = Arr::get($input, 'pay_company')) {
+   774→            $queryBuilder->filterByPayCompany($payCompany);
+   775→        }
+   776→
+   777→        // 按照请款原因查询
+   778→        if ($applyReason = Arr::get($input, 'apply_reason')) {
+   779→            $queryBuilder->filterByApplyReason($applyReason);
+   780→        }
+   781→
+   782→        // 按照发票类型查询
+   783→        if ($invoiceType = Arr::get($input, 'invoice_type')) {
+   784→            $queryBuilder->filterByInvoiceType($invoiceType);
+   785→        }
+   786→
+   787→        // 按照实际付款时间搜索
+   788→        $queryBuilder->payDateAfter(Arr::get($input, 'pay_date_start', ''))
+   789→            ->payDateBefore(Arr::get($input, 'pay_date_end', ''));
+   790→
+   791→        // 按照发起时间搜索
+   792→        $queryBuilder->launchDateAfter(Arr::get($input, 'launch_date_start', ''))
+   793→            ->launchDateBefore(Arr::get($input, 'launch_date_end', ''));
+   794→
+   795→        $requests = $queryBuilder->queryBuilder()->selectRaw(
+   796→            '`requests`.`id`, `user_id`, `process_key`, `no`, `current_state_id`, `is_locked`, `requests`.`created_at`, `data`,
+   797→            `actual_money`, `pay_date`, `complete_date`'
+   798→        )->paginate($input['per_page'])->toArray();
+   799→
+   800→        foreach ($requests['data'] as &$one) {
+   801→            $one = (array)$one;
+   802→            $one['data'] = my_json_decode($one['data']);
+   803→            $one['actual_money'] = number_format($one['actual_money'], 2, '.', '');
+   804→        }
+   805→        unset($one);
+   806→
+   807→        $res = [
+   808→            'current_page' => $requests['current_page'],
+   809→            'per_page' => $requests['per_page'],
+   810→            'total' => $requests['total'],
+   811→            'requests' => $requests['data'],
+   812→        ];
+   813→
+   814→        return $this->responseJsonSuccess($res);
+   815→    }
+   816→
+   817→    /**
+   818→     * 获取审批详情.
+   819→     *
+   820→     * @param Request $request
+   821→     * @return JsonResponse
+   822→     */
+   823→    public function request(Request $request)
+   824→    {
+   825→        $sfuserId = $request->input('sfuser_info.id');
+   826→        $requestId = $request->input('oc_request_id');
+   827→
+   828→        // 在 OA 端，只有可见，才能查看详情
+   829→        $wrs = (new CommonRequestStakeholder())->setConnection('oc')
+   830→            ->where('request_id', $requestId)->where('user_id', $sfuserId)
+   831→            ->first();
+   832→        if (!$wrs) {
+   833→            throw new WorkflowException(__('my_api.workflow_request_not_found'), ExceptionCode::ERR_RESOURCE_MISSING);
+   834→        }
+   835→
+   836→        $wr = new RequestService('oc', $requestId, $sfuserId);
+   837→
+   838→        $detail = $wr->detail(true);
+   839→
+   840→        if (Arr::has($detail, 'basic') && $detail['basic']['process_key'] == Registry::PAYMENT) {
+   841→            $requestId = $detail['basic']['id'];
+   842→            $chargeDetail = AdvanceChargeDetail::where('request_id', $requestId)->first();
+   843→
+   844→            // 大写付款金额
+   845→            $detail['basic']['data']['actual_money'] = ($chargeDetail == null) ? '' : $chargeDetail->actual_money;
+   846→            $detail['basic']['data']['uppercase_actual_money'] = Helper::num2rmb($detail['basic']['data']['actual_money']);
+   847→            $detail['basic']['data']['uppercase_actual_money_eng'] = Helper::num2eng($detail['basic']['data']['actual_money']);
+   848→            // 冲账详情
+   849→            $detail['basic']['strike_balance_detail'] = StrikeBalanceDetail::where(['request_id' => $requestId, 'is_closed' => 0])->get()->toArray();
+   850→            // 付款时间
+   851→            $detail['basic']['pay_date'] = ($chargeDetail == null) ? '' : $chargeDetail->pay_date;
+   852→            // 审批通过时间
+   853→            $detail['basic']['approval_date'] = ($chargeDetail == null) ? '' : $chargeDetail->approval_date;
+   854→            // 审批完成时间
+   855→            $detail['basic']['complete_date'] = ($chargeDetail == null) ? '' : $chargeDetail->complete_date;
+   856→            // 优先级 兼容历史数据
+   857→            $detail['basic']['data']['priority'] = ($chargeDetail == null) ? Arr::get($detail, 'basic.data.priority', 1) : $chargeDetail->priority;
+   858→
+   859→            // 作为申请人
+   860→            if ($sfuserId == $wr->getRequest()->user_id) {
+   861→                // 付款凭证
+   862→                $detail['basic']['pay_proof'] = empty($chargeDetail->pay_proof) ? [] : $chargeDetail->pay_proof;
+   863→            }
+   864→
+   865→            // 超额请款审批单据, 员工端只有财务主管和 CEO 可以看到
+   866→            $operatorIds = (new CommonRequestAction())->setConnection('oc')->where('request_id', $requestId)
+   867→                ->whereIn('operator_type', [CommonSpecialStakeholder::FINANCIAL_TYPE, CommonSpecialStakeholder::CEO_TYPE])
+   868→                ->pluck('operator_id')->unique()->toArray();
+   869→            if (in_array($sfuserId, $operatorIds) && $chargeDetail != null) {
+   870→                $detail['basic']['is_excess'] = $chargeDetail->is_excess;
+   871→                $detail['basic']['excess_file'] = empty($chargeDetail->excess_file) ? [] : $chargeDetail->excess_file;
+   872→            }
+   873→
+   874→            // 作废详情
+   875→            if ($detail['basic']['is_locked']) {
+   876→                $lockDetail = (new CommonRequestLockDetail())->setConnection('oc')->where('request_id', $requestId)->first();
+   877→                $detail['basic']['lock_detail'] = ($lockDetail == null) ? [] : $lockDetail->toArray();
+   878→            }
+   879→
+   880→            // 管理端审批人花名
+   881→            $types = [CommonSpecialStakeholder::FINANCIAL_HANDEL_TYPE, CommonSpecialStakeholder::FINANCIAL_PAYMENT_TYPE];
+   882→            $stateClass = $wr->getStateClass();
+   883→            foreach ($types as $operatorType) {
+   884→                $specialSfusers = $stateClass->fetchSpecialSfuser('oc', $operatorType, $detail['basic']['data']);
+   885→                $detail['special_nicknames'][] = [
+   886→                    'operator_type' => $operatorType,
+   887→                    'nicknames' => $specialSfusers['nicknames'],
+   888→                ];
+   889→            }
+   890→
+   891→            // 留言
+   892→            $detail['message_forum'] = OcMessageForum::where('request_id', $requestId)->orderBy('id', 'DESC')->get()->toArray();
+   893→
+   894→            Arr::forget($detail, 'basic.data.supplier_info.supplier_company_hash');
+   895→        }
+   896→
+   897→        $res = ['detail' => $detail];
+   898→
+   899→        // 有 Token，并且不是本人的话，不需要通过 Token 解密
+   900→        if ($wr->getRequest()->token && $sfuserId != $wr->getRequest()->user_id) {
+   901→            $res['decrypt_config'] = [
+   902→                'tokens' => Arr::wrap($wr->getRequest()->token),
+   903→            ];
+   904→        }
+   905→
+   906→        return $this->responseJsonSuccess($res);
+   907→    }
+   908→
+   909→    /**
+   910→     * 付款留言增删改.
+   911→     *
+   912→     * @param Request $request
+   913→     * @return JsonResponse
+   914→     */
+   915→    public function editMessageForum(Request $request): JsonResponse
+   916→    {
+   917→        $input = Arr::only($request->all(), [
+   918→            'sfuser_info', 'oc_request_id', 'operation_type', 'oc_message_id', 'data',
+   919→        ]);
+   920→        $sfuserId = $input['sfuser_info']['id'];
+   921→
+   922→        $exists = (new CommonRequest())->setConnection('oc')->where(['id' => $input['oc_request_id'], 'user_id' => $sfuserId])->exists();
+   923→        if (!$exists) {
+   924→            return $this->responseJsonFail(__('my_api.lack_permission'));
+   925→        }
+   926→
+   927→        switch ($input['operation_type']) {
+   928→            case 'add':
+   929→                $ret = OcMessageForum::create(['request_id' => $input['oc_request_id'], 'sfuser_id' => $sfuserId, 'data' => $input['data']]);
+   930→                if ($ret) {
+   931→                    $paths = array_column(Arr::get($input, 'data.files', []), 'value');
+   932→                    if (empty($paths)) {
+   933→                        break;
+   934→                    }
+   935→                    $files = array_map(fn ($path) => [
+   936→                        'table_name' => 'oc_message_forums',
+   937→                        'table_id' => $ret->id,
+   938→                        'file_store_path' => $path,
+   939→                        'type' => 'annex',
+   940→                        'disk' => 'oc',
+   941→                        'operator_id' => $sfuserId,
+   942→                        'is_closed' => 0,
+   943→                    ], $paths);
+   944→                    (new CommonFileStorePath())->setConnection('oc')->insert($files);
+   945→                }
+   946→                break;
+   947→            case 'modify':
+   948→                $ret = OcMessageForum::where(['id' => $input['oc_message_id'], 'sfuser_id' => $sfuserId])->update(['data' => $input['data']]);
+   949→                if ($ret) {
+   950→                    $paths = array_column(Arr::get($input, 'data.files', []), 'value');
+   951→                    (new CommonFileStorePath())->setConnection('oc')
+   952→                        ->where(['table_name' => 'oc_message_forums', 'table_id' => $input['oc_message_id']])
+   953→                        ->whereNotIn('file_store_path', $paths)
+   954→                        ->update(['is_closed' => 1]);
+   955→                    foreach ($paths as $path) {
+   956→                        (new CommonFileStorePath())->setConnection('oc')
+   957→                            ->updateOrCreate([
+   958→                                'table_name' => 'oc_message_forums',
+   959→                                'table_id' => $input['oc_message_id'],
+   960→                                'file_store_path' => $path,
+   961→                            ], [
+   962→                                'table_name' => 'oc_message_forums',
+   963→                                'table_id' => $input['oc_message_id'],
+   964→                                'file_store_path' => $path,
+   965→                                'type' => 'annex',
+   966→                                'disk' => 'oc',
+   967→                                'operator_id' => $sfuserId,
+   968→                                'is_closed' => 0,
+   969→                            ]);
+   970→                    }
+   971→                }
+   972→                break;
+   973→            case 'delete':
+   974→                $ret = OcMessageForum::where(['id' => $input['oc_message_id'], 'sfuser_id' => $sfuserId])->delete();
+   975→                if ($ret) {
+   976→                    (new CommonFileStorePath())->setConnection('oc')
+   977→                        ->where(['table_name' => 'oc_message_forums', 'table_id' => $input['oc_message_id']])
+   978→                        ->delete();
+   979→                }
+   980→                break;
+   981→            default:
+   982→                break;
+   983→        }
+   984→
+   985→        return $this->responseJsonSuccess(['success' => !empty($ret)]);
+   986→    }
+   987→
+   988→    /**
+   989→     *  变成已打印.
+   990→     */
+   991→    public function printed(Request $request): JsonResponse
+   992→    {
+   993→        $input = Arr::only($request->all(), [
+   994→            'sfuser_info', 'oc_request_id',
+   995→        ]);
+   996→        $sfuserId = $input['sfuser_info']['id'];
+   997→
+   998→        $exists = (new CommonRequest())->setConnection('oc')->where(['id' => $input['oc_request_id']])->exists();
+   999→        if (!$exists) {
+  1000→            return $this->responseJsonFail(__('my_api.lack_permission'));
+  1001→        }
+  1002→        $wr = new RequestService('oc', $input['oc_request_id'], $sfuserId);
+  1003→        $wr->appendData('printed', 1, true);
+  1004→        return $this->responseJsonSuccess(['success' => true]);
+  1005→    }
+  1006→
+  1007→    /**
+  1008→     * 执行动作.
+  1009→     *
+  1010→     * @param Request $request
+  1011→     * @return JsonResponse
+  1012→     */
+  1013→    public function performAction(Request $request): JsonResponse
+  1014→    {
+  1015→        $input = Arr::only($request->all(), ['sfuser_info', 'oc_request_id', 'action_id', 'remark']);
+  1016→        $sfuserId = $input['sfuser_info']['id'];
+  1017→
+  1018→        if ($input['action_id'] == Action::DELETE) {
+  1019→            return $this->responseJsonFail(__('my_api.invalid_action_given'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+  1020→        }
+  1021→
+  1022→        $request = new RequestService('oc', $input['oc_request_id'], $sfuserId);
+  1023→        $msg = $request->performActionWithMsg($input['action_id'], $input['remark'] ?? '');
+  1024→
+  1025→        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'msg' => $msg]);
+  1026→    }
+  1027→
+  1028→    /**
+  1029→     * 执行特殊动作.
+  1030→     *
+  1031→     * @param Request $request
+  1032→     * @return JsonResponse
+  1033→     */
+  1034→    public function performSpecialAction(Request $request): JsonResponse
+  1035→    {
+  1036→        $input = Arr::only($request->all(), [
+  1037→            'sfuser_info', 'oc_request_id', 'special_action_id', 'money', 'file', 'balance_ids',
+  1038→        ]);
+  1039→
+  1040→        $sfuserId = Arr::get($input, 'sfuser_info.id');
+  1041→
+  1042→        $errMsg = __('my_api.lack_permission');
+  1043→        $lackParam = false;
+  1044→        $success = true;
+  1045→
+  1046→        switch ($input['special_action_id']) {
+  1047→            case SpecialAction::STRIKE_BALANCE:
+  1048→                if (!Arr::has($input, ['money', 'file'])) {
+  1049→                    $lackParam = true;
+  1050→                    break;
+  1051→                }
+  1052→                $success = SpecialAction::strikeBalance($sfuserId, $input['oc_request_id'], $input['money'], $input['file'], $errMsg);
+  1053→                break;
+  1054→            case SpecialAction::ADD_EXCEEDED_MONEY_SUPPLEMENT:
+  1055→                if (!Arr::has($input, ['file'])) {
+  1056→                    $lackParam = true;
+  1057→                    break;
+  1058→                }
+  1059→                $success = SpecialAction::addExceededMoneySupplement($sfuserId, $input['oc_request_id'], $input['file']);
+  1060→                break;
+  1061→            case SpecialAction::REMOVE_STRIKE_BALANCE:
+  1062→                if (!Arr::has($input, ['balance_ids'])) {
+  1063→                    $lackParam = true;
+  1064→                    break;
+  1065→                }
+  1066→                $success = SpecialAction::removeStrikeBalance($sfuserId, $input['oc_request_id'], Arr::wrap($input['balance_ids']));
+  1067→                break;
+  1068→            default:
+  1069→                return $this->responseJsonFail(__('my_api.invalid_action_given'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+  1070→        }
+  1071→
+  1072→        if ($lackParam) {
+  1073→            return $this->responseJsonFail(__('my_api.lack_required_param'), ExceptionCode::ERR_COMMON_MISSING_PARAMETERS);
+  1074→        }
+  1075→        if (!$success) {
+  1076→            return $this->responseJsonFail($errMsg, ExceptionCode::ERR_USER_OPERATE_LIMIT);
+  1077→        }
+  1078→
+  1079→        return $this->responseJsonSuccess(['success' => true]);
+  1080→    }
+  1081→
+  1082→    /**
+  1083→     * 重新编辑.
+  1084→     *
+  1085→     * @param Request $request
+  1086→     * @return JsonResponse
+  1087→     */
+  1088→    public function reEdit(Request $request): JsonResponse
+  1089→    {
+  1090→        $input = Arr::only($request->all(), [
+  1091→            'sfuser_info', 'oc_request_id', 'process_key', 'start', 'context', 'files', 'cc_nickname_hash_filter', 'authorized_token', 'info',
+  1092→        ]);
+  1093→
+  1094→        $sfuserId = $input['sfuser_info']['id'];
+  1095→
+  1096→        // 抄送人
+  1097→        if (Arr::has($input, 'cc_nickname_hash_filter')) {
+  1098→            $input['cc_ids'] = OcUser::whereIn('nickname_hash', $input['cc_nickname_hash_filter'])->active()->pluck('sfuser_id')->toArray();
+  1099→        }
+  1100→
+  1101→        $updateColumns = Arr::only($input, ['files', 'cc_ids', 'info']);
+  1102→        if (array_key_exists('authorized_token', $input)) {
+  1103→            $updateColumns['token'] = $input['authorized_token'];
+  1104→        }
+  1105→
+  1106→        $wr = new RequestService('oc', $input['oc_request_id'], $sfuserId);
+  1107→
+  1108→        // 流程不能改变
+  1109→        if ($input['process_key'] != $wr->getRequest()->process_key) {
+  1110→            throw new WorkflowException('process_key cannot be changed');
+  1111→        }
+  1112→
+  1113→        if (array_key_exists('context', $input)) {
+  1114→            RequestService::checkInput($input['process_key'], $sfuserId, $input['context'], $wr->getRequest()->version);
+  1115→
+  1116→            // 重新编辑不可更改的字段
+  1117→            $persistColumns = ['nickname', 'department', 'pay_company'];
+  1118→            foreach ($persistColumns as $column) {
+  1119→                if (Arr::get($wr->getRequest()->data, $column) != $input['context'][$column]) {
+  1120→                    throw new WorkflowException(sprintf('[%s] cannot be changed', $column));
+  1121→                }
+  1122→            }
+  1123→            $updateColumns['data'] = $input['context'];
+  1124→        }
+  1125→
+  1126→        // 检查 files 格式
+  1127→        [$errNo, $needSupplementFiles, $hasSupplementFiles] = RequestService::checkFiles($updateColumns['files'] ?? []);
+  1128→        if ($errNo != 0) {
+  1129→            throw new WorkflowException(__('my_api.check_files_failed', ['err' => $errNo]));
+  1130→        }
+  1131→        if (array_key_exists('files', $updateColumns)) {
+  1132→            $updateColumns += ['need_supplements' => $needSupplementFiles, 'has_supplements' => $hasSupplementFiles];
+  1133→        }
+  1134→
+  1135→        $wr->getRequest()->update($updateColumns);
+  1136→        $wr->performAction(Action::REEDIT);
+  1137→        $wr->requestCreated();
+  1138→
+  1139→        UpdateCommonRequestNextReplaceCache::dispatch('oc', CommonRequest::STRATEGY_REPLACE);
+  1140→
+  1141→        $msg = '';
+  1142→        if (Arr::get($input, 'start', false)) {
+  1143→            $msg = $wr->performActionWithMsg(Action::APPROVE);
+  1144→        }
+  1145→
+  1146→        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'msg' => $msg]);
+  1147→    }
+  1148→
+  1149→    /**
+  1150→     * 查询单据中付款公司, 收款单位和请款总金额与历史单据是否有重合.
+  1151→     *
+  1152→     * @param Request $request
+  1153→     * @return JsonResponse
+  1154→     */
+  1155→    public function searchDuplicatedPayment(Request $request): JsonResponse
+  1156→    {
+  1157→        $input = $request->only([
+  1158→            'sfuser_info', 'pay_company', 'receive_money_company_hash_filter', 'total_money',
+  1159→        ]);
+  1160→
+  1161→        $sfuserId = Arr::get($input, 'sfuser_info.id');
+  1162→
+  1163→        $requestIds = AdvanceChargeDetail::alias('acd')
+  1164→            ->join(db_name('oc').'.requests', 'acd.request_id', '=', 'requests.id')->where([
+  1165→                'acd.sfuser_id' => $sfuserId,
+  1166→                'acd.pay_company' => $input['pay_company'],
+  1167→                'acd.total_money' => round($input['total_money'], 4),
+  1168→            ])
+  1169→            ->whereIn('acd.receive_money_company_hash', $input['receive_money_company_hash_filter'])
+  1170→            ->whereNotIn('requests.current_state_id', [State::START, State::DELETED])
+  1171→            ->pluck('acd.request_id')->toArray();
+  1172→
+  1173→        if (!empty($requestIds)) {
+  1174→            $data = (new CommonRequest())->setConnection('oc')->whereIn('id', $requestIds)->select('id', 'no')->get()->toArray();
+  1175→            return $this->responseJsonSuccess(['duplicate' => true, 'requests' => $data]);
+  1176→        }
+  1177→
+  1178→        return $this->responseJsonSuccess(['duplicate' => false, 'requests' => []]);
+  1179→    }
+  1180→}
+  1181→

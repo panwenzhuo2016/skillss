@@ -1,0 +1,165 @@
+<?php
+
+use App\Http\Controllers\Oa\DailyReportAiController;
+
+return [
+    // AI 助手权限检查
+    'daily-report/ai/check-access' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+        ],
+        'route' => [DailyReportAiController::class, 'checkAccess'],
+    ],
+
+    // 分组设置权限检查
+    'daily-report/ai/check-group-access' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+        ],
+        'route' => [DailyReportAiController::class, 'checkGroupAccess'],
+    ],
+
+    // 角色列表
+    'daily-report/ai/role/list' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+        ],
+        'route' => [DailyReportAiController::class, 'roleList'],
+    ],
+
+    // 新建角色
+    'daily-report/ai/role/create' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'name' => 'required|string|max:100',
+            'system_prompt' => 'required|string',
+        ],
+        'route' => [DailyReportAiController::class, 'roleCreate'],
+    ],
+
+    // 编辑角色
+    'daily-report/ai/role/update' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'id' => 'required|integer',
+            'name' => 'filled|string|max:100',
+            'system_prompt' => 'filled|string',
+        ],
+        'route' => [DailyReportAiController::class, 'roleUpdate'],
+    ],
+
+    // 删除角色
+    'daily-report/ai/role/delete' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'id' => 'required|integer',
+        ],
+        'route' => [DailyReportAiController::class, 'roleDelete'],
+    ],
+
+    // 常用提示词列表
+    'daily-report/ai/prompt/list' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+        ],
+        'route' => [DailyReportAiController::class, 'promptList'],
+    ],
+
+    // 新建提示词
+    'daily-report/ai/prompt/create' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'content' => 'required|string',
+        ],
+        'route' => [DailyReportAiController::class, 'promptCreate'],
+    ],
+
+    // 删除提示词
+    'daily-report/ai/prompt/delete' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'id' => 'required|integer',
+        ],
+        'route' => [DailyReportAiController::class, 'promptDelete'],
+    ],
+
+    // 历史会话列表
+    'daily-report/ai/session/list' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'role_id' => 'required|integer',
+        ],
+        'route' => [DailyReportAiController::class, 'sessionList'],
+    ],
+
+    // 某会话的消息列表
+    'daily-report/ai/session/messages' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'session_id' => 'required|integer',
+        ],
+        'route' => [DailyReportAiController::class, 'sessionMessages'],
+    ],
+
+    // 加载更多 context 内容
+    'daily-report/ai/session/context-more' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'message_id' => 'required|integer',
+            'offset' => 'required|integer|min:0',
+        ],
+        'route' => [DailyReportAiController::class, 'contextMore'],
+    ],
+
+    // 保存消息（意图识别阶段的对话落库）
+    'daily-report/ai/save-messages' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'role_id' => 'required|integer',
+            'session_id' => 'nullable|integer',
+            'messages' => 'required|array|min:1',
+            'messages.*.role' => 'required|string|in:user,assistant,context',
+            'messages.*.content' => 'required|string',
+        ],
+        'route' => [DailyReportAiController::class, 'saveMessages'],
+        'methods' => ['post'],
+    ],
+
+    // 意图识别：提取查询槽位（成员+周期）
+    'daily-report/ai/extract-slots' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'message' => 'required|string',
+            'conversation_id' => 'nullable|string',
+            'available_groups' => 'nullable|array',
+            'available_groups.*' => 'string',
+            'available_members' => 'nullable|array',
+            'available_members.*' => 'string',
+            'previous_context' => 'nullable|array',
+            'previous_context.member_type' => 'nullable|string|in:group,individual',
+            'previous_context.members' => 'nullable|array',
+            'previous_context.members.*' => 'string',
+            'previous_context.period_start' => 'nullable|string',
+            'previous_context.period_end' => 'nullable|string',
+        ],
+        'route' => [DailyReportAiController::class, 'extractSlots'],
+        'methods' => ['post'],
+    ],
+
+    // 发送消息（SSE 流式）
+    'daily-report/ai/ask' => [
+        'params' => [
+            'sfuser_info' => 'required|array',
+            'role_id' => 'required|integer',
+            'session_id' => 'nullable|integer',
+            'message' => 'required|string',
+            'report_context' => 'nullable|string',
+            'report_context_raw' => 'nullable|string',
+            'history' => 'nullable|array',
+            'history.*.role' => 'required_with:history|string|in:user,assistant',
+            'history.*.content' => 'required_with:history|string',
+        ],
+        'route' => [DailyReportAiController::class, 'ask'],
+        'methods' => ['post'],
+    ],
+];

@@ -1,0 +1,341 @@
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-494-            'sfusers' => $sfusers,
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-495-        ]);
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-496-
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-497-        $mc = MailConfig::whereType(MailConfig::TYPE_RESIGNATION_ENTERING_REPORT)->first();
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-498-        if (empty($mc)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-499-            Log::info('missing mc');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-500-            return;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-501-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-502-        $config = $mc->config;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-503-        $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:504:        $sfuserToken = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-505-        $departmentToken = Arr::get($config, 'department_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-506-        if (!$sfuserToken || !$departmentToken) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-507-            Log::info('missing tokens');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-508-            return;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-509-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-510-
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-511-        if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-512-            Log::info('missing emails');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-513-            return;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-514-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-59-            info('[ScheduleJob][DailyWorkOvertimeJob] finished #3');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-60-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-61-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-62-        $oneEmailLimit = 50000;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-63-        foreach ($mailConfigs as $mailConfig) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-64-            $emailAllCount = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-65-            $emailOne = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-66-            try {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-67-                $config = $mailConfig['config'];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-68-                $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:69:                $sfuser_authorized_token = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:70:                if (!$sfuser_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-71-                    info('发送加班记录邮件 没有 tokens 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-72-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-73-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-74-                $department_authorized_token = Arr::get($config, 'department_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-75-                if (!$department_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-76-                    info('发送加班记录邮件 没有 department_authorized_token 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-77-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-78-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-79-                if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-80-                    info('发送加班记录邮件 没有 emails 跳过'.my_json_encode($mailConfig));
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-108-                    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-109-                } else {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-110-                    $nicknameSend = $this->encr($sfuser->nickname);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-111-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-112-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-113-                if (empty($data) || empty($data['approvals'])) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-114-                    info('发送加班记录邮件 没有数据跳过'.$sfuserId.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-115-                    $content = '<p >Dear '.$nicknameSend.',</p><p >'.$msgDate.'无加班记录。</p>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-116-                    $content .= '<br><span>👉点击快速跳转OA查看更多加班记录详情：<a href="'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record">'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record</a></span><br><br><br><br>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-117-                    $subject = '【'.$sendDate.'】 加班记录汇总';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:118:                    sendEmail($content, $subject, [$sfuser_authorized_token, $department_authorized_token], filter: 'emails', filterMap: ['emails' => $toEmails]);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-119-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-120-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-121-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-122-                // 更
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-123-                $content = '<p >Dear '.$nicknameSend.',</p><p >以下是相关同事'.$msgDate.'的加班记录：</p>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-124-                $content .= $this->getTableHead();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-125-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-126-                // d
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-127-                $no = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-128-                foreach ($data['approvals'] as $report) {
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-179-                    $newContent = $n.$contentO;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-180-                    if (strlen($content) + strlen($newContent) > $oneEmailLimit) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-181-                        ++$emailOne;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-182-                        $subject = '【'.$sendDate.'】 加班记录汇总'.($emailAllCount > 1 ? '（'.$emailOne.'/'.$emailAllCount.'）'
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-183-                                    : '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-184-                        info('发送加班记录邮件'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-185-                        $content .= '</table>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-186-                        sendEmail(
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-187-                            $content,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-188-                            $subject,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:189:                            [$sfuser_authorized_token, $department_authorized_token],
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-190-                            filter: 'emails',
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-191-                            filterMap: ['emails' => $toEmails]
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-192-                        );
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-193-                        info('发送加班记录邮件成功'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-194-                        $content = $this->getTableHead();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-195-                    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-196-                    $content .= $newContent;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-197-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-198-                ++$emailOne;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-199-                $subject = '【'.$sendDate.'】 加班记录汇总'.($emailAllCount > 1 ? '（'.$emailOne.'/'.$emailAllCount.'）'
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-200-                            : '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-201-                $content .= '</table>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-202-                $content .= '<br><span>👉点击快速跳转OA查看更多加班记录详情：<a href="'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record">'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record</a></span><br><br><br><br>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-203-                info('发送加班记录邮件'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:204:                sendEmail($content, $subject, [$sfuser_authorized_token, $department_authorized_token], filter: 'emails', filterMap: ['emails' => $toEmails]);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-205-                info('发送加班记录邮件成功'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-206-            } catch (\Throwable $e) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-207-                info(json_encode([
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-208-                    'method' => __METHOD__,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-209-                    'error' => '发送加班记录邮件失败',
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-210-                    'line' => $e->getLine(),
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-211-                    'file' => $e->getFile(),
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-212-                    'mc_config' => $mailConfig,  // 直接记录对象（需确保可序列化）
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-213-                    'message' => $e->getMessage(),
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-214-                    'trace' => $e->getTrace(),
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-56-            info('[ScheduleJob][DailyReportJob] finished #3');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-57-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-58-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-59-        $oneEmailLimit = 50000;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-60-        foreach ($mcs as $mc) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-61-            $emailAllCount = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-62-            $emailOne = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-63-            try {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-64-                $config = $mc['config'];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-65-                $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php:66:                $sfuser_token = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-67-                if (!$sfuser_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-68-                    info('发送日报邮件 没有 tokens 跳过'.my_json_encode($mc));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-69-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-70-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-71-                if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-72-                    info('发送日报邮件 没有 emails 跳过'.my_json_encode($mc));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-73-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-74-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-75-                $sfuserId = substr($mc['type'], strpos($mc['type'], 'daily_report_') + 13);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-76-                if (!$sfuserId) {
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-79-        $sfuserId = $task->sfuser_id;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-80-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-81-        // 读取邮箱配置
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-82-        $mc = MailConfig::where('type', "daily_report_{$sfuserId}")->first();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-83-        if (!$mc || empty(Arr::get($mc->config, 'to_email'))) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-84-            info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} no email config, skip");
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-85-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-86-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-87-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-88-        $toEmails = Arr::get($mc->config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php:89:        $sfuserToken = Arr::get($mc->config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-90-        if (!$sfuserToken) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-91-            info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} no sfuser_token, skip");
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-92-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-93-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-94-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-95-        // 确定日报日期范围
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-96-        [$startDate, $endDate] = $this->getDateRange($task->report_range);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-97-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-98-        // 拉取该用户能看到日报的全部员工（维度只决定分组方式）
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportAiEmailJob.php-99-        $dailyService = app(DailyReportService::class);
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-59-            info('[ScheduleJob][DailyApprovalJob] finished #3');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-60-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-61-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-62-        $oneEmailLimit = 50000;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-63-        foreach ($mailConfigs as $mailConfig) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-64-            $emailAllCount = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-65-            $emailOne = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-66-            try {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-67-                $config = $mailConfig['config'];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-68-                $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:69:                $sfuser_authorized_token = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:70:                if (!$sfuser_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-71-                    info('发送请假记录邮件 没有 tokens 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-72-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-73-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-74-                $department_authorized_token = Arr::get($config, 'department_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-75-                if (!$department_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-76-                    info('发送请假记录邮件 没有 department_authorized_token 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-77-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-78-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-79-                if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-80-                    info('发送请假记录邮件 没有 emails 跳过'.my_json_encode($mailConfig));
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-111-                    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-112-                } else {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-113-                    $nicknameSend = $this->encr($sfuser->nickname);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-114-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-115-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-116-                if (empty($data) || empty($data['approvals'])) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-117-                    info('发送请假记录邮件 没有数据跳过'.$sfuserId.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-118-                    $content = '<p >Dear '.$nicknameSend.',</p><p >'.$msgDate.'无请假记录。</p>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-119-                    $content .= '<br><span>👉点击快速跳转OA查看更多请假记录详情：<a href="'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record">'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record</a></span><br><br><br><br>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-120-                    $subject = '【'.$sendDate.'】 请假记录汇总';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:121:                    sendEmail($content, $subject, [$sfuser_authorized_token, $department_authorized_token], filter: 'emails', filterMap: ['emails' => $toEmails]);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-122-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-123-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-124-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-125-                // 更
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-126-                $content = '<p >Dear '.$nicknameSend.',</p><p >以下是相关同事'.$msgDate.'的请假记录：</p>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-127-                $content .= $this->getTableHead();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-128-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-129-                // d
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-130-                $no = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-131-                foreach ($data['approvals'] as $report) {
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-182-                    $newContent = $n.$contentO;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-183-                    if (strlen($content) + strlen($newContent) > $oneEmailLimit) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-184-                        ++$emailOne;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-185-                        $subject = '【'.$sendDate.'】 请假记录汇总'.($emailAllCount > 1 ? '（'.$emailOne.'/'.$emailAllCount.'）'
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-186-                                    : '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-187-                        info('发送请假记录邮件'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-188-                        $content .= '</table>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-189-                        sendEmail(
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-190-                            $content,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-191-                            $subject,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:192:                            [$sfuser_authorized_token, $department_authorized_token],
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-193-                            filter: 'emails',
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-194-                            filterMap: ['emails' => $toEmails]
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-195-                        );
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-196-                        info('发送请假记录邮件成功'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-197-                        $content = $this->getTableHead();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-198-                    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-199-                    $content .= $newContent;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-200-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-201-                ++$emailOne;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-202-                $subject = '【'.$sendDate.'】 请假记录汇总'.($emailAllCount > 1 ? '（'.$emailOne.'/'.$emailAllCount.'）'
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-203-                            : '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-204-                $content .= '</table>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-205-                $content .= '<br><span>👉点击快速跳转OA查看更多请假记录详情：<a href="'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record">'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record</a></span><br><br><br><br>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-206-                info('发送请假记录邮件'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:207:                sendEmail($content, $subject, [$sfuser_authorized_token, $department_authorized_token], filter: 'emails', filterMap: ['emails' => $toEmails]);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-208-                info('发送请假记录邮件成功'.$subject.' to '.implode(',', $toEmails));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-209-            } catch (\Throwable $e) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-210-                info(json_encode([
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-211-                    'method' => __METHOD__,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-212-                    'error' => '发送请假记录邮件失败',
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-213-                    'line' => $e->getLine(),
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-214-                    'file' => $e->getFile(),
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-215-                    'mc_config' => $mailConfig,  // 直接记录对象（需确保可序列化）
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-216-                    'message' => $e->getMessage(),
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-217-                    'trace' => $e->getTrace(),
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-39-                try {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-40-                    $content = '资产类型【'.$type->name.'】使用量已达到警戒值'.$alert.'，请及时处理';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-41-                    $subject = '资产使用量已达到警戒值，请及时处理';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-42-                    $mc = MailConfig::whereType(MailConfig::ASSET_TYPES[$type->category_id])->first();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-43-                    if (empty($mc)) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-44-                        info('missing mc');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-45-                        return false;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-46-                    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-47-                    $config = $mc->config;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-48-                    $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php:49:                    $sfuserToken = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-50-                    if (!$sfuserToken) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-51-                        info('missing tokens');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-52-                        return false;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-53-                    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-54-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-55-                    if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-56-                        info('missing emails');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-57-                        return false;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-58-                    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\AssetTypeAlertSendEmail.php-59-                    sendEmail($content, $subject, [$sfuserToken], filter: 'emails', filterMap: ['emails' => $toEmails]);
+--
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-217-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-218-        \Log::info('[lbl][0416-AI日报][AiEmail][TEST] 开始测试 Prompt', [
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-219-            'sfuser_id' => $sfuserId,
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-220-            'dimension' => $dimension,
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-221-            'group_key' => $groupKey,
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-222-            'group_name' => $targetGroup['name'],
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-223-            'report_count' => $no,
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-224-            'content_len' => mb_strlen($content),
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-225-        ]);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-226-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:227:        // 从 MailConfig 读取 sfuser_authorized_token，与定时邮件 Job 使用同一个 token 解密
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-228-        $mc = MailConfig::where('type', "daily_report_{$sfuserId}")->first();
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php:229:        $sfuserToken = $mc ? Arr::get($mc->config, 'sfuser_authorized_token', '') : '';
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-230-        if (empty($sfuserToken)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-231-            return $this->sseError('未配置邮件授权 Token，请先在管理后台配置邮件');
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-232-        }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-233-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-234-        // 调用 oa-core ai/chat，带 decrypt_config + compress，streaming 模式
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-235-        $reportCount = $no;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-236-        return response()->stream(function () use ($content, $systemPrompt, $dimension, $reportRange, $startDate, $endDate, $reportCount, $sfuserToken) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-237-            ignore_user_abort(true);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-238-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Oa\DailyReportAiEmailController.php-239-            // 首帧：发送测试信息摘要（维度、日期范围、日报数量）
+--
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-43-class DailyReport extends MyModel
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-44-{
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-45-    use HasFactory;
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-46-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-47-    public const STATUS_DRAFT = 0;
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-48-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-49-    public const STATUS_COMMITTED = 1;
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-50-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-51-    public const DAILY_REPORT_KEY = 'sfuser_daily_report_key';
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-52-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php:53:    public const REPORT_TOKEN_CACHE_PREFIX = 'daily_report_token:';
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-54-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-55-    // Subordinates的缓存key
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-56-    public const SUBORDINATES_CACHE_KEY = 'daily_report_subordinates:';
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-57-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-58-    public const SUBORDINATES_NICKNAME_CACHE_KEY = 'daily_report_subordinates_nickname:';
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-59-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-60-    public const TOMORROW_REST_KEY = 'tomorrow_is_rest_key';
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-61-
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-62-    protected $table = 'daily_report';
+D:\project\info-gitlab\oa\oa-server\app\Models\DailyReport.php-63-
+--
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-365-                'creator_id' => Auth::id(),
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-366-            ];
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-367-            $mc = MailConfig::create($defaultConfig + ['type' => $type_before]);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-368-        }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-369-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-370-        // mc 存在，先取出旧的 config
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-371-        $config = array_merge($mc->config, $input['config'] ?? []);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-372-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-373-        if (isset($request->authorized_token)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-374-            if ($request->input('token_type') == 'sfuser') {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php:375:                $config['sfuser_authorized_token'] = $request->authorized_token;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-376-            }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-377-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-378-            if ($request->input('token_type') == 'department') {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-379-                $config['department_authorized_token'] = $request->authorized_token;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-380-            }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-381-        }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-382-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-383-        $input['config'] = $config;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-384-        $res = $mc->update($input);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-385-
+--
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-402-                'creator_id' => Auth::id(),
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-403-            ];
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-404-            $mc = MailConfig::create($defaultConfig + ['type' => $typeBefore]);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-405-        }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-406-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-407-        // mc 存在，先取出旧的 config
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-408-        $config = array_merge($mc->config, $input['config'] ?? []);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-409-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-410-        if (isset($request->authorized_token)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-411-            if ($request->input('token_type') == 'sfuser') {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php:412:                $config['sfuser_authorized_token'] = $request->authorized_token;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-413-            }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-414-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-415-            if ($request->input('token_type') == 'department') {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-416-                $config['department_authorized_token'] = $request->authorized_token;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-417-            }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-418-        }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-419-
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-420-        $input['config'] = $config;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-421-        $res = $mc->update($input);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\System\ConfigManagementController.php-422-

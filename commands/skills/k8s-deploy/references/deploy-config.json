@@ -1,0 +1,147 @@
+{
+  "base_path": "/home/username/Deployments",
+  "gitlab": {
+    "base_url": "https://pt-gitlab.yottastudios.com"
+  },
+  "kubectl": {
+    "image": "192.168.0.63:5000/px-infra-kubectl:latest",
+    "command_template": "docker run --rm {image} kubectl {args}",
+    "command_template_stdin": "docker run --rm -i {image} kubectl {args}",
+    "command_template_mount": "docker run --rm -v {local_path}:/manifests {image} kubectl {args}",
+    "host_ops_namespace": "host-ops",
+    "host_ops_deployment": "host-ops",
+    "host_mnt_prefix": "/host-mnt/data"
+  },
+  "registries": {
+    "test": {
+      "host": "192.168.0.63:5000",
+      "prefix": "px-",
+      "suffix": "-test",
+      "tag": "latest"
+    },
+    "prod": {
+      "host": "us.gcr.io/mocan-cloud",
+      "prefix": "px-",
+      "suffix": "",
+      "tag_sha": "${CI_COMMIT_SHORT_SHA}",
+      "tag_latest": "latest"
+    }
+  },
+  "domains": {
+    "test": "{name}.xtool-staging.yottastudios.com",
+    "prod": "{name}.yottastudios.com"
+  },
+  "repos": {
+    "test_kubernetes": {
+      "gitlab_path": "px/collabspace/kubernetes",
+      "local_path": "test/kubernetes",
+      "branch": "master"
+    },
+    "test_gateway": {
+      "gitlab_path": "px/infra/gateway",
+      "local_path": "test/gateway",
+      "branch": "master"
+    },
+    "prod_kubernetes": {
+      "gitlab_path": "px/collabspace-prod/kubernetes",
+      "local_path": "prod/kubernetes",
+      "branch": "aio-service"
+    },
+    "prod_gateway": {
+      "gitlab_path": "px/collabspace-prod/gateway",
+      "local_path": "prod/gateway",
+      "branch": "aio-service"
+    },
+    "ref_frontend": {
+      "gitlab_path": "px/collabspace/collabspace-web",
+      "local_path": "collabspace-web",
+      "branch": "master"
+    },
+    "ref_backend": {
+      "gitlab_path": "px/collabspace/collabspace-server",
+      "local_path": "collabspace-server",
+      "branch": "master"
+    },
+    "ref_deployment": {
+      "gitlab_path": "px/collabspace/deployment",
+      "local_path": "deployment",
+      "branch": "master"
+    }
+  },
+  "ci_runner": {
+    "docker_tag": "docker",
+    "shell_tag": "xshell",
+    "kubectl_image": "192.168.0.63:5000/px-infra-kubectl:latest",
+    "docker_image": "docker:19.03",
+    "gcloud_image": "192.168.0.63:5000/google/cloud-sdk:latest"
+  },
+  "deployment_repo": {
+    "url_template": "https://oauth2:{token}@pt-gitlab.yottastudios.com/px/collabspace/deployment.git",
+    "cache_dir_template": "shell-runner-cache/{project}-deployment"
+  },
+  "shared_services": {
+    "mysql": {
+      "host": "10.57.0.45",
+      "port": 30306,
+      "user": "root",
+      "password": "123456"
+    },
+    "mysql_private": {
+      "host": "10.57.0.45",
+      "port": 30306,
+      "user": "root",
+      "password": "123456"
+    },
+    "postgres": {
+      "host": "10.57.0.45",
+      "port": 30432,
+      "user": "postgres",
+      "password": "123456"
+    },
+    "minio": {
+      "host": "10.57.0.45",
+      "port": 30900,
+      "user": "minioadmin",
+      "password": "minioadmin",
+      "admin_url": "http://10.57.0.45:31901"
+    },
+    "minio_private": {
+      "host": "10.57.0.45",
+      "port": 30901,
+      "user": "minioadmin",
+      "password": "minioadmin",
+      "admin_url": "http://10.57.0.45:31902"
+    },
+    "mongo": {
+      "host": "10.57.0.45",
+      "port": 30017,
+      "user": "admin",
+      "password": "admin"
+    },
+    "rabbitmq": {
+      "host": "10.57.0.45",
+      "port": 30567,
+      "user": "root",
+      "password": "123456",
+      "admin_url": "http://10.57.0.45:31567"
+    },
+    "rabbitmq_private": {
+      "host": "10.57.0.45",
+      "port": 30568,
+      "user": "root",
+      "password": "123456",
+      "admin_url": "http://10.57.0.45:31568"
+    },
+    "elasticsearch": {
+      "host": "10.57.0.45",
+      "port": 30200
+    }
+  },
+  "grafana": {
+    "base_url": "https://xgrafana.xtool-staging.yottastudios.com",
+    "user": "pxtool",
+    "password": "pxtool123",
+    "loki_datasource_id": 2
+  },
+  "redis_strategy": "standalone_per_namespace"
+}

@@ -1,0 +1,873 @@
+D:\project\info-gitlab\oa\oa-server\app\Workflows\WorkflowRequestService.php-805-        }
+D:\project\info-gitlab\oa\oa-server\app\Workflows\WorkflowRequestService.php-806-
+D:\project\info-gitlab\oa\oa-server\app\Workflows\WorkflowRequestService.php-807-        if (!$backdoor) {
+D:\project\info-gitlab\oa\oa-server\app\Workflows\WorkflowRequestService.php:808:            // 如果下一个阶段的操作者是同一个人，再继续 perform 相同的 Action，再查一遍当前用户是否还有激活的操作
+D:\project\info-gitlab\oa\oa-server\app\Workflows\WorkflowRequestService.php-809-            /** @var WorkflowRequestAction $wra */
+D:\project\info-gitlab\oa\oa-server\app\Workflows\WorkflowRequestService.php-810-            $wra = WorkflowRequestAction::where([
+D:\project\info-gitlab\oa\oa-server\app\Workflows\WorkflowRequestService.php-811-                'request_id' => $this->requestModel->id,
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-313-     * `array_set_func` 是一个对数组中的某些键值对执行一些操作的方法，支持的具体操作见 `operate_target_array` 函数，`$func` 为
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-314-     * 一个闭包，会对旧的值进行转换，得到的新值会在 `$operation` 中包含 `add:*` 时添加到原数组中。
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-315-     *
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php:316:     * `$options` 当前只支持设置 `skip_error` 来跳过错误。
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-317-     *
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-318-     * @param mixed $target 目标数组
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-319-     * @param string $path 指定路径，支持通配符，比如 `staffs.*.username`，支持 `$this` 代指 `$target` 本身
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-325-     */
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-326-    function array_set_func(&$target, string $path, Closure $func, ?string $operation = null, array $options = []): void
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-327-    {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php:328:        $skipError = $options['skip_error'] ?? false;
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-329-        if (!is_array($target)) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php:330:            if ($skipError) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-331-                return;
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-332-            }
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-333-            throw new Exception(sprintf('target must be an element of array type, got %s', gettype($target)));
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-360-        } else {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-361-            // 如果目标数组不包含该 key，则不再继续进行下去
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-362-            if (!array_key_exists($seg, $target)) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php:363:                if ($skipError) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-364-                    return;
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-365-                }
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-366-                throw new Exception(sprintf('missing key in target element: %s', $seg));
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-412-    function array_set_func_recursive(array &$target, array $rules, string $parentPath, Closure $func, ?string $operation = null): void
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-413-    {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-414-        foreach ($target as $key => &$value) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php:415:            // 当前路径不在“要包括的路径”中，同时在“要排除的路径”中，则直接跳过
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-416-            $currPath = empty($parentPath) ? $key : "{$parentPath}.{$key}";
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-417-            if (
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-418-                !match_paths($currPath, $rules['included_paths'])
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-485-        $expSegs = explode('*', $exp);
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-486-        $offset = 0;
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-487-        for ($i = 0; $i < count($expSegs); ++$i) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php:488:            // 空段 (* 在首尾或连续多个 *) 直接跳过
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-489-            if ($expSegs[$i] === '') {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-490-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-491-            }
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-725-        // 合并 $prefix_conf 和 $api_conf 的中间件配置
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-726-        $middlewares = $prefix_conf['middlewares'];
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-727-        $middlewares = array_merge($middlewares, $api_conf['middlewares'] ?? []);
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php:728:        $middlewares = array_diff($middlewares, $api_conf['skip_middlewares'] ?? []);
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-729-
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-730-        return [
+D:\project\info-gitlab\oa\oa-server\app\Helpers\next.php-731-            'api_prefix' => $api_prefix,
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-157-function calculate_total_columns(array $needed_columns, array $total, array $data)
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-158-{
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-159-    foreach ($needed_columns as $row) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php:160:        // 如果查询结果中不存在则跳过
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-161-        if (!empty($data[$row])) {
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-162-            $total[$row] = round($total[$row], 2) + $data[$row];
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-163-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-735-    // 合并 $prefix_conf 和 $api_conf 的中间件配置
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-736-    $middlewares = $prefix_conf['middlewares'];
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-737-    $middlewares = array_merge($middlewares, $api_conf['middlewares'] ?? []);
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php:738:    $middlewares = array_diff($middlewares, $api_conf['skip_middlewares'] ?? []);
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-739-
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-740-    return [
+D:\project\info-gitlab\oa\oa-server\app\Helpers\functions.php-741-        'api_prefix' => $api_prefix,
+--
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-185-    public function fetchSpecialSfuser(string $processKey, string $type, array $context): array
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-186-    {
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-187-        // 只有运营, 美术, 市场会有第二第三个部门主管
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php:188:        $skip = true;
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-189-        $stakeholders = Stakeholder::getData($processKey, $type);   // ['type', 'ids', 'nicknames', 'special_config']
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-190-        if (empty($stakeholders)) {
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php:191:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-192-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-193-            }
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-194-            throw new WorkflowException("Special stakeholder type {$type} Not Found.1");
+--
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-215-        }
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-216-        // 如果 ids 为空
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-217-        if (empty($ids)) {
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php:218:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-219-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-220-            }
+D:\project\info-gitlab\oa\oa-server\app\Asset\States\Asset.php-221-            throw new WorkflowException("Special stakeholder type {$type} Not Found.2");
+--
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\RequestService.php-581-            return;
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\RequestService.php-582-        }
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\RequestService.php-583-
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\RequestService.php:584:        // 如果下一个阶段的操作者是同一个人，再继续 perform 相同的 Action，再查一遍当前用户是否还有激活的操作
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\RequestService.php-585-        /** @var CommonRequestAction $wra */
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\RequestService.php-586-        $wra = (new CommonRequestAction())->setTableByProcessKey($this->processKey)->where([
+D:\project\info-gitlab\oa\oa-server\app\Asset\Services\RequestService.php-587-            'request_id' => $this->requestModel->id,
+--
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php-56-    ];
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php-57-
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php-58-    // 某个 State 可以允许的操作
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php:59:    // 审批流程：申请人-SSC-直接主管
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php-60-    public $actions = [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php-61-        self::START => [
+D:\project\info-gitlab\oa\oa-server\app\Workflows\States\ElderlyCareLeave.php-62-            Action::APPROVE => [self::SSC_PENDING], // 申请人提交或者系统自动操作
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-51-            $start = $addMonth;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-52-            if ($endDate > '2025-04-01') {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-53-                if ($today <= $endDate) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php:54:                    info('处理'.$startDate.'至'.$endDate.'的 超过本月的不处理，跳过');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-55-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-56-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php:57:                // 如果 startDate 大于锁定审批日期，则跳过
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-58-                if ($today > $endDate && $today <= $lockApprovalDate) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php:59:                    info('处理'.$startDate.'至'.$endDate.'的 没有到锁定审批日期，跳过');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-60-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-61-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\DealAbsenteeismAttendanceUnusual.php-62-            }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyYaUserDismissed.php-19-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyYaUserDismissed.php-20-    public function handle(): int
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyYaUserDismissed.php-21-    {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyYaUserDismissed.php:22:        // 跳过
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyYaUserDismissed.php-23-        foreach ($this->yaSfusers as $yaSfuser) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyYaUserDismissed.php-24-            $payload = [
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyYaUserDismissed.php-25-                // 前端已经 base64_encode 过了
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyEbUserDismissed.php-19-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyEbUserDismissed.php-20-    public function handle(): int
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyEbUserDismissed.php-21-    {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyEbUserDismissed.php:22:        // 跳过
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyEbUserDismissed.php-23-        $nicknames = Arr::wrap($this->rsaNicknames);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyEbUserDismissed.php-24-        foreach ($nicknames as $nickname) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\ThirdApp\NotifyEbUserDismissed.php-25-            $payload = [
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\SendNotification.php-52-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\SendNotification.php-53-                $currN = CalendarService::app()->currentRevRank();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\SendNotification.php-54-                if ($currN > 10) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\SendNotification.php:55:                    // 剩下的日子超过 10 天，跳过
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\SendNotification.php-56-                    info('[ScheduleJob][SendNotification] finished #3');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\SendNotification.php-57-                    return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\SendNotification.php-58-                }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-44-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-45-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-46-        // 3个工作日内没有进行任何操作，第3个工作日19点自动执行
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php:47:        // 判断当前是否是工作日，不是工作日的话跳过
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-48-        // 非工作日不发送消息提醒
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-49-        $date = date('Y-m-d');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-50-        /** @var null|ShiftCalendar $calendar */
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-51-        $calendar = ShiftCalendar::where('full_date', $date)->first();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-52-        if (empty($calendar) || $calendar->is_holiday || $calendar->is_weekend) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php:53:            Log::info('not in calendar or not work day, skipped close dismissed eb accounts.');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-54-            info('[ScheduleJob][AutoCloseEbAccount] finished #2');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-55-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-56-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-107-            ->where('type', ResignationPermission::EASTBLUE_TYPE)
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-108-            ->first();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-109-        if (empty($rp)) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php:110:            Log::error('receivers not configured, skipped...');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-111-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-112-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-113-
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-115-        $rps = ResignationPermissionSfuser::whereIn('id', $ids)->get()->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-116-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-117-        $willOperateSfuserIds = [];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php:118:        $skippedIds = [];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-119-        /** @var ResignationPermissionSfuser $item */
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-120-        foreach ($rps as $item) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-121-            $sfuserId = $item['sfuser_id'];
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-123-            $nickname = Arr::get($extraInfo, 'eb_nickname', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-124-            if (empty($nickname)) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-125-                // 这部分我们没办法和 EB 进行交互
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php:126:                $skippedIds[] = $sfuserId;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-127-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-128-            }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-129-            $willOperateSfuserIds[] = $item['sfuser_id'];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-130-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php:131:        if ($skippedIds) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php:132:            Log::info('some sfuser ids missing eb nickname', [$skippedIds]);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-133-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-134-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Resignation\AutoCloseEbAccount.php-135-        if (empty($willOperateSfuserIds)) {
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\RefreshViewableTabs.php-32-    public function handle(): void
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\RefreshViewableTabs.php-33-    {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\RefreshViewableTabs.php-34-        if (!in_array($this->type, PerformanceCache::TYPES)) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\RefreshViewableTabs.php:35:            Log::error(__CLASS__.' skipped...', ['type' => $this->type]);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\RefreshViewableTabs.php-36-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\RefreshViewableTabs.php-37-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\RefreshViewableTabs.php-38-
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-43-            if ($this->mode == self::MODE_LAST_CHECK) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-44-                if ($notLastDay) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-45-                    info(sprintf(
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php:46:                        '[PSE] current date is %s, dispatched date is %s, skipped...',
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-47-                        $currentDate,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-48-                        $dispatchedDate
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-49-                    ));
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-51-                    return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-52-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-53-                if ($before20) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php:54:                    info('20点之前 跳过不发送邮件...'.now()->hour);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-55-                    info('[ScheduleJob][PerformanceSendEmail] finished #2');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-56-                    return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-57-                }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-84-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-85-        // 默认检查 date，主要是方便测试操作
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-86-        if ($notLastDay) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php:87:            info(sprintf('[PSE] current date is %s, dispatched date is %s, skipped...', $currentDate, $dispatchedDate));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-88-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-89-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\PerformanceSendEmail.php-90-
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-46-        // 默认检查 date，主要是方便测试操作
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-47-        $checkDate = Arr::get($this->context, 'check_date', true);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-48-        if ($checkDate && $currentDate != $dispatchedDate) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php:49:            info(sprintf('[NPE] current date is %s, dispatched date is %s, skipped...', $currentDate, $dispatchedDate));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-50-            info('[ScheduleJob][NoPublishmentExpiration] finished #1');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-51-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-52-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-62-                $month = $this->context['month'];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-63-            }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-64-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php:65:            // 发布逾期一定是系统标记的，这里先做一个判断，如果当前年份存在发布逾期的记录，直接跳过吧
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-66-            // 可以避免中途更改了公司日历的情况
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-67-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-68-            if (
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-80-                // already exists expired operations
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-81-                if (Arr::get($this->context, 'check_existed', true)) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-82-                    // 默认检查是否存在
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php:83:                    info('already marked no publishment, skipped.....');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-84-                    info('[ScheduleJob][NoPublishmentExpiration] finished #2');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-85-                    return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoPublishmentExpiration.php-86-                }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoAppraisalExpiration.php-44-        // 默认检查 date，主要是方便测试操作
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoAppraisalExpiration.php-45-        $checkDate = Arr::get($this->context, 'check_date', true);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoAppraisalExpiration.php-46-        if ($checkDate && $currentDate != $dispatchedDate) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoAppraisalExpiration.php:47:            info(sprintf('[NAE] current date is %s, dispatched date is %s, skipped...', $currentDate, $dispatchedDate));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoAppraisalExpiration.php-48-            info('[ScheduleJob][NoAppraisalExpiration] finished #1');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoAppraisalExpiration.php-49-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\NoAppraisalExpiration.php-50-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\Init.php-42-            'year' => $this->year,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\Init.php-43-            'month' => $this->month,
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\Init.php-44-        ])->exists()) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\Init.php:45:            info('already generated performances records, skipped...');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\Init.php-46-            info('[ScheduleJob][Init] finished #1');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\Init.php-47-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\Init.php-48-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\CreateGroupWhenAppraisalExpired.php-34-        // 默认检查 date，主要是方便测试操作
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\CreateGroupWhenAppraisalExpired.php-35-        $checkDate = Arr::get($this->context, 'check_date', true);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\CreateGroupWhenAppraisalExpired.php-36-        if ($checkDate && $currentDate != $dispatchedDate) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\CreateGroupWhenAppraisalExpired.php:37:            info(sprintf('[CGW] current date is %s, dispatched date is %s, skipped...', $currentDate, $dispatchedDate));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\CreateGroupWhenAppraisalExpired.php-38-            info('[ScheduleJob][CreateGroupWhenAppraisalExpired] finished #1');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\CreateGroupWhenAppraisalExpired.php-39-            return;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Performance\CreateGroupWhenAppraisalExpired.php-40-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-60-                continue;
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-61-            }
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-62-
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php:63:            // if year < 2020 or year > current year, skip
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-64-            if ($record['year'] < 2020 || $record['year'] > date('Y') || !in_array($record['half_flag'], [1, 2])) {
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-65-                $result[] = [
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-66-                    'row_index' => $rowIndex,
+--
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-70-                continue;
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-71-            }
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-72-
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php:73:            // if current date is before 07-01 and half_flag is 2, skip
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-74-            if ($record['year'] == date('Y') && date('m-d') < '07-01' && $record['half_flag'] == 2) {
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-75-                $result[] = [
+D:\project\info-gitlab\oa\oa-server\app\PerformanceEvaluation\Services\Impl\PerformanceEvaluationServiceImpl.php-76-                    'row_index' => $rowIndex,
+--
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-42-            ->get()->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-43-
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-44-        $targetRequestIds = [];
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php:45:        $skippedRequestIds = [];
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-46-        foreach ($allDeductionRequests as $request) {
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-47-            /** @var \App\Models\WorkflowRequest $request */
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-48-            $data = $request['data'];
+--
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-53-                if ($state == State::COMPLETED && !isset($data['attendance_unusual_id'])) {
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-54-                    $targetRequestIds[] = $request['id'];
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-55-                } else {
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php:56:                    $skippedRequestIds[] = $request['id'];
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-57-                }
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-58-            }
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-59-        }
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-60-
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-61-        $this->log('Workflow Request Stage Target request ids: '.implode(',', $targetRequestIds));
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php:62:        $this->log('Workflow Request State Skipped request ids: '.implode(',', $skippedRequestIds));
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-63-
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-64-        // 每一个审批只能有两个操作，审批人发起审批，审核人通过审批
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-65-        $workflowRequestLogs = WorkflowRequestLog::whereIn('request_id', $targetRequestIds)
+--
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-70-        $this->log('Workflow Request Log: '.json_encode($workflowRequestLogs));
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-71-
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-72-        // 检查是否所有的 target request 都有两条操作记录
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php:73:        $skippedWorkflowRequestIds = [];
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-74-        foreach ($targetRequestIds as $requestId) {
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-75-            if (!isset($workflowRequestLogs[$requestId])) {
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-76-                $this->log("Workflow Request {$requestId} has no logs");
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php:77:                $skippedWorkflowRequestIds[] = $requestId;
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-78-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-79-            }
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-80-            $workflowRequestLog = $workflowRequestLogs[$requestId];
+--
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-82-        }
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-83-
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-84-        // 移除掉没有两条操作记录的 request id
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php:85:        $targetRequestIds = array_diff($targetRequestIds, $skippedWorkflowRequestIds);
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-86-        $this->log('Workflow Request Stage Target request ids: '.implode(',', $targetRequestIds));
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-87-
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-88-        // 针对每一条记录，找到对应的审批记录，完成后续的操作
+--
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-97-                ->where('id', '>', $requestId)
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-98-                ->get();
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-99-            if ($laterSameRequest->count() > 0) {
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php:100:                // 获取 data 中的 deduction_date, 如果是同一天，打印日志，跳过该 request 的处理
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-101-                foreach ($laterSameRequest as $request) {
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-102-                    $data = $request->data;
+D:\project\info-gitlab\oa\oa-server\app\Console\Commands\Fix\AnnualLeaves.php-103-                    $deductionDate = $data['deduction_date'];
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-39-            ->select('department', 'plan_reversal_date', 'loan_requests.sfuser_id', 'no', 'request_id', 'nickname');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-40-        $sfuserIds = (clone $allReversalPendingLoanRequests)->pluck('sfuser_id')->unique()->toArray();  // 取所有sfuser_id
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-41-        // 取排班, 找往后三个排班日，与plan_reversal_date对比。
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php:42:        // 判断当前是否是工作日，不是工作日的话跳过
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-43-        $date = date('Y-m-d');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-44-        /** @var null|ShiftCalendar $calendar */
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-45-        $calendar = ShiftCalendar::where('full_date', $date)->first();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-46-        if (empty($calendar) || $calendar->is_holiday || $calendar->is_weekend) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php:47:            Log::info('not in calendar or not work day, skipped.');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-48-            info('[ScheduleJob][SendReversalNotice] finished #1');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-49-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\SendReversalNotice.php-50-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-12-{
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-13-    protected const FIXED_GROUP_MEMBERS = [447342, 864888, 22419, 165924];
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-14-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php:15:    protected $skip;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-16-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-17-    /**
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-18-     * Create a new job instance.
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-19-     *
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php:20:     * @param mixed $skip
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-21-     * @return void
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-22-     */
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php:23:    public function __construct($skip = 0)
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-24-    {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php:25:        $this->skip = 0;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php:26:        if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php:27:            $this->skip = 1;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-28-        }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-29-    }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-30-
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-43-            ->orderBy('full_date', 'DESC')->first();
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-44-        // 每月最后一天工作日
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-45-        if ($shiftCalendarQuery == null || $shiftCalendarQuery->full_date != date('Y-m-d')) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php:46:            if (!$this->skip) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-47-                return 1;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-48-            }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\ManageMeicanKnockGroup.php-49-        }
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-68-                $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-69-                $sfuser_authorized_token = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-70-                if (!$sfuser_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:71:                    info('发送加班记录邮件 没有 tokens 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-72-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-73-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-74-                $department_authorized_token = Arr::get($config, 'department_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-75-                if (!$department_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:76:                    info('发送加班记录邮件 没有 department_authorized_token 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-77-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-78-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-79-                if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:80:                    info('发送加班记录邮件 没有 emails 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-81-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-82-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-83-                $sfuserId = substr($mailConfig['type'], strpos($mailConfig['type'], 'approval_report_') + 16);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-84-                if (!$sfuserId) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:85:                    info('发送加班记录邮件 没有 sfuserId 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-86-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-87-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-88-                $service = app(AttendanceService::class);
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-111-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-112-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-113-                if (empty($data) || empty($data['approvals'])) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php:114:                    info('发送加班记录邮件 没有数据跳过'.$sfuserId.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-115-                    $content = '<p >Dear '.$nicknameSend.',</p><p >'.$msgDate.'无加班记录。</p>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-116-                    $content .= '<br><span>👉点击快速跳转OA查看更多加班记录详情：<a href="'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record">'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record</a></span><br><br><br><br>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyWorkOvertimeJob.php-117-                    $subject = '【'.$sendDate.'】 加班记录汇总';
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-65-                $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-66-                $sfuser_token = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-67-                if (!$sfuser_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php:68:                    info('发送日报邮件 没有 tokens 跳过'.my_json_encode($mc));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-69-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-70-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-71-                if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php:72:                    info('发送日报邮件 没有 emails 跳过'.my_json_encode($mc));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-73-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-74-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-75-                $sfuserId = substr($mc['type'], strpos($mc['type'], 'daily_report_') + 13);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-76-                if (!$sfuserId) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php:77:                    info('发送日报邮件 没有 sfuserId 跳过'.my_json_encode($mc));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-78-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-79-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-80-                $dailyService = app(DailyReportService::class);
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-88-                    10000
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-89-                );
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-90-                if (empty($data) || empty($data['reports']) || empty($data['reports']['report_list'])) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php:91:                    info('发送日报邮件 没有数据跳过'.$sfuserId.my_json_encode($mc));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-92-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-93-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyReportJob.php-94-
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-68-                $toEmails = Arr::get($config, 'to_email');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-69-                $sfuser_authorized_token = Arr::get($config, 'sfuser_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-70-                if (!$sfuser_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:71:                    info('发送请假记录邮件 没有 tokens 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-72-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-73-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-74-                $department_authorized_token = Arr::get($config, 'department_authorized_token', '');
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-75-                if (!$department_authorized_token) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:76:                    info('发送请假记录邮件 没有 department_authorized_token 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-77-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-78-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-79-                if (!$toEmails) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:80:                    info('发送请假记录邮件 没有 emails 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-81-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-82-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-83-                $sfuserId = substr($mailConfig['type'], strpos($mailConfig['type'], 'approval_report_') + 16);
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-84-                if (!$sfuserId) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:85:                    info('发送请假记录邮件 没有 sfuserId 跳过'.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-86-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-87-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-88-                $service = app(AttendanceService::class);
+--
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-114-                }
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-115-
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-116-                if (empty($data) || empty($data['approvals'])) {
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php:117:                    info('发送请假记录邮件 没有数据跳过'.$sfuserId.my_json_encode($mailConfig));
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-118-                    $content = '<p >Dear '.$nicknameSend.',</p><p >'.$msgDate.'无请假记录。</p>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-119-                    $content .= '<br><span>👉点击快速跳转OA查看更多请假记录详情：<a href="'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record">'.'http://oa.xinyoudi.com'.'/home/#/admin-page/attendance-record</a></span><br><br><br><br>';
+D:\project\info-gitlab\oa\oa-server\app\Jobs\Notification\DailyApprovalJob.php-120-                    $subject = '【'.$sendDate.'】 请假记录汇总';
+--
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-28-    {
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-29-        Log::info('EnableOpenVPNAccount');
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-30-        if (!App::environment('production')) { // 测试服
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php:31:            Log::info('EnableOpenVPNAccount', ['skip']);
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-32-            return;
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-33-        }
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-34-        if (str_starts_with(config('app.name'), 'OA_STAGING')) { // 预发布
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php:35:            Log::info('EnableOpenVPNAccount', ['skip']);
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-36-            return;
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-37-        }
+D:\project\info-gitlab\oa\oa-server\app\Third\Jobs\EnableOpenVPNAccount.php-38-
+--
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-662-            /** @var null|PerformanceGroup $group */
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-663-            foreach ($groups as $group) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-664-                if (!empty($group->cc_nicknames)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php:665:                    Log::info('skip group', [
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-666-                        'group_id' => $group->id,
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-667-                        'cc_nicknames' => $group->cc_nicknames,
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-668-                    ]);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php:669:                    continue; // 如若已经存在记忆的人，直接跳过即可
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-670-                }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-671-                // $ccId2Nicknames is like [1 => '张三,李四', 2 => '王五'], the key is user id, the value is nickname
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\BackendController.php-672-                // we want only get the names of the users in this group and the key is not
+--
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\AttendanceController.php-158-    public function absent(Request $request): JsonResponse
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\AttendanceController.php-159-    {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\AttendanceController.php-160-        $input = Arr::only($request->all(), ['sfuser_id', 'attend_dates']);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\AttendanceController.php:161:        $data = $this->service->skipWork($input);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\AttendanceController.php-162-        return $this->responseJsonSuccess($data);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\AttendanceController.php-163-    }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\AttendanceController.php-164-
+--
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-322-        // 只有运营, 美术, 市场会有第二第三个部门主管
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-323-        $departments2 = Arr::only(CommonConst::PAY_STAMP_DEPARTMENT, CommonConst::SECOND_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-324-        $departments3 = Arr::only(CommonConst::PAY_STAMP_DEPARTMENT, CommonConst::THIRD_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php:325:        $skip = false;
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-326-        if ($type == CommonSpecialStakeholder::SECOND_SUPERVISOR_TYPE && !in_array($context['department'], $departments2)
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-327-            || $type == CommonSpecialStakeholder::THIRD_SUPERVISOR_TYPE && !in_array($context['department'], $departments3)) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php:328:            $skip = true;
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-329-        }
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-330-
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-331-        $stakeholders = Stakeholder::getData($connection, $type);
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-332-        if (empty($stakeholders)) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php:333:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-334-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-335-            }
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-336-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-374-
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-375-        // 如果 ids 为空
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-376-        if (empty($ids)) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php:377:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-378-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-379-            }
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Stamp.php-380-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-231-        // 只有运营, 美术, 市场会有第二第三个部门主管
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-232-        $departments2 = Arr::only(CommonConst::PAY_STAMP_DEPARTMENT, CommonConst::SECOND_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-233-        $departments3 = Arr::only(CommonConst::PAY_STAMP_DEPARTMENT, CommonConst::THIRD_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php:234:        $skip = false;
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-235-        if ($type == CommonSpecialStakeholder::SECOND_SUPERVISOR_TYPE && !in_array($context['department'], $departments2)
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-236-            || $type == CommonSpecialStakeholder::THIRD_SUPERVISOR_TYPE && !in_array($context['department'], $departments3)) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php:237:            $skip = true;
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-238-        }
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-239-
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-240-        $stakeholders = Stakeholder::getData($connection, $type);
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-241-        if (empty($stakeholders)) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php:242:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-243-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-244-            }
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-245-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-291-
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-292-        // 如果 ids 为空
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-293-        if (empty($ids)) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php:294:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-295-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-296-            }
+D:\project\info-gitlab\oa\oa-server\app\Oc\States\Payment.php-297-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-136-            return $this->responseJsonFail(__('my_api.param_error'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-137-        }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-138-        // 直接主管和部门主管是同一个人的
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php:139:        $sameIds = Sfuser::active()->whereIn('nickname_hash', $hash)->whereRaw('direct_supervisor_id=supervisor_id')->pluck('id')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-140-        // 根据员工的直接主管(去掉直接主管和部门主管是同一个人的, 避免重复通知)
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-141-        $directs = Sfuser::active()->whereIn('nickname_hash', $hash)->whereNotIn('id', $sameIds)->select(['nickname', 'direct_supervisor_id'])->get()->groupBy('direct_supervisor_id')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-142-        // 员工的部门主管
+--
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-212-                $nicknames[] = $dvv['nickname'];
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-213-            }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-214-            if (empty($dk) || empty($nicknames)) {
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php:215:                // 信息不全的直接跳过
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-216-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-217-            }
+D:\project\info-gitlab\oa\oa-server\app\Http\Controllers\Admin\Staff\SfuserController.php-218-            if ($type == 1) {
+--
+D:\project\info-gitlab\oa\oa-server\app\Oc\RequestService.php-532-            return;
+D:\project\info-gitlab\oa\oa-server\app\Oc\RequestService.php-533-        }
+D:\project\info-gitlab\oa\oa-server\app\Oc\RequestService.php-534-
+D:\project\info-gitlab\oa\oa-server\app\Oc\RequestService.php:535:        // 如果下一个阶段的操作者是同一个人，再继续 perform 相同的 Action，再查一遍当前用户是否还有激活的操作
+D:\project\info-gitlab\oa\oa-server\app\Oc\RequestService.php-536-        /** @var CommonRequestAction $wra */
+D:\project\info-gitlab\oa\oa-server\app\Oc\RequestService.php-537-        $wra = (new CommonRequestAction())->setConnection($this->connection)->where([
+D:\project\info-gitlab\oa\oa-server\app\Oc\RequestService.php-538-            'request_id' => $this->requestModel->id,
+--
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-202-        // 只有运营, 美术, 市场会有第二第三个部门主管
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-203-        $departments2 = Arr::only(CommonConst::LOAN_REVERSAL_DEPARTMENT, CommonConst::SECOND_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-204-        $departments3 = Arr::only(CommonConst::LOAN_REVERSAL_DEPARTMENT, CommonConst::THIRD_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php:205:        $skip = false;
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-206-        if ($type == CommonSpecialStakeholder::SECOND_SUPERVISOR_TYPE && !in_array($context['department'], $departments2)
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-207-            || $type == CommonSpecialStakeholder::THIRD_SUPERVISOR_TYPE && !in_array($context['department'], $departments3)) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php:208:            $skip = true;
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-209-        }
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-210-
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-211-        $stakeholders = Stakeholder::getData($processKey, $type);
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-212-        if (empty($stakeholders)) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php:213:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-214-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-215-            }
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-216-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-238-
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-239-        // 如果 ids 为空
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-240-        if (empty($ids)) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php:241:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-242-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-243-            }
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Reversal.php-244-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-252-        // 只有运营, 美术, 市场会有第二第三个部门主管
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-253-        $departments2 = Arr::only(CommonConst::LOAN_REVERSAL_DEPARTMENT, CommonConst::SECOND_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-254-        $departments3 = Arr::only(CommonConst::LOAN_REVERSAL_DEPARTMENT, CommonConst::THIRD_SUPERVISOR_DEPARTMENTS);
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php:255:        $skip = false;
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-256-        if ($type == CommonSpecialStakeholder::SECOND_SUPERVISOR_TYPE && !in_array($context['department'], $departments2)
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-257-            || $type == CommonSpecialStakeholder::THIRD_SUPERVISOR_TYPE && !in_array($context['department'], $departments3)) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php:258:            $skip = true;
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-259-        }
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-260-        $stakeholders = Stakeholder::getData($processKey, $type);   // ['type', 'ids', 'nicknames', 'special_config']
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-261-        if (empty($stakeholders)) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php:262:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-263-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-264-            }
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-265-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-286-        }
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-287-        // 如果 ids 为空
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-288-        if (empty($ids)) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php:289:            if ($skip) {
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-290-                return ['ids' => [], 'nicknames' => []];
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-291-            }
+D:\project\info-gitlab\oa\oa-server\app\Lr\States\Loan.php-292-            throw new WorkflowException("Special stakeholder type {$type} Not Found");
+--
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\RequestService.php-563-            return;
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\RequestService.php-564-        }
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\RequestService.php-565-
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\RequestService.php:566:        // 如果下一个阶段的操作者是同一个人，再继续 perform 相同的 Action，再查一遍当前用户是否还有激活的操作
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\RequestService.php-567-        /** @var CommonRequestAction $wra */
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\RequestService.php-568-        $wra = (new CommonRequestAction())->setTableByProcessKey($this->processKey)->where([
+D:\project\info-gitlab\oa\oa-server\app\Lr\Service\RequestService.php-569-            'request_id' => $this->requestModel->id,
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-194-
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-195-        // 获取居家办公的日期
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-196-        $homeDays = AttendanceHomeWorkingData::where('sfuser_id', $sfuserId)->whereBetween('home_working_date', [$startDate, $today])->where('is_enable', 1)->pluck('home_working_date')->toArray();
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php:197:        $skipDates = array_values(array_unique(array_merge($tmpDates, $homeDays)));
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-198-
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-199-        $data = [];
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-200-        for ($i = 0; $i < count($fullDates) - 1; ++$i) {
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-213-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-214-            }
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-215-            // 过滤掉居家办公的日期和过滤已经申请过加班晚到的日期
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php:216:            if (in_array($thisDay, $skipDates)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-217-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-218-            }
+D:\project\info-gitlab\oa\oa-server\app\Service\ApprovalManagementService.php-219-            // 前一天没有打卡记录
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\Administration\MeetingRoomService.php-322-
+D:\project\info-gitlab\oa\oa-server\app\Service\Administration\MeetingRoomService.php-323-        if (Arr::has($input, 'end_time')) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Administration\MeetingRoomService.php-324-            $query->whereTime('ma.end_time', '<=', Carbon::parse($input['end_time'])->toTimeString());
+D:\project\info-gitlab\oa\oa-server\app\Service\Administration\MeetingRoomService.php:325:            // 排除结束时间为24点的。24点在laravel会被算作0点。 而真的约到24点的，筛选条件为23:59:59，此时跳过该if语句，24点=0点符合筛选，且其他一切结束时间都符合，只需满足开始时间限制即可。
+D:\project\info-gitlab\oa\oa-server\app\Service\Administration\MeetingRoomService.php-326-            if (Arr::get($input, 'end_time') != '23:59:59') {
+D:\project\info-gitlab\oa\oa-server\app\Service\Administration\MeetingRoomService.php-327-                $query->whereTime('ma.end_time', '<>', '00:00:00');
+D:\project\info-gitlab\oa\oa-server\app\Service\Administration\MeetingRoomService.php-328-            }
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php-60-            // 检查是否已存在
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php-61-            $exists = ElderlyCareLeaveWhitelist::where('sfuser_id', $sfuserId)->active()->exists();
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php-62-            if ($exists) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php:63:                info('[陪护假] 添加白名单跳过：该员工已在白名单中', ['sfuser_id' => $sfuserId]);
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php-64-                $results[] = [
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php-65-                    'sfuser_id' => $sfuserId,
+D:\project\info-gitlab\oa\oa-server\app\Service\ElderlyCareLeaveService.php-66-                    'success' => false,
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\Shift\CalendarService.php-185-        $elements = [];
+D:\project\info-gitlab\oa\oa-server\app\Service\Shift\CalendarService.php-186-        foreach ($shiftCalendars as $fullDate => $shiftCalendar) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Shift\CalendarService.php-187-            $redis->hSet($redisKey, $fullDate, json_encode($shiftCalendar));
+D:\project\info-gitlab\oa\oa-server\app\Service\Shift\CalendarService.php:188:            // 节假日，跳过
+D:\project\info-gitlab\oa\oa-server\app\Service\Shift\CalendarService.php-189-            if ($shiftCalendar['is_weekend'] || $shiftCalendar['is_holiday']) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Shift\CalendarService.php-190-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\Shift\CalendarService.php-191-            }
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceService.php-1520-     * @param array $input
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceService.php-1521-     * @return bool
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceService.php-1522-     */
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceService.php:1523:    public function skipWork(array $input): bool
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceService.php-1524-    {
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceService.php-1525-        $sfuserId = $input['sfuser_id'] ?? 0;
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceService.php-1526-        $dates = $input['attend_dates'] ?? [];
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-35-            ->orderBy('calculate_date') // 从前往后排序，取出第一个大于今天的
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-36-            ->limit(1)->first();
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-37-        if (empty($attendanceCalculateDate)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php:38:            Log::error('calculate date not set, skipped.....');
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-39-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-40-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-41-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-45-        /** @var null|ShiftCalendar $curr */
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-46-        $curr = ShiftCalendar::where('full_date', $today)->first();
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-47-        if (empty($curr)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php:48:            Log::error('calendar not init, skipped...');
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-49-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-50-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-51-
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-52-        if ($curr->is_holiday || $curr->is_weekend) {
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php:53:            // 是节假日或者工作日，跳过即可
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-54-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-55-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-56-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-60-
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-61-        if ($count != 2 && $count != 4) {
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-62-            // 前一个工作日或者前三个工作日
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php:63:            Log::info('not 1 day or 3 days before, skipped....', [$today, $calculateDate, $count]);
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-64-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-65-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\AttendanceNotificationService.php-66-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-46-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-47-
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-48-        if ($curr->is_holiday || $curr->is_weekend) {
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php:49:            info('当前日期是节假日或者工作日，跳过'.$today);
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-50-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-51-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-52-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-56-
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-57-        // 提醒时间：考勤截止确认前3天（需要是工作日）14:00、考勤截止确认当天14:00
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-58-        if ($count != 2 && $count != 4) {
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php:59:            info('前一个工作日或者前三个工作日 跳过....'.$today.' count:'.$count.' calculateDate:'.$calculateDate);
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-60-            return 1;
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-61-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\FangBuNotificationService.php-62-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\QuotaManagementService.php-367-                    $messages[$quota['row_id']][] = '加班调整数据格式错误';
+D:\project\info-gitlab\oa\oa-server\app\Service\QuotaManagementService.php-368-                }
+D:\project\info-gitlab\oa\oa-server\app\Service\QuotaManagementService.php-369-
+D:\project\info-gitlab\oa\oa-server\app\Service\QuotaManagementService.php:370:                if ($failed) { // 跳过当前异常数据
+D:\project\info-gitlab\oa\oa-server\app\Service\QuotaManagementService.php-371-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\QuotaManagementService.php-372-                }
+D:\project\info-gitlab\oa\oa-server\app\Service\QuotaManagementService.php-373-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\NotifyNumberService.php-156-    public function modifyIndividual(int $sfuserId, string $type, int $delta = 1, bool $logChange = true): int
+D:\project\info-gitlab\oa\oa-server\app\Service\NotifyNumberService.php-157-    {
+D:\project\info-gitlab\oa\oa-server\app\Service\NotifyNumberService.php-158-        if (!in_array($type, static::NOTIFY_TYPES)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\NotifyNumberService.php:159:            info('[NotifyNumber] 无效的待办类型，跳过更新', ['sfuserId' => $sfuserId, 'type' => $type]);
+D:\project\info-gitlab\oa\oa-server\app\Service\NotifyNumberService.php-160-            return 0;
+D:\project\info-gitlab\oa\oa-server\app\Service\NotifyNumberService.php-161-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\NotifyNumberService.php-162-        $redisKey = config('my_project.site_key').':'.static::REDIS_KEY_PREFIX.$sfuserId;
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-922-                    'user_id' => $performance['sfuser_id'],
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-923-                    'id' => $performance['performance_id'],
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-924-                ])->first();
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php:925:                // 绩效不存在，表示不是本地区的数据，直接跳过
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-926-                if (empty($p)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-927-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-928-                }
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-929-
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-930-                if ($staffSide && $p->expiration_status == Performance::EXPIRATION_STATUS_NO_PUBLISHMENT) {
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php:931:                    // 发布逾期，直接跳过
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-932-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-933-                }
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-934-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-960-                }
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-961-
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-962-                if ($staffSide && $pg->expiration_status == Performance::EXPIRATION_STATUS_NO_PUBLISHMENT) {
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php:963:                    // 发布逾期，直接跳过
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-964-                    continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-965-                }
+D:\project\info-gitlab\oa\oa-server\app\Service\PerformanceService.php-966-
+--
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterRequestService.php-479-            return;
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterRequestService.php-480-        }
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterRequestService.php-481-
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterRequestService.php:482:        // 如果下一个阶段的操作者是同一个人，再继续 perform 相同的 Action，再查一遍当前用户是否还有激活的操作
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterRequestService.php-483-        /** @var LivingWaterRequestAction $wra */
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterRequestService.php-484-        $wra = LivingWaterRequestAction::where([
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterRequestService.php-485-            'request_id' => $this->requestModel->id,
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-13-{
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-14-    use TService;
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-15-
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php:16:    // 只要配置的 skip_middlewares 里面包含下面中的任意一个，就跳过
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-17-    protected $middlewares = ['CheckPermission', CheckPermission::class];
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-18-
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-19-    /**
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-25-    {
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-26-        return array_unique(
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-27-            array_keys(array_filter(config('my_web_api'), function ($api) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php:28:                $skip_middlewares = $api['skip_middlewares'] ?? [];
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php:29:                if (!empty(array_intersect($skip_middlewares, $this->middlewares))) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-30-                    return 0;
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-31-                }
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-32-                return 1;
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-42-    public function getApiMetaData(): array
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-43-    {
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-44-        return collect(array_filter(config('my_web_api'), function ($api) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php:45:            $skip_middlewares = $api['skip_middlewares'] ?? [];
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php:46:            if (!empty(array_intersect($skip_middlewares, $this->middlewares))) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-47-                return 0;
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-48-            }
+D:\project\info-gitlab\oa\oa-server\app\Service\Permission\OperationService.php-49-            return 1;
+--
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterNeedRequestService.php-466-            return;
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterNeedRequestService.php-467-        }
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterNeedRequestService.php-468-
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterNeedRequestService.php:469:        // 如果下一个阶段的操作者是同一个人，再继续 perform 相同的 Action，再查一遍当前用户是否还有激活的操作
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterNeedRequestService.php-470-        /** @var LivingWaterNeedRequestAction $wra */
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterNeedRequestService.php-471-        $wra = LivingWaterNeedRequestAction::where([
+D:\project\info-gitlab\oa\oa-server\app\LivingWater\Services\LivingWaterNeedRequestService.php-472-            'request_id' => $this->requestModel->id,
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-46-
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-47-        $records = $data['records'];
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-48-        if (empty($records)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php:49:            Log::error('cc empty records, skipped'.$publishmentId);
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-50-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-51-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-52-
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-53-        $p = PerformancePublishment::find($publishmentId);
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-54-        if (empty($p)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php:55:            Log::error('cc not found publishment, maybe not in current site, skipped....'.$publishmentId);
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-56-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-57-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-58-
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-59-        $ccUserIds = $data['ccs'];
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-60-        if (empty($ccUserIds)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php:61:            Log::error('cc empty cc user ids, skipped'.$publishmentId);
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-62-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-63-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-64-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-123-
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-124-        $records = $data['records'];
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-125-        if (empty($records)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php:126:            Log::error('empty records, skipped'.$publishmentId);
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-127-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-128-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-129-
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-130-        $p = PerformancePublishment::find($publishmentId);
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-131-        if (empty($p)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php:132:            Log::error('not found publishment, maybe not in current site, skipped....'.$publishmentId);
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-133-            return false;
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-134-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\Performance\PerformanceEmailService.php-135-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ReimbursementLedgerService.php-207-                        $ex = $ex->where('total_money', $v['total_money']);
+D:\project\info-gitlab\oa\oa-server\app\Service\ReimbursementLedgerService.php-208-                    }
+D:\project\info-gitlab\oa\oa-server\app\Service\ReimbursementLedgerService.php-209-                    if ($ex->exists()) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ReimbursementLedgerService.php:210:                        info('台账已存在，跳过 '.my_json_encode($v));
+D:\project\info-gitlab\oa\oa-server\app\Service\ReimbursementLedgerService.php-211-                        continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\ReimbursementLedgerService.php-212-                    }
+D:\project\info-gitlab\oa\oa-server\app\Service\ReimbursementLedgerService.php-213-                } catch (Exception $e) {
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-537-        // 针对 EB 权限列的处理，直接加一把大锁好了
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-538-        $lockerKey = $this->redisLockerKey(ResignationPermission::EASTBLUE_TYPE);
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-539-        $frontendItems = array_column($input, null, 'id');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:540:        $skipIds = [];
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-541-        $existsIds = [];
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-542-        $existsNicknames = [];
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-543-        $sumTodoNumDiff = 0;
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-553-            }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-554-            if (empty($nickname)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-555-                Log::error('missing eb nickname: '.$record->sfuser_id);
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:556:                // 再判断一次，如果存在空的，跳过执行，标记一下
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:557:                $skipIds[] = $record->id;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-558-                continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-559-            }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-560-
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-573-//                }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-574-//            } catch (\Throwable $e) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-575-//                Log::error('failed to call eb api', ['e' => $e->getMessage(), 'sfuser_id' => $record->sfuser_id]);
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:576://                $skipIds[] = $record->id;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-577-//            }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-578-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-579-
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:580:        if (!empty($skipIds) && !$system) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:581:            return str_replace('?', implode(',', $skipIds), 'some operations failed, the staff user resignation permission ids are: ?');
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-582-        }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-583-
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-584-        $lock = Cache::lock($lockerKey, 10);
+--
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-602-                            }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-603-                        }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-604-                    }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php:605:                    if (in_array($record->id, $skipIds)) {
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-606-                        continue;
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-607-                    }
+D:\project\info-gitlab\oa\oa-server\app\Service\ResignationService.php-608-                    $executionInfo = $frontendItems[$record->id] ?? [];

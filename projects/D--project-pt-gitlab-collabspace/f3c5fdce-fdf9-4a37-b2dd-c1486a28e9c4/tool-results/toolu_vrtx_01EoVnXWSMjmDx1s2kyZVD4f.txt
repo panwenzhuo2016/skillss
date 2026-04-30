@@ -1,0 +1,310 @@
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-67-        String taskId = spaceNodeMigrationUpdateManager.createMigrationTask(
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-68-                ro.getSpaceNodeIds(), 
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-69-                ro.getTargetSpaceId(), 
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-70-                sourceSpaceId, 
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-71-                userId,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-72-                ro.getIsRemained()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-73-        );
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-74-        return ResponseData.success(taskId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-75-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-76-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-77-    @GetResource(path = "/task/{taskId}", requiredPermission = false)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-78-    @Operation(summary = "Get migration task info")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-79-    public ResponseData<SpaceNodeMigrationTaskVo> getMigrationTaskInfo(
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-80-            @PathVariable("taskId") @Parameter(description = "Task ID", example = "spc123-spc456-1234567890") String taskId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-81-        SpaceNodeMigrationTaskVo taskInfo = spaceNodeMigrationQueryManager.getMigrationTaskInfo(taskId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-82-        return ResponseData.success(taskInfo);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-83-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-84-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-85-    @GetResource(path = "/managedSpaces", requiredPermission = false)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-86-    @Operation(summary = "Get user managed spaces for migration")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java:87:    public ResponseData<List<SpaceVo>> listManagedSpaceForMigration() {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-88-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java:89:        List<SpaceVo> spaces = spaceNodeMigrationQueryManager.listManagedSpaceForMigration(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-90-        return ResponseData.success(spaces);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-91-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-92-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-93-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-94-    @PostResource(path = "/copyFile")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-95-    @Parameters({
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-96-            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-97-                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-98-    })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-99-    @Operation(summary = "Copy file")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-100-    public ResponseData<List<CopyFileVo>> copyFile(@RequestBody @Valid CopyFileRo ro){
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-101-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-102-        String spaceId = SpaceHolder.get();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-103-        permissionChecker.requireUser(userId).onNodes(ro.getSpaceNodeIds()).needRole(RoleConstants.SpaceNode.EDITOR);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-104-        List<CopyFileVo> voList = spaceNodeMigrationUpdateManager.copyFile(ro.getSpaceNodeIds(), userId, spaceId, spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-105-        return ResponseData.success(voList);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-106-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-107-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-108-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-109-    @PostResource(path = "/version/copy")
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-1-package com.yottastudios.ns.collabspace.workspace.manager.query;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-2-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-3-import com.yottastudios.ns.collabspace.space.vo.SpaceVo;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-4-import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeMigrationTaskVo;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-5-import com.yottastudios.ns.collabspace.workspace.vo.VersionSnapshotVo;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-6-import jakarta.validation.constraints.NotEmpty;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-7-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-8-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-9-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-10-public interface SpaceNodeMigrationQueryManager {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-11-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-12-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-13-     * source取target的task相关信息
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-14-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-15-    SpaceNodeMigrationTaskVo getMigrationTaskInfo(String taskId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-16-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java:17:    List<SpaceVo> listManagedSpaceForMigration(Long userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-18-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-19-    List<VersionSnapshotVo> listVersionSnapshot(Long spaceNodeId, Integer status);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\SpaceNodeMigrationQueryManager.java-20-}
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-47-    private SpaceQueryManager spaceQueryManager;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-48-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-49-    @Resource
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-50-    private ISpaceAppRelService spaceAppRelService;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-51-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-52-    @Resource
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-53-    private IVersionSnapshotService versionSnapshotService;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-54-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-55-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-56-    public SpaceNodeMigrationTaskVo getMigrationTaskInfo(String taskId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-57-        if (constProperties.isMirror()) { //mirror环境为跨服务器迁移, 从对方服务获取数据
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-58-            return collabspaceGrpcClientService.getSpaceNodeMigrationTask(taskId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-59-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-60-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-61-        SpaceNodeMigrationTaskEntity task = spaceNodeMigrationTaskService.getByTaskId(taskId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-62-        ExceptionUtil.isNotNull(task, DatabaseException.QUERY_EMPTY_BY_ID);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-63-        return new SpaceNodeMigrationTaskVo(task);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-64-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-65-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-66-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java:67:    public List<SpaceVo> listManagedSpaceForMigration(Long userId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-68-        if (constProperties.isMirror()) { //mirror环境为跨服务器迁移, 从对方服务获取数据
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-69-            UserSimpleInfoVo user = apitableGrpcClientService.getUserById(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-70-            String email = user.getEmail();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java:71:            return collabspaceGrpcClientService.listManagedSpaceForMigration(email);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-72-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-73-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-74-        List<SpaceEntity> spaceEntities = spaceQueryManager.getMemberManagedSpace(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-75-        return spaceEntities.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-76-                .map(entity -> {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-77-                    List<SpaceAppRelEntity> spaceAppRels = spaceAppRelService.listBySpaceId(entity.getSpaceId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-78-                    return new SpaceVo(entity, spaceAppRels);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-79-                })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-80-                .collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-81-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-82-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-83-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-84-    public List<VersionSnapshotVo> listVersionSnapshot(Long spaceNodeId, Integer status) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-85-        List<CollabspaceVersionSnapshotEntity> list = versionSnapshotService.getByNodeId(spaceNodeId, status);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-86-        if (list.isEmpty()){
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-87-            return new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-88-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-89-        List<Long> creatorList = new ArrayList<>(list.stream().map(CollabspaceVersionSnapshotEntity::getCreatedBy).toList());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-90-        List<Long> operatorList = list.stream().map(CollabspaceVersionSnapshotEntity::getOperatorId).toList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeMigrationQueryManagerImpl.java-91-        if (!operatorList.isEmpty()){
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-62-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-63-        if (spaceNodes.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-64-            log.info("No Affine nodes found for migration");
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-65-            return SpaceNodeMigrationResult.builder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-66-                    .successCount(0)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-67-                    .failedCount(0)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-68-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-69-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-70-        List<String> affineNodeIds = spaceNodes.stream().map(SpaceNodeVo::getAppSpaceNodeId).toList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-71-        // 从 migrationConfig 中获取复制来源空间站对应的 Affine 空间站 id
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-72-        String sourceAffineSpaceId = migrationConfig.getSourceSpaceAppRels().stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-73-                .filter(appRel -> Objects.equals(appRel.getAppType(), 2))
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-74-                .map(SpaceAppRelVo::getAppSpaceId)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-75-                .findFirst()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-76-                .orElse(null);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-77-        log.info("处理 sourceSpaceId, 获取 Affine 应用内的 spaceId: {} -> {}", sourceSpaceId, sourceAffineSpaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-78-        if (sourceAffineSpaceId == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-79-            throw new Error("获取复制来源空间站对应的 Affine 空间站 id 失败");
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-80-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-81-        String email = migrationConfig.getEmail();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java:82:        List<SpaceVo> spaceVos = collabspaceGrpcClientService.listManagedSpaceForMigration(email);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-83-        log.info("private spaceVos: {}", spaceVos);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-84-        Optional<SpaceAppRelEntity> spaceAppRel = spaceAppRelService.listBySpaceIdAndAppType(targetSpaceId, 2).stream().findFirst();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-85-        String targetAffineSpaceId = spaceAppRel.map(SpaceAppRelEntity::getAppSpaceId).orElse(null);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-86-        log.info("处理 targetSpaceId, 获取 Affine 应用内的 spaceId: {} -> {}", targetSpaceId, targetAffineSpaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-87-        if (targetAffineSpaceId == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-88-            throw new Error("获取模板空间站对应的 Affine 空间站 id 失败");
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-89-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-90-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-91-        Map<String, String> nodeIdMapping = new HashMap<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-92-        int successCount = 0;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-93-        int failedCount = 0;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-94-        try {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-95-            log.info("开始导出文档 docIds: {}; spaceId: {}", affineNodeIds, sourceAffineSpaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-96-            String downloadUrl = affineService.exportDoc(affineNodeIds, sourceAffineSpaceId, targetAffineSpaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-97-            log.info("导出文档到 minio: {}", downloadUrl);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-98-            if (downloadUrl == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-99-                throw new Error("导出文档到 minio 失败");
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-100-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-101-            nodeIdMapping = affineService.importDocToPrivate(downloadUrl, targetAffineSpaceId, email);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\thirdparty\impl\AffineCrossMigrationServiceImpl.java-102-            log.info("导入成功: {}", nodeIdMapping);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-476-        try {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-477-            SpaceNodeMigrationTaskEntity entity = spaceNodeMigrationTaskService.getByTaskId(request.getTaskId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-478-            GetSpaceNodeMigrationTaskResult result = GetSpaceNodeMigrationTaskResult.newBuilder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-479-                    .setTaskId(entity.getTaskId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-480-                    .setEmail(entity.getEmail() != null ? entity.getEmail() : "")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-481-                    .setTargetSpaceId(entity.getTargetSpaceId() != null ? entity.getTargetSpaceId() : "")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-482-                    .setSourceSpaceId(entity.getSourceSpaceId() != null ? entity.getSourceSpaceId() : "")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-483-                    .setErrorMessage(entity.getErrorMessage() != null ? entity.getErrorMessage() : "")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-484-                    .setStatus(entity.getStatus())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-485-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-486-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-487-            responseObserver.onNext(result);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-488-            responseObserver.onCompleted();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-489-        } catch (Exception e) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-490-            log.error("getSpaceNodeMigrationTask error: taskId={}", request.getTaskId(), e);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-491-            responseObserver.onError(e);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-492-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-493-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-494-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-495-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java:496:    public void listManagedSpaceForMigration(ListManagedSpaceForMigrationRequest request, StreamObserver<ListManagedSpaceForMigrationResult> responseObserver) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java:497:        log.info("listManagedSpaceForMigration: email={}", request.getEmail());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-498-        try {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-499-            UserSimpleInfoVo user = apitableGrpcClientService.getUserByEmail(request.getEmail());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-500-            if (user == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-501-                log.error("User not found with email: {}", request.getEmail());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-502-                responseObserver.onNext(ListManagedSpaceForMigrationResult.newBuilder().build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-503-                responseObserver.onCompleted();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-504-                return;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-505-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-506-            Long userId = user.getId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-507-            List<SpaceEntity> spaceEntities = spaceQueryManager.getMemberManagedSpace(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-508-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-509-            List<SpaceInfo> spaceInfos = spaceEntities.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-510-                    .map(entity -> SpaceInfo.newBuilder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-511-                            .setSpaceId(entity.getSpaceId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-512-                            .setName(entity.getName())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-513-                            .setOwner(entity.getOwner())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-514-                            .build())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-515-                    .collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-516-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-517-            ListManagedSpaceForMigrationResult result = ListManagedSpaceForMigrationResult.newBuilder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-518-                    .addAllSpaces(spaceInfos)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-519-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-520-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-521-            responseObserver.onNext(result);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-522-            responseObserver.onCompleted();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-523-        } catch (Exception e) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java:524:            log.error("listManagedSpaceForMigration error: email={}", request.getEmail(), e);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-525-            responseObserver.onError(e);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-526-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-527-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-528-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-529-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-530-    public void logMethod(LogMethodRequest request, StreamObserver<BasicResult> responseObserver) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-531-        try {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-532-            MethodLogEntity entity = MethodLogEntity.builder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-533-                    .traceId(request.getTraceId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-534-                    .spaceId(request.getSpaceId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-535-                    .methodName(request.getMethodName())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-536-                    .className(request.getClassName())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-537-                    .createdBy(request.getUserId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-538-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-539-            methodLogService.save(entity);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-540-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-541-            BasicResult result = BasicResult.newBuilder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-542-                    .setCode(DEFAULT_SUCCESS_CODE)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-543-                    .setMessage(DEFAULT_SUCCESS_MESSAGE)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceServingServiceImpl.java-544-                    .setSuccess(true)
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-104-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-105-            SpaceNodeMigrationTaskStatusEnum statusEnum = SpaceNodeMigrationTaskStatusEnum.fromValue(result.getStatus());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-106-            String statusDesc = statusEnum != null ? statusEnum.getDesc() : "";
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-107-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-108-            return SpaceNodeMigrationTaskVo.builder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-109-                    .taskId(result.getTaskId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-110-                    .sourceSpaceId(result.getSourceSpaceId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-111-                    .targetSpaceId(result.getTargetSpaceId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-112-                    .email(result.getEmail())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-113-                    .status(result.getStatus())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-114-                    .statusDesc(statusDesc)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-115-                    .errorMessage(result.getErrorMessage())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-116-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-117-        } catch (StatusRuntimeException e) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-118-            log.error("grpc getSpaceNodeMigrationTask error: taskId={}", taskId, e);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-119-            return null;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-120-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-121-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-122-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-123-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java:124:    public List<SpaceVo> listManagedSpaceForMigration(String email) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-125-        try {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-126-            ListManagedSpaceForMigrationRequest request = ListManagedSpaceForMigrationRequest.newBuilder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-127-                    .setEmail(email)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-128-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-129-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java:130:            ListManagedSpaceForMigrationResult result = collabspacePrivateStub.listManagedSpaceForMigration(request);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-131-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java:132:            log.info("listManagedSpaceForMigration success: email={}, spacesCount={}", email, result.getSpacesCount());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-133-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-134-            return result.getSpacesList().stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-135-                    .map(spaceInfo -> SpaceVo.builder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-136-                            .spaceId(spaceInfo.getSpaceId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-137-                            .name(spaceInfo.getName())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-138-                            .owner(spaceInfo.getOwner())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-139-                            .apps(spaceAppRelService.listBySpaceId(spaceInfo.getSpaceId()).stream().map(SpaceAppRelVo::new).toList())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-140-                            .build())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-141-                    .collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-142-        } catch (StatusRuntimeException e) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java:143:            log.error("grpc listManagedSpaceForMigration error: email={}", email, e);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-144-            return new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-145-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-146-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-147-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-148-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-149-    public List<AnnouncementEntity> getExactAnnouncement() {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-150-        GetExactAnnouncementRequest request = GetExactAnnouncementRequest.newBuilder().build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-151-        log.info("start getExactAnnouncement, 运行环境：{}", constProperties.isInternalNetwork());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-152-        GetExactAnnouncementResult result = collabspaceMirrorStub.getExactAnnouncement(request);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-153-        log.info("mirror获取待发公告, 运行环境：{}", constProperties.isInternalNetwork());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-154-        List<GetListAnnouncementVo> voList = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-155-        result.getListList().forEach(
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-156-                val -> {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-157-                    GetListAnnouncementVo vo = JSONUtil.toBean(val, GetListAnnouncementVo.class);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-158-                    vo.setStatus(AnnouncementStatus.WAITING.getCode());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-159-                    voList.add(vo);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-160-                }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-161-        );
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-162-        List<Long> currentIdList = voList.stream().map(GetListAnnouncementVo::getId).toList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\impl\CollabspaceGrpcClientServiceImpl.java-163-        // 2. 从Redis中获取历史上待发送的公告ID集合
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-17-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-18-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-19-     * 内部创建source(collabspace-mirror)->target(collabspace-private)的迁移任务, 这里是source请求target发起任务, 并传递必要信息
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-20-     * @param spaceNodeTree source希望同步的文件的树结构
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-21-     * @param email 操作者邮箱
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-22-     * @param targetSpaceId 要同步到的space的Id
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-23-     * @param sourceSpaceId 源space的Id
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-24-     * @param sourceSpaceApps 源space的各个子应用的信息
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-25-     * @return taskId
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-26-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-27-    String createSpaceNodeMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId, String sourceSpaceId, List<SpaceAppRelVo> sourceSpaceApps);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-28-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-29-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-30-     * source取target的task相关信息
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-31-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-32-    SpaceNodeMigrationTaskVo getSpaceNodeMigrationTask(String taskId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-33-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-34-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-35-     * collabspace-mirror 取 collabspace-private上用户管理的空间站用于迁移
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-36-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java:37:    List<SpaceVo> listManagedSpaceForMigration(String email);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-38-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-39-    List<AnnouncementEntity> getExactAnnouncement();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-40-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-41-    List<SpaceWithNodeVo> listManagedSpaceDataSheetMirror(Long userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\grpc\ICollabspaceGrpcClientService.java-42-}

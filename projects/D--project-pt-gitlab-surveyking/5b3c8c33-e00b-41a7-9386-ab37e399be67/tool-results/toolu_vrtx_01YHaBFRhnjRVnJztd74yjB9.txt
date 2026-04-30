@@ -1,0 +1,1239 @@
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-90-	 */
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-91-	@Override
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-92-	public void beforeLaunchProcess(PublicProjectView projectView) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:93:		SurveySchema schema = projectView.getSurvey();
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:94:		if (schema == null) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-95-			return;
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-96-		}
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:97:		FlowEntryNode node = entryNodeService.getById(schema.getId());
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-98-		// 未设置流程
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-99-		if (node == null) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-100-			return;
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-101-		}
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-102-		// 流程申请人为空
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-103-		if (node.getIdentity() == null) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:104:			SchemaHelper.updateSchemaByPermission(node.getFieldPermission(), schema);
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-105-			return;
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-106-		}
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-107-		// 需要登录，如开启了工作流或者设置了成员/部门题都需要登录才能答卷
+--
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-114-		Set<String> userGroups = userService.getUserGroups(userId);
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-115-		for (String identity : node.getIdentity()) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-116-			if (userGroups.contains(identity)) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:117:				SchemaHelper.updateSchemaByPermission(node.getFieldPermission(), schema);
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-118-				return;
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-119-			}
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-120-		}
+--
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-304-	@Override
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-305-	public SurveySchema loadSchemaByPermission(SchemaQuery query) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-306-		ProjectView projectView = projectService.getProject(query.getProjectId());
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:307:		SurveySchema schema = projectView.getSurvey();
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-308-		FlowEntryNode element = entryNodeService.getById(query.getTaskDefKey());
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-309-		if (element == null) {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:310:			return schema;
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-311-		}
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:312:		SchemaHelper.updateSchemaByPermission(element.getFieldPermission(), schema);
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java:313:		return schema;
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-314-	}
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-315-
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\impl\FlowServiceImpl.java-316-	@Override
+--
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-14-public interface FlowService {
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-15-
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-16-	/**
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java:17:	 * 启动前过滤过滤当前问卷 schema
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-18-	 * @param projectView
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-19-	 * @return
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-20-	 */
+--
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-53-	PaginationResponse<FlowTaskView> getFlowTasks(FlowTaskQuery query);
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-54-
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-55-	/**
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java:56:	 * 查询当前任务节点根据权限过滤之后的 schema
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-57-	 * @param query
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-58-	 * @return
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\service\FlowService.java-59-	 */
+--
+D:\project\pt-gitlab\surveyking\server\api\src\main\java\cn\surveyking\server\api\AnswerApi.java-139-	/**
+D:\project\pt-gitlab\surveyking\server\api\src\main\java\cn\surveyking\server\api\AnswerApi.java-140-	 * 修改答案上传附件
+D:\project\pt-gitlab\surveyking\server\api\src\main\java\cn\surveyking\server\api\AnswerApi.java-141-	 * @param request 附件
+D:\project\pt-gitlab\surveyking\server\api\src\main\java\cn\surveyking\server\api\AnswerApi.java:142:	 * @return 项目 schema
+D:\project\pt-gitlab\surveyking\server\api\src\main\java\cn\surveyking\server\api\AnswerApi.java-143-	 */
+D:\project\pt-gitlab\surveyking\server\api\src\main\java\cn\surveyking\server\api\AnswerApi.java-144-	@PostMapping("/upload")
+D:\project\pt-gitlab\surveyking\server\api\src\main\java\cn\surveyking\server\api\AnswerApi.java-145-	@PreAuthorize("hasAuthority('answer:upload')")
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadView.java-11-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadView.java-12-	private String projectId;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadView.java-13-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadView.java:14:	private SurveySchema schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadView.java-15-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadView.java-16-}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadRequest.java-15-	private String projectId;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadRequest.java-16-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadRequest.java-17-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadRequest.java:18:	 * 是否根据行头自动创建 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadRequest.java-19-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadRequest.java-20-	private Boolean autoSchema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\AnswerUploadRequest.java-21-
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-1-package cn.surveyking.server.core.uitls;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-2-/*
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java:3: * Slightly modified version of the com.ibatis.common.jdbc.ScriptRunner class
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-4- * from the iBATIS Apache project. Only removed dependency on Resource class
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-5- * and a constructor
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-6- * GPSHansl, 06.08.2015: regex for delimiter, rearrange comment/delimiter detection, remove some ide warnings.
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-30-/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-31- * Tool to run database scripts
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-32- */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java:33:public class ScriptRunner {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-34-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-35-	private static final String DEFAULT_DELIMITER = ";";
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-36-
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-65-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-66-	 * Default constructor
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-67-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java:68:	public ScriptRunner(Connection connection, boolean autoCommit, boolean stopOnError) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-69-		this.connection = connection;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-70-		this.autoCommit = autoCommit;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ScriptRunner.java-71-		this.stopOnError = stopOnError;
+--
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\api\FlowApi.java-47-	}
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\api\FlowApi.java-48-
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\api\FlowApi.java-49-	/**
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\api\FlowApi.java:50:	 * 加载问卷 schema
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\api\FlowApi.java-51-	 * @param query
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\api\FlowApi.java-52-	 * @return
+D:\project\pt-gitlab\surveyking\server\flow\src\main\java\cn\surveyking\server\flow\api\FlowApi.java-53-	 */
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-20-import java.util.stream.Collectors;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-21-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-22-/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:23: * schema的一些帮助方法
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-24- *
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-25- * @author javahuang
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-26- * @date 2021/8/10
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-51-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-52-	private static MessageSource initMessageSource() {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-53-		ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:54:		messageSource.setBasenames("i18n/schema");
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-55-		messageSource.setDefaultEncoding("UTF-8");
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-56-		messageSource.setFallbackToSystemLocale(false);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-57-		return messageSource;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-58-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-59-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-60-	public static String getOpenIdColumnName() {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:61:		return i18n("schema.column.customField", OPENID_COLUMN_NAME);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-62-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-63-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-64-	private static String i18n(String code, String defaultMessage, Object... args) {
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-70-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-71-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-72-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:73:	 * 将 schema 解析为导出的 excel的header
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-74-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:75:	 * @param schemaDataTypes 问题数据类型列表
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-76-	 * @param mode            项目模式
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-77-	 * @return Excel表头列表
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-78-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:79:	public static List<String> parseColumns(List<SurveySchema> schemaDataTypes, ProjectModeEnum mode) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-80-		List<String> result = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:81:		result.add(i18n("schema.column.serialNumber", "序号"));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-82-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-83-		// 添加问题标题
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:84:		schemaDataTypes.forEach(schemaType -> result.add(schemaType.getTitle()));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-85-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-86-		// 考试模式添加分数列
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-87-		if (ProjectModeEnum.exam.equals(mode)) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:88:			result.add(i18n("schema.column.score", "分数"));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-89-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-90-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-91-		// 添加固定的元数据列
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-92-		result.addAll(Arrays.asList(
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-93-				getOpenIdColumnName(),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:94:				i18n("schema.column.submitter", "提交人"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:95:				i18n("schema.column.submitTime", "提交时间"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:96:				i18n("schema.column.duration", "填写时长"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:97:				i18n("schema.column.device", "填写设备"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:98:				i18n("schema.column.os", "操作系统"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:99:				i18n("schema.column.browser", "浏览器"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:100:				i18n("schema.column.region", "填写地区"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:101:				i18n("schema.column.ip", "IP"),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:102:				i18n("schema.column.id", "ID")));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-103-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-104-		return result;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-105-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-106-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-107-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:108:	 * @param schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-109-	 * @return 有数据
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-110-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:111:	public static List<SurveySchema> flatSurveySchema(SurveySchema schema) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:112:		return flatSurveySchemaWitchOption(schema, false);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-113-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-114-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-115-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:116:	 * @param schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-117-	 * @param withOption 是否解析选项
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-118-	 * @return 有数据
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-119-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:120:	public static List<SurveySchema> flatSurveySchemaWitchOption(SurveySchema schema, boolean withOption) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-121-		List<SurveySchema> dataTypes = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:122:		// 选项 schema 额类型为 Option 或者为空
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:123:		if (SurveySchema.QuestionType.dataType().contains(schema.getType()) || (withOption
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:124:				&& (SurveySchema.QuestionType.Option.equals(schema.getType()) || schema.getType() == null))) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:125:			SurveySchema dataType = schema.deepCopy();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:126:			dataType.setTitle(trimHtmlTag(schema.getTitle()));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-127-			dataTypes.add(dataType);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-128-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:129:		if (schema.getChildren() != null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:130:			schema.getChildren().forEach(child -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-131-				dataTypes.addAll(flatSurveySchemaWitchOption(child, withOption));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-132-			});
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-133-		}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-139-	 * 转换答案为导出 excel 的行格式
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-140-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-141-	 * @param answerInfo 单条答案记录
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:142:	 * @param dataTypes  所有的问题 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-143-	 * @param index      当前行索引
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-144-	 * @param mode       项目模式
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-145-	 * @return excel 行记录
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-181-			List<Object> rowData) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-182-		LinkedHashMap<String, Object> answer = answerInfo.getAnswer();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-183-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:184:		for (SurveySchema schemaType : dataTypes) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:185:			String questionId = schemaType.getId();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:186:			SurveySchema.QuestionType questionType = schemaType.getType();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-187-			Object valueObj = answer.get(questionId);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-188-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-189-			if (valueObj == null) {
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-191-				continue;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-192-			}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-193-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:194:			Object parsedValue = parseQuestionValue(schemaType, valueObj, answerInfo);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-195-			rowData.add(parsedValue);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-196-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-197-	}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-199-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-200-	 * 根据问题类型解析问题值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-201-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:202:	private static Object parseQuestionValue(SurveySchema schemaType, Object valueObj, AnswerView answerInfo) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:203:		SurveySchema.QuestionType questionType = schemaType.getType();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-204-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-205-		switch (questionType) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-206-			case Upload:
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-207-			case Signature:
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-208-				return parseFileQuestionValue(valueObj, answerInfo);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-209-			case Cascader:
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:210:				return parseCascaderQuestionValue(schemaType, valueObj);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-211-			case User:
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-212-				return parseUserQuestionValue(valueObj, answerInfo);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-213-			case Dept:
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-214-				return parseDeptQuestionValue(valueObj, answerInfo);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-215-			case MatrixAuto:
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:216:				return parseMatrixAutoQuestionValue(schemaType, valueObj);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-217-			default:
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-218-				if (questionType.name().startsWith("Matrix")) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:219:					return parseMatrixQuestionValue(schemaType, valueObj, questionType);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-220-				} else {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:221:					return parseStandardQuestionValue(schemaType, valueObj);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-222-				}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-223-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-224-	}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-248-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-249-	 * 解析层级选择器问题值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-250-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:251:	private static String parseCascaderQuestionValue(SurveySchema schemaType, Object valueObj) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-252-		Map<?, ?> mapValue = (Map<?, ?>) valueObj;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-253-		List<String> result = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:254:		List<SurveySchema.DataSource> dataSources = schemaType.getDataSource();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-255-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:256:		for (SurveySchema child : schemaType.getChildren()) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-257-			String optionId = child.getId();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-258-			String optionValue = (String) mapValue.get(optionId);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-259-			SurveySchema.DataSource dataSource = dataSources.stream()
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-310-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-311-	 * 解析标准问题值（单选、多选、填空等）
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-312-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:313:	private static String parseStandardQuestionValue(SurveySchema schemaType, Object valueObj) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:314:		return schemaType.getChildren().stream()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:315:				.map(optionSchema -> parseOptionValue(schemaType, optionSchema, valueObj))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-316-				.filter(Objects::nonNull)
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-317-				.collect(Collectors.joining(","));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-318-	}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-320-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-321-	 * 解析选项值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-322-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:323:	private static String parseOptionValue(SurveySchema schemaType, SurveySchema optionSchema, Object valueObj) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-324-		Object optionValue = ((Map<?, ?>) valueObj).get(optionSchema.getId());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-325-		if (optionValue == null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-326-			return null;
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-349-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-350-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-351-		// 单选或多选填空题
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:352:		if (SurveySchema.QuestionType.Radio.equals(schemaType.getType())
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:353:				|| SurveySchema.QuestionType.Checkbox.equals(schemaType.getType())) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-354-			return String.format("%s(%s)", trimHtmlTag(optionSchema.getTitle()), optionValue);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-355-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-356-
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-383-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-384-	 * 解析矩阵自动问题值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-385-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:386:	private static String parseMatrixAutoQuestionValue(SurveySchema schemaType, Object valueObj) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-387-		List<String> result = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-388-		((List<Map<?, ?>>) valueObj).forEach(rowValue -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-389-			List<String> matrixRowData = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-390-			rowValue.forEach((optionId, v) -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:391:				SurveySchema optionSchema = schemaType.getChildren().stream()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-392-						.filter(option -> option.getId().equals(optionId))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-393-						.findFirst()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-394-						.orElse(null);
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-401-							.getLabel();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-402-					matrixRowData.add(label);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-403-				} else if (v instanceof Boolean) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:404:					String title = trimHtmlTag(schemaType.getChildren().stream()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-405-							.filter(x -> x.getId().equals(optionId))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-406-							.findFirst()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-407-							.orElseGet(SurveySchema::new)
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-419-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-420-	 * 解析矩阵问题值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-421-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:422:	private static String parseMatrixQuestionValue(SurveySchema schemaType, Object valueObj,
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-423-			SurveySchema.QuestionType questionType) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-424-		List<String> result = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-425-		((Map<?, ?>) valueObj).forEach((optionId, valueMap) -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:426:			String title = trimHtmlTag(schemaType.getRow().stream()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-427-					.filter(x -> x.getId().equals(optionId))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-428-					.findFirst()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-429-					.orElseGet(SurveySchema.Row::new)
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-432-			List<String> valueList = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-433-			((LinkedHashMap<?, ?>) valueMap).forEach((childOptId, val) -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-434-				if (val != null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:435:					String processedValue = schemaType.getChildren().stream()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-436-							.filter(x -> x.getId().equals(childOptId))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-437-							.findFirst()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-438-							.map(x -> processMatrixCellValue(x, val, questionType))
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-512-	private static List<Object> createErrorRowData(int index) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-513-		List<Object> errorRow = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-514-		errorRow.add(index);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:515:		errorRow.add(i18n("schema.error.rowData", "数据解析错误"));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-516-		return errorRow;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-517-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-518-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-519-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:520:	 * @param optionSchema 选项 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-521-	 * @param optionValue
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-522-	 * @return
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-523-	 */
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-574-	 * 根据字段权限更新Schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-575-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-576-	 * @param fieldPermission 字段权限映射
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:577:	 * @param schema          Schema对象
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-578-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:579:	public static void updateSchemaByPermission(LinkedHashMap<String, Integer> fieldPermission, SurveySchema schema) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:580:		if (schema.getChildren() == null || fieldPermission == null || fieldPermission.isEmpty()) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-581-			return;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-582-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-583-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-584-		// 移除隐藏的题目，设置只读权限
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:585:		schema.getChildren().removeIf(child -> processChildPermission(child, fieldPermission));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-586-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-587-		// 递归处理子项
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:588:		schema.getChildren().forEach(child -> updateSchemaByPermission(fieldPermission, child));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-589-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-590-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-591-	/**
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-618-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-619-	 * 确保Schema具有Attribute对象
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-620-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:621:	 * @param schema Schema对象
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-622-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:623:	private static void ensureAttributeExists(SurveySchema schema) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:624:		if (schema.getAttribute() == null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:625:			schema.setAttribute(new SurveySchema.Attribute());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-626-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-627-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-628-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-629-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:630:	 * 移除 schema 里面的指定属性值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-631-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:632:	 * @param schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-633-	 * @param attributes
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-634-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:635:	public static void ignoreAttributes(SurveySchema schema, String... attributes) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:636:		if (schema.getAttribute() != null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-637-			for (String attributeName : attributes) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:638:				BeanWrapper wrapper = PropertyAccessorFactory.forBeanPropertyAccess(schema.getAttribute());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-639-				wrapper.setPropertyValue(attributeName, null);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-640-			}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-641-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:642:		if (schema.getChildren() == null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-643-			return;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-644-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:645:		schema.getChildren().forEach(child -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-646-			ignoreAttributes(child, attributes);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-647-		});
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-648-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-649-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-650-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:651:	 * 根据属性名和属性值找到所有满足条件的子 schema 列表
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-652-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:653:	 * @param schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-654-	 * @param attributeName
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-655-	 * @param attributeValue
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-656-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:657:	public static List<SurveySchema> findSchemaListByAttribute(SurveySchema schema, String attributeName,
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-658-			Object attributeValue) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-659-		List<SurveySchema> result = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:660:		BeanWrapper wrapper = PropertyAccessorFactory.forBeanPropertyAccess(schema.getAttribute());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-661-		if (attributeValue.equals(wrapper.getPropertyValue(attributeName))) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:662:			result.add(schema);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-663-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:664:		if (schema.getChildren() != null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:665:			schema.getChildren().forEach(child -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-666-				result.addAll(findSchemaListByAttribute(child, attributeName, attributeValue));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-667-			});
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-668-		}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-670-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-671-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-672-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:673:	 * 根据属性名查找子 schema 列表
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-674-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:675:	 * @param schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-676-	 * @param attributeName
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-677-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:678:	public static List<SurveySchema> findSchemaHasAttribute(SurveySchema schema, String attributeName) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-679-		List<SurveySchema> result = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:680:		BeanWrapper wrapper = PropertyAccessorFactory.forBeanPropertyAccess(schema.getAttribute());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-681-		Object attrValue = wrapper.getPropertyValue(attributeName);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-682-		if (attrValue != null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:683:			result.add(schema);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-684-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:685:		if (schema.getChildren() != null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:686:			schema.getChildren().forEach(child -> {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-687-				result.addAll(findSchemaHasAttribute(child, attributeName));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-688-			});
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-689-		}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-713-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-714-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-715-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:716:	 * 将问题 schema 添加到问卷里面
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-717-	 * 
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:718:	 * @param parent 问卷 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:719:	 * @param child  问题 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-720-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-721-	public static void appendChildIfNotExist(SurveySchema parent, SurveySchema child) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-722-		boolean exists = flatSurveySchema(parent).stream().anyMatch(x -> child.getId().equals(x.getId()));
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-835-		long seconds = (duration / MILLISECONDS_PER_SECOND) % 60;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-836-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-837-		if (days > 0) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:838:			parts.add(i18n("schema.duration.days", "{0}天", days));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-839-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-840-		if (hours > 0) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:841:			parts.add(i18n("schema.duration.hours", "{0}小时", hours));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-842-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-843-		if (minutes > 0) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:844:			parts.add(i18n("schema.duration.minutes", "{0}分钟", minutes));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-845-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-846-		if (seconds > 0) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:847:			parts.add(i18n("schema.duration.seconds", "{0}秒", seconds));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-848-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-849-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-850-		if (parts.isEmpty()) {
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-899-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-900-	public enum LoginFormFieldEnum {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-901-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:902:		username("schema.login.username", "用户名", SurveySchema.DataType.text),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:903:		password("schema.login.password", "密码", SurveySchema.DataType.password),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:904:		extraPassword("schema.login.extraPassword", "请输入问卷密码", SurveySchema.DataType.text),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java:905:		whitelistName("schema.login.whitelistName", "请先输入名单，再进行填写", SurveySchema.DataType.text);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-906-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-907-		private final String titleKey;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\SchemaHelper.java-908-
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-85-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-86-    @SneakyThrows
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-87-    private void parseRadioOrJudge(Row r, SurveySchema.QuestionType questionType) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:88:        SurveySchema schema = row2schema(r);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:89:        schema.setType(questionType);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:90:        schema.getAttribute().setExamAnswerMode(SurveySchema.ExamScoreMode.onlyOne);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-91-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-92-        TemplateRequest templateRequest = TemplateRequest.builder().questionType(questionType)
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:93:                .mode(ProjectModeEnum.exam).name(schema.getTitle())
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-94-                .serialNo(r.getCellText(0))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:95:                .template(schema).build();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-96-        result.add(templateRequest);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-97-    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-98-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-99-    @SneakyThrows
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-100-    private void parseCheckbox(Row r) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:101:        SurveySchema schema = row2schema(r);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:102:        schema.setType(SurveySchema.QuestionType.Checkbox);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:103:        schema.getAttribute().setExamAnswerMode(SurveySchema.ExamScoreMode.selectAll);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-104-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-105-        TemplateRequest templateRequest = TemplateRequest.builder().questionType(SurveySchema.QuestionType.Checkbox)
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-106-                .serialNo(r.getCellText(0))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:107:                .mode(ProjectModeEnum.exam).name(schema.getTitle()).template(schema).build();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-108-        result.add(templateRequest);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-109-    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-110-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-111-    @SneakyThrows
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-112-    private void parseFillBlank(Row r) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:113:        SurveySchema schema = row2schema(r);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:114:        SurveySchema.QuestionType questionType = schema.getChildren().size() > 1
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-115-                ? SurveySchema.QuestionType.MultipleBlank : SurveySchema.QuestionType.FillBlank;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:116:        schema.setType(questionType);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:117:        schema.getAttribute().setExamAnswerMode(SurveySchema.ExamScoreMode.selectAll);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:118:        schema.getAttribute().setExamMatchRule(SurveySchema.ExamMatchRule.completeSame);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-119-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-120-        TemplateRequest templateRequest = TemplateRequest.builder().questionType(questionType)
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-121-                .serialNo(r.getCellText(0))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:122:                .mode(ProjectModeEnum.exam).name(schema.getTitle()).template(schema).build();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-123-        result.add(templateRequest);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-124-    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-125-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-126-    @SneakyThrows
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-127-    private void parseTextarea(Row r) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:128:        SurveySchema schema = row2schema(r);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:129:        schema.setType(SurveySchema.QuestionType.Textarea);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-130-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:131:        schema.getAttribute().setExamAnswerMode(SurveySchema.ExamScoreMode.selectAll);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:132:        schema.getAttribute().setExamMatchRule(SurveySchema.ExamMatchRule.completeSame);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-133-        String correctAnswer = getCellAsString(r, "examCorrectAnswer");
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-134-        // 简答题没有设置选项，只有答案列，所以需要手动的添加 option
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:135:        schema.setChildren(Collections.singletonList(SurveySchema.builder().id(generateId())
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-136-                .attribute(SurveySchema.Attribute.builder().examCorrectAnswer(correctAnswer).build()).build()));
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-137-        ;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-138-        TemplateRequest templateRequest = TemplateRequest.builder().questionType(SurveySchema.QuestionType.Textarea)
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-139-                .serialNo(r.getCellText(0))
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:140:                .mode(ProjectModeEnum.exam).name(schema.getTitle()).template(schema).build();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-141-        result.add(templateRequest);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-142-    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-143-
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-158-        return false;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-159-    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-160-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java:161:    private SurveySchema row2schema(Row r) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-162-        String title = getCellAsString(r, "title");
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-163-        String correctAnswer = getCellAsString(r, "examCorrectAnswer");
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\RepoTemplateExcelParseHelper.java-164-        Double examScore = getCellAsDouble(r, "examScore");
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-15- */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-16-public class ProjectStatHelper {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-17-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java:18:	final SurveySchema schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-19-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-20-	final List<AnswerView> answers;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-21-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java:22:	public ProjectStatHelper(SurveySchema schema, List<AnswerView> answers) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java:23:		this.schema = schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-24-		this.answers = answers;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-25-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-26-
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-50-	}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-51-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-52-	private Map<String, PublicStatisticsView.QuestionStatistics> initQuestionStatistics() {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java:53:		List<SurveySchema> flatSurveySchema = SchemaHelper.flatSurveySchema(schema);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-54-		// 只有问题配置了 statEnabled 和选项配置了 quota 属性的题才能进行统计
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-55-		List<SurveySchema> canStatSchema = flatSurveySchema.stream()
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\ProjectStatHelper.java-56-				.filter(questionSchema -> Boolean.TRUE.equals(questionSchema.getAttribute().getStatEnabled())
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-86-		// 创建启动文件
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-87-		createFileFromProperties(properties);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-88-		// 执行数据库初始化操作
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java:89:		initDatabaseSchema(properties);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-90-		// 完成
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-91-		finish();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-92-	}
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-201-	 * @param properties
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-202-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-203-	@SneakyThrows
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java:204:	private static void initDatabaseSchema(DatabaseInitProperties properties) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-205-		if (!yesOrNo("是否执行数据库初始化操作？")) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-206-			return;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-207-		}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-208-		try (Connection connection = DriverManager.getConnection(String.format("jdbc:mysql://%s:%d/%s",
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-209-				properties.getDbIp(), properties.getDbPort(), properties.getDbName()), properties.getUsername(),
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-210-				properties.getPassword())) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java:211:			ScriptRunner runner = new ScriptRunner(connection, false, false);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-212-			String file = getJarFilePath() + File.separator + String.format(INIT_DB_SCRIPT_FILE_NAME, db);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-213-			if (!new File(file).exists()) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-214-				colorOutput(String.format("初始化脚本不存在 %s", file), 2);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java:215:				initDatabaseSchema(properties);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-216-				return;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-217-			}
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\DatabaseInitHelper.java-218-			runner.runScript(new BufferedReader(new FileReader(file)));
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-14-@Slf4j
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-15-public class AnswerScoreEvaluator {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-16-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:17:    // 问卷 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:18:    private final SurveySchema schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-19-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-20-    // 当前答案
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-21-    private final LinkedHashMap answer;
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-24-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-25-    LinkedHashMap<String, Double> questionScore = new LinkedHashMap<>();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-26-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:27:    public AnswerScoreEvaluator(SurveySchema schema, LinkedHashMap answer) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:28:        this.schema = schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-29-        this.answer = answer;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-30-        evaluatorList.add(new OnlyOneEvaluator());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-31-        evaluatorList.add(new SelectAllEvaluator());
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-39-     * @return
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-40-     */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-41-    public Double eval() {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:42:        return doEval(schema);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-43-    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-44-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-45-    /**
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-68-    interface Evaluator {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-69-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-70-        /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:71:         * @param qSchema 当前问题的 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-72-         * @return 当前问题的分值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-73-         */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-74-        Double eval(SurveySchema qSchema);
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-75-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-76-        /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:77:         * @param qSchema 当前问题的 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-78-         * @return 是否能使用当前 evaluator 计算分值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-79-         */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-80-        boolean support(SurveySchema qSchema);
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-86-        /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-87-         * 只有一个正确答案
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-88-         *
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:89:         * @param qSchema 当前问题的 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-90-         * @return
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-91-         */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-92-        @Override
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-120-        /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-121-         * 全部答对才得分
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-122-         *
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:123:         * @param qSchema 当前问题的 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-124-         * @return
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-125-         */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-126-        @Override
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-163-        /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-164-         * 按正确答案计分，选择题答错不得分、填空题按正确答案算分
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-165-         *
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:166:         * @param qSchema 当前问题的 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-167-         * @return
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-168-         */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-169-        @Override
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-202-        /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-203-         * 按选中的答案算分
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-204-         *
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:205:         * @param qSchema 当前问题的 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-206-         * @return
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-207-         */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-208-        @Override
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-217-                    Double score = option.getAttribute().getExamScore();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-218-                    if (score == null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-219-                        score = .0;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:220:                        log.warn("问卷{}问题{}选项{}未设置分值", schema.getId(), qSchema.getId(), option.getId());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-221-                    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-222-                    sum += score;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-223-                }
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-251-    }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-252-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-253-    /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:254:     * @param qSchema     问题 schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-255-     * @param optionId    选项 id
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-256-     * @param optionValue 选项的值
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-257-     * @return 该选项答案是否匹配正确答案
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-269-                .get();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-270-        String correctAnswer = optionSchema.getAttribute().getExamCorrectAnswer();
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-271-        if (correctAnswer == null) {
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:272:            log.warn("问卷{}问题{}选项{}未设置正确答案", schema.getId(), qSchema.getId(), optionSchema.getId());
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-273-            return false;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-274-        }
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-275-        // 多个正确答案可以按照（回车键）隔开，只要有一个正确即可
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-287-    /**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-288-     * 选择题selectCorrect选择了错误的，整题不会得分；填空题selectCorrect只计算正确的分数
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-289-     *
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java:290:     * @param qSchema 问题schema
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-291-     * @return 是否是填空题
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-292-     */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\core\uitls\AnswerScoreEvaluator.java-293-    private boolean isBlank(SurveySchema qSchema) {
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicExamResult.java-13-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicExamResult.java-14-	private String name;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicExamResult.java-15-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicExamResult.java:16:	private SurveySchema schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicExamResult.java-17-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicExamResult.java-18-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicExamResult.java-19-	 * 考试分数
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryView.java-15-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryView.java-16-	 * 展示的查询表单
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryView.java-17-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryView.java:18:	private SurveySchema schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryView.java-19-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryView.java-20-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryView.java-21-	 * 答案
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryVerifyView.java-14-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryVerifyView.java-15-	private String password;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryVerifyView.java-16-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryVerifyView.java:17:	private SurveySchema schema;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryVerifyView.java-18-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\PublicQueryVerifyView.java-19-}
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java-131-    public TemplateView getTemplate(TemplateQuery query) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java-132-        Template template = this.getById(query.getId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java-133-        TemplateView templateView = templateViewMapper.toView(template);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java:134:        SurveySchema schema = template.getTemplate();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java:135:        schema.setId(query.getId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java-136-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java-137-        UserBook userBook = userBookService.getOne(Wrappers.<UserBook>lambdaQuery().eq(UserBook::getTemplateId, query.getId())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\TemplateServiceImpl.java-138-                .eq(UserBook::getCreateBy, SecurityContextUtils.getUserId()));
+--
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\SurveySchema.java-40-	private List<LinkSurvey> linkSurveys;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\SurveySchema.java-41-
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\SurveySchema.java-42-	/**
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\SurveySchema.java:43:	 * 当前 schema 标签
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\SurveySchema.java-44-	 */
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\SurveySchema.java-45-	private List<String> tags;
+D:\project\pt-gitlab\surveyking\server\shared\src\main\java\cn\surveyking\server\domain\dto\SurveySchema.java-46-
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-77-                .eq(query.getId() != null, Answer::getId, query.getId()).orderByDesc(Answer::getCreateAt));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-78-        List<AnswerView> list = answerViewMapper.toView(page.getRecords());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-79-        Project project = projectMapper.selectById(query.getProjectId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:80:        FlatSurveySchemaByType schemaByType = parseSurveySchemaByType(project.getSurvey());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:81:        list.forEach(view -> setAnswerExtraInfo(view, schemaByType));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-82-        return new PaginationResponse<>(page.getTotal(), list);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-83-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-84-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:85:    private FlatSurveySchemaByType parseSurveySchemaByType(SurveySchema schema) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:86:        FlatSurveySchemaByType schemaByType = new FlatSurveySchemaByType();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:87:        List<SurveySchema> schemaDataTypes = SchemaHelper.flatSurveySchema(schema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:88:        schemaByType.setSchemaDataTypes(schemaDataTypes);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:89:        schemaByType.setUserQuestions(parseSurveySchemaByType(schemaDataTypes, SurveySchema.QuestionType.User));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:90:        schemaByType.setDeptQuestions(parseSurveySchemaByType(schemaDataTypes, SurveySchema.QuestionType.Dept));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:91:        schemaByType.setFileQuestions(parseSurveySchemaByType(schemaDataTypes, SurveySchema.QuestionType.Signature));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:92:        schemaByType.getFileQuestions()
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:93:                .addAll((parseSurveySchemaByType(schemaDataTypes, SurveySchema.QuestionType.Upload)));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:94:        return schemaByType;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-95-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-96-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-97-    private List<SurveySchema> parseSurveySchemaByType(List<SurveySchema> flattedSurveySchema,
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-99-        return flattedSurveySchema.stream().filter(x -> x.getType() == questionType).collect(Collectors.toList());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-100-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-101-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:102:    private void setAnswerExtraInfo(AnswerView view, FlatSurveySchemaByType schemaByType) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:103:        setAnswerTypeInfo(schemaByType.getDeptQuestions(), view);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:104:        setAnswerTypeInfo(schemaByType.getFileQuestions(), view);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:105:        setAnswerTypeInfo(schemaByType.getUserQuestions(), view);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-106-        setUserName(view);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-107-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-108-
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-186-        String projectId = answerView.getProjectId();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-187-        Project project = projectMapper.selectById(projectId);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-188-        if (project == null || project.getSurvey() == null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:189:            // 随机问题问卷没有 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-190-            return answerView;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-191-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:192:        FlatSurveySchemaByType schemaByType = parseSurveySchemaByType(project.getSurvey());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:193:        setAnswerExtraInfo(answerView, schemaByType);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-194-        return answerView;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-195-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-196-
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-325-    public List<AnswerView> listAnswerDeleted(AnswerQuery query) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-326-        List<AnswerView> list = answerViewMapper.toView(getBaseMapper().selectLogicDeleted(query.getProjectId()));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-327-        Project project = projectMapper.selectById(query.getProjectId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:328:        FlatSurveySchemaByType schemaByType = parseSurveySchemaByType(project.getSurvey());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:329:        list.forEach(view -> setAnswerExtraInfo(view, schemaByType));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-330-        return list;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-331-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-332-
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-395-            view.setCreateAt(x.getCreateAt());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-396-            view.setExamExerciseType(x.getExamExerciseType());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-397-            view.setAnswerId(x.getId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:398:            SurveySchema schema = x.getSurvey();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:399:            view.setProjectName(schema.getTitle());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-400-            view.setRepoId(x.getRepoId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-401-            view.setPercent(0L);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-402-
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-491-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-492-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-493-    private void export(Project project, List<AnswerView> answerViews, OutputStream outputStream) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:494:        List<SurveySchema> schemaDataTypes = SchemaHelper.flatSurveySchema(project.getSurvey());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-495-        int[] indexArr = {0};
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-496-        new ExcelExporter.Builder().setSheetName(project.getName()).setOutputStream(outputStream)
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-497-                .setRows(answerViews.stream().map(answer -> {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-498-                    indexArr[0] = indexArr[0] += 1;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:499:                    return SchemaHelper.parseRowData(answer, schemaDataTypes, indexArr[0], project.getMode());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-500-                }).collect(Collectors.toList()))
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:501:                .setColumns(SchemaHelper.parseColumns(schemaDataTypes, project.getMode())).build().exportToStream();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-502-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-503-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-504-    /**
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-506-     * @param nameExp         附件名称表达式
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-507-     * @param file            当前附件
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-508-     * @param serialNum       序号
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:509:     * @param uploadQuestions 问卷上传题 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-510-     * @return 新的附件名称
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-511-     */
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-512-    private String parseAttachmentNameByExp(AnswerView answerView, String nameExp, FileView file, int[] serialNum,
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-622-        if (project != null && ProjectModeEnum.exam.equals(project.getMode()) && answer != null
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-623-                && answer.getAnswer() != null && !ExerciseProjectTemplate.EXERCISE_PROJECT_ID.equals(project.getId())) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-624-            SurveySchema srcSchema = project.getSurvey();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:625:            // 随机抽题需要根据答案获取 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-626-            if (answer.getId() != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-627-                Answer existAnswer = getById(answer.getId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-628-                if (existAnswer != null && existAnswer.getSurvey() != null) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-694-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-695-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-696-    private ProjectView parseRow2Schema(Row row, String name, String parentId) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:697:        // 处理行头自动生成 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:698:        SurveySchema schema = createSurveyFromExcelRowHeader(row);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:699:        schema.setTitle(name);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-700-        ProjectRequest projectRequest = new ProjectRequest();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:701:        projectRequest.setSurvey(schema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-702-        projectRequest.setName(name);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-703-        projectRequest.setMode(ProjectModeEnum.survey);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-704-        projectRequest.setParentId(parentId);
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-708-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-709-    private SurveySchema createSurveyFromExcelRowHeader(Row row) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-710-        Set<String> ids = new HashSet<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:711:        SurveySchema schema = SurveySchema.builder()
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-712-                .children(row.stream()
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-713-                        .map(cell -> SurveySchema.builder().id(NanoIdUtils.randomNanoId(4, ids))
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-714-                                .type(SurveySchema.QuestionType.FillBlank).title(cell.getText())
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-717-                                .build())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-718-                        .collect(Collectors.toList()))
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-719-                .build();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:720:        return schema;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-721-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-722-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:723:    private SurveySchema filterSchemaByRow(Row row, SurveySchema schema) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:724:        List<SurveySchema> flatSurveySchema = SchemaHelper.flatSurveySchema(schema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java:725:        return SurveySchema.builder().id(schema.getId()).children(row.stream().map(cell -> {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-726-            String title = cell.getText();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-727-            return flatSurveySchema.stream().filter(x -> x.getTitle().equals(title)).findFirst()
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\AnswerServiceImpl.java-728-                    .orElse(SurveySchema.builder().build());
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-85-    private final MessageSource messageSource;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-86-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-87-    /**
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:88:     * answerService 如果需要验证密码，则只有密码输入正确之后才开始加载 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-89-     *
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-90-     * @param query
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-91-     * @return
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-170-            // 校验问卷
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-171-            validateProject(project);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-172-        } else {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:173:            // 直接根据答案加载出 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-174-            AnswerQuery answerQuery = new AnswerQuery();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-175-            answerQuery.setId(query.getAnswerId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-176-            AnswerView answerView = answerService.getAnswer(answerQuery);
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-184-            return projectView;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-185-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-186-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:187:        // 如果需要登录，将问卷 schema 替换成登录表单的 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-188-        if (loginFormSchema != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-189-            projectView.setSurvey(loginFormSchema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-190-            projectView.setLoginRequired(true);
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-293-    @SneakyThrows
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-294-    public PublicQueryVerifyView loadQuery(PublicQueryRequest request) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-295-        Tuple2<ProjectView, ProjectSetting.PublicQuery> projectAndQuery = getProjectAndQueryThenValidate(request);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:296:        SurveySchema schema = buildQueryFormSchema(projectAndQuery.getFirst(), projectAndQuery.getSecond());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-297-        PublicQueryVerifyView view = new PublicQueryVerifyView();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:298:        view.setSchema(schema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-299-        return view;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-300-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-301-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-302-    @Override
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-303-    public PublicQueryView getQueryResult(PublicQueryRequest request) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-304-        Tuple2<ProjectView, ProjectSetting.PublicQuery> projectAndQuery = getProjectAndQueryThenValidate(request);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:305:        SurveySchema schema = buildQueryResultSchema(projectAndQuery.getFirst(), projectAndQuery.getSecond());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-306-        PublicQueryView view = new PublicQueryView();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:307:        view.setSchema(schema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-308-        List<Answer> answers = findAnswerByQuery(request, projectAndQuery);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-309-        // 根据配置的权限信息过滤答案
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-310-        LinkedHashMap<String, Integer> fieldPermission = projectAndQuery.getSecond().getFieldPermission();
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-841-     * @return
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-842-     */
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-843-    private SurveySchema buildQueryFormSchema(ProjectView project, ProjectSetting.PublicQuery query) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:844:        SurveySchema schema = SurveySchema.builder().id(query.getId()).title(query.getTitle())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-845-                .description(query.getDescription())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-846-                .children(findMatchChildrenInSchema(query.getConditionQuestion(), project))
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-847-                .attribute(SurveySchema.Attribute.builder().submitButton(i18n("survey.query.submit")).build()).build();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-848-        // 目前只支持文本题 #{huaw}#{fhpd}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-849-        if (isNotBlank(query.getPassword())) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:850:            // 添加一个password的schema，用于密码校验
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-851-            SurveySchema passwordSchema = SurveySchema.builder().id(AppConsts.PUBLIC_QUERY_PASSWORD_FIELD_ID)
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-852-                    .title(i18n("survey.password.title")).type(SurveySchema.QuestionType.FillBlank)
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-853-                    .attribute(SurveySchema.Attribute.builder().required(true).build()).build();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-854-            passwordSchema.setChildren(Collections
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-855-                    .singletonList(SurveySchema.builder().id(AppConsts.PUBLIC_QUERY_PASSWORD_FIELD_ID).build()));
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:856:            schema.getChildren().add(passwordSchema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-857-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:858:        return schema;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-859-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-860-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-861-    private List<SurveySchema> findMatchChildrenInSchema(String conditionQuestion, ProjectView project) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-881-     * @return
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-882-     */
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-883-    private SurveySchema buildQueryResultSchema(ProjectView project, ProjectSetting.PublicQuery query) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:884:        SurveySchema schema = project.getSurvey().deepCopy();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:885:        SchemaHelper.updateSchemaByPermission(query.getFieldPermission(), schema);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-886-        if (query.getFieldPermission().values().contains(FieldPermissionType.editable)) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:887:            schema.setAttribute(SurveySchema.Attribute.builder().submitButton(i18n("survey.edit.submit")).suffix(null).build());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-888-        } else {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:889:            schema.setAttribute(null);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-890-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-891-        if (ProjectModeEnum.exam.equals(project.getMode())) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:892:            schema.getChildren()
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-893-                    .add(SurveySchema.builder().id("examScore").title(i18n("survey.score.title")).type(SurveySchema.QuestionType.FillBlank)
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-894-                            .attribute(SurveySchema.Attribute.builder().readOnly(true).build())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-895-                            .children(Collections.singletonList(SurveySchema.builder().id("examScore").build()))
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-896-                            .build());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-897-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-898-        // 公开查询表单需要取消结束、显示隐藏、跳转规则
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:899:        SchemaHelper.ignoreAttributes(schema, "finishRule", "visibleRule", "jumpRule");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:900:        return schema;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-901-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-902-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-903-    /**
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-956-    /**
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-957-     * 通过问题答案手动构建like 查询
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-958-     *
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:959:     * @param qNode     当前问题的 schema node 节点
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-960-     * @param qValueObj 当前问题的答案
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-961-     * @return
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-962-     */
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-994-     *
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-995-     * @param project 当前项目
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-996-     * @param answer  查询表单的答案
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java:997:     * @return 返回查询表单的 schema，如果未空，则会直接进入到答卷页面
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-998-     */
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-999-    private SurveySchema convertAndValidateLoginFormIfNeeded(ProjectView project,
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\SurveyServiceImpl.java-1000-                                                             LinkedHashMap<String, Object> answer) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-57-            shouldSaveRandomSchema = true;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-58-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-59-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java:60:        // 如果有 RandomSurvey 题型或配置了随机抽题，保存随机schema到答案表
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-61-        if (shouldSaveRandomSchema && projectView.getSurvey() != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-62-            saveRandomSchemaToAnswer(project, projectView.getSurvey(), projectView);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-63-        }
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-100-            return false;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-101-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-102-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java:103:        // 尝试从已有答案中加载 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-104-        SurveySchema existingSchema = loadSchemaFromExistingAnswer(project, projectView);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-105-        if (existingSchema != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-106-            return false; // 已有答案，不需要重新处理
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-119-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-120-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-121-    /**
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java:122:     * 从已有答案中加载schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-123-     */
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-124-    private SurveySchema loadSchemaFromExistingAnswer(ProjectView project, PublicProjectView projectView) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-125-        String cookieName = AppConsts.COOKIE_RANDOM_PROJECT_PREFIX + project.getId();
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-140-                return answerView.getSurvey();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-141-            }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-142-        } catch (Exception e) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java:143:            log.warn("Failed to load existing answer schema for project {}: {}", project.getId(), e.getMessage());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-144-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-145-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-146-        return null;
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-214-            ContextHelper.getCurrentHttpResponse().addCookie(cookie);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-215-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-216-        } catch (Exception e) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java:217:            log.error("Failed to save random schema to answer for project {}: {}", project.getId(), e.getMessage());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-218-        }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-219-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-220-
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-237-                if (!CollectionUtils.isEmpty(child.getChildren())) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-238-                    List<SurveySchema> processedChildren = processRandomSurveyInChildren(child.getChildren());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-239-                    if (!processedChildren.equals(child.getChildren())) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java:240:                        // 创建新的schema，更新children
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-241-                        SurveySchema newChild = SurveySchema.builder()
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-242-                                .id(child.getId())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-243-                                .type(child.getType())
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-262-    /**
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-263-     * 处理单个RandomSurvey题型，根据其配置的抽题规则选择对应的问题
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-264-     * 
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java:265:     * @param randomSurveySchema RandomSurvey题型的schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-266-     * @return 随机选择的问题列表
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-267-     */
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RandomSurveyProcessor.java-268-    private List<SurveySchema> processSingleRandomSurvey(SurveySchema randomSurveySchema) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-212-        });
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-213-        // 相同类型的问题排放在一起
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-214-        return templates.stream().map(x -> {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:215:            SurveySchema schema = x.getTemplate();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:216:            schema.setId(x.getId());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:217:            return schema;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-218-        }).sorted(Comparator.comparing(SurveySchema::getType)).collect(Collectors.toList());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-219-    }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-220-
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-382-        int radioIndex = 1;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-383-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-384-        for (Template template : radioQuestions) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:385:            SurveySchema schema = template.getTemplate();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-386-            List<Object> row = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-387-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-388-            // 序号
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-389-            row.add(radioIndex++);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-390-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-391-            // 题干
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:392:            row.add(schema.getTitle());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-393-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-394-            // 选项A-H (单选题处理)
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:395:            List<SurveySchema> options = schema.getChildren();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-396-            String[] optionTexts = new String[8];
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-397-            String correctAnswer = "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:398:            Double examScore = schema.getAttribute() != null ? schema.getAttribute().getExamScore() : null;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-399-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-400-            if (options != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-401-                for (int i = 0; i < Math.min(options.size(), 8); i++) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-416-            }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-417-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-418-            // 解析
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:419:            String analysis = schema.getAttribute() != null ? schema.getAttribute().getExamAnalysis() : "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-420-            row.add(analysis != null ? analysis : "");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-421-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-422-            // 分数
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-442-        int checkboxIndex = 1;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-443-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-444-        for (Template template : checkboxQuestions) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:445:            SurveySchema schema = template.getTemplate();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-446-            List<Object> row = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-447-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-448-            // 序号
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-449-            row.add(checkboxIndex++);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-450-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-451-            // 题干
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:452:            row.add(schema.getTitle());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-453-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-454-            // 选项A-H (多选题处理)
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:455:            List<SurveySchema> options = schema.getChildren();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-456-            String[] optionTexts = new String[8];
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-457-            List<String> correctAnswers = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:458:            Double examScore = schema.getAttribute() != null ? schema.getAttribute().getExamScore() : null;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-459-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-460-            if (options != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-461-                for (int i = 0; i < Math.min(options.size(), 8); i++) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-476-            }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-477-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-478-            // 解析
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:479:            String analysis = schema.getAttribute() != null ? schema.getAttribute().getExamAnalysis() : "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-480-            row.add(analysis != null ? analysis : "");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-481-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-482-            // 分数
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-502-        int judgeIndex = 1;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-503-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-504-        for (Template template : judgeQuestions) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:505:            SurveySchema schema = template.getTemplate();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-506-            List<Object> row = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-507-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-508-            // 序号
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-509-            row.add(judgeIndex++);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-510-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-511-            // 题干
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:512:            row.add(schema.getTitle());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-513-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-514-            // 选项A、选项B（判断题一般是正确/错误）
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:515:            List<SurveySchema> options = schema.getChildren();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-516-            String optionA = "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-517-            String optionB = "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-518-            String correctAnswer = "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:519:            Double examScore = schema.getAttribute() != null ? schema.getAttribute().getExamScore() : null;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-520-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-521-            if (options != null && options.size() >= 2) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-522-                optionA = options.get(0).getTitle();
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-536-            row.add(optionB);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-537-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-538-            // 解析
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:539:            String analysis = schema.getAttribute() != null ? schema.getAttribute().getExamAnalysis() : "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-540-            row.add(analysis != null ? analysis : "");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-541-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-542-            // 分数
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-562-        int fillBlankIndex = 1;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-563-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-564-        for (Template template : fillBlankQuestions) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:565:            SurveySchema schema = template.getTemplate();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-566-            List<Object> row = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-567-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-568-            // 序号
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-569-            row.add(fillBlankIndex++);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-570-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-571-            // 题干
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:572:            row.add(schema.getTitle());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-573-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-574-            // 空1-空8
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:575:            List<SurveySchema> blanks = schema.getChildren();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-576-            String[] blankAnswers = new String[8];
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:577:            Double examScore = schema.getAttribute() != null ? schema.getAttribute().getExamScore() : null;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-578-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-579-            if (blanks != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-580-                for (int i = 0; i < Math.min(blanks.size(), 8); i++) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-591-            }
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-592-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-593-            // 解析
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:594:            String analysis = schema.getAttribute() != null ? schema.getAttribute().getExamAnalysis() : "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-595-            row.add(analysis != null ? analysis : "");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-596-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-597-            // 单空分数
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-614-        int textareaIndex = 1;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-615-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-616-        for (Template template : textareaQuestions) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:617:            SurveySchema schema = template.getTemplate();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-618-            List<Object> row = new ArrayList<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-619-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-620-            // 序号
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-621-            row.add(textareaIndex++);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-622-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-623-            // 题干
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:624:            row.add(schema.getTitle());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-625-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-626-            // 答案（对于简答题，可能存储在第一个子元素中）
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-627-            String answer = "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:628:            if (schema.getChildren() != null && !schema.getChildren().isEmpty()) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:629:                SurveySchema firstChild = schema.getChildren().get(0);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-630-                if (firstChild.getAttribute() != null && firstChild.getAttribute().getExamCorrectAnswer() != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-631-                    answer = firstChild.getAttribute().getExamCorrectAnswer();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-632-                }
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-634-            row.add(answer);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-635-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-636-            // 解析
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:637:            String analysis = schema.getAttribute() != null ? schema.getAttribute().getExamAnalysis() : "";
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-638-            row.add(analysis != null ? analysis : "");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-639-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-640-            // 分数
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java:641:            Double examScore = schema.getAttribute() != null ? schema.getAttribute().getExamScore() : null;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-642-            row.add(examScore != null ? examScore : "");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-643-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\impl\RepoServiceImpl.java-644-            // 标签
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java-12-public class FlatSurveySchemaByType {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java-13-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java-14-	/**
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java:15:	 * 原始 schema
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java-16-	 */
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java:17:	List<SurveySchema> schemaDataTypes;
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java-18-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java-19-	/**
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\dto\FlatSurveySchemaByType.java-20-	 * 用户题
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-36-	@AfterMapping
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-37-	default void calledWithSourceAndTargetType(ProjectView source, @MappingTarget PublicProjectView view) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-38-		view.setSurvey(view.getSurvey().deepCopy());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:39:		// 非练习模式需要去掉 schema 里面的答案信息
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-40-		if (ProjectModeEnum.exam.equals(source.getMode())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-41-				&& !((source.getSetting() != null && source.getSetting().getExamSetting() != null
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-42-						&& Boolean.TRUE.equals(source.getSetting().getExamSetting().getExerciseMode())))) {
+--
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-50-		}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-51-	}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-52-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:53:	default void trimExamAnswerInfo(SurveySchema schema) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:54:		if (schema.getAttribute() == null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:55:			schema.setAttribute(SurveySchema.Attribute.builder().build());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-56-		}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-57-		// examAnswerMode 不能去除，前端要用于区分计分题和信息题
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:58:		SchemaHelper.ignoreAttributes(schema, "examCorrectAnswer", "examScore", "examMatchRule");
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-59-	}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-60-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:61:	default void randomSchemaOrder(SurveySchema schema) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:62:		if (schema.getChildren() != null) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-63-			// 非考试题的顺序需要保持不变
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-64-			// 填空题的顺序也保持不变
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:65:			Map<SurveySchema, Integer> schemaShouldKeepOrder = new LinkedHashMap<>();
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:66:			for (int i = 0; i < schema.getChildren().size(); i++) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:67:				SurveySchema curr = schema.getChildren().get(i);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-68-				if (curr.getAttribute().getExamAnswerMode() == SurveySchema.ExamScoreMode.none
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-69-						|| SurveySchema.QuestionType.FillBlank.equals(curr.getType())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-70-						|| SurveySchema.QuestionType.MultipleBlank.equals(curr.getType())
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-71-						|| SurveySchema.QuestionType.Textarea.equals(curr.getType())) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:72:					schemaShouldKeepOrder.put(curr, i);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-73-				}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-74-			}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:75:			List<SurveySchema> schemasShouldReorder = schema.getChildren().stream()
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:76:					.filter(x -> !schemaShouldKeepOrder.containsKey(x)).collect(Collectors.toList());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:77:			Collections.shuffle(schemasShouldReorder);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:78:			schemaShouldKeepOrder.entrySet().stream().forEach(entry -> {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:79:				schemasShouldReorder.add(entry.getValue(), entry.getKey());
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-80-			});
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:81:			schema.setChildren(schemasShouldReorder);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-82-
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:83:			schemasShouldReorder.forEach(child -> {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java:84:				if (schema.getAttribute().getExamAnswerMode() != SurveySchema.ExamScoreMode.none) {
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-85-					randomSchemaOrder(child);
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-86-				}
+D:\project\pt-gitlab\surveyking\server\rdbms\src\main\java\cn\surveyking\server\domain\mapper\ProjectViewMapper.java-87-			});

@@ -1,0 +1,575 @@
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/grpc/ICollabspaceGrpcClientService.java b/src/main/java/com/yottastudios/ns/collabspace/grpc/ICollabspaceGrpcClientService.java
+index 221c582b..3f1fbcd2 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/grpc/ICollabspaceGrpcClientService.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/grpc/ICollabspaceGrpcClientService.java
+@@ -24,7 +24,7 @@ public interface ICollabspaceGrpcClientService {
+      * @param sourceSpaceApps 源space的各个子应用的信息
+      * @return taskId
+      */
+-    String createSpaceNodeMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId, String sourceSpaceId, List<SpaceAppRelVo> sourceSpaceApps);
++    String createSpaceNodeMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId, String sourceSpaceId, List<SpaceAppRelVo> sourceSpaceApps, Long targetParentNodeId);
+ 
+     /**
+      * source取target的task相关信息
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceGrpcClientServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceGrpcClientServiceImpl.java
+index d78a11b4..30da4525 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceGrpcClientServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceGrpcClientServiceImpl.java
+@@ -16,6 +16,7 @@ import com.yottastudios.ns.collabspace.space.vo.SpaceAppRelVo;
+ import com.yottastudios.ns.collabspace.space.vo.SpaceVo;
+ import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
+ import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeMigrationTaskStatusEnum;
++import com.yottastudios.ns.collabspace.space.vo.FolderTreeNodeVo;
+ import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeMigrationTaskVo;
+ import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeVo;
+ import com.yottastudios.ns.collabspace.workspace.vo.SpaceWithNodeVo;
+@@ -66,24 +67,27 @@ public class CollabspaceGrpcClientServiceImpl implements ICollabspaceGrpcClientS
+     private SpaceGrpcConverter spaceGrpcConverter;
+ 
+     @Override
+-    public String createSpaceNodeMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId, String sourceSpaceId, List<SpaceAppRelVo> sourceSpaceApps) {
++    public String createSpaceNodeMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId, String sourceSpaceId, List<SpaceAppRelVo> sourceSpaceApps, Long targetParentNodeId) {
+         try {
+             List<SpaceNodeTreeNode> grpcTreeNodes = grpcMapper.toGrpcSpaceNodeTreeNodes(spaceNodeTree);
+             List<SpaceAppRel> grpcSpaceApps = grpcMapper.toGrpcSpaceAppRels(sourceSpaceApps);
+ 
+-            CreateSpaceNodeMigrationTaskRequest request = CreateSpaceNodeMigrationTaskRequest.newBuilder()
++            CreateSpaceNodeMigrationTaskRequest.Builder requestBuilder = CreateSpaceNodeMigrationTaskRequest.newBuilder()
+                     .addAllSpaceNodeTree(grpcTreeNodes)
+                     .setEmail(email)
+                     .setTargetSpaceId(targetSpaceId)
+                     .setSourceSpaceId(sourceSpaceId)
+-                    .addAllSourceSpaceApps(grpcSpaceApps)
+-                    .build();
+-            
+-            CreateSpaceNodeMigrationTaskResult result = collabspacePrivateStub.createSpaceNodeMigrationTask(request);
+-            
+-            log.info("createSpaceNodeMigrationTask success: taskId={}, email={}, targetSpaceId={}, sourceSpaceId={}, treeSize={}", 
+-                    result.getTaskId(), email, targetSpaceId, sourceSpaceId, spaceNodeTree.size());
+-            
++                    .addAllSourceSpaceApps(grpcSpaceApps);
++
++            if (targetParentNodeId != null) {
++                requestBuilder.setTargetParentNodeId(targetParentNodeId);
++            }
++
++            CreateSpaceNodeMigrationTaskResult result = collabspacePrivateStub.createSpaceNodeMigrationTask(requestBuilder.build());
++
++            log.info("createSpaceNodeMigrationTask success: taskId={}, email={}, targetSpaceId={}, sourceSpaceId={}, targetParentNodeId={}, treeSize={}",
++                    result.getTaskId(), email, targetSpaceId, sourceSpaceId, targetParentNodeId, spaceNodeTree.size());
++
+             return result.getTaskId();
+         } catch (StatusRuntimeException e) {
+             log.error("grpc createSpaceNodeMigrationTask error: email={}, targetSpaceId={}", email, targetSpaceId, e);
+@@ -137,6 +141,7 @@ public class CollabspaceGrpcClientServiceImpl implements ICollabspaceGrpcClientS
+                             .name(spaceInfo.getName())
+                             .owner(spaceInfo.getOwner())
+                             .apps(spaceAppRelService.listBySpaceId(spaceInfo.getSpaceId()).stream().map(SpaceAppRelVo::new).toList())
++                            .folders(convertGrpcFolders(spaceInfo.getFoldersList()))
+                             .build())
+                     .collect(Collectors.toList());
+         } catch (StatusRuntimeException e) {
+@@ -238,6 +243,19 @@ public class CollabspaceGrpcClientServiceImpl implements ICollabspaceGrpcClientS
+ 
+     }
+ 
++    private List<FolderTreeNodeVo> convertGrpcFolders(List<SpaceNodeTreeNode> grpcNodes) {
++        if (grpcNodes == null || grpcNodes.isEmpty()) {
++            return List.of();
++        }
++        return grpcNodes.stream()
++                .map(node -> FolderTreeNodeVo.builder()
++                        .id(node.getId())
++                        .name(node.getName())
++                        .children(convertGrpcFolders(node.getChildrenList()))
++                        .build())
++                .toList();
++    }
++
+     private List<AnnouncementEntity> transAnnouncementEntity(List<GetListAnnouncementVo> voList) {
+         List<AnnouncementEntity> list = new ArrayList<>();
+         // 此处需要通过邮箱反向查出creatorId和creatorName
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceServingServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceServingServiceImpl.java
+index 078eb96e..1c45ab54 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceServingServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/grpc/impl/CollabspaceServingServiceImpl.java
+@@ -34,6 +34,8 @@ import com.yottastudios.ns.collabspace.workspace.entity.MethodLogEntity;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeMigrationTaskEntity;
+ import com.yottastudios.ns.collabspace.workspace.enums.MigrationTypeEnum;
++import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeTypeEnum;
++import java.util.Objects;
+ import com.yottastudios.ns.collabspace.workspace.manager.query.NodeRoleQueryManager;
+ import com.yottastudios.ns.collabspace.workspace.manager.query.SpaceNodeQueryManager;
+ import com.yottastudios.ns.collabspace.workspace.manager.update.SpaceNodeMigrationUpdateManager;
+@@ -448,13 +450,14 @@ public class CollabspaceServingServiceImpl extends CollabspaceServingServiceGrpc
+      */
+     @Override
+     public void createSpaceNodeMigrationTask(CreateSpaceNodeMigrationTaskRequest request, StreamObserver<CreateSpaceNodeMigrationTaskResult> responseObserver) {
+-        log.info("createSpaceNodeMigrationTask: email={}, targetSpaceId={}, sourceSpaceId={}, treeSize={}",
+-                request.getEmail(), request.getTargetSpaceId(), request.getSourceSpaceId(), request.getSpaceNodeTreeCount());
++        log.info("createSpaceNodeMigrationTask: email={}, targetSpaceId={}, sourceSpaceId={}, targetParentNodeId={}, treeSize={}",
++                request.getEmail(), request.getTargetSpaceId(), request.getSourceSpaceId(), request.getTargetParentNodeId(), request.getSpaceNodeTreeCount());
+ 
+         try {
+             List<TreeNode<SpaceNodeVo>> spaceNodeTree = grpcMapper.toTreeNodes(request.getSpaceNodeTreeList());
+             List<SpaceAppRelVo> appRelVos = grpcMapper.toSpaceAppRelVos(request.getSourceSpaceAppsList());
+-            String taskId = spaceNodeMigrationUpdateManager.acceptMigrationTask(spaceNodeTree, request.getEmail(), request.getTargetSpaceId(), request.getSourceSpaceId(), appRelVos, MigrationTypeEnum.CROSS_SERVER.getValue(), true);
++            Long targetParentNodeId = request.getTargetParentNodeId() == 0 ? null : request.getTargetParentNodeId();
++            String taskId = spaceNodeMigrationUpdateManager.acceptMigrationTask(spaceNodeTree, request.getEmail(), request.getTargetSpaceId(), request.getSourceSpaceId(), appRelVos, MigrationTypeEnum.CROSS_SERVER.getValue(), true, targetParentNodeId);
+             
+             log.info("createSpaceNodeMigrationTask success: taskId={}", taskId);
+ 
+@@ -507,11 +510,15 @@ public class CollabspaceServingServiceImpl extends CollabspaceServingServiceGrpc
+             List<SpaceEntity> spaceEntities = spaceQueryManager.getMemberManagedSpace(userId);
+             
+             List<SpaceInfo> spaceInfos = spaceEntities.stream()
+-                    .map(entity -> SpaceInfo.newBuilder()
+-                            .setSpaceId(entity.getSpaceId())
+-                            .setName(entity.getName())
+-                            .setOwner(entity.getOwner())
+-                            .build())
++                    .map(entity -> {
++                        List<SpaceNodeTreeNode> folderTree = buildFolderTree(entity.getSpaceId());
++                        return SpaceInfo.newBuilder()
++                                .setSpaceId(entity.getSpaceId())
++                                .setName(entity.getName())
++                                .setOwner(entity.getOwner())
++                                .addAllFolders(folderTree)
++                                .build();
++                    })
+                     .collect(Collectors.toList());
+             
+             ListManagedSpaceForMigrationResult result = ListManagedSpaceForMigrationResult.newBuilder()
+@@ -681,6 +688,38 @@ public class CollabspaceServingServiceImpl extends CollabspaceServingServiceGrpc
+         }
+     }
+ 
++    private List<SpaceNodeTreeNode> buildFolderTree(String spaceId) {
++        List<TreeNode<SpaceNodeVo>> fullTree = spaceNodeQueryManager.getSpaceNodeTree(spaceId);
++        return filterAndConvertFolders(fullTree);
++    }
++
++    private List<SpaceNodeTreeNode> filterAndConvertFolders(List<TreeNode<SpaceNodeVo>> nodes) {
++        if (nodes == null || nodes.isEmpty()) {
++            return List.of();
++        }
++        List<SpaceNodeTreeNode> result = new ArrayList<>();
++        for (TreeNode<SpaceNodeVo> node : nodes) {
++            SpaceNodeVo data = node.getData();
++            if (Objects.equals(data.getType(), SpaceNodeTypeEnum.FOLDER.getValue())) {
++                List<SpaceNodeTreeNode> childFolders = filterAndConvertFolders(node.getChildren());
++                SpaceNodeTreeNode grpcNode = SpaceNodeTreeNode.newBuilder()
++                        .setId(data.getId())
++                        .setName(data.getName() != null ? data.getName() : "")
++                        .setType(data.getType())
++                        .setParentId(node.getParentId() != null ? node.getParentId() : 0L)
++                        .setAppSpaceNodeId(data.getAppSpaceNodeId() != null ? data.getAppSpaceNodeId() : "")
++                        .setDescription(data.getDescription() != null ? data.getDescription() : "")
++                        .addAllChildren(childFolders)
++                        .build();
++                result.add(grpcNode);
++            } else {
++                List<SpaceNodeTreeNode> childFolders = filterAndConvertFolders(node.getChildren());
++                result.addAll(childFolders);
++            }
++        }
++        return result;
++    }
++
+     @Override
+     public void listManagedSpaceDataSheet(
+             ListManagedSpaceDataSheetRequest request,
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/space/vo/FolderTreeNodeVo.java b/src/main/java/com/yottastudios/ns/collabspace/space/vo/FolderTreeNodeVo.java
+new file mode 100644
+index 00000000..6480160f
+--- /dev/null
++++ b/src/main/java/com/yottastudios/ns/collabspace/space/vo/FolderTreeNodeVo.java
+@@ -0,0 +1,29 @@
++package com.yottastudios.ns.collabspace.space.vo;
++
++import com.fasterxml.jackson.databind.annotation.JsonSerialize;
++import com.yottastudios.ns.collabspace.shared.support.serializer.NullCollectionSerializer;
++import io.swagger.v3.oas.annotations.media.Schema;
++import lombok.AllArgsConstructor;
++import lombok.Builder;
++import lombok.Data;
++import lombok.NoArgsConstructor;
++
++import java.util.List;
++
++@Data
++@NoArgsConstructor
++@AllArgsConstructor
++@Builder
++@Schema(name = "FolderTreeNodeVo", description = "文件夹树节点")
++public class FolderTreeNodeVo {
++
++    @Schema(description = "节点ID")
++    private Long id;
++
++    @Schema(description = "文件夹名称")
++    private String name;
++
++    @Schema(description = "子文件夹")
++    @JsonSerialize(nullsUsing = NullCollectionSerializer.class)
++    private List<FolderTreeNodeVo> children;
++}
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/space/vo/SpaceVo.java b/src/main/java/com/yottastudios/ns/collabspace/space/vo/SpaceVo.java
+index f03fa53b..a0e9ae34 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/space/vo/SpaceVo.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/space/vo/SpaceVo.java
+@@ -36,6 +36,10 @@ public class SpaceVo {
+     @JsonSerialize(nullsUsing = NullCollectionSerializer.class)
+     private List<SpaceAppRelVo> apps;
+ 
++    @Schema(description = "空间站下的文件夹树（仅FOLDER类型）")
++    @JsonSerialize(nullsUsing = NullCollectionSerializer.class)
++    private List<FolderTreeNodeVo> folders;
++
+     public SpaceVo(SpaceEntity entity) {
+         BeanUtils.copyProperties(entity, this);
+     }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/consumer/SpaceNodeMigrationConsumer.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/consumer/SpaceNodeMigrationConsumer.java
+index af20b5ce..970c166e 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/consumer/SpaceNodeMigrationConsumer.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/consumer/SpaceNodeMigrationConsumer.java
+@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
+ import com.rabbitmq.client.Channel;
+ import com.yottastudios.ns.collabspace.auth.enums.AuthException;
+ import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
++import com.yottastudios.ns.collabspace.base.service.INodeService;
+ import com.yottastudios.ns.collabspace.base.enums.DatabaseException;
+ import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+ import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
+@@ -81,6 +82,9 @@ public class SpaceNodeMigrationConsumer {
+     @Resource
+     private SpaceNodeQueryManager spaceNodeQueryManager;
+ 
++    @Resource
++    private INodeService nodeService;
++
+     abstract static class TreeNodeMixin<T extends RelIdProvider> {
+         @JsonProperty("children")
+         @JsonDeserialize(contentAs = TreeNode.class)
+@@ -137,7 +141,8 @@ public class SpaceNodeMigrationConsumer {
+         List<SpaceAppRelVo> sourceSpaceAppRels = JSONUtil.toList(task.getSourceSpaceAppRels(), SpaceAppRelVo.class);
+         MigrationTypeEnum migrationType = MigrationTypeEnum.fromValue(task.getType());
+ 
+-        log.info("executeTask: taskId={}, treeSize={}, type: {}, appRels: {}", task.getTaskId(), spaceNodeTree.size(), migrationType.getDescription(), task.getSourceSpaceAppRels());
++        log.info("executeTask: taskId={}, treeSize={}, type: {}, targetParentNodeId={}, appRels: {}",
++                task.getTaskId(), spaceNodeTree.size(), migrationType.getDescription(), task.getTargetParentNodeId(), task.getSourceSpaceAppRels());
+ 
+         MigrationConfig migrationConfig = MigrationConfig.builder()
+                 .email(task.getEmail())
+@@ -163,7 +168,17 @@ public class SpaceNodeMigrationConsumer {
+         }
+ 
+         // 迁移后的节点重新构建成树并入库
+-        saveNewNodeTree(spaceNodeTree, task.getTargetSpaceId(), overallResult.getNodeIdMapping(), userId, migrationType);
++        // targetParentNodeId 是 space_node 表的 ID，需转换为 node 表的 ID 作为树的 parentId
++        Long rootParentId = ROOT_PARENT_ID;
++        if (task.getTargetParentNodeId() != null) {
++            NodeEntity parentNode = nodeService.getByRelId(task.getTargetParentNodeId());
++            if (parentNode != null) {
++                rootParentId = parentNode.getId();
++            } else {
++                log.warn("targetParentNodeId={} 对应的 node 不存在，使用根目录", task.getTargetParentNodeId());
++            }
++        }
++        saveNewNodeTree(spaceNodeTree, task.getTargetSpaceId(), overallResult.getNodeIdMapping(), userId, migrationType, rootParentId);
+         // 判断是空间站内迁移并且保留状态是false，调用文件删除接口，把源文件删除
+         if (!task.getIsRemained() && task.getType().equals(MigrationTypeEnum.INTRA_SERVER.getValue())) {
+             for (TreeNode<SpaceNodeVo> treeNode : spaceNodeTree) {
+@@ -172,16 +187,16 @@ public class SpaceNodeMigrationConsumer {
+         }
+     }
+ 
+-    private void saveNewNodeTree(List<TreeNode<SpaceNodeVo>> originalTree, String spaceId, Map<String, String> nodeIdMapping, Long userId, MigrationTypeEnum migrationType) {
++    private void saveNewNodeTree(List<TreeNode<SpaceNodeVo>> originalTree, String spaceId, Map<String, String> nodeIdMapping, Long userId, MigrationTypeEnum migrationType, Long rootParentId) {
+         if (originalTree == null || originalTree.isEmpty()) {
+             log.info("No tree nodes to save for space: {}", spaceId);
+             return;
+         }
+ 
+-        log.info("Starting to save new node tree for space: {}, total original nodes: {}", spaceId, originalTree.size());
++        log.info("Starting to save new node tree for space: {}, rootParentId: {}, total original nodes: {}", spaceId, rootParentId, originalTree.size());
+ 
+         for (TreeNode<SpaceNodeVo> node : originalTree) {
+-            saveNodeAndChildren(node, spaceId, nodeIdMapping, ROOT_PARENT_ID, userId, migrationType);
++            saveNodeAndChildren(node, spaceId, nodeIdMapping, rootParentId, userId, migrationType);
+         }
+ 
+         log.info("Completed saving new node tree for space: {}", spaceId);
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeMigrationController.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeMigrationController.java
+index 601947c0..5882f947 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeMigrationController.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/controller/SpaceNodeMigrationController.java
+@@ -65,11 +65,12 @@ public class SpaceNodeMigrationController {
+             ro.setIsRemained(true);
+         }
+         String taskId = spaceNodeMigrationUpdateManager.createMigrationTask(
+-                ro.getSpaceNodeIds(), 
+-                ro.getTargetSpaceId(), 
+-                sourceSpaceId, 
++                ro.getSpaceNodeIds(),
++                ro.getTargetSpaceId(),
++                sourceSpaceId,
+                 userId,
+-                ro.getIsRemained()
++                ro.getIsRemained(),
++                ro.getTargetParentNodeId()
+         );
+         return ResponseData.success(taskId);
+     }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/entity/SpaceNodeMigrationTaskEntity.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/entity/SpaceNodeMigrationTaskEntity.java
+index fcb48e46..a622649e 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/entity/SpaceNodeMigrationTaskEntity.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/entity/SpaceNodeMigrationTaskEntity.java
+@@ -39,6 +39,8 @@ public class SpaceNodeMigrationTaskEntity extends BaseEntity implements Serializ
+     private Integer type;
+     // 是否保留原文件 true 保留 false 不保留
+     private Boolean isRemained;
++    // 目标父节点ID（文件夹），不传则放到空间站根目录
++    private Long targetParentNodeId;
+ 
+ 
+ }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeMigrationQueryManagerImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeMigrationQueryManagerImpl.java
+index 8207cc91..1098b6fe 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeMigrationQueryManagerImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/query/impl/SpaceNodeMigrationQueryManagerImpl.java
+@@ -1,6 +1,7 @@
+ package com.yottastudios.ns.collabspace.workspace.manager.query.impl;
+ 
+ import com.yottastudios.ns.collabspace.base.enums.DatabaseException;
++import com.yottastudios.ns.collabspace.base.vo.TreeNode;
+ import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
+ import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+ import com.yottastudios.ns.collabspace.grpc.ICollabspaceGrpcClientService;
+@@ -9,15 +10,19 @@ import com.yottastudios.ns.collabspace.space.entity.SpaceAppRelEntity;
+ import com.yottastudios.ns.collabspace.space.entity.SpaceEntity;
+ import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
+ import com.yottastudios.ns.collabspace.space.service.ISpaceAppRelService;
++import com.yottastudios.ns.collabspace.space.vo.FolderTreeNodeVo;
+ import com.yottastudios.ns.collabspace.space.vo.SpaceVo;
+ import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
+ import com.yottastudios.ns.collabspace.workspace.entity.CollabspaceVersionSnapshotEntity;
+ import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeMigrationTaskEntity;
++import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeTypeEnum;
+ import com.yottastudios.ns.collabspace.workspace.enums.VersionSnapshotStatusEnum;
+ import com.yottastudios.ns.collabspace.workspace.manager.query.SpaceNodeMigrationQueryManager;
++import com.yottastudios.ns.collabspace.workspace.manager.query.SpaceNodeQueryManager;
+ import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeMigrationTaskService;
+ import com.yottastudios.ns.collabspace.workspace.service.IVersionSnapshotService;
+ import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeMigrationTaskVo;
++import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeVo;
+ import com.yottastudios.ns.collabspace.workspace.vo.VersionSnapshotVo;
+ import jakarta.annotation.Resource;
+ import lombok.extern.slf4j.Slf4j;
+@@ -52,6 +57,9 @@ public class SpaceNodeMigrationQueryManagerImpl implements SpaceNodeMigrationQue
+     @Resource
+     private IVersionSnapshotService versionSnapshotService;
+ 
++    @Resource
++    private SpaceNodeQueryManager spaceNodeQueryManager;
++
+     @Override
+     public SpaceNodeMigrationTaskVo getMigrationTaskInfo(String taskId) {
+         if (constProperties.isMirror()) { //mirror环境为跨服务器迁移, 从对方服务获取数据
+@@ -75,7 +83,9 @@ public class SpaceNodeMigrationQueryManagerImpl implements SpaceNodeMigrationQue
+         return spaceEntities.stream()
+                 .map(entity -> {
+                     List<SpaceAppRelEntity> spaceAppRels = spaceAppRelService.listBySpaceId(entity.getSpaceId());
+-                    return new SpaceVo(entity, spaceAppRels);
++                    SpaceVo vo = new SpaceVo(entity, spaceAppRels);
++                    vo.setFolders(buildFolderTree(entity.getSpaceId()));
++                    return vo;
+                 })
+                 .collect(Collectors.toList());
+     }
+@@ -112,4 +122,29 @@ public class SpaceNodeMigrationQueryManagerImpl implements SpaceNodeMigrationQue
+         return finalList;
+     }
+ 
+-} 
+\ No newline at end of file
++    private List<FolderTreeNodeVo> buildFolderTree(String spaceId) {
++        List<TreeNode<SpaceNodeVo>> fullTree = spaceNodeQueryManager.getSpaceNodeTree(spaceId);
++        return filterFolders(fullTree);
++    }
++
++    private List<FolderTreeNodeVo> filterFolders(List<TreeNode<SpaceNodeVo>> nodes) {
++        if (nodes == null || nodes.isEmpty()) {
++            return List.of();
++        }
++        List<FolderTreeNodeVo> result = new ArrayList<>();
++        for (TreeNode<SpaceNodeVo> node : nodes) {
++            SpaceNodeVo data = node.getData();
++            if (Objects.equals(data.getType(), SpaceNodeTypeEnum.FOLDER.getValue())) {
++                result.add(FolderTreeNodeVo.builder()
++                        .id(data.getId())
++                        .name(data.getName())
++                        .children(filterFolders(node.getChildren()))
++                        .build());
++            } else {
++                result.addAll(filterFolders(node.getChildren()));
++            }
++        }
++        return result;
++    }
++
++}
+\ No newline at end of file
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/SpaceNodeMigrationUpdateManager.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/SpaceNodeMigrationUpdateManager.java
+index 810bacaf..61f3f06a 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/SpaceNodeMigrationUpdateManager.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/SpaceNodeMigrationUpdateManager.java
+@@ -15,14 +15,14 @@ public interface SpaceNodeMigrationUpdateManager {
+     /**
+      * 创建迁移任务, 由source(collabspace-mirror)发起
+      */
+-    String createMigrationTask(List<Long> spaceNodeIds, String targetSpaceId, String sourceSpaceId, Long userId, Boolean isRemained);
++    String createMigrationTask(List<Long> spaceNodeIds, String targetSpaceId, String sourceSpaceId, Long userId, Boolean isRemained, Long targetParentNodeId);
+     
+     /**
+      * 接收迁移任务, 跨服务器迁移由target(collabspace-private)接收, 服务器内迁移由本服务接收
+      *
+      */
+ 
+-    String acceptMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId, String sourceSpaceId, List<SpaceAppRelVo> appRels, Integer migrationType, Boolean isRemained);
++    String acceptMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId, String sourceSpaceId, List<SpaceAppRelVo> appRels, Integer migrationType, Boolean isRemained, Long targetParentNodeId);
+ 
+     /**
+      * 复制一份文档
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/SpaceNodeMigrationUpdateManagerImpl.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/SpaceNodeMigrationUpdateManagerImpl.java
+index 3e210e46..37b43de1 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/SpaceNodeMigrationUpdateManagerImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/manager/update/impl/SpaceNodeMigrationUpdateManagerImpl.java
+@@ -97,7 +97,7 @@ public class SpaceNodeMigrationUpdateManagerImpl implements SpaceNodeMigrationUp
+     private INodeService nodeService;
+ 
+     @Override
+-    public String createMigrationTask(List<Long> spaceNodeIds, String targetSpaceId, String sourceSpaceId, Long userId, Boolean isRemained) {
++    public String createMigrationTask(List<Long> spaceNodeIds, String targetSpaceId, String sourceSpaceId, Long userId, Boolean isRemained, Long targetParentNodeId) {
+         UserSimpleInfoVo user = apitableGrpcClientService.getUserById(userId);
+         String email = user.getEmail();
+         Set<Long> targetNodeIds = new HashSet<>(spaceNodeIds);
+@@ -109,21 +109,21 @@ public class SpaceNodeMigrationUpdateManagerImpl implements SpaceNodeMigrationUp
+         // 目前每个服务都只会执行一种迁移逻辑, MigrationTypeEnum直接由服务环境判断, mirror服务只执行跨服务器迁移, 其它的都是服务器内迁移
+         String taskId;
+         if (constProperties.isMirror()) {
+-            taskId = collabspaceGrpcClientService.createSpaceNodeMigrationTask(spaceNodeTree, email, targetSpaceId, sourceSpaceId, sourceSpaceApps);
++            taskId = collabspaceGrpcClientService.createSpaceNodeMigrationTask(spaceNodeTree, email, targetSpaceId, sourceSpaceId, sourceSpaceApps, targetParentNodeId);
+         } else {
+             taskId = acceptMigrationTask(spaceNodeTree, email, targetSpaceId, sourceSpaceId, sourceSpaceApps,
+-                    MigrationTypeEnum.INTRA_SERVER.getValue(), isRemained);
++                    MigrationTypeEnum.INTRA_SERVER.getValue(), isRemained, targetParentNodeId);
+         }
+ 
+-        log.info("createMigrationTask: taskId={}, sourceNodeIds={}, targetSpaceId={}, sourceSpaceId={}, userId={}, filteredTreeSize={}",
+-                taskId, spaceNodeIds, targetSpaceId, sourceSpaceId, userId, spaceNodeTree.size());
++        log.info("createMigrationTask: taskId={}, sourceNodeIds={}, targetSpaceId={}, sourceSpaceId={}, userId={}, targetParentNodeId={}, filteredTreeSize={}",
++                taskId, spaceNodeIds, targetSpaceId, sourceSpaceId, userId, targetParentNodeId, spaceNodeTree.size());
+ 
+         return taskId;
+     }
+ 
+     @Override
+     public String acceptMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId,
+-                                      String sourceSpaceId, List<SpaceAppRelVo> appRels, Integer migrationType, Boolean isRemained) {
++                                      String sourceSpaceId, List<SpaceAppRelVo> appRels, Integer migrationType, Boolean isRemained, Long targetParentNodeId) {
+         if (CollectionUtils.isEmpty(spaceNodeTree) || StringUtils.isBlank(targetSpaceId) || StringUtils.isBlank(email) || StringUtils.isBlank(sourceSpaceId)) {
+             log.error("email={}, targetSpaceId={}, sourceSpaceId={}", email, targetSpaceId, sourceSpaceId);
+             throw new BusinessException("acceptMigrationTask: empty or invalid arguments");
+@@ -141,6 +141,7 @@ public class SpaceNodeMigrationUpdateManagerImpl implements SpaceNodeMigrationUp
+                 .status(SpaceNodeMigrationTaskStatusEnum.PENDING.getValue())
+                 .type(migrationType)
+                 .isRemained(isRemained)
++                .targetParentNodeId(targetParentNodeId)
+                 .build();
+         spaceNodeMigrationTaskService.save(spaceNodeMigrationTaskEntity);
+ 
+@@ -149,8 +150,8 @@ public class SpaceNodeMigrationUpdateManagerImpl implements SpaceNodeMigrationUp
+                 .build();
+         rabbitMqSender.directSend(SPACE_NODE_MIGRATION_EXCHANGE, SPACE_NODE_MIGRATION_KEY, JSONUtil.toJsonStr(message));
+ 
+-        log.info("acceptMigrationTask: taskId={}, email={}, targetSpaceId={}, sourceSpaceId={}, treeSize={}",
+-                taskId, email, targetSpaceId, sourceSpaceId, spaceNodeTree.size());
++        log.info("acceptMigrationTask: taskId={}, email={}, targetSpaceId={}, sourceSpaceId={}, targetParentNodeId={}, treeSize={}",
++                taskId, email, targetSpaceId, sourceSpaceId, targetParentNodeId, spaceNodeTree.size());
+ 
+         return taskId;
+     }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/workspace/ro/MigrationTaskCreateRo.java b/src/main/java/com/yottastudios/ns/collabspace/workspace/ro/MigrationTaskCreateRo.java
+index e7f55a36..73e3a15b 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/workspace/ro/MigrationTaskCreateRo.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/workspace/ro/MigrationTaskCreateRo.java
+@@ -28,4 +28,8 @@ public class MigrationTaskCreateRo {
+     @Schema(description = "是否保留原空间站文件，只有在跨空间站迁移生效，跨网不生效 true保留 false不保留",
+             example = "true", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+     private Boolean isRemained;
++
++    @Schema(description = "目标父节点ID（文件夹），复制到该文件夹下；不传则放到空间站根目录",
++            example = "123", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
++    private Long targetParentNodeId;
+ } 
+\ No newline at end of file
+diff --git a/src/main/proto/serving/CollabspaceBackendServingService.proto b/src/main/proto/serving/CollabspaceBackendServingService.proto
+index c808cae7..a9928241 100644
+--- a/src/main/proto/serving/CollabspaceBackendServingService.proto
++++ b/src/main/proto/serving/CollabspaceBackendServingService.proto
+@@ -127,6 +127,7 @@ message CreateSpaceNodeMigrationTaskRequest {
+   string targetSpaceId = 3;
+   string sourceSpaceId = 4;
+   repeated SpaceAppRel sourceSpaceApps = 5;
++  int64 targetParentNodeId = 6;
+ }
+ 
+ message CreateSpaceNodeMigrationTaskResult {
+@@ -168,6 +169,7 @@ message SpaceInfo {
+   string spaceId = 1;
+   string name = 2;
+   int64 owner = 3;
++  repeated SpaceNodeTreeNode folders = 4;
+ }
+ 
+ message SpaceAppRel {
+diff --git a/src/main/resources/db/changelog/006_migration_task_target_parent.xml b/src/main/resources/db/changelog/006_migration_task_target_parent.xml
+new file mode 100644
+index 00000000..c4e6e50c
+--- /dev/null
++++ b/src/main/resources/db/changelog/006_migration_task_target_parent.xml
+@@ -0,0 +1,21 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<databaseChangeLog
++        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
++        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
++
++    <!-- PXTL-2263: 复制镜像功能优化 - 加目标父节点ID字段 -->
++    <changeSet id="006-1" author="collabspace">
++        <preConditions onFail="MARK_RAN">
++            <not>
++                <columnExists tableName="collabspace_space_node_migration_task" columnName="target_parent_node_id"/>
++            </not>
++        </preConditions>
++        <sql>
++            ALTER TABLE `collabspace_space_node_migration_task`
++            ADD COLUMN `target_parent_node_id` BIGINT NULL COMMENT '目标父节点ID（文件夹），NULL表示放到空间站根目录'
++            AFTER `is_remained`;
++        </sql>
++    </changeSet>
++
++</databaseChangeLog>
+diff --git a/src/main/resources/db/changelog/db.changelog-master.xml b/src/main/resources/db/changelog/db.changelog-master.xml
+index ef5b4e68..d909e262 100644
+--- a/src/main/resources/db/changelog/db.changelog-master.xml
++++ b/src/main/resources/db/changelog/db.changelog-master.xml
+@@ -9,5 +9,6 @@
+     <include file="classpath:db/changelog/003_app_center.xml" relativeToChangelogFile="false" />
+     <include file="classpath:db/changelog/004_permission_request.xml" relativeToChangelogFile="false" />
+     <include file="classpath:db/changelog/005_node_permission_log.xml" relativeToChangelogFile="false" />
++    <include file="classpath:db/changelog/006_migration_task_target_parent.xml" relativeToChangelogFile="false" />
+ 
+ </databaseChangeLog>

@@ -1,0 +1,192 @@
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-9-import java.util.List;
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-10-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-11-public interface SpaceNodeUpdateManager {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:12:    TreeNode<SpaceNodeVo> createSpaceNode(String spaceId, Long userId, SpaceNodeCreateRo ro);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-13-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:14:    TreeNode<SpaceNodeVo> createSpaceNodeOnlyInAio(String spaceId, Long parentId, String appSpaceNodeId, String name, Integer type);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-15-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-16-    TreeNode<SpaceNodeVo> importSpaceNode(String spaceId, Long userId, SpaceNodeImportRo ro);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-17-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-18-    /**
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-19-     * @param token oss token uploaded by /asset/upload/callback or /mapper/base/attach/upload
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:20:     * @return appSpaceNodeId
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-21-     */
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-22-    String importAppSpaceNodeByToken(String spaceId, Long userId, String token, Integer type, String name);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-23-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-103-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-104-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-105-    @Transactional
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:106:    public TreeNode<SpaceNodeVo> createSpaceNode(String spaceId, Long userId, SpaceNodeCreateRo ro) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-107-        spaceService.checkSpaceExist(spaceId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-108-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-109-        boolean checkResult = spaceNodeQueryManager.checkNameWithParent(spaceId, ro.getName(), ro.getParentId());
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-119-        LoginUserDto loginUser = loginUserCacheService.getLoginUser(userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-120-        String userName = loginUser == null ? null : loginUser.getNickName();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-121-        CreateContext ctx = CreateContext.builder().spaceNodeName(name).spaceId(spaceId).userId(userId).userName(userName).extra(ro.getExtra()).build();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:122:        String appSpaceNodeId = appSpaceNodeActionFactory.getCreatable(spaceNodeType).create(ctx);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-123-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:124:        if(appSpaceNodeId==null)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-125-            throw new BusinessException("创建失败");
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-126-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:127:        TreeNode<SpaceNodeVo> spaceNodeOnlyInAio = createSpaceNodeOnlyInAio(spaceId, ro.getParentId(), appSpaceNodeId, name, type);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-128-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-129-        nodeRoleUpdateManager.handleRoleByCreate(userId,spaceId,spaceNodeOnlyInAio.getData().getId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-130-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-132-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-133-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-134-    @Override
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:135:    public TreeNode<SpaceNodeVo> createSpaceNodeOnlyInAio(String spaceId, Long parentId, String appSpaceNodeId, String name, Integer type) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-136-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-137-        boolean checkResult = spaceNodeQueryManager.checkNameWithParent(spaceId, name, parentId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-138-        if(!checkResult) {
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-140-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-141-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-142-        SpaceNodeEntity spaceNodeEntity = SpaceNodeEntity.builder()
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:143:                .appSpaceNodeId(appSpaceNodeId)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-144-                .name(name)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-145-                .type(type)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-146-                .spaceId(spaceId)
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-163-        Integer type = ro.getType();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-164-        String name = ro.getName();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-165-        String token = ro.getToken();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:166:        String appSpaceNodeId = importAppSpaceNodeByToken(spaceId, userId, token, type, name);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-167-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:168:        if (StringUtils.isBlank(appSpaceNodeId)) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-169-            throw new BusinessException(SpaceNodeException.IMPORT_FAIL);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-170-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-171-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:172:        TreeNode<SpaceNodeVo> spaceNodeOnlyInAio = createSpaceNodeOnlyInAio(spaceId, ro.getParentId(), appSpaceNodeId, name, type);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-173-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-174-        nodeRoleUpdateManager.handleRoleByCreate(userId,spaceId,spaceNodeOnlyInAio.getData().getId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-175-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-236-        spaceNodeService.updateById(spaceNodeEntity);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-237-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-238-        //sync
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:239:        String appSpaceNodeId = spaceNodeEntity.getAppSpaceNodeId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-240-        String spaceId = spaceNodeEntity.getSpaceId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-241-        SpaceNodeTypeEnum spaceNodeType = SpaceNodeTypeEnum.fromValue(spaceNodeEntity.getType());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:242:        NameSyncContext ctx = NameSyncContext.builder().spaceId(spaceId).userId(userId).name(ro.getName()).appSpaceNodeId(appSpaceNodeId).build();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-243-        appSpaceNodeActionFactory.getNameSyncable(spaceNodeType).syncName(ctx);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-244-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-245-        SpaceNodeVo spaceNodeVo = spaceNodeTransfer.toSpaceNodeVo(spaceNodeEntity);
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-260-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-261-        Integer type = spaceNodeEntity.getType();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-262-        String spaceId = spaceNodeEntity.getSpaceId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:263:        String appSpaceNodeId = spaceNodeEntity.getAppSpaceNodeId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-264-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-265-        SpaceNodeTypeEnum spaceNodeType = SpaceNodeTypeEnum.fromValue(type);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-266-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-273-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-274-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-275-        try { // 吞掉应用内删除报的异常, 防止因此删不掉spaceNode
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:276:            SoftDeleteContext ctx = SoftDeleteContext.builder().appSpaceId(appSpaceId).userId(userId).appSpaceNodeId(appSpaceNodeId).build();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-277-            appSpaceNodeActionFactory.getSoftDeletable(spaceNodeType).delete(ctx);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-278-        } catch (Exception e) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-279-            log.error("Failed to delete space node", e);
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-297-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-298-        Integer type = spaceNodeEntity.getType();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-299-        String spaceId = spaceNodeEntity.getSpaceId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:300:        String appSpaceNodeId = spaceNodeEntity.getAppSpaceNodeId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-301-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-302-        SpaceNodeTypeEnum spaceNodeType = SpaceNodeTypeEnum.fromValue(type);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-303-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-308-        List<SpaceAppRelEntity> spaceAppRelEntities = spaceAppRelService.listBySpaceIdAndAppType(spaceId, spaceType);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-309-        String appSpaceId = spaceAppRelEntities.getFirst().getAppSpaceId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-310-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:311:        RecoverContext ctx = RecoverContext.builder().appSpaceId(appSpaceId).userId(userId).appSpaceNodeId(appSpaceNodeId).build();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-312-        appSpaceNodeActionFactory.getRecoverable(spaceNodeType).recover(ctx);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-313-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-314-        //还原
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-336-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-337-        Integer type = spaceNodeEntity.getType();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-338-        String spaceId = spaceNodeEntity.getSpaceId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:339:        String appSpaceNodeId = spaceNodeEntity.getAppSpaceNodeId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-340-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-341-        SpaceNodeTypeEnum spaceNodeType = SpaceNodeTypeEnum.fromValue(type);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-342-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-347-        List<SpaceAppRelEntity> spaceAppRelEntities = spaceAppRelService.listBySpaceIdAndAppType(spaceId, spaceType);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-348-        String appSpaceId = spaceAppRelEntities.getFirst().getAppSpaceId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-349-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:350:        HardDeleteContext ctx = HardDeleteContext.builder().appSpaceId(appSpaceId).userId(userId).appSpaceNodeId(appSpaceNodeId).build();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-351-        appSpaceNodeActionFactory.getHardDeletable(spaceNodeType).deleteTotally(ctx);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-352-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-353-        //remove bin record
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-365-        if(!checkResult) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-366-            throw new BusinessException(ro.getName()+"已存在重名文件/文件夹");
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-367-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:368:        TreeNode<SpaceNodeVo> spaceNodeOnlyInAio = createSpaceNodeOnlyInAio(spaceId, ro.getParentId(), ro.getAppSpaceNodeId(), ro.getName(), ro.getType());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-369-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-370-        nodeRoleUpdateManager.handleRoleByCreate(userId,spaceId,spaceNodeOnlyInAio.getData().getId());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-371-
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-449-    }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-450-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-451-    private TreeNode<SpaceNodeVo> saveAndBuildTree(String spaceId, Long parentId, AppSpaceNodeRelTreeNodeRo nodeRo) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:452:        String appSpaceNodeId = nodeRo.getAppSpaceNodeId();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-453-        if (FOLDER.getValue().equals(nodeRo.getType())) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:454:            appSpaceNodeId = "";
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-455-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-456-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-457-        //nameCheck
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-462-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-463-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-464-        SpaceNodeEntity entity = SpaceNodeEntity.builder()
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:465:                .appSpaceNodeId(appSpaceNodeId)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-466-                .name(nodeRo.getName())
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-467-                .type(nodeRo.getType())
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-468-                .spaceId(spaceId)
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-109-        // 目前每个服务都只会执行一种迁移逻辑, MigrationTypeEnum直接由服务环境判断, mirror服务只执行跨服务器迁移, 其它的都是服务器内迁移
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-110-        String taskId;
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-111-        if (constProperties.isMirror()) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java:112:            taskId = collabspaceGrpcClientService.createSpaceNodeMigrationTask(spaceNodeTree, email, targetSpaceId, sourceSpaceId, sourceSpaceApps);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-113-        } else {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-114-            taskId = acceptMigrationTask(spaceNodeTree, email, targetSpaceId, sourceSpaceId, sourceSpaceApps,
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-115-                    MigrationTypeEnum.INTRA_SERVER.getValue(), isRemained);
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-190-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-191-        // 迁移后的节点重新构建成树并入库
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-192-        saveNewNodeTree(spaceNodeTree, targetSpaceId, overallResult.getNodeIdMapping(), userId);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java:193:        List<String> appSpaceNodeIds =  overallResult.getNodeIdMapping().values().stream().toList();
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java:194:        List<SpaceNodeEntity> spaceNodeEntityList = spaceNodeQueryManager.getSpaceNodeByAppIds(appSpaceNodeIds);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-195-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-196-        overallResult.getNodeIdMapping().forEach((k,v) -> {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-197-            CopyFileVo vo = new  CopyFileVo();
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-274-        versionSnapshotService.save(entity);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-275-        // 补充spaceNode， 增加鉴权
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-276-        SpaceNodeEntity spaceNodeEntity = SpaceNodeEntity.builder()
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java:277:                .appSpaceNodeId(snapShotId)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-278-                .name(snapshotName)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-279-                .type(type)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-280-                .description("")
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-376-        }
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-377-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-378-        SpaceNodeEntity spaceNodeEntity = SpaceNodeEntity.builder()
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java:379:                .appSpaceNodeId(newNodeId)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-380-                .name(name)
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-381-                .type(spaceNodeVo.getType())
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-382-                .description(spaceNodeVo.getDescription())
+--
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-390-        // 补充副本关系
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-391-        nodeInstancesManager.createInstance(node.getData().getId(), spaceNodeEntity.getId(), 0);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-392-        NodeEntity nodeEntity = treeNodeTemplate.addNode(parentId, spaceId, spaceNodeEntity.getId(), SpaceNodeEntity.class);
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java:393:        log.info("migrate node, id: {}, appSpaceNodeId: {}, name: {}, parentId",spaceNodeEntity.getId(),spaceNodeEntity.getAppSpaceNodeId(),spaceNodeEntity.getName());
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-394-
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-395-        if (node.getChildren() != null && !node.getChildren().isEmpty()) {
+D:\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-396-            for (TreeNode<SpaceNodeVo> child : node.getChildren()) {

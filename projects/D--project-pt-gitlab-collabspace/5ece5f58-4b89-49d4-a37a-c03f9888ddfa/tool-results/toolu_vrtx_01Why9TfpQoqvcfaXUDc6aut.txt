@@ -1,0 +1,145 @@
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\asset\service\impl\AssetUploadTokenServiceImpl.java-141-            vos.add(certificateVO);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\asset\service\impl\AssetUploadTokenServiceImpl.java-142-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\asset\service\impl\AssetUploadTokenServiceImpl.java-143-        // batch save to db
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\asset\service\impl\AssetUploadTokenServiceImpl.java:144:        boolean flag = iAssetService.saveBatch(entities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\consumer\handle\UserAdminChangeEventHandler.java-103-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\consumer\handle\UserAdminChangeEventHandler.java-104-            newResources.add(entity);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\consumer\handle\UserAdminChangeEventHandler.java-105-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\consumer\handle\UserAdminChangeEventHandler.java:106:        spaceUserResourceRelService.saveBatch(newResources);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\mapper\SystemConfigMapper.java-46-     * @param entities System Config Entities
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\mapper\SystemConfigMapper.java-47-     * @return affected rows count
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\mapper\SystemConfigMapper.java-48-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\mapper\SystemConfigMapper.java:49:    int insertBatch(@Param("entities") List<SystemConfigEntity> entities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-120-                    Long preId = selectLastNode(treeId, nodeKey, parentId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-121-                    List<NodeEntity> allEntities = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-122-                    buildSubtreeEntities(parentId, preId, roots, treeId, nodeKey, nodeType, allEntities);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:123:                    nodeService.saveBatch(allEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-282-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-283-                        List<UserTeamUserRelEntity> userRelEntities = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-284-                        addUserIds.forEach(u -> userRelEntities.add(UserTeamUserRelEntity.builder().teamId(teamId).userId(u).build()));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java:285:                        userTeamUserRelService.saveBatch(userRelEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-339-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-340-                        List<UserTeamUserRelEntity> userRelEntities = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-341-                        mmUserIds.forEach(u -> userRelEntities.add(UserTeamUserRelEntity.builder().teamId(teamId).userId(u).build()));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java:342:                        userTeamUserRelService.saveBatch(userRelEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-380-                for (Long u : allUserIds)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-381-                    userRelEntities.add(UserTeamUserRelEntity.builder().teamId(commonRelTeamId).userId(u).build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-382-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java:383:                userTeamUserRelService.saveBatch(userRelEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-407-                    for (Long u : addUserIds)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-408-                        userRelEntities.add(UserTeamUserRelEntity.builder().teamId(commonRelTeamId).userId(u).build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java-409-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\task\MattermostUserSyncTask.java:410:                    userTeamUserRelService.saveBatch(userRelEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\manageback\manager\update\impl\AppCenterConfigUpdateManagerImpl.java-254-                    .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\manageback\manager\update\impl\AppCenterConfigUpdateManagerImpl.java-255-            optionEntities.add(entity);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\manageback\manager\update\impl\AppCenterConfigUpdateManagerImpl.java-256-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\manageback\manager\update\impl\AppCenterConfigUpdateManagerImpl.java:257:        appDownloadOptionService.saveBatch(optionEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\SpaceChangeRecordUpdateManager.java-42-                    Map.of("resourceCode", code)));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\SpaceChangeRecordUpdateManager.java-43-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\SpaceChangeRecordUpdateManager.java-44-        if (!records.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\SpaceChangeRecordUpdateManager.java:45:            spaceChangeRecordService.saveBatch(records);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-219-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-220-        List<SpaceNodeEntity> allSpaceNodes = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-221-        List<SubtreeNode> subtreeRoots = flattenSpaceNodeTree(roots, spaceId, allSpaceNodes);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:222:        spaceNodeService.saveBatch(allSpaceNodes);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-488-                        .roleCode(role.getRoleCode())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-489-                        .build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-490-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:491:            controlRoleService.saveBatch(newRoles);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpaceUpdateManagerImpl.java-94-            log.info("Created app space for type: {}, appSpaceId: {}", appType, appSpaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpaceUpdateManagerImpl.java-95-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpaceUpdateManagerImpl.java-96-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpaceUpdateManagerImpl.java:97:        spaceAppRelService.saveBatch(apps);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpacePermissionPolicyUpdateManagerImpl.java-100-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpacePermissionPolicyUpdateManagerImpl.java-101-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpacePermissionPolicyUpdateManagerImpl.java-102-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\update\impl\SpacePermissionPolicyUpdateManagerImpl.java:103:        if (!toInsert.isEmpty()) spacePermissionPolicyService.saveBatch(toInsert);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserTeamUpdateManagerImpl.java-221-            List<UserTeamAppRelEntity> addList=new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserTeamUpdateManagerImpl.java-222-            addBindTeamIds.forEach(abt-> addList.add(UserTeamAppRelEntity.builder().teamId(abt).appSpaceId(appSpaceId).appTeamId(appTeamId).
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserTeamUpdateManagerImpl.java-223-                    spaceId(spaceId).appType(appType).build()));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserTeamUpdateManagerImpl.java:224:            userTeamAppRelService.saveBatch(addList);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-130-                    userRelEntities.add(UserTeamUserRelEntity.builder().teamId(t).userId(u).build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-131-                });
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-132-            });
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java:133:            userTeamUserRelService.saveBatch(userRelEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-256-                    userRelEntities.add(UserTeamUserRelEntity.builder().teamId(t).userId(u).build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-257-                });
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-258-            });
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java:259:            userTeamUserRelService.saveBatch(userRelEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-463-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-464-        if (CollectionUtils.isNotEmpty(addUserRelEntities)){
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java-465-            addUserRelEntities.forEach(userTeamUserRelEntity -> {userTeamUserRelEntity.setIsInTeam(BinaryOperationEnum.ON.getValue());});
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\user\manager\update\impl\UserManageUpdateManagerImpl.java:466:            userTeamUserRelService.saveBatch(addUserRelEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandServiceImpl.java-23-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandServiceImpl.java-24-    @Transactional(rollbackFor = Exception.class)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandServiceImpl.java-25-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandServiceImpl.java:26:    public boolean saveBatch(Collection<T> entityList, int batchSize) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandServiceImpl.java-27-        List<List<T>> splitList = CollUtil.splitList(new ArrayList<>(entityList), batchSize);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandServiceImpl.java-28-        for (List<T> entities : splitList) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandServiceImpl.java:29:            boolean addEntities = SqlHelper.retBool(baseMapper.insertBatchSomeColumn(entities));
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandBaseMapper.java-18-     * @param entityList entities
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandBaseMapper.java-19-     * @return executed rows
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandBaseMapper.java-20-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\util\ibatis\ExpandBaseMapper.java:21:    int insertBatchSomeColumn(Collection<T> entityList);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\config\MybatisPlusConfig.java-97-            @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\config\MybatisPlusConfig.java-98-            public List<AbstractMethod> getMethodList(Class<?> mapperClass, TableInfo tableInfo) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\config\MybatisPlusConfig.java-99-                List<AbstractMethod> methodList = super.getMethodList(mapperClass, tableInfo);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\config\MybatisPlusConfig.java:100:                InsertBatchSomeColumn insertBatchSomeColumn = new InsertBatchSomeColumn(
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\config\MybatisPlusConfig.java-101-                    t -> !StrUtil.equalsAny(t.getProperty(), "createdAt", "updatedAt",
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\config\MybatisPlusConfig.java-102-                        "isDeleted"));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\shared\config\MybatisPlusConfig.java:103:                methodList.add(insertBatchSomeColumn);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-389-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-390-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-391-        if (!controlEntities.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java:392:            controlService.saveBatch(controlEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-394-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-395-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-396-        if (!controlRoleEntities.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java:397:            controlRoleService.saveBatch(controlRoleEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-668-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-669-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-670-        if (!spaceNodeStarEntities.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java:671:            spaceNodeStarService.saveBatch(spaceNodeStarEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-846-                        .build();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-847-                newResources.add(entity);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-848-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java:849:            spaceUserResourceRelService.saveBatch(newResources);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1095-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1096-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1097-            if (!nodeShareEntities.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java:1098:                nodeShareService.saveBatch(nodeShareEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1100-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1101-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1102-            if (!nodeShareScopeEntities.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java:1103:                nodeShareScopeService.saveBatch(nodeShareScopeEntities);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1105-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1106-            
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java-1107-            if (!shareScopeEntities.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\migrate\SpaceMigrationService.java:1108:                shareScopeService.saveBatch(shareScopeEntities);

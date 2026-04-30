@@ -1,0 +1,44 @@
+package com.exam.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+/**
+ * 系统用户
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName("sys_user")
+public class SysUser {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    @TableField("oa_user_id")
+    private String oaUserId;
+
+    @TableField("username")
+    private String username;
+
+    @TableField("display_name")
+    private String displayName;
+
+    @TableField("is_admin")
+    private Boolean isAdmin;
+
+    @TableField("created_at")
+    private LocalDateTime createdAt;
+
+    @TableField("updated_at")
+    private LocalDateTime updatedAt;
+}

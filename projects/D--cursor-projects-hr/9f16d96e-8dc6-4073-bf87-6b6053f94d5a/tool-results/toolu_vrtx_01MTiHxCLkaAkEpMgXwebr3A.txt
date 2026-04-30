@@ -1,0 +1,1234 @@
+     1→/**
+     2→ * 此文件用来保存所有需要解密接口的额外传参信息
+     3→ * 在请求发送前与其他接口参数合并后一并提交
+     4→ */
+     5→
+     6→/** 加密配置对象为 $this 时 non_encrypt_columns 注意添加
+     7→ * 'sys_lang',
+     8→ * 'version_info',
+     9→ * */
+    10→type EncryptOptionType = {
+    11→    res_type: 'resume' | 'staff' | 'sfuser'
+    12→    obj: string
+    13→    non_encrypt_columns?: Array<string>
+    14→    hash_columns?: Array<string>
+    15→    dup_check_columns?: Array<string>
+    16→    owner_rule?: { type: string }
+    17→    filter_method?: 'replace'
+    18→}
+    19→
+    20→type AdditionalParamsType = {
+    21→    encrypt_config?: EncryptOptionType | Array<EncryptOptionType>
+    22→    decrypt_config?: {
+    23→        obj: string
+    24→        decrypt_columns: Array<string>
+    25→    }
+    26→    replace_filter?: {
+    27→        columns: any[]
+    28→        obj: string
+    29→    }
+    30→    hash_filter?: any
+    31→}
+    32→
+    33→export function getParamMapConfig(url: string, params?: any): AdditionalParamsType {
+    34→    const key = getCleanUrl(url)
+    35→
+    36→    const offerEncryptInfo = ['probation_time', 'salary', 'probation_salary', 'intern_salary', 'offer_pdf', 'reject_reason', 'remark']
+    37→
+    38→    const entryEncryptInfo = [
+    39→        'mentor',
+    40→        'seat',
+    41→        'signed_bonus',
+    42→        'insurance_account',
+    43→        'remark',
+    44→        'work_type',
+    45→        'work_place',
+    46→        'work_schedule',
+    47→        'is_green_code',
+    48→        'is_overseas_student',
+    49→        'is_send_entry_notice_mail',
+    50→        'is_settle_down',
+    51→        'is_shanghainese',
+    52→        'is_social_fund_in_sh',
+    53→        'is_social_recruitment',
+    54→        'is_tripartite_agreement_signed',
+    55→        'is_intern',
+    56→        'is_part_time',
+    57→        'is_foreigner',
+    58→        'is_hmt',
+    59→    ]
+    60→
+    61→    const expEncryptInfo = ['description', 'details', 'name']
+    62→
+    63→    switch (key) {
+    64→        case 'common/import-history-onboarding-review-files':
+    65→            return {
+    66→                encrypt_config: {
+    67→                    res_type: 'staff',
+    68→                    obj: 'onboarding_review_files.*',
+    69→                    non_encrypt_columns: ['file_store_path_info.*.disk', 'file_store_path_info.*.type'],
+    70→                    hash_columns: [],
+    71→                    dup_check_columns: [],
+    72→                },
+    73→            }
+    74→
+    75→        case 'to-do-list':
+    76→            return {
+    77→                decrypt_config: {
+    78→                    obj: 'reminders.*',
+    79→                    decrypt_columns: ['*.name'],
+    80→                },
+    81→            }
+    82→
+    83→        case 'resume-search/share-resume-recruitment':
+    84→            return {
+    85→                decrypt_config: {
+    86→                    obj: '$this',
+    87→                    decrypt_columns: ['username'],
+    88→                },
+    89→            }
+    90→
+    91→        case 'resume-search/search-by-inputer':
+    92→            return {
+    93→                decrypt_config: {
+    94→                    obj: 'resumes.*.*',
+    95→                    decrypt_columns: ['username', 'nickname', 'mobile_num', 'email', 'file_store_path_info.*.file_store_path'],
+    96→                },
+    97→            }
+    98→
+    99→        case 'resume-search/search':
+   100→            return {
+   101→                decrypt_config: {
+   102→                    obj: 'resumes.*',
+   103→                    decrypt_columns: [
+   104→                        'username',
+   105→                        'nickname',
+   106→                        'mobile_num',
+   107→                        'email',
+   108→                        'file_store_path_info.*.file_store_path',
+   109→                        'onboarding_review.file_store_path_info.*.file_store_path',
+   110→                        'birth_year',
+   111→                        'filing_reason',
+   112→                        'gender',
+   113→                        'remark',
+   114→                        'recent_archive_info.reason',
+   115→                        'hr_extra_info',
+   116→                        ...expEncryptInfo.map(el => 'get_resume_experience.*.' + el),
+   117→                    ],
+   118→                },
+   119→            }
+   120→
+   121→        case 'resume-import/add':
+   122→        case 'reference-info/resume/add':
+   123→        case 'resume-search/update':
+   124→            return {
+   125→                encrypt_config: {
+   126→                    res_type: 'resume',
+   127→                    obj: 'resume',
+   128→                    non_encrypt_columns: [
+   129→                        'reference_id',
+   130→                        'id',
+   131→                        'file_store_path_info.*.id',
+   132→                        'file_store_path_info.*.type',
+   133→                        'file_store_path_info.*.is_on',
+   134→                        'job_id',
+   135→                        'expect_job_ids',
+   136→                        'country',
+   137→                        'region',
+   138→                        'experience.*.type',
+   139→                        'experience.*.start_time',
+   140→                        'experience.*.end_time',
+   141→                        'experience.*.status',
+   142→                        'channel_id',
+   143→                        'channel_remark',
+   144→                        'archive_reason',
+   145→                        'is_cooperation',
+   146→                    ],
+   147→                    hash_columns: ['username', 'gender', 'mobile_num', 'email'],
+   148→                    dup_check_columns: ['username', 'mobile_num', 'email'],
+   149→                },
+   150→
+   151→                decrypt_config: {
+   152→                    obj: 'resume_info.*',
+   153→                    decrypt_columns: [
+   154→                        'username',
+   155→                        'mobile_num',
+   156→                        'email',
+   157→                        'birth_year',
+   158→                        'file_store_path_info.*.file_store_path',
+   159→                        'filing_reason',
+   160→                        ...expEncryptInfo.map(el => 'get_resume_experience.*.' + el),
+   161→                        'gender',
+   162→                        'remark',
+   163→                    ],
+   164→                },
+   165→            }
+   166→
+   167→        case 'resume-import/upload-history-resume':
+   168→            return {
+   169→                encrypt_config: {
+   170→                    res_type: 'resume',
+   171→                    obj: 'resume.*',
+   172→                    non_encrypt_columns: [
+   173→                        'channel',
+   174→                        'channel_remark',
+   175→                        'country',
+   176→                        'interview_date',
+   177→                        'interview_level',
+   178→                        'interview_result',
+   179→                        'interview_time',
+   180→                        'interviewer_id',
+   181→                        'job',
+   182→                        'job_id',
+   183→                        'row_index',
+   184→                        'job_type',
+   185→                        'procession_status',
+   186→                        'region',
+   187→                        'archive_reason',
+   188→                    ],
+   189→                    hash_columns: ['nickname', 'username', 'mobile_num', 'gender', 'email'],
+   190→                    dup_check_columns: ['nickname', 'username', 'mobile_num', 'email'],
+   191→                },
+   192→            }
+   193→
+   194→        case 'interviewer-workbench/entry-arrangement':
+   195→            return {
+   196→                decrypt_config: {
+   197→                    obj: 'entry_arrangement.*',
+   198→                    decrypt_columns: [
+   199→                        'username',
+   200→                        'nickname',
+   201→                        'mobile_num',
+   202→                        'email',
+   203→                        'identification',
+   204→                        'birth_year',
+   205→                        'filing_reason',
+   206→                        'gender',
+   207→                        'remark',
+   208→                        'hr_extra_info',
+   209→                        ...offerEncryptInfo.map(el => 'offer_approval.' + el),
+   210→                        ...entryEncryptInfo.map(el => 'waiting_entry.' + el),
+   211→                        ...expEncryptInfo.map(el => 'get_resume_experience.*.' + el),
+   212→                    ],
+   213→                },
+   214→            }
+   215→
+   216→        case 'recruitment-procession/search':
+   217→            return {
+   218→                decrypt_config: {
+   219→                    obj: 'recruitments.*',
+   220→                    decrypt_columns: [
+   221→                        'username',
+   222→                        'nickname',
+   223→                        'mobile_num',
+   224→                        'email',
+   225→                        'identification',
+   226→                        'birth_year',
+   227→                        'filing_reason',
+   228→                        'gender',
+   229→                        'remark',
+   230→                        'birth_place',
+   231→                        'political_status',
+   232→                        'marital_status',
+   233→                        'address_residence',
+   234→                        'family_members',
+   235→                        'emergency_contact',
+   236→                        'hr_extra_info',
+   237→                        'onboarding_review.file_store_path_info.*.file_store_path',
+   238→                        ...offerEncryptInfo.map(el => 'offer_approval.' + el),
+   239→                        ...entryEncryptInfo.map(el => 'waiting_entry.' + el),
+   240→                        ...expEncryptInfo.map(el => 'get_resume_experience.*.' + el),
+   241→                        'country',
+   242→                        'emergency_contact',
+   243→                        'resume_extra_info',
+   244→                        'family_members',
+   245→                    ],
+   246→                },
+   247→            }
+   248→
+   249→        case 'recruitment-procession/create-offer-mail-approval':
+   250→            return {
+   251→                encrypt_config: {
+   252→                    res_type: 'resume',
+   253→                    obj: '$this',
+   254→                    non_encrypt_columns: [
+   255→                        'sys_lang',
+   256→                        'version_info',
+   257→                        'offer_id',
+   258→                        'mail_config.disk',
+   259→                        'mail_config.attach_path',
+   260→                        'mail_config.id_sign',
+   261→                        'mail_config.template_id',
+   262→                    ],
+   263→                },
+   264→            }
+   265→
+   266→        case 'recruitment-procession/recreate-expired-offer':
+   267→            return {
+   268→                encrypt_config: {
+   269→                    res_type: 'resume',
+   270→                    obj: '$this',
+   271→                    non_encrypt_columns: ['rec_pro_id', 'id_sign'],
+   272→                },
+   273→            }
+   274→
+   275→        case 'interviewer-workbench/resume-filter':
+   276→            return {
+   277→                decrypt_config: {
+   278→                    obj: 'resume_filter.*',
+   279→                    decrypt_columns: [
+   280→                        'birth_year',
+   281→                        'filing_reason',
+   282→                        'gender',
+   283→                        'username',
+   284→                        'nickname',
+   285→                        'mobile_num',
+   286→                        'email',
+   287→                        ...offerEncryptInfo.map(el => 'offer_approval.' + el),
+   288→                        ...entryEncryptInfo.map(el => 'waiting_entry.' + el),
+   289→                        ...expEncryptInfo.map(el => 'get_resume_experience.*.' + el),
+   290→                    ],
+   291→                },
+   292→            }
+   293→
+   294→        case 'recruitment-procession/update-offer-approval':
+   295→            return {
+   296→                encrypt_config: {
+   297→                    res_type: 'resume',
+   298→                    obj: '$this',
+   299→                    non_encrypt_columns: ['sys_lang', 'version_info', 'id'],
+   300→                },
+   301→            }
+   302→
+   303→        case 'recruitment-procession/to-rescreening':
+   304→            return {
+   305→                encrypt_config: {
+   306→                    res_type: 'resume',
+   307→                    obj: 'recruitments.*',
+   308→                    non_encrypt_columns: ['rec_pro_id', 'archive_reason', 'is_auto_next_job'],
+   309→                },
+   310→            }
+   311→
+   312→        case 'recruitment-procession/update-waiting-entry-info':
+   313→            return {
+   314→                encrypt_config: {
+   315→                    res_type: 'resume',
+   316→                    obj: '$this',
+   317→                    non_encrypt_columns: [
+   318→                        'sys_lang',
+   319→                        'version_info',
+   320→                        'id',
+   321→                        'job_id',
+   322→                        'direct_supervisor_id',
+   323→                        'supervisor_id',
+   324→                        'entry_time',
+   325→                        'positive_date',
+   326→                        'follow_up_hr_id',
+   327→                        'inputer_user_id',
+   328→                    ],
+   329→                },
+   330→            }
+   331→
+   332→        case 'recruitment-procession/offer-response':
+   333→            return {
+   334→                encrypt_config: {
+   335→                    res_type: 'resume',
+   336→                    obj: '$this',
+   337→                    non_encrypt_columns: [
+   338→                        'sys_lang',
+   339→                        'version_info',
+   340→                        'offer_id',
+   341→                        'direct_supervisor_id',
+   342→                        'supervisor_id',
+   343→                        'result',
+   344→                        'probation_time',
+   345→                        'entry_time',
+   346→                    ],
+   347→                },
+   348→            }
+   349→
+   350→        case 'recruitment-procession/create-offer':
+   351→            return {
+   352→                encrypt_config: {
+   353→                    res_type: 'resume',
+   354→                    obj: '$this',
+   355→                    non_encrypt_columns: ['sys_lang', 'version_info', 'rec_pro_id', 'approver_id', 'job_id', 'background_check_deferred'],
+   356→                },
+   357→            }
+   358→
+   359→        case 'recruitment-procession/background-check-reminder-check':
+   360→        case 'recruitment-procession/background-check-record-skip':
+   361→            return {
+   362→                encrypt_config: {
+   363→                    res_type: 'resume',
+   364→                    obj: '$this',
+   365→                    non_encrypt_columns: ['sys_lang', 'version_info', 'rec_pro_id', 'scene', 'work_experience_index', 'skip_reason', 'skip_specific_reason'],
+   366→                },
+   367→            }
+   368→
+   369→        case 'recruitment-procession/ini-scr-to-interview':
+   370→            return {
+   371→                encrypt_config: {
+   372→                    res_type: 'resume',
+   373→                    obj: '$this',
+   374→                    non_encrypt_columns: ['sys_lang', 'version_info', 'id'],
+   375→                },
+   376→            }
+   377→
+   378→        case 'recruitment-procession/common-archive':
+   379→            return {
+   380→                encrypt_config: {
+   381→                    res_type: 'resume',
+   382→                    obj: 'recruitments.*',
+   383→                    non_encrypt_columns: ['rec_pro_id', 'archive_reason', 'is_auto_next_job'],
+   384→                },
+   385→            }
+   386→
+   387→        case 'interview-workbench/candidate-details':
+   388→        case 'recruitment-procession/candidate-details':
+   389→        case 'resume-search/resume-details':
+   390→            return {
+   391→                decrypt_config: {
+   392→                    obj: '$this',
+   393→                    decrypt_columns: [
+   394→                        'resume.username',
+   395→                        'resume.nickname',
+   396→                        'resume.mobile_num',
+   397→                        'resume.birth_year',
+   398→                        'resume.filing_reason',
+   399→                        'resume.gender',
+   400→                        'resume.remark',
+   401→                        'resume.email',
+   402→                        'resume.self_evaluation',
+   403→                        'resume.hr_extra_info',
+   404→                        'resume.identification',
+   405→                        'resume.works_link',
+   406→                        'resume.birth_place',
+   407→                        'resume.political_status',
+   408→                        'resume.marital_status',
+   409→                        'resume.address_residence',
+   410→                        'resume.family_members',
+   411→                        'resume.file_store_path_info.*.file_store_path',
+   412→                        'interview_records.*.interview_evaluation',
+   413→                        'interview_records.*.video_interview_link',
+   414→                        'offer_approval.*.approver_name',
+   415→                        'offer_approval.*.remark',
+   416→                        'resume_operation.*.extra_info.operator',
+   417→                        'resume_operation.*.extra_info.share_name',
+   418→                        'resume_operation.*.extra_info.to_email',
+   419→                        'resume_operation.*.reason',
+   420→                        'resume_operation.*.specific_reason',
+   421→                        'resume.resume_extra_info',
+   422→                        'resume.family_members',
+   423→                        'resume.emergency_contact',
+   424→                        'resume.address_residence',
+   425→                        ...offerEncryptInfo.map(el => 'offer_approval.*.' + el),
+   426→                        ...entryEncryptInfo.map(el => 'waiting_entry.*.' + el),
+   427→                        ...expEncryptInfo.map(el => 'resume.get_resume_experience.*.' + el),
+   428→                        'history_result.*.interview_records.*.interview_evaluation',
+   429→                        'history_result.*.interview_records.*.video_interview_link',
+   430→                        'history_result.*.offer_approval.*.approver_name',
+   431→                        'history_result.*.resume_operation.*.extra_info.operator',
+   432→                        'history_result.*.resume_operation.*.extra_info.share_name',
+   433→                        'history_result.*.resume_operation.*.extra_info.to_email',
+   434→                        'history_result.*.resume_operation.*.reason',
+   435→                        'history_result.*.resume_operation.*.specific_reason',
+   436→                        'history_result.*.written_exam_info.*.candidate_remark',
+   437→                        'history_result.*.written_exam_info.*.file_store_path_info.*.file_store_path',
+   438→                        'history_result.*.written_exam_info.*.evaluation',
+   439→                        'history_result.*.written_exam_info.*.remark',
+   440→                        ...offerEncryptInfo.map(el => 'history_result.*.offer_approval.*.' + el),
+   441→                        ...entryEncryptInfo.map(el => 'history_result.*.waiting_entry.*.' + el),
+   442→                        'onboarding_review.file_store_path_info.*.file_store_path',
+   443→                        'onboarding_review.remark_certificate',
+   444→                        'onboarding_review.remark_resignation',
+   445→                        'onboarding_review.password',
+   446→                        'written_exam_info.*.candidate_remark',
+   447→                        'written_exam_info.*.file_store_path_info.*.file_store_path',
+   448→                        'written_exam_info.*.evaluation',
+   449→                        'written_exam_info.*.remark',
+   450→                        'reward_template.introducer_name',
+   451→                        'resume_remarks.*.remark',
+   452→                        'offer_approval.*.offer_remark',
+   453→                    ],
+   454→                },
+   455→            }
+   456→
+   457→        case 'interviewer-workbench/interview-result':
+   458→            return {
+   459→                encrypt_config: {
+   460→                    res_type: 'resume',
+   461→                    obj: '$this',
+   462→                    non_encrypt_columns: ['sys_lang', 'version_info', 'id', 'interview_result'],
+   463→                },
+   464→            }
+   465→
+   466→        case 'recruitment-procession/email-link':
+   467→            return {
+   468→                decrypt_config: {
+   469→                    obj: 'data.data_info',
+   470→                    decrypt_columns: ['username', 'nickname', 'mobile_num', 'email'],
+   471→                },
+   472→            }
+   473→
+   474→        case 'interview-procession/search':
+   475→            return {
+   476→                decrypt_config: {
+   477→                    obj: 'resumes.*',
+   478→                    decrypt_columns: [
+   479→                        'username',
+   480→                        'nickname',
+   481→                        'birth_year',
+   482→                        'email',
+   483→                        'gender',
+   484→                        'identification',
+   485→                        'hr_extra_info',
+   486→                        'mobile_num',
+   487→                        'interview_evaluation',
+   488→                        'video_interview_link',
+   489→                    ],
+   490→                },
+   491→            }
+   492→
+   493→        case 'interviewer-workbench/interview-schedule':
+   494→            return {
+   495→                decrypt_config: {
+   496→                    obj: 'interview_records.*',
+   497→                    decrypt_columns: ['username', 'nickname'],
+   498→                },
+   499→            }
+   500→
+   501→        case 'interviewer-workbench/offer-approval':
+   502→            return {
+   503→                decrypt_config: {
+   504→                    obj: 'offers.*',
+   505→                    decrypt_columns: [
+   506→                        'username',
+   507→                        'nickname',
+   508→                        'salary',
+   509→                        'probation_salary',
+   510→                        'intern_salary',
+   511→                        'mail_config.attach_path',
+   512→                        'mail_config.attach_real_name',
+   513→                        'mail_config.content',
+   514→                        'mail_config.subject',
+   515→                        'oa_remark',
+   516→                    ],
+   517→                },
+   518→            }
+   519→
+   520→        case 'resume-search/record-resume-remark':
+   521→            return {
+   522→                encrypt_config: {
+   523→                    res_type: 'resume',
+   524→                    obj: '$this',
+   525→                    non_encrypt_columns: ['sys_lang', 'version_info'],
+   526→                },
+   527→            }
+   528→
+   529→        case 'recruitment-procession/employee-applicant':
+   530→            return {
+   531→                encrypt_config: {
+   532→                    res_type: 'resume',
+   533→                    obj: '$this',
+   534→                    non_encrypt_columns: ['sys_lang', 'version_info', 'id', 'archive_reason', 'applicant_result', 'entry_time'],
+   535→                },
+   536→            }
+   537→
+   538→        case 'recruitment-procession/update-interview-evaluation':
+   539→            return {
+   540→                encrypt_config: {
+   541→                    res_type: 'resume',
+   542→                    obj: '$this',
+   543→                    non_encrypt_columns: ['sys_lang', 'version_info', 'interview_record_id', 'interview_result'],
+   544→                },
+   545→            }
+   546→
+   547→        case 'recruitment-procession/interview-course':
+   548→        case 'recruitment-procession/arrange-interview-procession':
+   549→            return {
+   550→                encrypt_config: {
+   551→                    res_type: 'resume',
+   552→                    obj: '$this',
+   553→                    non_encrypt_columns: [
+   554→                        'sys_lang',
+   555→                        'version_info',
+   556→                        'rec_pro_id',
+   557→                        'is_send_mail',
+   558→                        'is_send_rejection_letter',
+   559→                        'archive_reason',
+   560→                        'final_result',
+   561→                        'interview.id',
+   562→                        'interview.round_times',
+   563→                        'interview.interviewer_id',
+   564→                        'interview.interview_result',
+   565→                        'interview.interview_time',
+   566→                        'interview.interview_pt_time',
+   567→                        'interview.email_timezone',
+   568→                        'interview.interview_way',
+   569→                        'interview.interview_position',
+   570→                        'interview.transportation',
+   571→                    ],
+   572→                },
+   573→            }
+   574→
+   575→        case 'recruitment-procession/arrange-interview':
+   576→            return {
+   577→                decrypt_config: {
+   578→                    obj: 'interview_records.*',
+   579→                    decrypt_columns: ['interview_evaluation', 'video_interview_link'],
+   580→                },
+   581→            }
+   582→
+   583→        case 'recruitment-procession/add-written-exam-info':
+   584→            return {
+   585→                encrypt_config: {
+   586→                    res_type: 'resume',
+   587→                    obj: '$this',
+   588→                    non_encrypt_columns: [
+   589→                        'id',
+   590→                        'sys_lang',
+   591→                        'version_info',
+   592→                        'rec_pro_id',
+   593→                        'status',
+   594→                        'file_store_path_info.*.type',
+   595→                        'file_store_path_info.*.id',
+   596→                    ],
+   597→                },
+   598→            }
+   599→
+   600→        case 'interviewer-workbench/search-written-exam-info':
+   601→        case 'recruitment-procession/search-written-exam-info':
+   602→            return {
+   603→                decrypt_config: {
+   604→                    obj: '$this',
+   605→                    decrypt_columns: ['*.file_store_path_info.*.file_store_path'],
+   606→                },
+   607→            }
+   608→
+   609→        case 'recruitment-procession/search-performance':
+   610→            return {
+   611→                decrypt_config: {
+   612→                    obj: '$this',
+   613→                    decrypt_columns: ['*.*.username', '*.*.nickname'],
+   614→                },
+   615→            }
+   616→
+   617→        case 'recruitment-procession/onboarding-review-approval':
+   618→            return {
+   619→                encrypt_config: {
+   620→                    res_type: 'resume',
+   621→                    obj: '$this',
+   622→                    non_encrypt_columns: ['sys_lang', 'version_info', 'id', 'result', 'rec_pro_id', 'archive_reason', 'is_send_refuse_mail'],
+   623→                },
+   624→            }
+   625→
+   626→        case 'onboarding-review/search':
+   627→            return {
+   628→                decrypt_config: {
+   629→                    obj: 'onboarding_review.*',
+   630→                    decrypt_columns: ['username', 'email', 'file_store_path_info.*.file_store_path'],
+   631→                },
+   632→            }
+   633→
+   634→        case 'recruitment-procession/onboarding-review':
+   635→            return {
+   636→                encrypt_config: {
+   637→                    res_type: 'resume',
+   638→                    obj: '$this',
+   639→                    non_encrypt_columns: ['sys_lang', 'version_info', 'rec_pro_id', 'id_sign'],
+   640→                },
+   641→            }
+   642→
+   643→        case 'recruitment-procession/background-check/send':
+   644→            return {
+   645→                encrypt_config: {
+   646→                    res_type: 'resume',
+   647→                    obj: '$this',
+   648→                    non_encrypt_columns: [
+   649→                        'sys_lang',
+   650→                        'version_info',
+   651→                        'resume_id',
+   652→                        'rec_pro_id',
+   653→                        'work_experience_index',
+   654→                        'company',
+   655→                        'position',
+   656→                        'work_location',
+   657→                        'employment_type',
+   658→                        'start_date',
+   659→                        'end_date',
+   660→                        'salary_structure',
+   661→                        'departure_type',
+   662→                        'has_compensation',
+   663→                        'email_subject',
+   664→                        'email_content',
+   665→                        'email_search',
+   666→                    ],
+   667→                },
+   668→            }
+   669→
+   670→        case 'recruitment-procession/background-check/resend':
+   671→            return {
+   672→                encrypt_config: {
+   673→                    res_type: 'resume',
+   674→                    obj: '$this',
+   675→                    non_encrypt_columns: ['sys_lang', 'version_info', 'background_check_id', 'resume_id', 'email_search'],
+   676→                },
+   677→            }
+   678→
+   679→        case 'recruitment-procession/background-check/list':
+   680→            return {
+   681→                decrypt_config: {
+   682→                    obj: '$this',
+   683→                    decrypt_columns: ['list.*.*.background_check_email', 'data.*.background_check_email'],
+   684→                },
+   685→            }
+   686→
+   687→        case 'recruitment-procession/background-check/detail':
+   688→            return {
+   689→                decrypt_config: {
+   690→                    obj: '$this',
+   691→                    decrypt_columns: ['background_check_email'],
+   692→                },
+   693→            }
+   694→
+   695→        case 'recruitment-procession/background-check-query/list':
+   696→            return {
+   697→                decrypt_config: {
+   698→                    obj: '$this',
+   699→                    decrypt_columns: ['list.*.background_check_email', 'list.*.candidate_nickname'],
+   700→                },
+   701→            }
+   702→
+   703→        case 'recruitment-procession/background-check-query/create':
+   704→        case 'recruitment-procession/background-check-query/update': {
+   705→            const hasResume = params?.resume_id != null && params.resume_id !== ''
+   706→            return {
+   707→                encrypt_config: {
+   708→                    res_type: 'resume',
+   709→                    obj: '$this',
+   710→                    non_encrypt_columns: hasResume
+   711→                        ? [
+   712→                              'sys_lang',
+   713→                              'version_info',
+   714→                              'id',
+   715→                              'company',
+   716→                              'work_location',
+   717→                              'status',
+   718→                              'witness_name',
+   719→                              'witness_position',
+   720→                              'contact_phone',
+   721→                              'remark',
+   722→                              'resume_id',
+   723→                              'email_search',
+   724→                          ]
+   725→                        : [
+   726→                              'sys_lang',
+   727→                              'version_info',
+   728→                              'id',
+   729→                              'company',
+   730→                              'work_location',
+   731→                              'status',
+   732→                              'witness_name',
+   733→                              'witness_position',
+   734→                              'contact_phone',
+   735→                              'remark',
+   736→                              'resume_id',
+   737→                              'background_check_email',
+   738→                              'email_search',
+   739→                          ],
+   740→                },
+   741→            }
+   742→        }
+   743→
+   744→        // 校招简历归档恢复原逻辑 23-11-06
+   745→        case 'interviewer-workbench/to-interview':
+   746→            return {
+   747→                encrypt_config: {
+   748→                    res_type: 'resume',
+   749→                    obj: '$this',
+   750→                    non_encrypt_columns: [
+   751→                        'sys_lang',
+   752→                        'version_info',
+   753→                        'id',
+   754→                        'result',
+   755→                        'archive_reason',
+   756→                        'round_times',
+   757→                        'is_send_rejection_letter',
+   758→                        // 'is_open_resume',
+   759→                        // 'update_permission',
+   760→                        // 'input_user_id',
+   761→                    ],
+   762→                },
+   763→            }
+   764→
+   765→        case 'introduce-management/introducer-score-detail':
+   766→            return {
+   767→                decrypt_config: {
+   768→                    obj: 'introducers.*',
+   769→                    decrypt_columns: ['introducer_name'],
+   770→                },
+   771→            }
+   772→
+   773→        case 'introduce-management/not-empty-score-detail':
+   774→            return {
+   775→                decrypt_config: {
+   776→                    obj: 'resumes.*',
+   777→                    decrypt_columns: ['username'],
+   778→                },
+   779→            }
+   780→
+   781→        case 'introduce-management/score-payment':
+   782→            return {
+   783→                decrypt_config: {
+   784→                    obj: 'error_records.*',
+   785→                    decrypt_columns: ['introducer_name'],
+   786→                },
+   787→            }
+   788→
+   789→        case 'introduce-management/introduce-job-ranking':
+   790→        case 'introduce-management/introducer-ranking':
+   791→        case 'introduce-management/introduce-department-ranking':
+   792→            return {
+   793→                decrypt_config: {
+   794→                    obj: 'ranking.*',
+   795→                    decrypt_columns: ['nickname'],
+   796→                },
+   797→            }
+   798→
+   799→        case 'introduce-management/introducer':
+   800→            return {
+   801→                decrypt_config: {
+   802→                    obj: 'introducer.*',
+   803→                    decrypt_columns: ['nickname'],
+   804→                },
+   805→            }
+   806→
+   807→        case 'introduce-management/introducer-resumes':
+   808→            return {
+   809→                decrypt_config: {
+   810→                    obj: 'resumes.*',
+   811→                    decrypt_columns: ['username'],
+   812→                },
+   813→            }
+   814→
+   815→        case 'offer-mail-approval/search':
+   816→            return {
+   817→                decrypt_config: {
+   818→                    obj: 'offer_mail_approval.*',
+   819→                    decrypt_columns: [
+   820→                        'username',
+   821→                        'nickname',
+   822→                        'salary',
+   823→                        'probation_salary',
+   824→                        'intern_salary',
+   825→                        'mail_config.attach_real_name',
+   826→                        'mail_config.to_email',
+   827→                        'mail_config.content',
+   828→                        'mail_config.subject',
+   829→                        'remark',
+   830→                        'offer_remark',
+   831→                    ],
+   832→                },
+   833→            }
+   834→
+   835→        case 'home/add-file-path-info':
+   836→            return {
+   837→                decrypt_config: {
+   838→                    obj: 'file_path_info.*',
+   839→                    decrypt_columns: ['file_store_path'],
+   840→                },
+   841→                encrypt_config: {
+   842→                    res_type: 'resume',
+   843→                    obj: '$this',
+   844→                    non_encrypt_columns: [
+   845→                        'sys_lang',
+   846→                        'version_info',
+   847→                        'table_id',
+   848→                        'table_name',
+   849→                        'file_path_info.*.disk',
+   850→                        'file_path_info.*.type',
+   851→                        'file_path_info.*.id',
+   852→                    ],
+   853→                },
+   854→            }
+   855→
+   856→        case 'regular-review/search':
+   857→        case 'staff-management/search':
+   858→            return {
+   859→                decrypt_config: {
+   860→                    obj: 'staff.*',
+   861→                    decrypt_columns: [
+   862→                        'direct_supervisor_nickname',
+   863→                        'nickname',
+   864→                        'username',
+   865→                        'document_number',
+   866→                        'nationality',
+   867→                        'birth_place',
+   868→                        'marital_status',
+   869→                        'identification',
+   870→                        'mobile_num',
+   871→                        'email_personal',
+   872→                        'email_business',
+   873→                        'we_chat_num',
+   874→                        'address_residence',
+   875→                        'address_home',
+   876→                        'address_shanghai',
+   877→                        'emergency_contact',
+   878→                        'emergency_mobile',
+   879→                        'family_members',
+   880→                        'bank_account',
+   881→                        'payroll_num',
+   882→                        'is_social_fund_in_sh',
+   883→                        'insurance_account',
+   884→                        'contract_subject',
+   885→                        'nationality_foreign',
+   886→                        'region_foreign',
+   887→                        'account_name_foreign',
+   888→                        'bank_account_foreign',
+   889→                        'iban_foreign',
+   890→                        'swift_code_foreign',
+   891→                        'bic_foreign',
+   892→                        'paypal_foreign',
+   893→                        'remark',
+   894→                        'education_level',
+   895→                        'contract_info.contract_subject',
+   896→                        'contract_info.remark',
+   897→                        'contract_info.contract_template',
+   898→                        'entry_info.*',
+   899→                        'gender',
+   900→                        'contract_reject_reason',
+   901→                        'reject_reason',
+   902→                        'sfuser_id',
+   903→                        'work_place',
+   904→                        'resignation_remark',
+   905→                        'start_user_name',
+   906→                        'social_security_last_month',
+   907→                    ],
+   908→                },
+   909→            }
+   910→
+   911→        case 'regular-review/staff-detail':
+   912→        case 'staff-management/staff-detail':
+   913→            return {
+   914→                decrypt_config: {
+   915→                    obj: '$this',
+   916→                    decrypt_columns: [
+   917→                        'personal_info.direct_supervisor_nickname',
+   918→                        'personal_info.nickname',
+   919→                        'personal_info.username',
+   920→                        'personal_info.document_number',
+   921→                        'personal_info.birth_place',
+   922→                        'personal_info.identification',
+   923→                        'personal_info.mobile_num',
+   924→                        'personal_info.email_personal',
+   925→                        'personal_info.email_business',
+   926→                        'personal_info.we_chat_num',
+   927→                        'personal_info.address_residence',
+   928→                        'personal_info.address_home',
+   929→                        'personal_info.address_shanghai',
+   930→                        'personal_info.emergency_contact',
+   931→                        'personal_info.emergency_mobile',
+   932→                        'personal_info.family_members',
+   933→                        'personal_info.payroll_num',
+   934→                        'personal_info.remark',
+   935→                        'personal_info.bank_account',
+   936→                        'personal_info.insurance_account',
+   937→                        'personal_info.is_social_fund_in_sh',
+   938→                        'personal_info.political_status',
+   939→                        'personal_info.type_of_household_registration',
+   940→                        'personal_info.education_level',
+   941→                        'personal_info.nationality',
+   942→                        'personal_info.marital_status',
+   943→                        'personal_info.gender',
+   944→                        'personal_info.work_place',
+   945→                        'personal_info.entry_info.*',
+   946→                        'staff_contracts.contracts.*.contract_subject',
+   947→                        'staff_contracts.contracts.*.remark',
+   948→                        'staff_contracts.contracts.*.contract_template',
+   949→                        'staff_contracts.renewal_contract_info.contract_subject',
+   950→                        'staff_contracts.renewal_contract_info.remark',
+   951→                        'staff_contracts.renewal_reject_reason',
+   952→                        'personal_info.nationality_foreign',
+   953→                        'personal_info.region_foreign',
+   954→                        'personal_info.account_name_foreign',
+   955→                        'personal_info.bank_account_foreign',
+   956→                        'personal_info.iban_foreign',
+   957→                        'personal_info.swift_code_foreign',
+   958→                        'personal_info.bic_foreign',
+   959→                        'personal_info.paypal_foreign',
+   960→                        'personal_info.sfuser_id',
+   961→                        'staff_experience.edu_experience.*.name',
+   962→                        'staff_experience.edu_experience.*.details',
+   963→                        'staff_experience.edu_experience.*.description',
+   964→                        'staff_experience.work_experience.*.name',
+   965→                        'staff_experience.work_experience.*.details',
+   966→                        'staff_experience.work_experience.*.description',
+   967→                        'staff_management_operations.*.reject_reason',
+   968→                        'onboarding_review_files.*.file_store_path',
+   969→                    ],
+   970→                },
+   971→            }
+   972→
+   973→        case 'staff-management/information-update':
+   974→            return {
+   975→                encrypt_config: {
+   976→                    res_type: 'staff',
+   977→                    obj: 'info',
+   978→                    non_encrypt_columns: ['entry_time', 'birth_date', 'height', 'positive_date', 'follow_up_hr_id'],
+   979→                    hash_columns: [],
+   980→                    filter_method: 'replace',
+   981→                    dup_check_columns: [],
+   982→                },
+   983→            }
+   984→
+   985→        case 'staff-management/staff-info-update':
+   986→            return {
+   987→                encrypt_config: [
+   988→                    {
+   989→                        res_type: 'staff',
+   990→                        obj: 'staff.*',
+   991→                        non_encrypt_columns: [
+   992→                            'direct_supervisor_id',
+   993→                            'email_personal',
+   994→                            'department_id',
+   995→                            'start_time_*',
+   996→                            'end_time_*',
+   997→                            'status',
+   998→                            'birth_date',
+   999→                            'resignation_date',
+  1000→                            'supervisor_id',
+  1001→                        ],
+  1002→                        hash_columns: ['nickname', 'document_number', 'insurance_account'],
+  1003→                        filter_method: 'replace',
+  1004→                        dup_check_columns: ['nickname', 'document_number'],
+  1005→                    },
+  1006→                    {
+  1007→                        res_type: 'sfuser', // 资源类型
+  1008→                        obj: 'sfusers.*', // 资源对象对应的字段
+  1009→                        owner_rule: {
+  1010→                            type: 'same_with_res_id',
+  1011→                        },
+  1012→                        non_encrypt_columns: [
+  1013→                            // 资源对象中不加密的字段
+  1014→                            'sfuser_id',
+  1015→                            'supervisor_id',
+  1016→                        ],
+  1017→                    },
+  1018→                ],
+  1019→            }
+  1020→
+  1021→        case 'staff-management/edit-renewal-contract':
+  1022→        case 'staff-management/contract-renewal':
+  1023→            return {
+  1024→                encrypt_config: {
+  1025→                    res_type: 'staff',
+  1026→                    obj: '$this',
+  1027→                    non_encrypt_columns: ['sys_lang', 'version_info', 'start_time', 'end_time', 'term', 'unit', 'sys_site'],
+  1028→                },
+  1029→            }
+  1030→
+  1031→        case 'staff-management/update-contract-info':
+  1032→            return {
+  1033→                encrypt_config: {
+  1034→                    res_type: 'staff',
+  1035→                    obj: '$this',
+  1036→                    non_encrypt_columns: [
+  1037→                        'sys_lang',
+  1038→                        'version_info',
+  1039→                        'operation',
+  1040→                        'contract_id',
+  1041→                        'contract_info.start_time',
+  1042→                        'contract_info.end_time',
+  1043→                        'contract_info.contract_status',
+  1044→                        'contract_info.contract_type',
+  1045→                        'contract_info.term',
+  1046→                        'contract_info.unit',
+  1047→                    ],
+  1048→                },
+  1049→            }
+  1050→
+  1051→        case 'staff-management/transfer-position':
+  1052→            return {
+  1053→                encrypt_config: [
+  1054→                    {
+  1055→                        res_type: 'staff',
+  1056→                        obj: '$this',
+  1057→                        non_encrypt_columns: [
+  1058→                            'sys_lang',
+  1059→                            'version_info',
+  1060→                            'department_id',
+  1061→                            'job_id',
+  1062→                            // 'sfuser_id',
+  1063→                            'current_department',
+  1064→                            'current_job',
+  1065→                            'inputer_user_id',
+  1066→                            'transfer_date',
+  1067→                            // 'direct_supervisor_id',
+  1068→                            'supervisor_id',
+  1069→                            // 'supervisor_sfuser_id',
+  1070→                            // 'ssc_nickname',
+  1071→                            // 'direct_supervisor_sfuser_nickname',
+  1072→                            // 'supervisor_sfuser_nickname',
+  1073→                        ],
+  1074→                    },
+  1075→                    //     {
+  1076→                    //     res_type: 'sfuser', // 资源类型
+  1077→                    //     obj: '$this', // 资源对象对应的字段
+  1078→                    //
+  1079→                    //     non_encrypt_columns: [ // 资源对象中不加密的字段
+  1080→                    //         'direct_supervisor_nickname',
+  1081→                    //         'sys_lang',
+  1082→                    //         'version_info',
+  1083→                    //         'department_id',
+  1084→                    //         'job_id',
+  1085→                    //         'sfuser_id',
+  1086→                    //         'current_department',
+  1087→                    //         'current_job',
+  1088→                    //         'inputer_user_id',
+  1089→                    //         'transfer_date',
+  1090→                    //         'direct_supervisor_id',
+  1091→                    //         'supervisor_id',
+  1092→                    //         'supervisor_sfuser_id',
+  1093→                    //         'staff_id'
+  1094→                    //     ],
+  1095→                    // }
+  1096→                ],
+  1097→            }
+  1098→
+  1099→        case 'staff-management/export-staff':
+  1100→            return {
+  1101→                decrypt_config: {
+  1102→                    obj: 'staff_export.*',
+  1103→                    decrypt_columns: [
+  1104→                        'nickname',
+  1105→                        'username',
+  1106→                        'identification',
+  1107→                        'edu_school_major',
+  1108→                        'remark',
+  1109→                        'payroll_num',
+  1110→                        'bank_account_foreign',
+  1111→                        'nationality',
+  1112→                        'political_status',
+  1113→                        'education_level',
+  1114→                        'type_of_household_registration',
+  1115→                        'address_residence',
+  1116→                        'gender',
+  1117→                        'direct_supervisor_nickname',
+  1118→                        ...entryEncryptInfo,
+  1119→                    ],
+  1120→                },
+  1121→                // replace_filter: {
+  1122→                //     obj: '$this',
+  1123→                //     columns: [{"column":"direct_supervisor_nickname",return_id:true}],
+  1124→                // },
+  1125→            }
+  1126→
+  1127→        case 'staff-management/give-up-entry':
+  1128→            return {
+  1129→                encrypt_config: {
+  1130→                    res_type: 'resume',
+  1131→                    obj: '$this',
+  1132→                    non_encrypt_columns: ['sys_lang', 'version_info', 'staff_id', 'sfuser_id', 'reason', 'rec_pro', 'nickname'],
+  1133→                    // hash_columns: ['nickname'],
+  1134→                },
+  1135→                hash_filter: {
+  1136→                    obj: '$this',
+  1137→                    columns: ['nickname'],
+  1138→                },
+  1139→            }
+  1140→
+  1141→        case 'dev-test/debug-model-users':
+  1142→        case 'dev-test/get-open-debug-model-info':
+  1143→            return {
+  1144→                decrypt_config: {
+  1145→                    obj: 'sfuser_list.*',
+  1146→                    decrypt_columns: ['nickname'],
+  1147→                },
+  1148→            }
+  1149→
+  1150→        case 'course-management/course-search':
+  1151→            return {
+  1152→                decrypt_config: {
+  1153→                    obj: 'courses.*',
+  1154→                    decrypt_columns: ['viewable_range.*.nickname'],
+  1155→                },
+  1156→            }
+  1157→
+  1158→        case 'course-management/course_statistics':
+  1159→            return {
+  1160→                decrypt_config: {
+  1161→                    obj: 'course_statistics.*',
+  1162→                    decrypt_columns: ['viewers.*.nickname', 'completed_learn_sfusers.*.nickname'],
+  1163→                },
+  1164→            }
+  1165→
+  1166→        case 'training-project/members-search':
+  1167→            return {
+  1168→                decrypt_config: {
+  1169→                    obj: 'members.*',
+  1170→                    decrypt_columns: ['nickname', 'public_file_store_path_info.*.file_store_path'],
+  1171→                },
+  1172→            }
+  1173→
+  1174→        case 'training-project/project-detail':
+  1175→            return {
+  1176→                decrypt_config: {
+  1177→                    obj: 'project.project_courses.*.members.*',
+  1178→                    decrypt_columns: ['nickname'],
+  1179→                },
+  1180→            }
+  1181→
+  1182→        default:
+  1183→            return {}
+  1184→    }
+  1185→}
+  1186→
+  1187→export function getCleanUrl(str: string): string {
+  1188→    const apiTypes = ['web-api/', 'public-api/']
+  1189→    const prefix = apiTypes.find(type => str.indexOf(type) !== -1),
+  1190→        suffix = '?',
+  1191→        preIndex = str.indexOf(prefix),
+  1192→        sufIndex = str.indexOf(suffix)
+  1193→
+  1194→    let res = ''
+  1195→    try {
+  1196→        if (sufIndex === -1) {
+  1197→            res = str.substr(preIndex + prefix.length)
+  1198→        } else {
+  1199→            res = str.substr(preIndex + prefix.length, sufIndex - preIndex - prefix.length)
+  1200→        }
+  1201→
+  1202→        return res
+  1203→    } catch (err) {
+  1204→        console.error(err)
+  1205→        return ''
+  1206→    }
+  1207→}
+  1208→
+  1209→export function getParamMapVal(url: string, params): AdditionalParamsType {
+  1210→    const configType = getParamMapConfig(url, params)
+  1211→    const inputType = params?.encrypt_config
+  1212→
+  1213→    if (!configType.encrypt_config || !inputType) {
+  1214→        return configType
+  1215→    }
+  1216→    if (inputType instanceof Array) {
+  1217→        return {
+  1218→            encrypt_config: inputType.length ? inputType : undefined,
+  1219→        }
+  1220→    }
+  1221→
+  1222→    return {
+  1223→        ...configType,
+  1224→        encrypt_config: {
+  1225→            ...configType.encrypt_config,
+  1226→            ...inputType,
+  1227→        },
+  1228→    }
+  1229→}
+  1230→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

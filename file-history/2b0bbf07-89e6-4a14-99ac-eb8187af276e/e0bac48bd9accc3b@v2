@@ -1,0 +1,69 @@
+# 智能表格视图类型使用情况查询
+
+## 需求背景
+
+PXTL-2061：统计 collabspace 线上内外网智能表格中各种类型视图的使用情况，为后续功能优化提供数据支持。
+
+- 统计范围：目前有效的视图（创建后未被删除的视图）
+- 无论用户是否实际使用或近期有无看过，只要该视图存在即统计
+- 一套代码两套部署（内网/外网），天然隔离
+
+## 方案
+
+collabspace-server 新增一个接口，通过 OpenFeign 调用 apitable 已有的 `GET /api/v1/statistics/get` 接口，提取视图相关字段返回。
+
+### 为什么选 HTTP 转发
+
+- apitable 已有完整的统计能力：`DataStatisticsServiceImpl.dailyStatistics()` 每日定时从 `apitable_datasheet_meta.meta_data` JSON 中解析视图类型，统计入 `data_statistics` 表
+- apitable 已有无需登录的 HTTP 接口 `GET /api/v1/statistics/get`，返回包含 7 种视图类型计数
+- collabspace-server 已有 `${apitable.host}` 配置和 `ApitableMigrationFeign` 作为参考模式
+
+## 数据流
+
+```
+调用方 → collabspace-server GET /api/v1/node/statistics/view/count
+           → Feign → apitable GET /api/v1/statistics/get
+           ← 提取 7 个 viewNum 字段 + statisticsDay
+         ← 返回 ViewTypeStatisticsVo
+```
+
+## 视图类型枚举
+
+| 值 | 类型 | 字段名 |
+|----|------|--------|
+| 1 | 表格视图 (GRID) | gridViewNum |
+| 2 | 看板视图 (KANBAN) | kanbanViewNum |
+| 3 | 相册视图 (GALLERY) | galleryViewNum |
+| 5 | 日历视图 (CALENDAR) | calendarViewNum |
+| 6 | 甘特视图 (GANTT) | ganttViewNum |
+| 7 | 架构视图 (ARCHITECTURE) | architectureViewNum |
+| 8 | 层级视图 (HIERARCHY) | hierarchyViewNum |
+
+## 返回结构
+
+```json
+{
+  "gridViewNum": 4387,
+  "kanbanViewNum": 150,
+  "galleryViewNum": 282,
+  "calendarViewNum": 109,
+  "ganttViewNum": 294,
+  "architectureViewNum": 67,
+  "hierarchyViewNum": 106,
+  "statisticsDay": "2026-04-01"
+}
+```
+
+## 涉及改动
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| `third/feign/ApitableStatisticsFeign.java` | 新建 | FeignClient，调用 apitable `/api/v1/statistics/get` |
+| `workspace/vo/ViewTypeStatisticsVo.java` | 新建 | 返回 VO，7 种视图类型计数 + 统计日期 |
+| `workspace/controller/SpaceNodeStatisticsController.java` | 修改 | 新增 `GET /node/statistics/view/count` 端点 |
+
+## 接口细节
+
+- 路径：`GET /api/v1/node/statistics/view/count`
+- 权限：`requiredLogin = false`，与现有统计接口风格一致
+- Feign 复用 `${apitable.host}` 配置，内外网各自部署时自动指向对应的 apitable 实例

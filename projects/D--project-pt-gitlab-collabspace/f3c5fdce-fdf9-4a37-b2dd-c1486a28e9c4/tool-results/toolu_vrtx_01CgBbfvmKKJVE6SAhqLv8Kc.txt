@@ -1,0 +1,146 @@
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-11-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-12-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-13-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-14-@NoArgsConstructor
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-15-@AllArgsConstructor
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-16-@Builder
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-17-@Schema(name = "MySpaceVoSpaceAppRelVo")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-18-public class MySpaceVo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-19-    @Schema(description = "我的空间站")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-20-    @JsonSerialize(nullsUsing = NullCollectionSerializer.class)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java:21:    private List<SpaceWithAdminInfoVo> managedSpaces;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-22-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-23-    @Schema(description = "共享空间站")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-24-    @JsonSerialize(nullsUsing = NullCollectionSerializer.class)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-25-    private List<SpaceWithAdminInfoVo> joinedSpaces;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-26-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-27-    @Schema(description = "已停用的空间站")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-28-    @JsonSerialize(nullsUsing = NullCollectionSerializer.class)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-29-    private List<SpaceWithAdminInfoVo> forbidSpaces;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\vo\MySpaceVo.java-30-}
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-82-                ));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-83-        Set<String> workbenchAdminSpaceIds = userResourceRels.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-84-                .filter(rel -> SpaceResourceEnum.MANAGE_WORKBENCH.getValue().equals(rel.getResourceCode()))
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-85-                .map(SpaceUserResourceRelEntity::getSpaceId)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-86-                .collect(Collectors.toSet());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-87-        Set<String> memberAdminSpaceIds = userResourceRels.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-88-                .filter(rel -> SpaceResourceEnum.MANAGE_MEMBER.getValue().equals(rel.getResourceCode()))
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-89-                .map(SpaceUserResourceRelEntity::getSpaceId)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-90-                .collect(Collectors.toSet());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-91-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java:92:        List<SpaceWithAdminInfoVo> managedSpaces = apitableSpaceVos.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-93-                .filter(space -> space.getAdmin() != null && space.getAdmin() && spaceEntityMap.containsKey(space.getSpaceId()) && !space.getHidden())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-94-                .map(space -> {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-95-                    SpaceEntity spaceEntity = spaceEntityMap.get(space.getSpaceId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-96-                    List<SpaceAppRelEntity> relatedApps = spaceAppRelMap.getOrDefault(space.getSpaceId(), List.of());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-97-                    boolean isMainAdmin = true;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-98-                    boolean isWorkbenchAdmin = true;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-99-                    boolean isMemberAdmin = true;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-100-                    return new SpaceWithAdminInfoVo(spaceEntity, relatedApps, isMainAdmin, isWorkbenchAdmin, isMemberAdmin);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-101-                })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-102-                .toList();
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-119-                .map(space -> {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-120-                    SpaceEntity spaceEntity = spaceEntityMap.get(space.getSpaceId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-121-                    List<SpaceAppRelEntity> relatedApps = spaceAppRelMap.getOrDefault(space.getSpaceId(), List.of());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-122-                    boolean isMainAdmin = spaceEntity.getOwner() != null && spaceEntity.getOwner().equals(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-123-                    boolean isWorkbenchAdmin = workbenchAdminSpaceIds.contains(space.getSpaceId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-124-                    boolean isMemberAdmin = memberAdminSpaceIds.contains(space.getSpaceId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-125-                    return new SpaceWithAdminInfoVo(spaceEntity, relatedApps, isMainAdmin, isWorkbenchAdmin, isMemberAdmin);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-126-                })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-127-                .toList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-128-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java:129:        return new MySpaceVo(managedSpaces, joinedSpaces, forbidSpaces);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-130-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-131-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-132-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-133-    public SpaceInfoVo getSpaceInfo(String spaceId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-134-        SpaceEntity spaceEntity = spaceService.getBySpaceId(spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-135-        ExceptionUtil.isNotNull(spaceEntity, DatabaseException.QUERY_EMPTY_BY_ID);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-136-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-137-        return spaceTransfer.toSpaceInfoVo(spaceEntity);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-138-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-139-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-153-        List<SpaceUserResourceRelEntity> spaceUserResourceRelEntities = spaceUserResourceRelService
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-154-                .getByUserIdAndResourceCodes(userId, List.of(SpaceResourceEnum.MANAGE_WORKBENCH.getValue()));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-155-        List<String> managedSpaceIds = CollectionUtils.isNotEmpty(spaceUserResourceRelEntities)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-156-                ? spaceUserResourceRelEntities.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-157-                .map(SpaceUserResourceRelEntity::getSpaceId)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-158-                .filter(e -> !ownSpaceIds.contains(e))
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-159-                .distinct()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-160-                .toList()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-161-                : List.of();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-162-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java:163:        List<SpaceEntity> managedSpaces = CollectionUtils.isNotEmpty(managedSpaceIds)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-164-                ? spaceService.listByIds(managedSpaceIds, false)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-165-                : List.of();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-166-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java:167:        return Stream.concat(ownSpaces.stream(), managedSpaces.stream()).toList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-168-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-169-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-170-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-171-    public List<Long> getAdminUsersWithWorkBenchManagePermission(String spaceId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-172-        SpaceEntity spaceEntity = spaceService.listByIds(new ArrayList<>(List.of(spaceId)), true).stream().
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-173-                findFirst().orElse(null);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-174-        if (spaceEntity == null) return List.of();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-175-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-176-        List<SpaceUserResourceRelEntity> spaceUserResourceRelEntities = spaceUserResourceRelService
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-177-                .getByResourceCodeAndSpaceId(SpaceResourceEnum.MANAGE_WORKBENCH.getValue(), spaceId);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-75-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-76-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-77-    @GetResource(path = "/task/{taskId}", requiredPermission = false)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-78-    @Operation(summary = "Get migration task info")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-79-    public ResponseData<SpaceNodeMigrationTaskVo> getMigrationTaskInfo(
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-80-            @PathVariable("taskId") @Parameter(description = "Task ID", example = "spc123-spc456-1234567890") String taskId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-81-        SpaceNodeMigrationTaskVo taskInfo = spaceNodeMigrationQueryManager.getMigrationTaskInfo(taskId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-82-        return ResponseData.success(taskInfo);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-83-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-84-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java:85:    @GetResource(path = "/managedSpaces", requiredPermission = false)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-86-    @Operation(summary = "Get user managed spaces for migration")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-87-    public ResponseData<List<SpaceVo>> listManagedSpaceForMigration() {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-88-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-89-        List<SpaceVo> spaces = spaceNodeMigrationQueryManager.listManagedSpaceForMigration(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-90-        return ResponseData.success(spaces);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-91-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-92-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-93-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-94-    @PostResource(path = "/copyFile")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeMigrationController.java-95-    @Parameters({
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-309-            return this.doExecute(List.of(principal.getPrincipal()), controlId, requestWrapper);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-310-        } else if (principal.getPrincipalType() == PrincipalType.USER_ID) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-311-            ControlRoleDict controlRoleDict = ControlRoleDict.create();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-312-            if (controlId.getControlType() == ControlType.SPACE_NODE) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-313-                List<Long> spaceNodeIds = controlId.getControlIds().stream().map(Long::parseLong).toList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-314-                Long userId = principal.getPrincipal();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-315-                Map<Long, String> snapshotNodeToSpaceMap = spaceNodeService.getSnapshotNodeIdToSpaceIdMap(spaceNodeIds);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-316-                // find space-spaceNode relation
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-317-                Map<String, List<Long>> spaceIdToSpaceNodeIdMap = spaceNodeQueryManager.getSpaceIdToSpaceNodeIdMap(spaceNodeIds);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-318-                // filter managed nodes and set top role
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java:319:                List<SpaceEntity> managedSpaces = spaceQueryManager.getMemberManagedSpace(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java:320:                for (SpaceEntity space : managedSpaces) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-321-                    List<Long> managedSpaceNodeIds = spaceIdToSpaceNodeIdMap.get(space.getSpaceId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-322-                    if (CollectionUtils.isNotEmpty(managedSpaceNodeIds)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-323-                        ControlRole topRole = this.getTopRole(controlId.getControlType());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-324-                        managedSpaceNodeIds.forEach(cId -> controlRoleDict.put(cId.toString(), topRole));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-325-                        spaceIdToSpaceNodeIdMap.remove(space.getSpaceId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-326-                    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-327-                }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-328-                // find units in all no-manage space
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-329-                List<Long> allUnitIds = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-330-                List<Long> noManagedSpaceNodeIds = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java:331:                Set<String> userInSpaceIds = managedSpaces.stream().map(SpaceEntity::getSpaceId).collect(Collectors.toSet());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-332-                for (Map.Entry<String, List<Long>> entry : spaceIdToSpaceNodeIdMap.entrySet()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-333-                    String spaceId = entry.getKey();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-334-                    List<Long> userUnitsInSpace = apitableGrpcClientService.getUnitsByMember(userId, spaceId);// todo batch&&cache
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-335-                    boolean isUserInSpace = CollectionUtils.isNotEmpty(userUnitsInSpace);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-336-                    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-337-                    // only process nodes if user is a member of the space
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-338-                    if (isUserInSpace) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-339-                        userInSpaceIds.add(spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-340-                        allUnitIds.addAll(userUnitsInSpace);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-341-

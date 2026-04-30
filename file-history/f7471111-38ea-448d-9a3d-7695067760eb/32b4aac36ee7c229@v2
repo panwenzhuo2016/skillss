@@ -1,0 +1,118 @@
+package com.yottastudios.ns.collabspace.control.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yottastudios.ns.collabspace.control.entity.ControlRoleEntity;
+import com.yottastudios.ns.collabspace.control.mapper.ControlRoleMapper;
+import com.yottastudios.ns.collabspace.control.service.IControlRoleService;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.Serializable;
+import java.util.*;
+
+@Service
+public class ControlRoleServiceImpl extends ServiceImpl<ControlRoleMapper, ControlRoleEntity> implements IControlRoleService {
+    @Override
+    public List<ControlRoleEntity> getByControlId(String controlId) {
+        QueryWrapper<ControlRoleEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(ControlRoleEntity::getControlId, controlId);
+        return list(queryWrapper);
+    }
+
+    @Override
+    public List<ControlRoleEntity> getByControlIds(Collection<? extends Serializable> controlIds) {
+        if (CollectionUtils.isEmpty(controlIds)) {
+            return new ArrayList<>();
+        }
+        QueryWrapper<ControlRoleEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().in(ControlRoleEntity::getControlId, controlIds);
+        return list(queryWrapper);
+    }
+
+    @Override
+    @Transactional
+    public void saveOrUpdateControlRole(Long userId, String controlId, List<Long> unitIds, String role) {
+        // 仅查询目标 unitId 对应的已有记录，避免不必要的全量写入
+        List<ControlRoleEntity> existingRoles = getByControlIdAndUnitIds(controlId, unitIds);
+        Set<Long> existingUnitIds = new HashSet<>();
+
+        // 更新已有记录
+        List<ControlRoleEntity> toUpdate = new ArrayList<>();
+        for (ControlRoleEntity existing : existingRoles) {
+            existingUnitIds.add(existing.getUnitId());
+            if (!role.equals(existing.getRoleCode())) {
+                existing.setRoleCode(role);
+                existing.setUpdatedBy(userId);
+                toUpdate.add(existing);
+            }
+        }
+        if (CollectionUtils.isNotEmpty(toUpdate)) {
+            updateBatchById(toUpdate);
+        }
+
+        // 插入新记录
+        List<ControlRoleEntity> toInsert = new ArrayList<>();
+        for (Long unitId : unitIds) {
+            if (!existingUnitIds.contains(unitId)) {
+                toInsert.add(ControlRoleEntity.builder()
+                        .id(IdWorker.getId())
+                        .controlId(controlId)
+                        .unitId(unitId)
+                        .roleCode(role)
+                        .createdBy(userId)
+                        .updatedBy(userId)
+                        .build());
+            }
+        }
+        if (CollectionUtils.isNotEmpty(toInsert)) {
+            saveBatch(toInsert);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void removeByControlIdAndUnitIds(String controlId, List<Long> unitIds) {
+        List<ControlRoleEntity> entities = getByControlIdAndUnitIds(controlId, unitIds);
+        removeByIds(entities);
+    }
+
+    @Override
+    public List<ControlRoleEntity> getByControlIdAndUnitIds(String controlId, List<Long> unitIds) {
+        if (CollectionUtils.isEmpty(unitIds)) {
+            return new ArrayList<>();
+        }
+        QueryWrapper<ControlRoleEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(ControlRoleEntity::getControlId, controlId)
+                .in(ControlRoleEntity::getUnitId, unitIds);
+        return list(queryWrapper);
+    }
+
+    @Override
+    @Transactional
+    public void removeControl(List<String> controlIds) {
+        if (CollectionUtils.isEmpty(controlIds)) {
+            return;
+        }
+        QueryWrapper<ControlRoleEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().in(ControlRoleEntity::getControlId, controlIds);
+        remove(queryWrapper);
+    }
+
+    @Override
+    public List<String> getControlIdsByUnitId(Long unitId) {
+        if (unitId == null) {
+            return new ArrayList<>();
+        }
+        QueryWrapper<ControlRoleEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda()
+                .eq(ControlRoleEntity::getUnitId, unitId)
+                .select(ControlRoleEntity::getControlId);
+        return list(queryWrapper).stream()
+                .map(ControlRoleEntity::getControlId)
+                .distinct()
+                .toList();
+    }
+}

@@ -1,0 +1,28 @@
+# Task 12: 试卷分析接口
+
+**Status:** Pending
+
+**Files:**
+- Create: `exam-system/src/main/resources/mapper/AnalysisMapper.xml`
+- Create: `exam-system/src/main/java/com/exam/dto/ScoreAnalysisResponse.java`
+- Create: `exam-system/src/main/java/com/exam/dto/QuestionAnalysisResponse.java`
+- Create: `exam-system/src/main/java/com/exam/service/AnalysisService.java`
+- Create: `exam-system/src/main/java/com/exam/controller/admin/AdminAnalysisController.java`
+
+## Steps
+
+- [ ] **Step 1:** DTO
+  - `ScoreAnalysisResponse`: userId, displayName, score, startTime, endTime, attemptNo
+  - `QuestionAnalysisResponse`: questionId, content, totalAnswered, correctCount, correctRate(Double)
+
+- [ ] **Step 2:** `AnalysisMapper.xml` — 需要在 ExamRecordMapper 或新建 Mapper 接口中定义方法
+  - 得分查询 SQL：SELECT er.*, su.display_name FROM exam_record er JOIN sys_user su ON er.user_id = su.id WHERE er.exam_id = #{examId} AND er.status IN ('submitted','timeout') ORDER BY er.score DESC（分页）
+  - 题目正答率 SQL：SELECT qb.id, qb.content, COUNT(ad.id) as total_answered, SUM(ad.is_correct) as correct_count FROM question_bank qb LEFT JOIN answer_detail ad ON qb.id = ad.question_id AND ad.record_id IN (SELECT id FROM exam_record WHERE exam_id = #{examId} AND status IN ('submitted','timeout')) WHERE qb.exam_id = #{examId} GROUP BY qb.id ORDER BY qb.sort_order
+
+- [ ] **Step 3:** `AnalysisService`
+  - `scoreAnalysis(examId, page, size)` — 分页
+  - `questionAnalysis(examId)` — 全部题目，计算 correctRate = correctCount / totalAnswered
+
+- [ ] **Step 4:** `AdminAnalysisController` — @RequestMapping("/api/admin/exams/{examId}/analysis")
+  - GET /scores — 得分情况
+  - GET /questions — 题目分析

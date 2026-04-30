@@ -1,0 +1,260 @@
+# 文档设置权限功能优化 - 后端设计
+
+## 概述
+
+优化文档权限设置弹窗的后端接口，支持：
+1. 管理员列表展示（已有，无需后端改动）
+2. 按小组授权（树结构 + 分页 + 搜索）
+3. 按成员授权（仅手动设置的 + 分页 + 搜索 + 权限冲突校验）
+4. 权限变更历史（新建表 + 查询接口）
+
+## 现有架构
+
+### 核心表
+- `collabspace_control` — 标记节点是否有独立权限（control_id = spaceNodeId）
+- `collabspace_control_role` — 存储 unitId ↔ roleCode 映射
+
+### 核心代码
+- `NodeRoleController` → 权限 CRUD 入口
+- `NodeRoleQueryManagerImpl` → 查询逻辑，`getNodeRoles()` 返回 `NodeCollaboratorsVo`
+- `NodeRoleUpdateManagerImpl` → 增删改逻辑
+- `NodeRoleTransfer` → 将 ControlRoleEntity 转换为 NodeRoleUnit VO
+- `IApitableGrpcClientService` → gRPC 调用 apitable 获取小组/成员数据
+
+### 权限角色
+- `reader` / `editor` / `manager`（RoleConstants.SpaceNode）
+- 对文档不可见 = 无 control_role 记录
+- 移除文档权限 = 删除 control_role 记录
+
+---
+
+## 模块 1：管理员列表
+
+**结论：后端无需改动。**
+
+现有 `getNodeRoles` 接口已返回 `admins: List<UnitMemberVo>`，通过 `getAdminUsersWithWorkBenchManagePermission(spaceId)` 查询。前端只需调整展示逻辑（默认收起/展开）。
+
+---
+
+## 模块 2：小组权限设置（按树结构 + 分页）
+
+### 新增接口
+
+```
+GET /api/v1/node/role/{spaceNodeId}/listTeamRoles
+Header: X-Space-Id
+Query: keyword(可选), pageNo(默认1), pageSize(默认20)
+```
+
+### 请求对象（RO）
+
+```java
+@Data
+public class ListTeamRolesRo {
+    @Schema(description = "搜索关键词")
+    private String keyword;
+
+    @Schema(description = "页码", example = "1")
+    @Min(1)
+    private Integer pageNo = 1;
+
+    @Schema(description = "每页条数", example = "20")
+    @Min(1) @Max(100)
+    private Integer pageSize = 20;
+}
+```
+
+### 返回对象（VO）
+
+```java
+@Data
+public class TeamRoleTreeVo {
+    @Schema(description = "小组ID")
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long teamId;
+
+    @Schema(description = "小组对应的 unitId")
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long unitId;
+
+    @Schema(description = "小组名称")
+    private String teamName;
+
+    @Schema(description = "父级小组ID, 0=根")
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long parentId;
+
+    @Schema(description = "成员数量")
+    private Integer memberCount;
+
+    @Schema(description = "当前权限角色: reader/editor/manager, null=对文档不可见")
+    private String role;
+
+    @Schema(description = "子小组列表")
+    private List<TeamRoleTreeVo> children;
+}
+```
+
+分页返回时使用 `PageInfo<TeamRoleTreeVo>`，搜索时返回平铺列表（不含 children），非搜索时返回树结构。
+
+### 业务逻辑
+
+1. 调用 `apitableGrpcClientService.getTeamMembers(spaceId, userId)` 获取完整小组树
+2. 需要将 teamId 转为 unitId（通过 gRPC `getNodeRoleUnitList` 或直接查 apitable_unit 表）
+3. 查询 `control_role` 中 controlId = spaceNodeId 的所有记录
+4. 按 unitId 匹配，将 roleCode 合并到树节点上
+5. 搜索：按 teamName 模糊过滤（包含匹配节点及其祖先路径）
+6. 分页：对平铺后的结果分页
+
+### 注意事项
+- 小组数据来自 apitable gRPC，权限数据在 collabspace 本地 DB
+- 搜索过滤在内存中进行（小组数量通常不大）
+- 分页在搜索结果基础上进行
+
+---
+
+## 模块 3：成员权限设置（仅手动设置的 + 分页）
+
+### 新增接口
+
+```
+GET /api/v1/node/role/{spaceNodeId}/listMemberRoles
+Header: X-Space-Id
+Query: keyword(可选), pageNo(默认1), pageSize(默认20)
+```
+
+### 返回对象
+
+复用现有 `NodeRoleUnit`，用 `PageInfo<NodeRoleUnit>` 包装。
+
+### 业务逻辑
+
+1. 查询 `control_role` 中 controlId = spaceNodeId 的所有记录
+2. 通过 gRPC `getNodeRoleUnitList` 获取这些 unitId 的详情
+3. 过滤出 unitType = 3（成员）的记录
+4. 若有 keyword，按成员名模糊匹配过滤
+5. 对结果分页返回
+
+### 权限冲突校验
+
+修改现有 `editRole` 接口逻辑，在 `NodeRoleUpdateManagerImpl.updateNodeRole` 中：
+
+1. 通过 gRPC 判断被修改的 unitId 是否为成员类型（unitType=3）
+2. 若是成员，查询该成员所属的所有小组 unitId
+3. 检查这些小组 unitId 在当前节点 `control_role` 中的最高权限
+4. 若小组权限 > 新设置的成员权限，在响应中返回提示信息
+
+响应结构：
+```java
+@Data
+public class EditRoleResultVo {
+    @Schema(description = "是否存在权限冲突")
+    private Boolean hasConflict;
+
+    @Schema(description = "冲突提示信息")
+    private String conflictMessage;
+
+    @Schema(description = "冲突的小组名称")
+    private String conflictTeamName;
+
+    @Schema(description = "冲突的小组权限")
+    private String conflictTeamRole;
+}
+```
+
+注意：即使有冲突也执行变更，只是返回提示信息让前端弹窗。
+
+---
+
+## 模块 4：权限变更历史
+
+### 新建表
+
+```sql
+CREATE TABLE collabspace_node_permission_log (
+    id            BIGINT UNSIGNED NOT NULL COMMENT 'Primary Key' PRIMARY KEY,
+    space_node_id BIGINT UNSIGNED NOT NULL COMMENT '文档节点ID',
+    space_id      VARCHAR(50)     NOT NULL COMMENT '空间站ID',
+    operator_id   BIGINT UNSIGNED NOT NULL COMMENT '操作人用户ID',
+    operator_name VARCHAR(100)    NOT NULL COMMENT '操作人名称',
+    target_name   VARCHAR(200)    NOT NULL COMMENT '被操作对象名称(小组名/成员名)',
+    target_type   TINYINT UNSIGNED NOT NULL COMMENT '类型: 1=小组, 3=成员',
+    action        VARCHAR(20)     NOT NULL COMMENT '操作类型: set/remove',
+    old_role      VARCHAR(50)     NULL     COMMENT '变更前角色(新增时为null)',
+    new_role      VARCHAR(50)     NULL     COMMENT '变更后角色(移除时为null)',
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间'
+) COMMENT '节点权限变更日志表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_space_node_id ON collabspace_node_permission_log (space_node_id);
+CREATE INDEX idx_created_at ON collabspace_node_permission_log (created_at);
+```
+
+### 新增接口
+
+```
+GET /api/v1/node/role/{spaceNodeId}/permissionLogs
+Header: X-Space-Id
+Query: keyword(可选), pageNo(默认1), pageSize(默认20)
+```
+
+### 返回对象
+
+```java
+@Data
+public class NodePermissionLogVo {
+    @Schema(description = "操作人名称")
+    private String operatorName;
+
+    @Schema(description = "操作时间")
+    private LocalDateTime createdAt;
+
+    @Schema(description = "变更描述, 如: '将 技术部 权限改为 可编辑'")
+    private String description;
+
+    @Schema(description = "变更后角色展示文本")
+    private String newRoleDisplay;
+}
+```
+
+### 业务逻辑
+
+查询：
+1. 按 space_node_id 查询，按 created_at DESC 排序
+2. keyword 搜索匹配 operator_name, target_name, new_role 等全部字段
+3. 分页返回
+
+记录：
+在 `NodeRoleUpdateManagerImpl` 的以下方法中插入日志：
+- `addNodeRole` → action='set', old_role=null
+- `updateNodeRole` → action='set', old_role=旧值
+- `deleteNodeRoles` → action='remove', new_role=null
+
+description 格式：`将 {targetName} 权限改为 {roleDisplay}` 或 `移除 {targetName} 所有权限`
+
+---
+
+## 影响范围
+
+| 层级 | 新增/修改 | 文件 |
+|------|-----------|------|
+| Controller | 修改 | `NodeRoleController` — 新增 3 个接口 |
+| Manager | 修改 | `NodeRoleQueryManagerImpl` — 新增小组树查询、成员权限分页查询 |
+| Manager | 修改 | `NodeRoleUpdateManagerImpl` — 新增权限变更日志记录、权限冲突校验 |
+| Service | 新增 | `INodePermissionLogService` / Impl |
+| Entity | 新增 | `NodePermissionLogEntity` |
+| Mapper | 新增 | `NodePermissionLogMapper` |
+| VO | 新增 | `TeamRoleTreeVo`, `NodePermissionLogVo`, `EditRoleResultVo` |
+| RO | 新增 | `ListTeamRolesRo` (可复用为通用分页搜索RO) |
+| DB Migration | 新增 | `005_node_permission_log.xml` |
+| gRPC | 无需改动 | `getTeamBranch` 已有 |
+
+---
+
+## 接口汇总
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/node/role/{spaceNodeId}/listTeamRoles` | GET | 小组权限树（分页+搜索） |
+| `/node/role/{spaceNodeId}/listMemberRoles` | GET | 成员权限列表（分页+搜索） |
+| `/node/role/{spaceNodeId}/permissionLogs` | GET | 权限变更历史（分页+搜索） |
+| `/node/role/editRole` | POST | 修改（增加冲突校验返回） |

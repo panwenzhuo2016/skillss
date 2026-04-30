@@ -1,0 +1,153 @@
+package com.yottastudios.ns.collabspace.workspace.controller;
+
+import com.yottastudios.ns.collabspace.core.support.ResponseData;
+import com.yottastudios.ns.collabspace.shared.util.ExportUtil;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.ApiResource;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.GetResource;
+import com.yottastudios.ns.collabspace.workspace.dto.MethodCountDto;
+import com.yottastudios.ns.collabspace.workspace.dto.TypeCountDto;
+import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeTypeEnum;
+import com.yottastudios.ns.collabspace.workspace.manager.query.MethodLogQueryManager;
+import com.yottastudios.ns.collabspace.workspace.manager.query.SpaceNodeStatisticsQueryManager;
+import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeCreatedByTypeVo;
+import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodePvByTypeVo;
+import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeUvByTypeVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@Tag(name = "SpaceNodeStatistics")
+@ApiResource(path = "/node/statistics")
+public class SpaceNodeStatisticsController {
+
+    @Resource
+    private SpaceNodeStatisticsQueryManager statisticsQueryManager;
+    @Resource
+    private MethodLogQueryManager methodLogQueryManager;
+
+    @GetResource(path = "/uv/total", requiredPermission = false, requiredLogin = false)
+    @Operation(summary = "统计区间内任意文档的去重访问用户数")
+    public ResponseData<Long> getDistinctVisitorCount(
+            @RequestParam("startAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startAt,
+            @RequestParam("endAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endAt
+    ) {
+        Long count = statisticsQueryManager.countDistinctVisitors(startAt, endAt);
+        return ResponseData.success(count);
+    }
+
+    @GetResource(path = "/uv/byType", requiredPermission = false, requiredLogin = false)
+    @Operation(summary = "统计区间内各类型文档的去重访问用户数")
+    public ResponseData<List<SpaceNodeUvByTypeVo>> getDistinctVisitorCountByType(
+            @RequestParam("startAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startAt,
+            @RequestParam("endAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endAt
+    ) {
+        return ResponseData.success(SpaceNodeUvByTypeVo.fromTypeCountDtoList(
+                statisticsQueryManager.countDistinctVisitorsByType(startAt, endAt)
+        ));
+    }
+
+    @GetResource(path = "/pv/byType", requiredPermission = false, requiredLogin = false)
+    @Operation(summary = "统计区间内各类型文档的访问人次（不去重）")
+    public ResponseData<List<SpaceNodePvByTypeVo>> getVisitCountByType(
+            @RequestParam("startAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startAt,
+            @RequestParam("endAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endAt
+    ) {
+        return ResponseData.success(SpaceNodePvByTypeVo.fromTypeCountDtoList(
+                statisticsQueryManager.countTotalVisitsByType(startAt, endAt)
+        ));
+    }
+
+    @GetResource(path = "/created/byType", requiredPermission = false, requiredLogin = false)
+    @Operation(summary = "统计区间内各类型文档的新建数量")
+    public ResponseData<List<SpaceNodeCreatedByTypeVo>> getCreatedCountByType(
+            @RequestParam("startAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startAt,
+            @RequestParam("endAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endAt
+    ) {
+        return ResponseData.success(SpaceNodeCreatedByTypeVo.fromTypeCountDtoList(
+                statisticsQueryManager.countCreatedNodesByType(startAt, endAt)
+        ));
+    }
+
+    @GetResource(path = "/method/count", requiredPermission = false, requiredLogin = false)
+    @Operation(summary = "统计区间内各方法的调用次数")
+    public ResponseData<List<MethodCountDto>> getMethodCallCount(
+            @RequestParam("startAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startAt,
+            @RequestParam("endAt") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endAt
+    ) {
+        return ResponseData.success(methodLogQueryManager.countByMethodName(startAt, endAt));
+    }
+
+    @GetResource(path = "/export/csv", requiredPermission = false, requiredLogin = false)
+    @Operation(summary = "导出统计汇总CSV")
+    public void exportStatisticsCsv(
+            @RequestParam(value = "startAt", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startAt,
+            @RequestParam(value = "endAt", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endAt
+    ) throws IOException {
+        LocalDateTime resolvedEnd = endAt == null ? LocalDateTime.now() : endAt;
+        LocalDateTime resolvedStart = startAt == null ? resolvedEnd.minusDays(7) : startAt;
+
+        Long totalUv = statisticsQueryManager.countDistinctVisitors(resolvedStart, resolvedEnd);
+
+        List<TypeCountDto> createdList = statisticsQueryManager.countCreatedNodesByType(resolvedStart, resolvedEnd);
+        List<TypeCountDto> uvList = statisticsQueryManager.countDistinctVisitorsByType(resolvedStart, resolvedEnd);
+        List<TypeCountDto> pvList = statisticsQueryManager.countTotalVisitsByType(resolvedStart, resolvedEnd);
+
+        Map<Integer, Long> createdMap = toCountMap(createdList);
+        Map<Integer, Long> uvMap = toCountMap(uvList);
+        Map<Integer, Long> pvMap = toCountMap(pvList);
+
+        List<SpaceNodeTypeEnum> orderedTypes = List.of(
+                SpaceNodeTypeEnum.DATASHEET,
+                SpaceNodeTypeEnum.FORM,
+                SpaceNodeTypeEnum.DASHBOARD,
+                SpaceNodeTypeEnum.MIRROR,
+                SpaceNodeTypeEnum.AFFINE,
+                SpaceNodeTypeEnum.OUTLINE,
+                SpaceNodeTypeEnum.ONLYOFFICE_EXCEL,
+                SpaceNodeTypeEnum.ONLYOFFICE_WORD,
+                SpaceNodeTypeEnum.ONLYOFFICE_PPT,
+                SpaceNodeTypeEnum.LINK
+        );
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("总使用人数,").append(totalUv == null ? 0 : totalUv).append('\n');
+        sb.append('\n');
+        sb.append(",新建数量,访问人数,访问人次").append('\n');
+
+        for (SpaceNodeTypeEnum type : orderedTypes) {
+            String label = type.getDescription();
+            long created = createdMap.getOrDefault(type.getValue(), 0L);
+            long uv = uvMap.getOrDefault(type.getValue(), 0L);
+            long pv = pvMap.getOrDefault(type.getValue(), 0L);
+            sb.append(label).append(',')
+                    .append(created).append(',')
+                    .append(uv).append(',')
+                    .append(pv).append('\n');
+        }
+
+        ExportUtil.exportBytes(sb.toString().getBytes(Charset.forName("GBK")),
+                "node_statistics.csv",
+                "text/csv;charset=GBK");
+    }
+
+    private Map<Integer, Long> toCountMap(List<TypeCountDto> list) {
+        Map<Integer, Long> map = new HashMap<>();
+        if (list == null) return map;
+        for (TypeCountDto dto : list) {
+            if (dto == null) continue;
+            map.put(dto.getSpaceNodeType(), dto.getCount());
+        }
+        return map;
+    }
+} 

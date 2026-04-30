@@ -1,0 +1,40 @@
+package com.yottastudios.ns.collabspace.feedback.controller;
+
+import com.yottastudios.ns.collabspace.core.support.ResponseData;
+import com.yottastudios.ns.collabspace.feedback.ro.MmFeedbackWebhookRo;
+import com.yottastudios.ns.collabspace.feedback.service.IFeedbackService;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.ApiResource;
+import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.PostResource;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * MM 机器人消息同步接口
+ * 路径：/api/v1/collabspace/syncMessage
+ * 由 Mattermost 服务端异步推送，无需登录和鉴权
+ */
+@Slf4j
+@RestController
+@Tag(name = "MM Sync")
+@ApiResource(path = "/collabspace")
+public class MmSyncMessageController {
+
+    @Resource
+    private IFeedbackService feedbackService;
+
+    @PostResource(path = "/syncMessage", requiredLogin = false, requiredPermission = false)
+    @Operation(summary = "MM bot sync message")
+    public ResponseData<Void> syncMessage(@RequestBody @Valid MmFeedbackWebhookRo ro) {
+        log.info("[lbl][2087-消息推送][Feedback][SYNC] 收到MM消息同步, action={}, postId={}, nickName={}, messageId={}, content长度={}, fileCount={}",
+                ro.getAction(), ro.getPostId(), ro.getFeedbackNickName(), ro.getMessageId(),
+                ro.getContent() != null ? ro.getContent().length() : 0,
+                ro.getFiles() != null ? ro.getFiles().size() : 0);
+        feedbackService.mmWebhookFeedback(ro);
+        return ResponseData.success();
+    }
+}

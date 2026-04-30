@@ -1,0 +1,57 @@
+package com.yottastudios.ns.collabspace.feedback.ro;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Schema(name = "MmFeedbackWebhookRo", description = "MM机器人消息同步请求")
+public class MmFeedbackWebhookRo {
+
+    @Schema(description = "附件文件列表")
+    private List<MmFileInfo> files;
+
+    @Schema(description = "消息文本内容")
+    private String content;
+
+    @NotBlank(message = "发送者昵称不能为空")
+    @Schema(description = "发送者昵称（优先nickname，其次username）")
+    private String feedbackNickName;
+
+    @Schema(description = "消息发送时间，格式yyyy-MM-dd HH:mm:ss")
+    private String feedbackTime;
+
+    @Schema(description = "消息来源，0表示私聊")
+    private Integer feedbackSource;
+
+    @Schema(description = "消息唯一标识（UUID）")
+    private String messageId;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "MM附件文件信息")
+    public static class MmFileInfo {
+
+        @Schema(description = "文件ID，可通过MM API下载")
+        private String fileId;
+
+        @Schema(description = "文件名")
+        private String fileName;
+
+        @Schema(description = "文件大小（字节）")
+        private Long size;
+
+        @Schema(description = "文件MIME类型")
+        private String fileContextType;
+    }
+}

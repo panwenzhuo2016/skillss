@@ -1,0 +1,60 @@
+package com.yottastudios.ns.collabspace.workspace.manager.update;
+
+import com.yottastudios.ns.collabspace.workspace.vo.EditRoleResultVo;
+
+import java.util.List;
+
+public interface NodeRoleUpdateManager {
+    /**
+     * Add an organizational unit to a node to specify a role
+     *
+     * @param userId  user id
+     * @param spaceId       space id
+     * @param spaceNodeId  spaceNode id
+     * @param role    role
+     * @param unitIds unitIds
+     */
+    void addNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds);
+
+    /**
+     * Modify the role of the organizational unit on the specified node
+     *
+     * @param userId  user id
+     * @param spaceId  space id
+     * @param spaceNodeId  spaceNode id
+     * @param role    role
+     * @param unitIds unitIds
+     */
+    EditRoleResultVo updateNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds);
+
+    /**
+     * Enable node to specify permissions and set organizational unit roles
+     * <p>
+     * includeExtend Whether to inherit the default role organization unit list after node permissions are enabled.
+     * Default role organization unit list: the parent node or the role organization unit of the root department.
+     *
+     * @param userId        user id
+     * @param spaceId       space id
+     * @param spaceNodeId  spaceNode id
+     * @param includeExtend Whether to inherit the list of default role organization units
+     */
+    void enableNodeRoleIfNotExist(Long userId, String spaceId, Long spaceNodeId, boolean includeExtend);
+
+    /**
+     * close the node to specify permissions
+     *
+     * @param spaceId      space id
+     * @param spaceNodeId  spaceNode id
+     */
+    void disableNodeRole(String spaceId, Long spaceNodeId);
+
+    /**
+     * @param userId       user id
+     * @param spaceId      space id
+     * @param spaceNodeId  spaceNode id
+     * @param unitIds unitIds
+     */
+    void deleteNodeRoles(Long userId, String spaceId, Long spaceNodeId, List<Long> unitIds);
+
+    void handleRoleByCreate(Long userId, String spaceId, Long spaceNodeId);
+}

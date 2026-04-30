@@ -1,0 +1,130 @@
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-397-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-398-     * 获取所有有效用户
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-399-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-400-    List<UserEntity> selectAllValidUsers();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-401-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-402-    List<UserEntity> selectAllExistUsers();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-403-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-404-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-405-     * 昵称模糊查询
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-406-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java:407:    List<UserEntity> selectUsersByNicknameLike(String nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-408-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-409-    List<UserEntity> selectByIds(List<Long> userIds);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-410-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-411-    List<UserEntity> selectExistUsersByNicknameLike(String nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-412-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-413-    UserEntity createUserByEmailForAio(String email, String password, String nickname, Boolean isMmSync);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-414-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-415-    void updateIsMmSyncByUserIds(List<Long> userIds, Boolean isMmSync);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-416-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\shared\core\src\main\java\com\apitable\user\service\IUserService.java-417-}
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-221-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-222-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-223-    <select id="selectAllValidUsers" resultType="com.apitable.user.entity.UserEntity">
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-224-        SELECT *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-225-        FROM ${tablePrefix}user
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-226-        WHERE status=0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-227-        AND is_deleted = 0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-228-        AND system_module is null
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-229-    </select>
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-230-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml:231:    <select id="selectUsersByNicknameLike" resultType="com.apitable.user.entity.UserEntity">
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-232-        SELECT *
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-233-        FROM ${tablePrefix}user
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-234-        WHERE nick_name like concat('%',#{nickname},'%')
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-235-        AND status=0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-236-        AND is_deleted = 0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-237-        AND system_module is null
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-238-    </select>
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-239-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-240-    <select id="selectAllExistUsers" resultType="com.apitable.user.entity.UserEntity">
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\resources\mapper\user\UserMapper.xml-241-        SELECT *
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1295-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1296-        userMapper.update(null, updateWrapper);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1297-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1298-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1299-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1300-    public List<UserEntity> selectAllValidUsers() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1301-        return userMapper.selectAllValidUsers();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1302-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1303-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1304-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java:1305:    public List<UserEntity> selectUsersByNicknameLike(String nickname) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java:1306:        return userMapper.selectUsersByNicknameLike(nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1307-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1308-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1309-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1310-    public List<UserEntity> selectByIds(List<Long> userIds) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1311-        return userMapper.selectByIds(userIds);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1312-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1313-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1314-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1315-    public List<UserEntity> selectAllExistUsers() {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\service\impl\UserServiceImpl.java-1316-        return userMapper.selectAllExistUsers();
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-266-    InviteUserInfo selectInviteUserInfoByUserId(@Param("userId") Long userId);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-267-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-268-    @Select("select * from ${tablePrefix}user where system_module = #{systemModule}")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-269-    UserEntity selectBySystemModule(@Param("systemModule") Integer systemModule);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-270-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-271-    /**
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-272-     * get all user status is 0
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-273-     */
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-274-    List<UserEntity> selectAllValidUsers();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-275-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java:276:    List<UserEntity> selectUsersByNicknameLike(@Param("nickname") String nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-277-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-278-    List<UserEntity> selectAllExistUsers();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-279-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-280-    List<UserEntity> selectExistUsersByNicknameLike(@Param("nickname") String nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-281-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-282-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-283-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\user\mapper\UserMapper.java-284-}
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-401-            responseObserver.onError(new RuntimeException("User not found"));
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-402-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-403-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-404-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-405-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-406-    public void getUserByName(GetUserByNameRo request, StreamObserver<UserInfo> responseObserver) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-407-        String name = request.getName();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-408-        String possibleEmail = name + "@yottastudios.com";
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-409-        UserEntity userEntity = null;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-410-        UserEntity userEntityByEmail = iUserService.getByEmail(possibleEmail);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java:411:        List<UserEntity> userEntities = iUserService.selectUsersByNicknameLike(name);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-412-        UserEntity userEntityByNickName = CollectionUtils.isEmpty(userEntities) ? null : userEntities.get(0);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-413-        if (userEntityByEmail != null) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-414-            userEntity = userEntityByEmail;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-415-        } else if (userEntityByNickName != null) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-416-            userEntity = userEntityByNickName;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-417-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-418-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-419-        if (userEntity != null) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-420-            UserInfo grpcUserInfo = UserInfo.newBuilder()
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-421-                    .setId(userEntity.getId())
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-971-            responseObserver.onCompleted();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-972-        } else {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-973-            responseObserver.onError(new RuntimeException("no user"));
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-974-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-975-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-976-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-977-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-978-    public void getUsersLikeNickname(GetUsersLikeNicknameRequest ro,StreamObserver<UserInfosResult> responseObserver) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-979-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-980-        String nickname=ro.getNickname();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java:981:        List<UserEntity> userEntities = iUserService.selectUsersByNicknameLike(nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-982-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-983-        if (CollectionUtils.isNotEmpty(userEntities)) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-984-            ArrayList<UserInfo> userInfos = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-985-            userEntities.forEach(u->{
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-986-                userInfos.add(UserInfo.newBuilder()
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-987-                        .setId(u.getId())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-988-                        .setUuid(u.getUuid() != null ? u.getUuid() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-989-                        .setNickName(u.getNickName() != null ? u.getNickName() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-990-                        .setStatus(u.getStatus())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-991-                        .setIsPaused(u.getIsPaused())

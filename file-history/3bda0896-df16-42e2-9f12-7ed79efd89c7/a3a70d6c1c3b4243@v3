@@ -1,0 +1,36 @@
+package com.yottastudios.ns.collabspace.feedback.service;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.yottastudios.ns.collabspace.feedback.entity.FeedbackEntity;
+import com.yottastudios.ns.collabspace.feedback.ro.FeedbackListRo;
+import com.yottastudios.ns.collabspace.feedback.ro.FeedbackSubmitRo;
+import com.yottastudios.ns.collabspace.feedback.ro.FeedbackUpdateStatusRo;
+import com.yottastudios.ns.collabspace.feedback.ro.MmFeedbackWebhookRo;
+import com.yottastudios.ns.collabspace.feedback.vo.FeedbackVo;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+public interface IFeedbackService extends IService<FeedbackEntity> {
+
+    /**
+     * 前端反馈提交（替代Sentry）
+     */
+    void submitFeedback(FeedbackSubmitRo ro, List<MultipartFile> files);
+
+    /**
+     * MM机器人反馈写入
+     */
+    void mmWebhookFeedback(MmFeedbackWebhookRo ro);
+
+    /**
+     * 管理后台分页查询
+     */
+    IPage<FeedbackVo> listFeedback(FeedbackListRo ro);
+
+    /**
+     * 更新反馈状态
+     */
+    void updateFeedbackStatus(FeedbackUpdateStatusRo ro);
+}

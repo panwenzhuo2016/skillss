@@ -1,0 +1,23 @@
+-- ============================================================
+-- 文档设置权限功能优化 - SQL 脚本
+-- 执行环境：collabspace 数据库
+-- ============================================================
+
+-- 1. 新建权限变更日志表
+CREATE TABLE collabspace_node_permission_log (
+    id            BIGINT UNSIGNED NOT NULL COMMENT 'Primary Key' PRIMARY KEY,
+    space_node_id BIGINT UNSIGNED NOT NULL COMMENT '文档节点ID',
+    space_id      VARCHAR(50)     NOT NULL COMMENT '空间站ID',
+    operator_id   BIGINT UNSIGNED NOT NULL COMMENT '操作人用户ID',
+    operator_name VARCHAR(100)    NOT NULL COMMENT '操作人名称',
+    target_name   VARCHAR(200)    NOT NULL COMMENT '被操作对象名称(小组名/成员名)',
+    target_type   TINYINT UNSIGNED NOT NULL COMMENT '类型: 1=小组, 3=成员',
+    action        VARCHAR(20)     NOT NULL COMMENT '操作类型: set=设置权限, remove=移除权限',
+    old_role      VARCHAR(50)     NULL     COMMENT '变更前角色(新增时为null): reader/editor/manager',
+    new_role      VARCHAR(50)     NULL     COMMENT '变更后角色(移除时为null): reader/editor/manager',
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间'
+) COMMENT '节点权限变更日志表' COLLATE = utf8mb4_unicode_ci;
+
+-- 2. 创建索引
+CREATE INDEX idx_npl_space_node_id ON collabspace_node_permission_log (space_node_id);
+CREATE INDEX idx_npl_created_at ON collabspace_node_permission_log (created_at);

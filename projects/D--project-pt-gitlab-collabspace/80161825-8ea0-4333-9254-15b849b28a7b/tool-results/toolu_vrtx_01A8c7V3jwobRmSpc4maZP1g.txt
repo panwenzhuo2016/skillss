@@ -1,0 +1,191 @@
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-122-            long deliveryTag = message.getMessageProperties().getDeliveryTag();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-123-            channel.basicAck(deliveryTag, false);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-124-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-125-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-126-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-127-    private void executeTask(SpaceNodeMigrationTaskEntity task) throws IOException {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-128-        UserSimpleInfoVo user = apitableGrpcClientService.getUserByEmail(task.getEmail());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-129-        ExceptionUtil.isNotNull(user, SpaceNodeMigrationException.OPERATOR_NOT_EXIST);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-130-        Long userId = user.getId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-131-        // 鉴权
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java:132:        if (!spaceQueryManager.isUserSpaceAdmin(userId, task.getTargetSpaceId())) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-133-            throw new BusinessException(AuthException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-134-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-135-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-136-        List<TreeNode<SpaceNodeVo>> spaceNodeTree = deserializeTree(task.getOriginTree());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-137-        List<SpaceAppRelVo> sourceSpaceAppRels = JSONUtil.toList(task.getSourceSpaceAppRels(), SpaceAppRelVo.class);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-138-        MigrationTypeEnum migrationType = MigrationTypeEnum.fromValue(task.getType());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-139-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-140-        log.info("executeTask: taskId={}, treeSize={}, type: {}, appRels: {}", task.getTaskId(), spaceNodeTree.size(), migrationType.getDescription(), task.getSourceSpaceAppRels());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-141-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\consumer\SpaceNodeMigrationConsumer.java-142-        MigrationConfig migrationConfig = MigrationConfig.builder()
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-501-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-502-        validateApproverIsAuthorized(approverUserId, request.getSpaceId(), request.getDocumentId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-503-        return request;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-504-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-505-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-506-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-507-     * Approver is authorized if they are a space admin (MANAGE_WORKBENCH) OR a document manager (MANAGE role on document).
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-508-     * Both groups receive the permission-apply notification and should be able to act on it.
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-509-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-510-    private void validateApproverIsAuthorized(Long approverUserId, String spaceId, String documentId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java:511:        boolean isSpaceAdmin = spaceQueryManager.isUserSpaceAdmin(approverUserId, spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-512-        if (isSpaceAdmin) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-513-            log.info("[1822-PermApply] validateApprover passed as spaceAdmin approverUserId={} spaceId={}", approverUserId, spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-514-            return;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-515-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-516-        List<Long> docManagers = getDocumentManagerUserIds(documentId, spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-517-        boolean isDocManager = docManagers.contains(approverUserId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-518-        log.info("[1822-PermApply] validateApprover isSpaceAdmin={} isDocManager={} approverUserId={} documentId={}",
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-519-            isSpaceAdmin, isDocManager, approverUserId, documentId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-520-        ExceptionUtil.isTrue(isDocManager, PermissionRequestException.INSUFFICIENT_PERMISSIONS);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\service\impl\PermissionRequestServiceImpl.java-521-    }
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-269-        if (spaceId == null &&  spaceNodeId == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-270-            // 两者至少有一个不为null
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-271-            throw new BusinessException(SpaceNodeException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-272-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-273-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-274-        ControlRole selfRole;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-275-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-276-        if (spaceNodeId == null || ROOT_PARENT_ID.equals(spaceNodeId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-277-            // 校验spaceId赋予该用户的默认spaceNode权限
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-278-            String roleTag;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java:279:            if (spaceQueryManager.isUserSpaceAdmin(userId, spaceId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-280-                roleTag = RoleConstants.SpaceNode.MANAGER;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-281-            } else if (spaceQueryManager.isUserInSpace(userId, spaceId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-282-                roleTag = RoleConstants.SpaceNode.DEFAULT_ROLE;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-283-            } else {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-284-                throw new BusinessException(SpaceNodeException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-285-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-286-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-287-            ControlRole userSpaceRole = ControlRoleManager.parseNodeRole(roleTag);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-288-            SpacePermissionPolicy policy = spacePermissionPolicyQueryManager.getPolicyBySpaceId(ControlType.SPACE_NODE.getVal(), spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-289-            selfRole = new SpacePolicyEnforcedControlRole(userSpaceRole, policy);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-294-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-295-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-296-        if (selfRole != null && selfRole.hasPermission(permission)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-297-            return;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-298-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-299-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-300-        throw new BusinessException(SpaceNodeException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-301-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-302-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-303-    public void mustBeSpaceAdmin(Long userId, String spaceId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java:304:        if (spaceQueryManager.isUserSpaceAdmin(userId, spaceId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-305-            return;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-306-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-307-        throw new BusinessException(SpaceException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-308-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-309-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-310-    protected ControlRoleDict execute(Principal principal, ControlId controlId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-311-        return execute(principal, controlId, ControlRequestOption.create().setNodeTreeRoleBuilding(false));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-312-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-313-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\infrastructure\ControlTemplate.java-314-    protected ControlRoleDict execute(Principal principal, ControlId controlId, ControlRequestOption requestOption) {
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-120-                }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-121-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-122-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-123-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-124-        @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-125-        public void needAdmin() {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-126-            if (spaceIds == null || spaceIds.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-127-                throw new BusinessException(SpaceException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-128-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-129-            for (String id : spaceIds) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java:130:                if (!spaceQueryManager.isUserSpaceAdmin(userId, id)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-131-                    throw new BusinessException(SpaceException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-132-                }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-133-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-134-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-135-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-136-        @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-137-        public void needPermission(PermissionDefinition permission) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-138-            if (userId == null || permission == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-139-                throw new BusinessException(SpaceNodeException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-140-            }
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-164-                }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-165-                return;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-166-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-167-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-168-            if (!useSpaceDefaultNode || spaceIds == null || spaceIds.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-169-                throw new BusinessException(SpaceNodeException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-170-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-171-            for (String spaceId : spaceIds) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-172-                // 校验spaceId赋予该用户的默认spaceNode权限
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-173-                String roleTag;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java:174:                if (spaceQueryManager.isUserSpaceAdmin(userId, spaceId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-175-                    roleTag = RoleConstants.SpaceNode.MANAGER;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-176-                } else if (spaceQueryManager.isUserInSpace(userId, spaceId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-177-                    roleTag = RoleConstants.SpaceNode.DEFAULT_ROLE;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-178-                } else {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-179-                    throw new BusinessException(SpaceNodeException.UNAUTHORIZED);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-180-                }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-181-                ControlRole selfRole = ControlRoleManager.parseNodeRole(roleTag);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-182-                SpacePermissionPolicy policy = spacePermissionPolicyQueryManager.getPolicyBySpaceId(ControlType.SPACE_NODE.getVal(), spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-183-                selfRole = new SpacePolicyEnforcedControlRole(selfRole, policy);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\control\check\impl\PermissionCheckerImpl.java-184-                if (!selfRole.hasPermission(permission)) {
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-12-    MySpaceVo listSpace(Long userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-13-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-14-    SpaceInfoVo getSpaceInfo(String spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-15-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-16-    List<SpaceInfoVo> getMemberManagedSpaceInfo(Long userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-17-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-18-    List<SpaceEntity> getMemberManagedSpace(Long userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-19-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-20-    List<Long> getAdminUsersWithWorkBenchManagePermission(String spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-21-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java:22:    boolean isUserSpaceAdmin(Long userId, String spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-23-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-24-    boolean isUserInSpace(Long userId, String spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-25-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-26-    boolean verifyAuth(Long userId, String spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-27-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-28-    IPage<SuperSpaceVo> listSpaceBySuper(SuperSpaceRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-29-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-30-    IPage<SpaceMemberVo> getSpaceMember(SpaceMemberRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-31-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\SpaceQueryManager.java-32-    List<TeamMemberVo> listTeamMember(String spaceId, Long userId);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-178-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-179-        Set<Long> adminIds = spaceUserResourceRelEntities.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-180-                .map(SpaceUserResourceRelEntity::getUserId).
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-181-                collect(Collectors.toSet());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-182-        adminIds.add(spaceEntity.getOwner());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-183-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-184-        return new ArrayList<>(adminIds);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-185-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-186-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-187-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java:188:    public boolean isUserSpaceAdmin(Long userId, String spaceId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-189-        List<Long> admins = getAdminUsersWithWorkBenchManagePermission(spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-190-        return admins.contains(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-191-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-192-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-193-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-194-    public boolean isUserInSpace(Long userId, String spaceId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-195-        // todo 性能还可以优化
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-196-        List<ApitableSpaceVo> apitableSpaceVos = apitableGrpcClientService.listSpaces(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-197-        if (CollectionUtils.isEmpty(apitableSpaceVos)) return false;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-198-        List<String> apiSpaceIds = apitableSpaceVos.stream().map(ApitableSpaceVo::getSpaceId).toList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-199-        return apiSpaceIds.contains(spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-200-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-201-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-202-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-203-    public boolean verifyAuth(Long userId, String spaceId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java:204:        return isUserSpaceAdmin(userId, spaceId) || superManagerCacheService.checkSuperManager(userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-205-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-206-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-207-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-208-    public IPage<SuperSpaceVo> listSpaceBySuper(SuperSpaceRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-209-        Page<SuperSpaceVo> page = new Page<>(ro.getPageNum(), ro.getPageSize());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-210-        IPage<SuperSpaceVo> superSpaceVoIPage = spaceService.getSpaceList(page);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-211-        List<SpaceMemberNumVo> voList = apitableGrpcClientService.getSpaceMemberNum(superSpaceVoIPage.getRecords().
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-212-                stream().map(SuperSpaceVo::getSpaceId).collect(Collectors.toList()));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-213-        superSpaceVoIPage.getRecords().forEach(space -> {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\space\manager\query\impl\SpaceQueryManagerImpl.java-214-            String spaceId = space.getSpaceId();

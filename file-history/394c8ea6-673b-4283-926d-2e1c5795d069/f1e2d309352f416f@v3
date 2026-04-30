@@ -1,0 +1,61 @@
+package com.exam.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.exam.enums.AccessMode;
+import com.exam.enums.ExamStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+/**
+ * 考试
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName("ex_exam")
+public class Exam {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    @TableField("title")
+    private String title;
+
+    @TableField("status")
+    private ExamStatus status;
+
+    @TableField("time_limit_min")
+    private Integer timeLimitMin;
+
+    @TableField("show_answer")
+    private Boolean showAnswer;
+
+    @TableField("show_analysis")
+    private Boolean showAnalysis;
+
+    @TableField("question_count")
+    private Integer questionCount;
+
+    @TableField("max_attempts")
+    private Integer maxAttempts;
+
+    @TableField("access_mode")
+    private AccessMode accessMode;
+
+    @TableField("created_by")
+    private Long createdBy;
+
+    @TableField("created_at")
+    private LocalDateTime createdAt;
+
+    @TableField("updated_at")
+    private LocalDateTime updatedAt;
+}

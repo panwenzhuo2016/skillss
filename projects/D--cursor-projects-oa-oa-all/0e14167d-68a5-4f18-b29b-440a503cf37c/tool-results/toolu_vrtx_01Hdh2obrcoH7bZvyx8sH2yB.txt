@@ -1,0 +1,728 @@
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\globalApis.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AccountManagement\index.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AccountManagement\index.ts:79:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AccountManagement\index.ts:180:                    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AccountManagement\index.ts:249:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AccountManagement\index.ts:304:        axios2(`${ajaxUrl.WebAPI}account/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AppConfig\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AppConfig\index.ts:33:        axios2(`${ajaxUrl.WebAPI}configuration-management`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AppConfig\index.ts:57:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AppConfig\index.ts:68:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AppConfig\index.ts:92:            axios2(`${ajaxUrl.WebAPI}team/apps`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AppConfig\index.ts:124:                axios2(`${ajaxUrl.WebAPI}team/set-app-manager`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:7:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:72:            axios2(`${ajaxUrl.WebAPI}attendance-management/leave-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:212:            axios2(`${ajaxUrl.WebAPI}attendance-management/deduction-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:339:            axios2(`${ajaxUrl.WebAPI}attendance-management/work-overtime-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:481:            axios2(`${ajaxUrl.WebAPI}attendance-management/leave-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:569:            axios2(`${ajaxUrl.WebAPI}attendance-management/attendance-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:672:            axios2(`${ajaxUrl.WebAPI}attendance-management/absenteeism-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:936:                    const r = await axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:991:        axios2(`${ajaxUrl.WebAPI}attendance-management/async-batch-generate-clock-result`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1022:        axios2(`${ajaxUrl.WebAPI}attendance-management/get-attendance-calculation-record`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1118:            axios2(`${ajaxUrl.WebAPI}attendance-management/async-generate-clock-result`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1145:        //             await axios2(`${ajaxUrl.WebAPI}attendance-management/generate-clock-result`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1204:            axios2(`${ajaxUrl.WebAPI}attendance-management/makeup-attendance-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1288:            axios2(`${ajaxUrl.WebAPI}attendance-management/leave-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1369:            axios2(`${ajaxUrl.WebAPI}attendance-management/breast-feed-leave-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1452:        axios2(ajaxUrl.WebAPI + 'attendance-management/home-working-log', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1519:            axios2(`${ajaxUrl.WebAPI}attendance-management/deduction-approval-log`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceRecord\AttendanceRecordTS.ts:1725:        await axios2(ajaxUrl.WebAPI + 'attendance-management/import-home-working-log', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ComponentManagement\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ComponentManagement\index.ts:62:        axios2(`${ajaxUrl.WebAPI}component`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ComponentManagement\index.ts:92:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ComponentManagement\index.ts:115:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:14:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:102:        axios2(`${ajaxUrl.WebAPI}assets/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:224:        axios2(`${ajaxUrl.WebAPI}assetProcurement/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:311:        axios2(`${ajaxUrl.WebAPI}assetConfigApplyWhitelist/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:353:                axios2(`${ajaxUrl.WebAPI}assetConfigApplyWhitelist/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:374:                axios2(`${ajaxUrl.WebAPI}assetConfigApplyWhitelist/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:405:        axios2(`${ajaxUrl.WebAPI}assetConfigQrcode/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:443:                axios2(`${ajaxUrl.WebAPI}assetConfigQrcode/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:462:                axios2(`${ajaxUrl.WebAPI}assetConfigQrcode/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:481:            axios2(`${ajaxUrl.WebAPI}assetConfigProcess/get-special-stakeholder`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:523:                axios2(`${ajaxUrl.WebAPI}assetConfigProcess/edit-special-stakeholder`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:572:        axios2(`${ajaxUrl.WebAPI}assetLog/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:623:            axios2(`${ajaxUrl.WebAPI}assetLog/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:738:            axios2(`${ajaxUrl.WebAPI}assets/distribution`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:795:        axios2(`${ajaxUrl.WebAPI}assets/inventory`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:837:        axios2(`${ajaxUrl.WebAPI}assets/receive`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1063:            const r = await axios2(`${ajaxUrl.WebAPI}assets/import`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1216:        axios2(`${ajaxUrl.WebAPI}assetStockLocation/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1230:    //     return await axios2(`${ajaxUrl.WebAPI}assetStockLocation/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1244:        return await axios2(`${ajaxUrl.WebAPI}assetStockLocation/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1259:        return await axios2(`${ajaxUrl.WebAPI}assetType/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1271:        axios2(`${ajaxUrl.WebAPI}assetType/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1293:        return await axios2(`${ajaxUrl.WebAPI}assetType/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1305:        axios2(`${ajaxUrl.WebAPI}assetType/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1327:        axios2(`${ajaxUrl.WebAPI}assetType/update-email`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1342:        return await axios2(`${ajaxUrl.WebAPI}assets/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1355:                axios2(`${ajaxUrl.WebAPI}assets/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AssetManagement\index.ts:1659:            const r = await axios2(`${ajaxUrl.WebAPI}assetType/import`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:64:                    axios2(`${ajaxUrl.WebAPI}benefits-management/meal-allowance-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:133:        axios2(`${ajaxUrl.UserAPI}approval-management/get-rent-allowance-tips`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:148:        axios2(`${ajaxUrl.WebAPI}approval-management/update-rent-allowance-tips`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:165:        axios2(`${ajaxUrl.WebAPI}approval-management/get-rent-allowance-tips`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:266:            axios2(`${ajaxUrl.WebAPI}benefits-management/add-meal-allowance`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:417:                    axios2(`${ajaxUrl.WebAPI}hr-approval/rent-allowance-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:503:                    axios2(`${ajaxUrl.UserAPI}hr-approval/rent-allowance-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:608:        axios2(`${ajaxUrl.WebAPI}hr-approval/preflight-process`, 'post', newParam)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:846:                    const r = await axios2(`${ajaxUrl.WebAPI}hr-approval/import-process`, 'post', data[i])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:903:    axios2(`${ajaxUrl.WebAPI}hr-approval/edit-rent-allowance-start-date`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:949:                    axios2(`${ajaxUrl.WebAPI}hr-approval/business-trip-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:1038:                    axios2(`${ajaxUrl.WebAPI}hr-approval/rent-supply-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:1191:                    axios2(`${ajaxUrl.WebAPI}hr-approval/reimbursement-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:1524:    axios2(`${ajaxUrl.WebAPI}hr-approval/reimbursement-commit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AdministrativeReview\AdministrativeReviewTS.ts:1530:    const res = await axios2(`${ajaxUrl.WebAPI}approval-management/reimbursement-form-extra`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\CalendarManagementTS.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\CalendarManagementTS.ts:111:    return axios2(`${ajaxUrl.WebAPI}shift-management/edit-calendar`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\WorkForceManageTs.ts:8:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\WorkForceManageTs.ts:143:                axios2(`${ajaxUrl.WebAPI}shift-management/get-schedules`, 'post', params)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\WorkForceManageTs.ts:246:                await axios2(`${ajaxUrl.WebAPI}shift-management/batch-replace`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\WorkForceManageTs.ts:297:                await axios2(`${ajaxUrl.WebAPI}shift-management/import-attend-late-types`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\WorkForceManageTs.ts:704:                        await axios2(`${ajaxUrl.WebAPI}shift-management/import-deploy-days`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\WorkForceManageTs.ts:755:        axios2(`${ajaxUrl.WebAPI}shift-management/get-attend-late-types`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\WorkForceManageTs.ts:787:        axios2(`${ajaxUrl.WebAPI}shift-management/edit-attend-late-type`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:20:        axios2(ajaxUrl.UserAPI + 'sfhome/profile', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:206:        axios2(`${ajaxUrl.WebAPI}sfuser/sfuser-ids`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:249:        axios2(`${ajaxUrl.WebAPI}sfuser/nicknames`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:277:        axios2(`${ajaxUrl.WebAPI}sfuser/nicknames`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:299:        axios2(`${ajaxUrl.UserAPI}common/get-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:318:        axios2(`${ajaxUrl.WebAPI}attendance-management/attendance-calculate-date`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:433:                            axios2(`${ajaxUrl.UserAPI}sfhome/update-notification-preset`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\common\index.ts:465:        axios2(ajaxUrl.UserAPI + 'common/nickname-exists', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\WelfareManagement\index.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\WelfareManagement\index.ts:97:        axios2(`${ajaxUrl.WebAPI}benefits-management/meal-allowance-detail-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\WelfareManagement\index.ts:152:        axios2(`${ajaxUrl.WebAPI}benefits-management/meal-allowance-personal-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\WelfareManagement\index.ts:297:        axios2(`${ajaxUrl.WebAPI}benefits-management/rent-allowance-detail-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\WelfareManagement\index.ts:339:        axios2(`${ajaxUrl.WebAPI}benefits-management/rent-allowance-personal-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AttendanceResultDetaisTS.ts:9:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AttendanceResultDetaisTS.ts:105:            axios2(`${ajaxUrl.WebAPI}attendance-management/attendance-result`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AttendanceResultDetaisTS.ts:299:        axios2(`${ajaxUrl.WebAPI}attendance-management/absent`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AttendanceResultDetaisTS.ts:316:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AttendanceResultDetaisTS.ts:350:    return axios2(`${ajaxUrl.WebAPI}attendance-management/change-calculate-date`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:31:    return axios2(`${ajaxUrl.WebAPI}quota-management/search`, 'post', p, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:37:    return axios2(`${ajaxUrl.WebAPI}common/get-config`, 'post', p, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:43:    return axios2(`${ajaxUrl.WebAPI}quota-management/archive`, 'post', p, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:49:    return axios2(`${ajaxUrl.WebAPI}quota-management/increment`, 'post', p, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:55:    return axios2(`${ajaxUrl.WebAPI}quota-management/batch-replace`, 'post', p, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:61:    return axios2(`${ajaxUrl.WebAPI}quota-management/operations`, 'post', p, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:185:                    const r = await axios2(`${ajaxUrl.WebAPI}quota-management/import-fetus-quota`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\LeaveQuotaTS.ts:273:        axios2(`${ajaxUrl.WebAPI}quota-management/calculate-annual-leaves`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:7:import axios2 from '../axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:93:        axios2(`${ajaxUrl.WebAPI}elderly-care-leave/get-whitelist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:142:        axios2(`${ajaxUrl.WebAPI}elderly-care-leave/add-whitelist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:169:        axios2(`${ajaxUrl.WebAPI}elderly-care-leave/delete-whitelist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:207:        axios2(`${ajaxUrl.WebAPI}elderly-care-leave/get-operation-logs`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:252:        axios2(`${ajaxUrl.UserAPI}elderly-care-leave/check-permission`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:272:        axios2(`${ajaxUrl.UserAPI}elderly-care-leave/get-remaining-leave`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:308:        axios2(`${ajaxUrl.UserAPI}elderly-care-leave/get-remaining-leave-history`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:343:        axios2(`${ajaxUrl.UserAPI}elderly-care-leave/get-dependents`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:406:        axios2(`${ajaxUrl.UserAPI}elderly-care-leave/process-dependent-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\ElderlyCareLeaveAPI.ts:438:        axios2(`${ajaxUrl.UserAPI}elderly-care-leave/calculate-leave-days`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\axios2.ts:21:    Message.warning(i18n.t('axios2_296'))
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:34:        axios2(`${ajaxUrl.WebAPI}configuration-management`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:57:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:68:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:104:            axios2(`${ajaxUrl.WebAPI}hr-approval/get-special-nickname`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:151:                axios2(`${ajaxUrl.WebAPI}hr-approval/edit-special-nickname`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:194:            axios2(`${ajaxUrl.WebAPI}hr-approval/get-oa-setting`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\GeneralConfig\index.ts:241:                axios2(`${ajaxUrl.WebAPI}hr-approval/edit-oa-setting`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AbnormalMonitoring\index.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AbnormalMonitoring\index.ts:17:        axios2(`${ajaxUrl.WebAPI}attendance-management/early-warning-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AbnormalMonitoring\index.ts:83:        axios2(`${ajaxUrl.WebAPI}attendance-management/is-error-monitor-white-result`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceManagement\AbnormalMonitoring\index.ts:103:        const data = await axios2(`${ajaxUrl.WebAPI}sfuser/departments`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\UserSettings\index.ts:1:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\UserSettings\index.ts:16:export const getUserSettingAPI = (): Promise<UserSettingConfig> => axios2(`${ajaxUrl.UserAPI}oa-settings/get-user-setting`, 'post', {}).then(rsp => {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\UserSettings\index.ts:34:export const saveUserSettingAPI = (config: UserSettingConfig): Promise<void> => axios2(`${ajaxUrl.UserAPI}oa-settings/save-user-setting`, 'post',
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\axiosInstance.ts:7:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\axiosInstance.ts:22:        axios2(url, 'post', param)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\axiosInstance.ts:158:        axios2(url, 'post', param)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:171://     axios2(`${ajaxUrl.WebAPI}openai/permission-keys`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:219:        axios2(`${ajaxUrl.WebAPI}openai`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:250:        return await axios2<any, PermSetResPart[]>(`${ajaxUrl.WebAPI}openai/permission-set`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:278:        axios2(`${ajaxUrl.WebAPI}openai/permission-update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:315:        axios2<any, StaffManageRes>(`${ajaxUrl.WebAPI}staff-management`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:340:        axios2(`${ajaxUrl.WebAPI}staff-management/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:362:        axios2(`${ajaxUrl.WebAPI}staff-management/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:508:        axios2(`${ajaxUrl.WebAPI}openai/permission-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:555:        axios2(`${ajaxUrl.WebAPI}openai/permission-import`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:757:        return await axios2<any, PermImportCheckRes>(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:776:        const r = await axios2<any, PermImportCheckRes>(`${ajaxUrl.WebAPI}openai/permission-import`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:862:        axios2(`${ajaxUrl.UserAPI}openai/chat/issue-context-id`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:881:        axios2(`${ajaxUrl.UserAPI}openai/chat/ask`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:900:        axios2(`${ajaxUrl.UserAPI}openai/chat/fetch-message`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:981:        axios2(`${ajaxUrl.UserAPI}openai/chat/records`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\Chatgpt\index.ts:1028:        axios2(`${ajaxUrl.UserAPI}openai/chat/mark-record`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ExternalApplicationConfig\index.ts:11:import axios2 from '../axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ExternalApplicationConfig\index.ts:60:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ExternalApplicationConfig\index.ts:78:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ExternalApplicationConfig\index.ts:112:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ExternalApplicationConfig\index.ts:127:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:356:        axios2(`${ajaxUrl.WebAPI}deposit/basic-config`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:389:            axios2(`${ajaxUrl.WebAPI}deposit/user/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:424:        axios2(`${ajaxUrl.WebAPI}deposit/user/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:445:        axios2(`${ajaxUrl.WebAPI}deposit/user/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:466:        axios2(`${ajaxUrl.WebAPI}deposit/user/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:495:        axios2(`${ajaxUrl.WebAPI}deposit/search-deposit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:567:        axios2(`${ajaxUrl.WebAPI}deposit/add-deposit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:602:        axios2(`${ajaxUrl.WebAPI}deposit/edit-deposit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:639:        axios2(`${ajaxUrl.WebAPI}deposit/delete-deposit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:748:        axios2(`${ajaxUrl.WebAPI}deposit/applicable-companies`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:771:        axios2(`${ajaxUrl.WebAPI}deposit/deposit-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:868:        axios2(`${ajaxUrl.WebAPI}deposit/update-deposit-status`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:884:        axios2(`${ajaxUrl.WebAPI}deposit/add-deposit-payment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:910:        axios2(`${ajaxUrl.WebAPI}deposit/edit-deposit-payment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:936:        axios2(`${ajaxUrl.WebAPI}deposit/delete-deposit-payment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:952:        axios2(`${ajaxUrl.WebAPI}deposit/add-deposit-refund`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:979:        axios2(`${ajaxUrl.WebAPI}deposit/edit-deposit-refund`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:1006:        axios2(`${ajaxUrl.WebAPI}deposit/delete-deposit-refund`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DepositManagement\index.ts:1027:                axios2(`${ajaxUrl.WebAPI}deposit/get-deposit-record`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:13:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:95:        axios2(ajaxUrl.WebAPI + 'medal-user-points/index', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:172:        axios2(ajaxUrl.WebAPI + 'medal-user-points/notice-change', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:408:            const r = await axios2(`${ajaxUrl.WebAPI}medal-users/import`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:487:        axios2(ajaxUrl.WebAPI + 'medal-user-points/notice-num', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:513:        axios2(ajaxUrl.WebAPI + 'medal-user-points/notice-send', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:537:        axios2(ajaxUrl.WebAPI + 'medal-user-points/medal-status', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:577:        axios2(ajaxUrl.WebAPI + 'medal-user-points/update', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:601:        axios2(ajaxUrl.WebAPI + 'medal-logs/index', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TrainingRewardManagement\index.ts:650:        axios2(ajaxUrl.WebAPI + 'medal-user-points/sub', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:53:        axios2(`${ajaxUrl.UserAPI}openai/image/starred`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:74:        axios2(ajaxUrl.UserAPI + 'openai/image/records', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:141:        axios2(`${ajaxUrl.UserAPI}openai/image/generate`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:164:        axios2(`${ajaxUrl.UserAPI}openai/image/edits`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:187:        axios2(`${ajaxUrl.UserAPI}openai/image/variations`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:210:            axios2(`${ajaxUrl.UserAPI}openai/image/record`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:291:        axios2(ajaxUrl.UserAPI + 'openai/image/update-extra-images', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:320:        axios2(ajaxUrl.UserAPI + 'openai/image/mark-images', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:345:        axios2(ajaxUrl.UserAPI + 'openai/image/mark-prompt', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:370:            axios2(ajaxUrl.UserAPI + 'openai/image/starred-prompts', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:433:        axios2(`${ajaxUrl.UserAPI}openai/chat/get-marked-messages`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:465:        axios2(`${ajaxUrl.UserAPI}openai/image/hide-all-records`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DallE\index.ts:478:        axios2(`${ajaxUrl.UserAPI}openai/image/unstar-all-records`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DeptManagement\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DeptManagement\index.ts:66:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DeptManagement\index.ts:115:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DeptManagement\index.ts:135:                axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\DeptManagement\index.ts:177:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TeamAttendanceManagement\index.ts:1:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\TeamAttendanceManagement\index.ts:29:            axios2(ajaxUrl.WebAPI + 'attendance-management/team-attendance-result', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceReview\AttendanceReviewTS.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\AttendanceReview\AttendanceReviewTS.ts:77:                axios2(`${ajaxUrl.WebAPI}hr-approval/approval-list`, 'post', newParams)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:40:                axios2(`${ajaxUrl.WebAPI}meeting-room/search-appointments`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:120:        axios2(`${ajaxUrl.WebAPI}meeting-room/search`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:194:        axios2(`${ajaxUrl.WebAPI}meeting-room/add-meeting-room`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:238:        axios2(`${ajaxUrl.WebAPI}meeting-room/update-meeting-room`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:290:        axios2(`${ajaxUrl.WebAPI}meeting-room/update-appointment-tips`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:309:        axios2(`${ajaxUrl.WebAPI}meeting-room/get-appointment-tips`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:335:        axios2(`${ajaxUrl.WebAPI}meeting-room/search-available-meeting-rooms`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:392:        axios2(`${ajaxUrl.WebAPI}meeting-room/book-meeting-room`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:453:        axios2(`${ajaxUrl.WebAPI}meeting-room/search-equipments`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:474:        axios2(`${ajaxUrl.WebAPI}meeting-room/add-equipment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:489://     axios2(`${ajaxUrl.WebAPI}meeting-room/delete-equipment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:503:        axios2(`${ajaxUrl.WebAPI}meeting-room/edit-equipment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:527:        axios2(`${ajaxUrl.WebAPI}meeting-room/stats`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:567:        axios2(`${ajaxUrl.WebAPI}meeting-room/revise-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:585:        axios2(`${ajaxUrl.WebAPI}meeting-room/cancel-appointments`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:606:        axios2(`${ajaxUrl.WebAPI}meeting-room/conflict-appointments`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingManagement\index.ts:648:        axios2(`${ajaxUrl.WebAPI}meeting-room/search-unavailable-meeting-rooms`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:51:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:168:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:192:            axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:272:    axios2(`${ajaxUrl.WebAPI}training-project/update-project`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:300:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:330:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:362:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:405:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:436:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:449:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:525:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:695:                    const r = await axios2(`${ajaxUrl.WebAPI}training-project/import-members`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:764:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:778:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:805:        axios2(`${ajaxUrl.WebAPI}training-project/reward-search`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:823:    axios2(`${ajaxUrl.WebAPI}training-project/add-reward`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:832:    axios2(`${ajaxUrl.WebAPI}training-project/update-reward`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\TrainingProject\index.ts:843:        axios2(`${ajaxUrl.WebAPI}training-project/generate-QR-code`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MidJourney\index.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MidJourney\index.ts:23:        axios2(`${ajaxUrl.UserAPI}midjourney/get-account`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MidJourney\index.ts:79:            axios2(`${ajaxUrl.UserAPI}midjourney/get-queue-num`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MidJourney\index.ts:129:        axios2(`${ajaxUrl.UserAPI}midjourney/get-queue`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MidJourney\index.ts:204:        axios2(`${ajaxUrl.UserAPI}midjourney/set-queue`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MidJourney\index.ts:233:        axios2(`${ajaxUrl.UserAPI}midjourney/del-queue`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SystemDev\index.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SystemDev\index.ts:21:        axios2(`${ajaxUrl.WebAPI}dev/file-list`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SystemDev\index.ts:39:        axios2(`${ajaxUrl.WebAPI}dev/command-list`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SystemDev\index.ts:59:        axios2(`${ajaxUrl.WebAPI}dev/call-command`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:7:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:51:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:72:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:112:        axios2(`${ajaxUrl.WebAPI}course-management/category-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:149:        axios2(`${ajaxUrl.WebAPI}course-management/send-new-chapter-notification`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:181:        axios2(`${ajaxUrl.WebAPI}course-management/extends-trainees`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:224:        axios2(`${ajaxUrl.WebAPI}course-management/course-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:402:    return axios2(`${ajaxUrl.WebAPI}course-management/add-course`, 'post', params, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:454:    return axios2(`${ajaxUrl.WebAPI}course-management/update-course`, 'post', newP, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:460:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:541:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:589:    return axios2(`${ajaxUrl.WebAPI}course-management/update-course-chapter`, 'post', param, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:594:    axios2(`${ajaxUrl.WebAPI}course-management/sort-chapters`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:601:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:616:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:749:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:793:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:870:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:934:        axios2(`${ajaxUrl.WebAPI}training-project/get-all-online-courses`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:953:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OnLineTrainingManage\index.ts:1033:        axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PlatformDev\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PlatformDev\index.ts:87:        axios2(`${ajaxUrl.WebAPI}app`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PlatformDev\index.ts:154:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:9:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:24:    axios2(`${ajaxUrl.UserAPI}sfhome/send-reset-mail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:38:        axios2(`${ajaxUrl.UserAPI}sfhome/login`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:63:        axios2(`${ajaxUrl.UserAPI}oversea-whitelist/user-get-white-list`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:75:export const doLogoutAPI = () => axios2(`${ajaxUrl.UserAPI}sfhome/logout`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:79:    axios2(`${ajaxUrl.UserAPI}sfhome/change-pwd`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:239:        axios2(`${ajaxUrl.WebAPI}home`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:304:        axios2(`${ajaxUrl.WebAPI}todo-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\login\index.ts:343:        axios2(`${ajaxUrl.UserAPI}sfhome/generate-login-id`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:177:        axios2(`${ajaxUrl.UserAPI}common/get-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:216:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-floor-rooms-name`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:254:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-meeting-room`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:425:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-meeting-room-more-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:544:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-meeting-room-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:618:        axios2(`${ajaxUrl.UserAPI}meeting-room/book-meeting-room`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:662:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-my-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:716:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-my-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:788:            axios2(`${ajaxUrl.UserAPI}meeting-room/alter-my-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:825:            axios2(`${ajaxUrl.UserAPI}meeting-room/cancel-my-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:831:            axios2(`${ajaxUrl.UserAPI}meeting-room/finish-my-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:867:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-appointment-tips`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:881:        axios2(`${ajaxUrl.UserAPI}meeting-room/get-sfuser-violate-appointment-tips`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:921:        axios2(`${ajaxUrl.UserAPI}meeting-room/confirm-sfuser-violate-appointment-tips`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:941:        axios2(url, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:956:        axios2(`${ajaxUrl.UserAPI}meeting-room/nickname-exists`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:978:        axios2(`${ajaxUrl.UserAPI}meeting-room/check-in-appointment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:1023:        axios2(`${ajaxUrl.UserAPI}common/nicknames-exist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:1056:        axios2(`${ajaxUrl.UserAPI}common/nickname-not-resigned-exist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:1093:        axios2(`${ajaxUrl.UserAPI}meeting-room/index-meeting-appointment-group`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MeetingRoomAppointment\index.ts:1127:        axios2(`${ajaxUrl.UserAPI}meeting-room/update-meeting-appointment-group`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MenuManagement\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MenuManagement\index.ts:30:        axios2(`${ajaxUrl.WebAPI}menu`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MenuManagement\index.ts:63:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MenuManagement\index.ts:78:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\MenuManagement\index.ts:94:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SubjectManagement\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SubjectManagement\index.ts:55:        axios2(`${ajaxUrl.WebAPI}cost-subject/department-branch-map`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SubjectManagement\index.ts:105:        axios2(`${ajaxUrl.UserAPI}oc/department-branch-map`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SubjectManagement\index.ts:154:        axios2(`${ajaxUrl.WebAPI}cost-subject/edit-department`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SubjectManagement\index.ts:172:        axios2(`${ajaxUrl.WebAPI}cost-subject/edit-area`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SubjectManagement\index.ts:191:        axios2(`${ajaxUrl.WebAPI}cost-subject/operate-department`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\SubjectManagement\index.ts:209:        axios2(`${ajaxUrl.WebAPI}cost-subject/operate-area`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCSysMap.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCSysMap.ts:509:                ? axios2(`${ajaxUrl.WebAPI}oc/get-config`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCSysMap.ts:510:                : axios2(`${ajaxUrl.UserAPI}oc/meta-data`, 'post', { sys_site: site }),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCSysMap.ts:512:                ? axios2(`${ajaxUrl.WebAPI}stamp/get-config`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCSysMap.ts:513:                : axios2(`${ajaxUrl.UserAPI}stamp/meta-data`, 'post', { sys_site: site }),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCSysMap.ts:514:            // axios2(store.state.currentPage === 'admin' ? `${ajaxUrl.WebAPI}oc/get-config` : `${ajaxUrl.UserAPI}oc/meta-data`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCSysMap.ts:515:            // axios2(store.state.currentPage === 'admin' ? `${ajaxUrl.WebAPI}stamp/get-config` : `${ajaxUrl.UserAPI}stamp/meta-data`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:83:        axios2(`${ajaxUrl.UserAPI}oa-course/recent-course`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:100:        axios2(`${ajaxUrl.UserAPI}oa-course/history-course`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:130:        axios2(`${ajaxUrl.UserAPI}oa-course/unlearned-course`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:172:        axios2(`${ajaxUrl.UserAPI}oa-course/all-course`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:237:        axios2(`${ajaxUrl.UserAPI}oa-course/course-chapters-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:312:    axios2(`${ajaxUrl.UserAPI}oa-course/update-course-watching-record`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:401:        axios2(`${ajaxUrl.UserAPI}oa-training`, 'post', { sys_site: 'CHN' })
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:423:        axios2(`${ajaxUrl.UserAPI}oa-training/project-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:491:    axios2(`${ajaxUrl.UserAPI}oa-training/add-homework`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:506:    axios2(`${ajaxUrl.UserAPI}oa-training/delete-homework`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:533:        axios2(ajaxUrl.UserAPI + 'medal-users/my-medals', 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\oaOnlineTraining\index.ts:578:        axios2(ajaxUrl.UserAPI + 'medal-users/my-points', 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\RatingViewConfig.ts:7:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\RatingViewConfig.ts:46:        axios2(`${ajaxUrl.WebAPI}performance-evaluation/viewers`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\RatingViewConfig.ts:69:        axios2(`${ajaxUrl.WebAPI}performance-evaluation/viewer/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\RatingViewConfig.ts:85:        axios2(`${ajaxUrl.WebAPI}performance-evaluation/viewer/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\RatingViewConfig.ts:100:        axios2(ajaxUrl.WebAPI + 'staff-management', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\RatingViewConfig.ts:155:        axios2(`${ajaxUrl.WebAPI}staff-management/viewable-sfuser-ids`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\RatingViewConfig.ts:173:        axios2(`${ajaxUrl.WebAPI}staff-management/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:39:            axios2(`${ajaxUrl.WebAPI}loan/user/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:79:        axios2(`${ajaxUrl.WebAPI}loan/user/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:103:        axios2(`${ajaxUrl.WebAPI}loan/user/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:122:        axios2(`${ajaxUrl.WebAPI}loan/user/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:167:            axios2(`${ajaxUrl.WebAPI}loan/get-department-config`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:196:                axios2(`${ajaxUrl.WebAPI}loan/edit-department-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:221:        axios2(`${ajaxUrl.WebAPI}loan/get-special-stakeholder`, 'post').then(res => {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:240:        axios2(`${ajaxUrl.WebAPI}loan/edit-special-stakeholder`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:257:        axios2(`${ajaxUrl.WebAPI}reversal/get-special-stakeholder`, 'post').then(res => {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\loanStrikeBalaneConfig.ts:276:        axios2(`${ajaxUrl.WebAPI}reversal/edit-special-stakeholder`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\P4VPermisssion\index.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\P4VPermisssion\index.ts:150:        axios2(`${ajaxUrl.WebAPI}hr-approval/get-p4v-special-nickname`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\P4VPermisssion\index.ts:176:        axios2(`${ajaxUrl.WebAPI}hr-approval/edit-p4v-special-nickname`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\P4VPermisssion\index.ts:196:            axios2(`${ajaxUrl.WebAPI}hr-approval/p4v-access-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\P4VPermisssion\index.ts:322:                axios2(`${ajaxUrl.WebAPI}hr-approval/p4v-mark-executed`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\P4VPermisssion\index.ts:360:        axios2(`${ajaxUrl.WebAPI}common/get-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\index.ts:18:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\index.ts:246:        axios2(`${ajaxUrl.WebAPI}performance-evaluation/records`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\index.ts:296:                axios2(`${ajaxUrl.WebAPI}performance-evaluation/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\index.ts:326:        axios2(`${ajaxUrl.WebAPI}performance-evaluation/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\index.ts:353:        axios2(`${ajaxUrl.WebAPI}performance-evaluation/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\index.ts:473:            axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\PerformanceRating\index.ts:572:        axios2(`${ajaxUrl.UserAPI}performance-evaluation/records`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:27:import axios2 from '../axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:132:                axios2(`${ajaxUrl.WebAPI}stamp/get-stamp-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:272:        axios2(`${ajaxUrl.WebAPI}stamp/user/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:317:        axios2(`${ajaxUrl.WebAPI}stamp/user/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:343:        axios2(`${ajaxUrl.WebAPI}stamp/user/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:366:        axios2(`${ajaxUrl.WebAPI}stamp/deal-with-stamp-request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:404:        axios2(`${ajaxUrl.WebAPI}stamp/execute-stamp-request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:446:        axios2(`${ajaxUrl.WebAPI}stamp/lock-stamp-request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:672:            axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:921:        axios2(`${currPage === 'admin' ? ajaxUrl.WebAPI : ajaxUrl.UserAPI}stamp/echo-file-name`, 'post', param)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:967:        axios2(ajaxUrl.UserAPI + 'stamp/perform-special-action', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:995:        axios2(ajaxUrl.UserAPI + 'stamp/perform-special-action', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:1025:        axios2(`${currPageType === 'admin' ? ajaxUrl.WebAPI : ajaxUrl.UserAPI}loan/echo-file-name`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\OCStampAPI.ts:1046:        const { loan_request_id } = await axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:492:            axios2(`${ajaxUrl.UserAPI}approval-management/metadata`, 'post'),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:493:            axios2(`${ajaxUrl.UserAPI}reversal/meta-data`, 'post'),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:520:        axios2(`${ajaxUrl.UserAPI}reversal/user-exists`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:553:        axios2(`${ajaxUrl.UserAPI}reversal/issued-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:615:        axios2(`${ajaxUrl.UserAPI}reversal/get-usable-loan-requests`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:630:        axios2(`${ajaxUrl.UserAPI}reversal/get-could-reversal-trip-dates`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:645:        axios2(`${ajaxUrl.UserAPI}reversal/preflight-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:705:        axios2(`${ajaxUrl.UserAPI}reversal/start-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:773:        axios2(`${ajaxUrl.UserAPI}reversal/authorize-request-token`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:799:        axios2(`${ajaxUrl.UserAPI}loan/authorize-request-token`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:853:        axios2(`${ajaxUrl.UserAPI}reversal/my-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:947:        axios2(`${ajaxUrl.UserAPI}reversal/cc-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1017:        axios2(`${ajaxUrl.UserAPI}reversal/perform-action`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1125:        axios2(`${ajaxUrl.UserAPI}reversal/request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1257:        axios2(`${ajaxUrl.UserAPI}loan/request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1291:        axios2(`${ajaxUrl.UserAPI}reversal/re-edit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1363:        axios2(`${ajaxUrl.WebAPI}reversal/submit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1393:        axios2(`${ajaxUrl.WebAPI}reversal/get-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1463:        axios2(`${ajaxUrl.WebAPI}reversal/get-request-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\LoanStrikeBalance\index.ts:1590:        const data = await axios2(`${ajaxUrl.UserAPI}reversal/todo-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\StaffManualApis.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\StaffManualApis.ts:25:        const res = await axios2(`${ajaxUrl.UserAPI}read-manual`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\StaffManualApis.ts:36:        const res = await axios2(`${ajaxUrl.UserAPI}is-read-manual`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:8:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:55:        axios2(`${ajaxUrl.WebAPI}performance/records`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:199:        axios2(`${ajaxUrl.WebAPI}performance/record-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:256:        axios2(`${ajaxUrl.WebAPI}performance/modify-record`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:282:        axios2(`${ajaxUrl.WebAPI}performance/search-performance-special-map`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:323:            axios2(`${ajaxUrl.WebAPI}performance/add-performance-special-map`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:353:            axios2(`${ajaxUrl.WebAPI}performance/edit-performance-special-map`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:378:            axios2(`${ajaxUrl.WebAPI}performance/edit-performance-special-map`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:457:        axios2(`${ajaxUrl.WebAPI}performance/get-config`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:476:        axios2(`${ajaxUrl.WebAPI}performance/update-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:496:        axios2(`${ajaxUrl.WebAPI}performance/expirations`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:538:        axios2(`${ajaxUrl.WebAPI}performance/expired-performances`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:568:        axios2(`${ajaxUrl.WebAPI}performance/handle-expiration`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:604:                const { performance: r } = await axios2(`${ajaxUrl.WebAPI}performance/user-record`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:636:        axios2(`${ajaxUrl.WebAPI}performance/refresh-user-performance`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:685:        axios2(`${ajaxUrl.WebAPI}performance/admin-publisher-groups`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:737:        axios2(`${ajaxUrl.WebAPI}performance/admin-publisher-group-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:801:        await axios2(ajaxUrl.WebAPI + 'performance/admin-publisher-appraise', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:831:        await axios2(ajaxUrl.WebAPI + 'performance/admin-publisher-update-group', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:875:        axios2(`${ajaxUrl.WebAPI}performance/admin-publisher-submit-appraisals`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:906:        const res = await axios2(ajaxUrl.WebAPI + 'performance/admin-create-publishment', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:931:                return axios2(ajaxUrl.WebAPI + 'performance/admin-update-yearly-token', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:955:                return axios2(ajaxUrl.WebAPI + 'performance/admin-update-quarter-token', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:975:        const res4 = await axios2(ajaxUrl.WebAPI + 'performance/admin-publish', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\PerformanceManagement\index.ts:1034:        axios2(`${ajaxUrl.WebAPI}performance/admin-cancel-publishment`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\commApi.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\commApi.ts:28:            axios2(`${ajaxUrl.UserAPI}attendance-management/attendance-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OverseasWhitelist\index.ts:9:import axios2 from '../axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OverseasWhitelist\index.ts:53:        axios2(`${ajaxUrl.WebAPI}oversea-whitelist/get-white-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OverseasWhitelist\index.ts:95:        axios2(`${ajaxUrl.WebAPI}oversea-whitelist/edit-white-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:286:        axios2(`${ajaxUrl.UserAPI}living-water-need/meta-data`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:316:        axios2(`${ajaxUrl.UserAPI}living-water-need/preflight-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:359:            axios2(`${ajaxUrl.UserAPI}living-water-need/start-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:410:        axios2(`${ajaxUrl.UserAPI}living-water-need/approve-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:428:        axios2(`${ajaxUrl.UserAPI}living-water-need/reject-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:446:        axios2(`${ajaxUrl.UserAPI}living-water-need/cancel-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:464:            axios2(`${ajaxUrl.UserAPI}living-water-need/re-edit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:524:        axios2(`${ajaxUrl.UserAPI}living-water-need/issued-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:580:        axios2(`${ajaxUrl.UserAPI}living-water-need/my-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:654:        axios2(`${ajaxUrl.UserAPI}living-water-need/cc-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:724:        axios2(`${ajaxUrl.UserAPI}living-water-need/request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:815:        axios2(`${ajaxUrl.UserAPI}living-water-need/todo-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Request\index.ts:842:        axios2(`${ajaxUrl.UserAPI}common/nickname-not-resigned-exist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:156:        axios2(url, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:248:        axios2(ajaxUrl.UserAPI + 'asset/user-exists', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:298:        axios2(ajaxUrl.UserAPI + 'asset/issued-requests', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:417:        axios2(ajaxUrl.UserAPI + 'asset/preflight-process', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:477:                axios2(ajaxUrl.UserAPI + 'asset/start-process', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:556:                axios2(ajaxUrl.UserAPI + 'asset/re-edit', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:638:        axios2(ajaxUrl.UserAPI + 'asset/get-office-supplies-nos', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:663:        axios2(ajaxUrl.UserAPI + 'asset/meta-data', 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:728:        axios2(url, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:886:                axios2(ajaxUrl.UserAPI + 'asset/perform-action', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:963:        axios2(ajaxUrl.UserAPI + 'asset/my-requests', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:1047:        axios2(url, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:1093:        axios2(ajaxUrl.UserAPI + 'asset/cc-requests', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PurchaseApp\index.ts:1176:        axios2(`${ajaxUrl.UserAPI}asset/info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:27:        const res = await axios2(`${ajaxUrl.UserAPI}stamp/site-specific-data`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:39:        const res = await axios2(`${ajaxUrl.UserAPI}stamp/todo-list`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:50:        const res = await axios2(`${ajaxUrl.UserAPI}stamp/meta-data`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:67:        const res = await axios2(`${ajaxUrl.UserAPI}stamp/user-exists`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:80:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/start-process', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:93:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/preflight-process', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:107:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/re-edit', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:120:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/authorize-request-token', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:133:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/request', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:146:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/issued-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:159:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/resolved-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:171:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/approving-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:184:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/my-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:197:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/cc-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:210:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/perform-action', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:227:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/get-post-address', 'post', handlerParams(p))
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:244:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/add-post-address', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:261:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/edit-post-address', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCSealApprovalApis.ts:273:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/remove-post-address', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\approvalApis.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\approvalApis.ts:798:        const res = await axios2(ajaxUrl.invoiceIdentifyUrl, 'get', { url: src })
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\approvalApis.ts:858:        const res = await axios2(ajaxUrl.UserAPI + 'invoice/check-invoice-by-url', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:22:        const data = await axios2(`${ajaxUrl.WebAPI}loan/get-config`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:64:        const data = await axios2(`${ajaxUrl.WebAPI}loan/get-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:135:        const data = await axios2(`${ajaxUrl.WebAPI}loan/get-request-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:309:        const { success = false } = await axios2(`${ajaxUrl.WebAPI}loan/submit-to-finance-staff`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:328:        const { success = false } = await axios2(`${ajaxUrl.WebAPI}loan/deal-with-loan-request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:352:        const { success = false } = await axios2(`${ajaxUrl.WebAPI}loan/edit-pay-proof`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:365:        const { success = false } = await axios2(`${ajaxUrl.WebAPI}loan/pay-done`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\loan\Loan\index.ts:383:        const { result = false } = await axios2(`${ajaxUrl.WebAPI}loan/lock-loan-request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:300:        axios2(`${ajaxUrl.UserAPI}living-water/meta-data`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:325:        axios2(`${ajaxUrl.UserAPI}living-water/user-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:349:        axios2(`${ajaxUrl.UserAPI}living-water/check-user-accessible`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:364:        axios2(`${ajaxUrl.UserAPI}living-water/authorize-request-token`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:396:        axios2(`${ajaxUrl.UserAPI}living-water/preflight-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:441:            axios2(`${ajaxUrl.UserAPI}living-water/start-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:507:        axios2(`${ajaxUrl.UserAPI}living-water/approve-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:525:        axios2(`${ajaxUrl.UserAPI}living-water/reject-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:543:        axios2(`${ajaxUrl.UserAPI}living-water/cancel-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:560:        axios2(`${ajaxUrl.UserAPI}living-water/accept-living-water`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:577:        axios2(`${ajaxUrl.UserAPI}living-water/refuse-living-water`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:595:            axios2(`${ajaxUrl.UserAPI}living-water/re-edit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:680:        axios2(`${ajaxUrl.UserAPI}living-water/issued-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:754:        axios2(`${ajaxUrl.UserAPI}living-water/my-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:837:        axios2(`${ajaxUrl.UserAPI}living-water/cc-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:905:        axios2(`${ajaxUrl.UserAPI}living-water/request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:1023:        axios2(`${ajaxUrl.UserAPI}living-water/living-water-need-index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Plan\index.ts:1060:        axios2(`${ajaxUrl.UserAPI}living-water/todo-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:95:        axios2(`${ajaxUrl.UserAPI}performance/publishment-cc-nicknames`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:122:        axios2(`${ajaxUrl.UserAPI}performance/update-yearly-token-ccs`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:157:        axios2(`${ajaxUrl.UserAPI}performance/update-group-cc-nicknames`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:188:        axios2(`${ajaxUrl.WebAPI}performance/admin-publishment-cc-nicknames`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:216:        axios2(`${ajaxUrl.WebAPI}performance/admin-update-yearly-token-ccs`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:251:        axios2(`${ajaxUrl.WebAPI}performance/admin-update-group-cc-nicknames`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:277:        axios2(`${ajaxUrl.WebAPI}performance/admin-management-detail`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementCc\index.ts:327:        axios2(`${ajaxUrl.WebAPI}performance/admin-management-records`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:8:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:73:            axios2(`${ajaxUrl.WebAPI}hr-approval/salary-appeal-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:177:            axios2(`${ajaxUrl.WebAPI}hr-approval/oc-account-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:250:            axios2(`${url}hr-approval/other-permission-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:306:    axios2(`${ajaxUrl.UserAPI}other-permission/execute`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:323:    axios2(`${ajaxUrl.UserAPI}other-permission/execute`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:366:    return axios2(`${ajaxUrl.UserAPI}team/metadata`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:399:        axios2(`${ajaxUrl.UserAPI}team/member/info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:427:        axios2(`${ajaxUrl.UserAPI}eb/get-permission-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:451:        axios2(`${ajaxUrl.UserAPI}ya/get-permission-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:469:    return axios2(`${ajaxUrl.UserAPI}team/metadata`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:486:    return axios2(`${ajaxUrl.UserAPI}team/metadata`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:492:    return axios2(`${ajaxUrl.UserAPI}team/perform-action`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:501:    axios2(`${ajaxUrl.UserAPI}team/perform-user-action`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:513:            axios2(`${ajaxUrl.UserAPI}team/groups`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:556:        Promise.all([axios2(`${ajaxUrl.UserAPI}team/members`, 'post', param)])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:582:        axios2(`${ajaxUrl.UserAPI}team/member/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:636:        axios2(ajaxUrl.UserAPI + 'team/member/import', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OtherReview\OtherReviewTS.ts:667:            axios2(`${ajaxUrl.UserAPI}team/group/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:130:                    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:281:        axios2(ajaxUrl.WebAPI + 'staff-management', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:330:        axios2(ajaxUrl.WebAPI + 'staff-management', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:386:        axios2(`${ajaxUrl.WebAPI}staff-management/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:406:        axios2(`${ajaxUrl.WebAPI}notification/send-knock-rbt-msg`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:429:        axios2(`${ajaxUrl.WebAPI}staff-management/viewable-sfuser-ids`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:543:                        axios2(`${ajaxUrl.WebAPI}staff/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:710:                    axios2(`${ajaxUrl.WebAPI}staff/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffManagement\index.ts:802:    axios2(ajaxUrl.UserAPI + 'sfhome/subordinates', 'post', {}).then(r => {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:32:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:149:            axios2(`${ajaxUrl.WebAPI}oc/get-pay-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:298:                axios2(`${ajaxUrl.WebAPI}oc/get-audit-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:439:                axios2(url, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:574:                axios2(url, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:602:                axios2(url, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:710:                axios2(`${ajaxUrl.WebAPI}oc/get-detail-with-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:838:        axios2(`${ajaxUrl.WebAPI}oc/deal-with-pay-request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:858:        axios2(`${ajaxUrl.WebAPI}oc/lock-payment-request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:914:            axios2(`${ajaxUrl.WebAPI}oc/user/index`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:956:        axios2(`${ajaxUrl.WebAPI}oc/user/add`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:979:        axios2(`${ajaxUrl.WebAPI}oc/user/update`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:993:        axios2(`${ajaxUrl.WebAPI}oc/user/delete`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1022:        Promise.all([getOCSysMapAPI(), axios2(`${ajaxUrl.WebAPI}oc/get-department-config`, 'post', {})])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1049:                axios2(`${ajaxUrl.WebAPI}oc/edit-department-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1141:        axios2(`${ajaxUrl.WebAPI}oc/get-supplier`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1184:        axios2(`${ajaxUrl.UserAPI}approval-management/get-supplier-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1235:        axios2(`${ajaxUrl.WebAPI}oc/add-supplier-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1285:        axios2(`${ajaxUrl.WebAPI}oc/edit-supplier-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1338:        axios2(`${ajaxUrl.WebAPI}oc/del-supplier-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1353:        axios2(`${ajaxUrl.WebAPI}oc/open-supplier-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1604:            axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1891:        axios2(`${ajaxUrl.WebAPI}oc/edit-pay-proof`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1919:        axios2(`${ajaxUrl.WebAPI}oc/pay-done`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:1962:        Promise.all([getOCSysMapAPI(), axios2(`${ajaxUrl.WebAPI}oc/get-special-stakeholder`, 'post', {})])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:2002:                axios2(`${ajaxUrl.WebAPI}oc/edit-special-stakeholder`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:2047:        Promise.all([getOCSysMapAPI(), axios2(`${ajaxUrl.WebAPI}stamp/get-special-stakeholder`, 'post', {})])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:2083:                axios2(`${ajaxUrl.WebAPI}stamp/edit-special-stakeholder`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:2115:        axios2(`${currPage === 'admin' ? ajaxUrl.WebAPI : ajaxUrl.UserAPI}oc/echo-file-name`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:2142:        axios2(`${ajaxUrl.UserAPI}oc/perform-special-action`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OCSystemAPI\index.ts:2170:        axios2(`${ajaxUrl.UserAPI}oc/perform-special-action`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:28:        const data = await axios2(`${ajaxUrl.UserAPI}loan/meta-data`, 'post', {})
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:61:        const data = await axios2(`${ajaxUrl.UserAPI}loan/todo-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:99:        const data = await axios2(`${ajaxUrl.UserAPI}loan/issued-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:176:        const data = await axios2(`${ajaxUrl.UserAPI}loan/my-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:267:        const data = await axios2(`${ajaxUrl.UserAPI}loan/cc-requests`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:337:        const data = await axios2(`${ajaxUrl.UserAPI}loan/request`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:527:        const data = await axios2(`${ajaxUrl.UserAPI}loan/user-exists`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:550:        const { data } = await axios2(`${ajaxUrl.UserAPI}loan/get-personal-info`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:573:        const data = await axios2(`${ajaxUrl.UserAPI}loan/preflight-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:629:        const data = await axios2(`${ajaxUrl.UserAPI}loan/start-process`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:686:        const { success = false } = await axios2(`${ajaxUrl.UserAPI}loan/authorize-request-token`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:711:        const { success = false } = await axios2(`${ajaxUrl.UserAPI}loan/perform-action`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCLoan\index.ts:736:        const { success = false } = await axios2(`${ajaxUrl.UserAPI}loan/re-edit`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:61:        axios2(ajaxUrl.UserAPI + 'performance/metadata', 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:87:        axios2(ajaxUrl.UserAPI + 'performance/viewable-tabs', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:130:        axios2(ajaxUrl.UserAPI + 'performance/my-records', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:219:        axios2(ajaxUrl.UserAPI + 'performance/group-records', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:280:        axios2(ajaxUrl.UserAPI + 'performance/start-workflow', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:331:        axios2(ajaxUrl.UserAPI + 'performance/reedit-workflow', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:355:        axios2(ajaxUrl.UserAPI + 'performance/delete-workflow', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:390:        axios2(ajaxUrl.UserAPI + 'performance/appraisals', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:436:        axios2(ajaxUrl.UserAPI + 'performance/appraiser-groups', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:472:        axios2(ajaxUrl.UserAPI + 'performance/appraiser-history', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:493:        axios2(ajaxUrl.UserAPI + 'performance/add-group', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:518:        axios2(ajaxUrl.UserAPI + 'performance/add-groups', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:548:        axios2(ajaxUrl.UserAPI + 'performance/update-group', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:575:        axios2(ajaxUrl.UserAPI + 'performance/replace-group-users', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:623:        axios2(ajaxUrl.UserAPI + 'common/nickname-exists', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:659:        axios2(ajaxUrl.UserAPI + 'performance/appraisals-workflows', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:721:        axios2(ajaxUrl.UserAPI + 'performance/appraise', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:765:        axios2(ajaxUrl.UserAPI + 'performance/batch-appraise', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:806:        axios2(ajaxUrl.UserAPI + 'performance/preflight-appraisals', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:836:        axios2(ajaxUrl.UserAPI + 'performance/submit-appraisals', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:861:        axios2(ajaxUrl.UserAPI + 'performance/appraiser-cancel-group', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:900:        axios2(ajaxUrl.UserAPI + 'performance/publisher-groups', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:984:        Promise.all([axios2(ajaxUrl.UserAPI + 'performance/publisher-group-detail', 'post', p)])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1040:        axios2(ajaxUrl.UserAPI + 'performance/publisher-update-group', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1079:        axios2(ajaxUrl.UserAPI + 'performance/publisher-appraise', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1111:        axios2(ajaxUrl.UserAPI + 'performance/publisher-submit-appraisals', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1148:        axios2(ajaxUrl.UserAPI + 'performance/publisher-reject-group', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1186:        axios2(ajaxUrl.UserAPI + 'performance/publisher-remind-group', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1209:        axios2(ajaxUrl.UserAPI + 'performance/create-publishment', 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1262:        axios2(ajaxUrl.UserAPI + 'performance/update-yearly-token', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1304:        axios2(ajaxUrl.UserAPI + 'performance/update-quarter-token', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1335:        axios2(ajaxUrl.UserAPI + 'performance/update-publishment', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1396:        axios2(ajaxUrl.UserAPI + 'performance/publish', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1425:        axios2(ajaxUrl.UserAPI + 'performance/cancel-publishment', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1464:        axios2(ajaxUrl.UserAPI + 'performance/management-tokens', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1503:        axios2(ajaxUrl.UserAPI + 'performance/management-records', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1562:        axios2(ajaxUrl.UserAPI + 'performance/management-detail', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1625:        axios2(ajaxUrl.UserAPI + 'performance/management-user-records', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1666:        axios2(ajaxUrl.UserAPI + 'performance/updateHide', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1693:        axios2(ajaxUrl.UserAPI + 'performance/management-user-tokens', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1738:        axios2(ajaxUrl.UserAPI + 'performance/approving-workflows', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1809:        axios2(ajaxUrl.UserAPI + 'performance/cope-with-workflow', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1834:        axios2(ajaxUrl.UserAPI + 'performance/mark-read', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\PerformanceManagementApis.ts:1856:        axios2(`${ajaxUrl.UserAPI}performance/publishment-cc-nicknames`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OperationManagement\index.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OperationManagement\index.ts:34:        axios2(`${ajaxUrl.WebAPI}operation`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OperationManagement\index.ts:74:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\OperationManagement\index.ts:87:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:11:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:101:        axios2(`${ajaxUrl.WebAPI}resignation/index-resignation-permission-whitelist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:141:                    axios2(`${ajaxUrl.WebAPI}resignation/edit-resignation-permission-whitelist`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:199:            axios2(`${ajaxUrl.WebAPI}resignation/search-resignation-sfusers`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:288:                axios2(`${ajaxUrl.WebAPI}resignation/add-resignation-sfusers`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:342:        axios2(`${url}config/get-mail-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:366:        axios2(`${url}config/set-mail-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:397:        axios2(`${ajaxUrl.WebAPI}config/set-mail-config`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:430:        axios2(`${ajaxUrl.UserAPI}resignation/to-be-processed-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:470:        axios2(`${ajaxUrl.UserAPI}resignation/history`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:527:        axios2(`${ajaxUrl.UserAPI}resignation/execute`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:548:        axios2(`${ajaxUrl.UserAPI}resignation/not-need-to-execute`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ResignManagement\index.ts:568:        axios2(`${ajaxUrl.UserAPI}resignation/deferred-execute`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\RoleManagement\index.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\RoleManagement\index.ts:28:        axios2(`${ajaxUrl.WebAPI}role`, 'post', {}, 'auto')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\RoleManagement\index.ts:53:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\RoleManagement\index.ts:66:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\RoleManagement\index.ts:80:    axios2(
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:4:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:29:        const res = await axios2(`${ajaxUrl.UserAPI}sfhome/visible-entries`, 'post', { sys_aggregate: true })
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:77:        const res = await axios2(`${ajaxUrl.UserAPI}oc/site-specific-data`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:89:        const res = await axios2(`${ajaxUrl.UserAPI}oc/todo-list`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:100:        const res = await axios2(`${ajaxUrl.UserAPI}oc/meta-data`, 'post')
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:114:        const res = await axios2(`${ajaxUrl.UserAPI}oc/department-branch-map`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:128:        const res = await axios2(`${ajaxUrl.UserAPI}oc/get-supplier-info`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:145:        const res = await axios2(`${ajaxUrl.UserAPI}oc/user-exists`, 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:158:        const res = await axios2(ajaxUrl.UserAPI + 'oc/start-process', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:171:        const res = await axios2(ajaxUrl.UserAPI + 'oc/preflight-process', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:185:        const res = await axios2(ajaxUrl.UserAPI + 'oc/re-edit', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:198:        const res = await axios2(ajaxUrl.UserAPI + 'oc/search-duplicated-payment', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:211:        const res = await axios2(ajaxUrl.UserAPI + 'oc/authorize-request-token', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:224:        const res = await axios2(ajaxUrl.UserAPI + 'oc/request', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:237:        const res = await axios2(ajaxUrl.UserAPI + 'oc/issued-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:248:        const res = await axios2(ajaxUrl.UserAPI + 'oc/delete-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:259:        const res = await axios2(ajaxUrl.UserAPI + 'stamp/delete-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:271:        const res = await axios2(ajaxUrl.UserAPI + 'oc/printed', 'post', param)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:284:        const res = await axios2(ajaxUrl.UserAPI + 'oc/resolved-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:296:        const res = await axios2(ajaxUrl.UserAPI + 'oc/approving-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:308:        const res = await axios2(ajaxUrl.UserAPI + 'oc/my-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:321:        const res = await axios2(ajaxUrl.UserAPI + 'oc/cc-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:334:        const res = await axios2(ajaxUrl.UserAPI + 'oc/perform-action', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:347:        const res = await axios2(ajaxUrl.UserAPI + 'oc/perform-special-action', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:395:        const res = await axios2(ajaxUrl.UserAPI + 'oc/export-issued-requests', 'post', p)
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:406:        axios2(`${ajaxUrl.UserAPI}oc/edit-message-forum`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:436:        axios2(`${ajaxUrl.UserAPI}oc/edit-message-forum`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\StaffPage\OCApprovalApis.ts:470:        axios2(`${ajaxUrl.UserAPI}oc/edit-message-forum`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Config\index.ts:5:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Config\index.ts:44:            axios2(`${ajaxUrl.WebAPI}living-water-need/get-special-stakeholder`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Config\index.ts:96:            axios2(`${ajaxUrl.WebAPI}living-water/get-special-stakeholder`, 'post', {}),
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Config\index.ts:144:                axios2(`${ajaxUrl.WebAPI}living-water/edit-special-stakeholder`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\LivingWater\Config\index.ts:170:                axios2(`${ajaxUrl.WebAPI}living-water-need/edit-special-stakeholder`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ITReview\ITReviewTS.ts:6:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ITReview\ITReviewTS.ts:63:            axios2(`${ajaxUrl.WebAPI}hr-approval/office-supply-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ITReview\ITReviewTS.ts:191:        Promise.all([getANLMapAPI(), axios2(`${ajaxUrl.WebAPI}hr-approval/cross-list`, 'post', p)])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ITReview\ITReviewTS.ts:270:        Promise.all([getANLMapAPI(), axios2(`${ajaxUrl.WebAPI}hr-approval/it-permission-list`, 'post', p)])
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ITReview\ITReviewTS.ts:339:            axios2(`${ajaxUrl.WebAPI}hr-approval/vpn-permission-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\ITReview\ITReviewTS.ts:377:    axios2(`${ajaxUrl.WebAPI}hr-approval/it-batch-mark-executed`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\HandbookRecord\index.ts:3:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\HandbookRecord\index.ts:46:        axios2(`${ajaxUrl.WebAPI}read-manual-list`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\KnockWhiteList\index.ts:1:import axios2 from '@/apis/axios2'
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\KnockWhiteList\index.ts:30:        axios2(`${ajaxUrl.WebAPI}system-config/search-knock-id`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\KnockWhiteList\index.ts:64:        axios2(`${ajaxUrl.WebAPI}system-config/bind-knock-id`, 'post', {
+D:\cursor-projects\oa\oa-all\oa-frontend\src\apis\KnockWhiteList\index.ts:84:        axios2(`${ajaxUrl.WebAPI}system-config/unbind-knock-id`, 'post', {

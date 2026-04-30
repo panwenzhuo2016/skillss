@@ -1,0 +1,454 @@
+package com.yottastudios.ns.collabspace.workspace.manager.update.impl;
+
+import cn.hutool.json.JSONUtil;
+import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
+import com.yottastudios.ns.collabspace.base.enums.DatabaseException;
+import com.yottastudios.ns.collabspace.base.manager.TreeNodeTemplate;
+import com.yottastudios.ns.collabspace.base.service.INodeService;
+import com.yottastudios.ns.collabspace.base.vo.TreeNode;
+import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+import com.yottastudios.ns.collabspace.core.support.tree.v2.TreeUtil;
+import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
+import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+import com.yottastudios.ns.collabspace.grpc.ICollabspaceGrpcClientService;
+import com.yottastudios.ns.collabspace.shared.config.properties.ConstProperties;
+import com.yottastudios.ns.collabspace.shared.context.SessionContext;
+import com.yottastudios.ns.collabspace.shared.mq.RabbitMqSender;
+import com.yottastudios.ns.collabspace.space.service.ISpaceAppRelService;
+import com.yottastudios.ns.collabspace.space.vo.SpaceAppRelVo;
+import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
+import com.yottastudios.ns.collabspace.workspace.dto.MigrationConfig;
+import com.yottastudios.ns.collabspace.workspace.dto.NodeShareProps;
+import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeMigrationMessage;
+import com.yottastudios.ns.collabspace.workspace.dto.SpaceNodeMigrationResult;
+import com.yottastudios.ns.collabspace.workspace.entity.CollabspaceVersionSnapshotEntity;
+import com.yottastudios.ns.collabspace.workspace.entity.NodeShareEntity;
+import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeMigrationTaskEntity;
+import com.yottastudios.ns.collabspace.workspace.enums.*;
+import com.yottastudios.ns.collabspace.workspace.manager.query.NodeInstancesManager;
+import com.yottastudios.ns.collabspace.workspace.manager.query.SpaceNodeQueryManager;
+import com.yottastudios.ns.collabspace.workspace.manager.update.SpaceNodeMigrationUpdateManager;
+import com.yottastudios.ns.collabspace.workspace.service.INodeShareService;
+import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeMigrationTaskService;
+import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
+import com.yottastudios.ns.collabspace.workspace.service.IVersionSnapshotService;
+import com.yottastudios.ns.collabspace.workspace.service.thirdparty.ThirdAppMigrationChain;
+import com.yottastudios.ns.collabspace.workspace.vo.CopyFileVo;
+import com.yottastudios.ns.collabspace.workspace.vo.CopyVersionSnapshotVo;
+import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeVo;
+import com.yottastudios.ns.collabspace.workspace.vo.VersionSnapshotVo;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+
+import static com.yottastudios.ns.collabspace.core.support.tree.v2.DefaultTreeBuildFactory.ROOT_PARENT_ID;
+import static com.yottastudios.ns.collabspace.shared.config.QueueConfig.SPACE_NODE_MIGRATION_EXCHANGE;
+import static com.yottastudios.ns.collabspace.shared.config.QueueConfig.SPACE_NODE_MIGRATION_KEY;
+
+@Slf4j
+@Service
+public class SpaceNodeMigrationUpdateManagerImpl implements SpaceNodeMigrationUpdateManager {
+
+    @Resource
+    private SpaceNodeQueryManager spaceNodeQueryManager;
+
+    @Resource
+    private IApitableGrpcClientService apitableGrpcClientService;
+
+    @Resource
+    private ICollabspaceGrpcClientService collabspaceGrpcClientService;
+
+    @Resource
+    private ISpaceNodeMigrationTaskService spaceNodeMigrationTaskService;
+
+    @Resource
+    private RabbitMqSender rabbitMqSender;
+
+    @Resource
+    private ConstProperties constProperties;
+
+    @Resource
+    private ISpaceAppRelService spaceAppRelService;
+
+    @Resource
+    private ThirdAppMigrationChain appMigrationChain;
+
+    @Resource
+    private TreeNodeTemplate treeNodeTemplate;
+
+    @Resource
+    private ISpaceNodeService spaceNodeService;
+
+    @Resource
+    private NodeInstancesManager nodeInstancesManager;
+
+    @Resource
+    private INodeShareService  nodeShareService;
+
+    @Resource
+    private IVersionSnapshotService versionSnapshotService;
+
+    @Resource
+    private INodeService nodeService;
+
+    @Override
+    public String createMigrationTask(List<Long> spaceNodeIds, String targetSpaceId, String sourceSpaceId, Long userId, Boolean isRemained) {
+        UserSimpleInfoVo user = apitableGrpcClientService.getUserById(userId);
+        String email = user.getEmail();
+        Set<Long> targetNodeIds = new HashSet<>(spaceNodeIds);
+        // 为了尽量保持原 spaceNodeTree 的相对顺序, 直接拉整个树再筛选
+        List<TreeNode<SpaceNodeVo>> spaceNodeTreeOrigin = spaceNodeQueryManager.getSpaceNodeTree(sourceSpaceId);
+        List<TreeNode<SpaceNodeVo>> spaceNodeTree = TreeUtil.filterByRelIds(spaceNodeTreeOrigin, targetNodeIds);
+        List<SpaceAppRelVo> sourceSpaceApps = spaceAppRelService.listBySpaceId(sourceSpaceId).stream().map(SpaceAppRelVo::new).toList();
+
+        // 目前每个服务都只会执行一种迁移逻辑, MigrationTypeEnum直接由服务环境判断, mirror服务只执行跨服务器迁移, 其它的都是服务器内迁移
+        String taskId;
+        if (constProperties.isMirror()) {
+            taskId = collabspaceGrpcClientService.createSpaceNodeMigrationTask(spaceNodeTree, email, targetSpaceId, sourceSpaceId, sourceSpaceApps);
+        } else {
+            taskId = acceptMigrationTask(spaceNodeTree, email, targetSpaceId, sourceSpaceId, sourceSpaceApps,
+                    MigrationTypeEnum.INTRA_SERVER.getValue(), isRemained);
+        }
+
+        log.info("createMigrationTask: taskId={}, sourceNodeIds={}, targetSpaceId={}, sourceSpaceId={}, userId={}, filteredTreeSize={}",
+                taskId, spaceNodeIds, targetSpaceId, sourceSpaceId, userId, spaceNodeTree.size());
+
+        return taskId;
+    }
+
+    @Override
+    public String acceptMigrationTask(List<TreeNode<SpaceNodeVo>> spaceNodeTree, String email, String targetSpaceId,
+                                      String sourceSpaceId, List<SpaceAppRelVo> appRels, Integer migrationType, Boolean isRemained) {
+        if (CollectionUtils.isEmpty(spaceNodeTree) || StringUtils.isBlank(targetSpaceId) || StringUtils.isBlank(email) || StringUtils.isBlank(sourceSpaceId)) {
+            log.error("email={}, targetSpaceId={}, sourceSpaceId={}", email, targetSpaceId, sourceSpaceId);
+            throw new BusinessException("acceptMigrationTask: empty or invalid arguments");
+        }
+
+        String taskId = sourceSpaceId + "-" + targetSpaceId + "-" + System.currentTimeMillis();
+
+        SpaceNodeMigrationTaskEntity spaceNodeMigrationTaskEntity = SpaceNodeMigrationTaskEntity.builder()
+                .taskId(taskId)
+                .sourceSpaceId(sourceSpaceId)
+                .targetSpaceId(targetSpaceId)
+                .email(email)
+                .originTree(JSONUtil.toJsonStr(spaceNodeTree))
+                .sourceSpaceAppRels(JSONUtil.toJsonStr(appRels))
+                .status(SpaceNodeMigrationTaskStatusEnum.PENDING.getValue())
+                .type(migrationType)
+                .isRemained(isRemained)
+                .build();
+        spaceNodeMigrationTaskService.save(spaceNodeMigrationTaskEntity);
+
+        SpaceNodeMigrationMessage message = SpaceNodeMigrationMessage.builder()
+                .taskId(taskId)
+                .build();
+        rabbitMqSender.directSend(SPACE_NODE_MIGRATION_EXCHANGE, SPACE_NODE_MIGRATION_KEY, JSONUtil.toJsonStr(message));
+
+        log.info("acceptMigrationTask: taskId={}, email={}, targetSpaceId={}, sourceSpaceId={}, treeSize={}",
+                taskId, email, targetSpaceId, sourceSpaceId, spaceNodeTree.size());
+
+        return taskId;
+    }
+
+    @Override
+    public List<CopyFileVo> copyFile(List<Long> spaceNodeIds, Long userId, String sourceSpaceId, String targetSpaceId) {
+        List<CopyFileVo> copyFileVoList = new ArrayList<>();
+        Set<Long> targetNodeIds = new HashSet<>(spaceNodeIds);
+        // 为了尽量保持原 spaceNodeTree 的相对顺序, 直接拉整个树再筛选
+        List<TreeNode<SpaceNodeVo>> spaceNodeTreeOrigin = spaceNodeQueryManager.getSpaceNodeTreeWithoutRole(sourceSpaceId);
+        List<TreeNode<SpaceNodeVo>> spaceNodeTree = TreeUtil.filterByRelIds(spaceNodeTreeOrigin, targetNodeIds);
+
+        checkCopy(spaceNodeTree, targetSpaceId);
+
+        MigrationTypeEnum migrationType = MigrationTypeEnum.fromValue(MigrationTypeEnum.INTRA_SERVER.getValue());
+
+        UserSimpleInfoVo user = apitableGrpcClientService.getUserById(userId);
+        String email = user.getEmail();
+
+        MigrationConfig migrationConfig = MigrationConfig.builder()
+                .email(email)
+                .build();
+
+        SpaceNodeMigrationResult overallResult = appMigrationChain.executeMigration(
+                spaceNodeTree,
+                targetSpaceId,
+                sourceSpaceId,
+                migrationType,
+                migrationConfig
+        );
+
+        // 迁移中遇到错误抛异常并终止迁移
+        if (overallResult.getErrorMessage() != null) {
+            log.warn("Migration had errors: {}", overallResult.getErrorMessage());
+            throw new BusinessException(overallResult.getErrorMessage());
+        }
+
+        // 迁移后的节点重新构建成树并入库
+        saveNewNodeTree(spaceNodeTree, targetSpaceId, overallResult.getNodeIdMapping(), userId);
+        List<String> appSpaceNodeIds =  overallResult.getNodeIdMapping().values().stream().toList();
+        List<SpaceNodeEntity> spaceNodeEntityList = spaceNodeQueryManager.getSpaceNodeByAppIds(appSpaceNodeIds);
+
+        overallResult.getNodeIdMapping().forEach((k,v) -> {
+            CopyFileVo vo = new  CopyFileVo();
+            vo.setAppSpaceNodeId(v);
+            spaceNodeEntityList.stream().filter(o -> o.getAppSpaceNodeId().equals(v)).
+                    findFirst().ifPresent(spaceNodeEntity -> vo.setAioSpaceNodeId(spaceNodeEntity.getId().toString()));
+            copyFileVoList.add(vo);
+
+        });
+        return copyFileVoList;
+    }
+
+    @Override
+    public List<CopyFileVo> copyShareFile(List<Long> spaceNodeIds, Long userId, String targetSpaceId, String shareId) {
+        // 判断用户是否对share有权限
+        NodeShareEntity nodeShareEntity = nodeShareService.getByShareId(shareId);
+        if (nodeShareEntity == null || Boolean.FALSE.equals(nodeShareEntity.getIsEnabled())) {
+            throw new BusinessException(NodeShareException.SHARE_FORBIDDEN);
+        }
+        SpaceNodeEntity spaceNodeEntity = spaceNodeService.getById(nodeShareEntity.getSpaceNodeId());
+        if (spaceNodeEntity == null) {
+            throw new BusinessException(NodeShareException.NODE_NOT_FOUND_OR_DELETED);
+        }
+        NodeShareProps props = NodeShareProps.fromBits(nodeShareEntity.getPropsBits());
+        if (!props.getCanBeStored()) {
+            throw new BusinessException(NodeShareException.NODE_SHARE_FORBID_STORE);
+        }
+        // todo 鉴权不太全, 未考虑指定人员分享和过期时间, 以及spaceNodeIds是否包含在shareId对应的子树里, 以后再重构
+        return copyFile(spaceNodeIds, userId, spaceNodeEntity.getSpaceId(), targetSpaceId);
+    }
+
+    @Override
+    public CopyVersionSnapshotVo copyVersionSnapshot(Long spaceNodeId, String snapshotName, String sourceSpaceId,
+                                                     String targetSpaceId, Long userId, Integer type) {
+        log.warn("spaceNodeId:{},snapshotName:{}, sourceSpaceId:{}.targetSpaceId:{},userId:{}",
+                spaceNodeId, snapshotName, sourceSpaceId, targetSpaceId, userId);
+        CollabspaceVersionSnapshotEntity entity = versionSnapshotService.getByName(snapshotName, spaceNodeId);
+        if (entity != null){
+            throw new BusinessException("副本名称重复");
+        }
+        // 生成spaceNodeId的副本
+        Set<Long> targetNodeIds = new HashSet<>(Collections.singleton(spaceNodeId));
+        // 为了尽量保持原 spaceNodeTree 的相对顺序, 直接拉整个树再筛选
+        List<TreeNode<SpaceNodeVo>> spaceNodeTreeOrigin = spaceNodeQueryManager.getSpaceNodeTreeWithoutRole(sourceSpaceId);
+        List<TreeNode<SpaceNodeVo>> spaceNodeTree = TreeUtil.filterByRelIds(spaceNodeTreeOrigin, targetNodeIds);
+
+        MigrationTypeEnum migrationType = MigrationTypeEnum.fromValue(MigrationTypeEnum.INTRA_SERVER.getValue());
+
+        UserSimpleInfoVo user = apitableGrpcClientService.getUserById(userId);
+        String email = user.getEmail();
+
+        MigrationConfig migrationConfig = MigrationConfig.builder()
+                .email(email)
+                .build();
+
+        SpaceNodeMigrationResult overallResult = appMigrationChain.executeMigration(
+                spaceNodeTree,
+                targetSpaceId,
+                sourceSpaceId,
+                migrationType,
+                migrationConfig
+        );
+
+        // 迁移中遇到错误抛异常并终止迁移
+        if (overallResult.getErrorMessage() != null) {
+            log.warn("Migration had errors: {}", overallResult.getErrorMessage());
+            throw new BusinessException(overallResult.getErrorMessage());
+        }
+
+        TreeNode<SpaceNodeVo> node = spaceNodeTree.stream().filter(o -> o.getData().getId().equals(spaceNodeId)).findFirst().orElse(null);
+        String snapShotId = null;
+        if (node != null) {
+            snapShotId = overallResult.getNodeIdMapping().get(String.valueOf(node.getData().getAppSpaceNodeId()));
+        }
+        if (snapShotId == null){
+            throw new BusinessException("copy file error");
+        }
+        entity = CollabspaceVersionSnapshotEntity.builder().snapshotName(snapshotName).snapshotId(snapShotId).nodeId(spaceNodeId)
+                .operatorId(0L).snapshotStatus(VersionSnapshotStatusEnum.ENABLED.getValue()).build();
+        versionSnapshotService.save(entity);
+        // 补充spaceNode， 增加鉴权
+        SpaceNodeEntity spaceNodeEntity = SpaceNodeEntity.builder()
+                .appSpaceNodeId(snapShotId)
+                .name(snapshotName)
+                .type(type)
+                .description("")
+                .spaceId(sourceSpaceId)
+                .createdBy(userId)
+                .updatedBy(userId)
+                .isSnapshot(SpaceNodeSnapshotEnum.SNAPSHOT.getValue())
+                .build();
+
+        spaceNodeService.save(spaceNodeEntity);
+        return CopyVersionSnapshotVo.builder().snapshotName(snapshotName).snapShotId(snapShotId).id(entity.getId()).build();
+    }
+
+    @Override
+    public void deleteVersionSnapshot(Long id) {
+        CollabspaceVersionSnapshotEntity entity = versionSnapshotService.getById(id);
+        if (entity == null){
+            throw new BusinessException("can not find snapshot with id:" + id );
+        }
+        entity.setSnapshotStatus(VersionSnapshotStatusEnum.DISABLED.getValue());
+        entity.setOperatorId(SessionContext.getUserId());
+        versionSnapshotService.updateById(entity);
+
+    }
+
+
+    @Override
+    public void recoverVersionSnapshot(Long id) {
+        CollabspaceVersionSnapshotEntity entity = versionSnapshotService.getById(id);
+        if (entity == null){
+            throw new BusinessException("can not find snapshot with id:" + id );
+        }
+        entity.setSnapshotStatus(VersionSnapshotStatusEnum.ENABLED.getValue());
+        entity.setOperatorId(0L);
+        versionSnapshotService.updateById(entity);
+    }
+
+    @Override
+    public void deleteOverTimeSnapshot() {
+        // 获取全部状态是disabled 并且更新时间比当前时间大于30天的snapshot, 批量删除
+        List<CollabspaceVersionSnapshotEntity> deleteList = versionSnapshotService.getOverTimeSnapshotList();
+        if (!deleteList.isEmpty()){
+            versionSnapshotService.removeBatchByIds(deleteList.stream().map(CollabspaceVersionSnapshotEntity::getId).toList());
+        }
+    }
+
+    @Override
+    public VersionSnapshotVo updateVersionSnapshot(Long id, String name) {
+        CollabspaceVersionSnapshotEntity entity = versionSnapshotService.getById(id);
+        if (entity == null){
+            throw new BusinessException("can not find snapshot with id:" + id );
+        }
+        entity.setSnapshotName(name);
+        versionSnapshotService.updateById(entity);
+        return VersionSnapshotVo.builder().snapshotId(id.toString()).snapshotName(name).build();
+    }
+
+
+    private void saveNewNodeTree(List<TreeNode<SpaceNodeVo>> originalTree, String spaceId, Map<String, String> nodeIdMapping, Long userId) {
+        if (originalTree == null || originalTree.isEmpty()) {
+            log.info("No tree nodes to save for space: {}", spaceId);
+            return;
+        }
+
+        log.info("Starting to save new node tree for space: {}, total original nodes: {}", spaceId, originalTree.size());
+
+        for (TreeNode<SpaceNodeVo> node : originalTree) {
+            Long parentId = ROOT_PARENT_ID;
+            if (spaceId.equals(node.getData().getSpaceId())) {
+                // 同空间站复制在原父节点下
+                // todo 优化
+                parentId = node.getParentId();
+            }
+            saveNodeAndChildren(node, spaceId, nodeIdMapping, parentId, userId);
+        }
+
+        log.info("Completed saving new node tree for space: {}", spaceId);
+    }
+
+    private void saveNodeAndChildren(TreeNode<SpaceNodeVo> node, String spaceId, Map<String, String> nodeIdMapping, Long parentId, Long userId) {
+        SpaceNodeVo spaceNodeVo = node.getData();
+        String oldNodeId = spaceNodeVo.getAppSpaceNodeId();
+        String newNodeId = nodeIdMapping.get(oldNodeId);
+
+        if (Objects.equals(spaceNodeVo.getType(), SpaceNodeTypeEnum.FOLDER.getValue())) {
+            newNodeId = "";
+        }
+
+        if (newNodeId == null) {
+            log.error("No mapping found for node: {}", oldNodeId);
+            return;
+        }
+
+        // todo:这里的序号没有考虑并发问题，如有需使用分布式锁
+        Integer count = nodeInstancesManager.getCountByOriginId(node.getData().getId());
+        String name = node.getData().getName() +  "的副本" ;
+        if (count > 0){
+            name = name + "(" + count + ")";
+        }
+
+        SpaceNodeEntity spaceNodeEntity = SpaceNodeEntity.builder()
+                .appSpaceNodeId(newNodeId)
+                .name(name)
+                .type(spaceNodeVo.getType())
+                .description(spaceNodeVo.getDescription())
+                .spaceId(spaceId)
+                .createdBy(userId)
+                .updatedBy(userId)
+                .build();
+
+        spaceNodeService.save(spaceNodeEntity);
+
+        // 补充副本关系
+        nodeInstancesManager.createInstance(node.getData().getId(), spaceNodeEntity.getId(), 0);
+        NodeEntity nodeEntity = treeNodeTemplate.addNode(parentId, spaceId, spaceNodeEntity.getId(), SpaceNodeEntity.class);
+        log.info("migrate node, id: {}, appSpaceNodeId: {}, name: {}, parentId",spaceNodeEntity.getId(),spaceNodeEntity.getAppSpaceNodeId(),spaceNodeEntity.getName());
+
+        if (node.getChildren() != null && !node.getChildren().isEmpty()) {
+            for (TreeNode<SpaceNodeVo> child : node.getChildren()) {
+                saveNodeAndChildren(child, spaceId, nodeIdMapping, nodeEntity.getId(), userId);
+            }
+        }
+    }
+
+    private void checkCopy(List<TreeNode<SpaceNodeVo>> originalTree, String spaceId) {
+        if (originalTree == null || originalTree.isEmpty()) {
+            log.info("No tree nodes to save for space: {}", spaceId);
+            return;
+        }
+
+        log.info("Starting to save new node tree for space: {}, total original nodes: {}", spaceId, originalTree.size());
+
+        for (TreeNode<SpaceNodeVo> node : originalTree) {
+            Long parentId = ROOT_PARENT_ID;
+            if (spaceId.equals(node.getData().getSpaceId())) {
+                parentId = node.getParentId();
+            }
+            checkCopyName(node, spaceId, parentId);
+        }
+
+        log.info("Completed saving new node tree for space: {}", spaceId);
+    }
+
+    private void checkCopyName(TreeNode<SpaceNodeVo> node, String spaceId, Long parentId) {
+
+        Long spaceNodeId = node.getData().getId();
+
+        Integer count = nodeInstancesManager.getCountByOriginId(spaceNodeId);
+        String name = node.getData().getName() +  "的副本" ;
+        if (count > 0){
+            name = name + "(" + count + ")";
+        }
+
+        Long nodeId = node.getId();
+        NodeEntity nodeEntity;
+        if(null==nodeId){
+            nodeEntity = nodeService.getByRelId(spaceNodeId);
+            ExceptionUtil.isNotNull(nodeEntity, DatabaseException.QUERY_EMPTY_BY_ID);
+        }else{
+            nodeEntity = nodeService.getById(nodeId);
+            ExceptionUtil.isNotNull(nodeEntity, DatabaseException.QUERY_EMPTY_BY_ID);
+        }
+
+
+
+        boolean checkResult = spaceNodeQueryManager.checkNameWithParent(spaceId, name, nodeEntity.getParentId());
+        if(!checkResult) {
+            throw new BusinessException(name+"已存在重名文件/文件夹");
+        }
+
+
+    }
+
+
+
+
+}

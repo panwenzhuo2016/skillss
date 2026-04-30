@@ -1,0 +1,101 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 项目概述
+
+CollabSpace 是一个协作平台，由两个独立的 git 仓库组成：
+
+- **collabspace-server** — Java 后端（Spring Boot 3.4.5, Java 21）
+- **collabspace-web** — React 前端（TypeScript, Vite 7, npm workspaces）
+
+## 后端（collabspace-server）
+
+### 技术栈
+- **框架：** Spring Boot 3.4.5，Spring Security，Spring Session (Redis)，OAuth2 Authorization Server
+- **数据库：** MySQL + MyBatis + MyBatis-Plus，Liquibase 数据库迁移，动态数据源
+- **缓存/消息：** Redis (Redisson)，RabbitMQ
+- **API 文档：** Knife4j (OpenAPI 3)
+- **gRPC/Protobuf** 服务间通信
+- **对象存储：** MinIO，七牛
+- **其他：** MapStruct（对象映射），Lombok，Hutool 工具库，ShedLock（分布式调度），Sentry（错误追踪），Caffeine（本地缓存），EasyExcel，PDFBox，JavaCV/FFmpeg
+
+### 构建命令
+```bash
+./gradlew build          # 构建（含测试）
+./gradlew build -x test  # 构建（跳过测试）
+./gradlew test           # 运行测试（JUnit 5）
+./gradlew bootJar        # 打包为 application.jar
+```
+
+### 架构
+- **包路径：** `com.yottastudios.ns.collabspace`
+- **启动类：** `CollabspaceApplication`（时区：Asia/Shanghai）
+- **分层结构（按业务模块）：** `controller/` → `service/` → `manager/` → `mapper/`
+  - `entity/` — 数据库实体
+  - `ro/` — 请求对象（入参 DTO）
+  - `vo/` — 视图对象（出参 DTO）
+  - `enums/` — 枚举
+  - `consumer/` — 消息消费者（RabbitMQ）
+- **共享配置：** `shared.config.initializers.EnterpriseEnvironmentInitializers`
+- 使用 OpenFeign 进行外部 HTTP 调用
+- 服务端口：8081
+
+### CI/CD
+- GitLab CI，分支：`testserver`（测试环境），`master`（生产环境）
+- Docker 构建 → 推送镜像 → K8s rollout restart
+- 测试部署命名空间：`collabspace` / `collabspace-private`
+
+## 前端（collabspace-web）
+
+### 技术栈
+- **框架：** React 19 + TypeScript 5.9
+- **构建：** Vite 7，React Compiler (babel-plugin-react-compiler)
+- **样式：** TailwindCSS 3，PostCSS nesting，CSS Modules
+- **国际化：** react-i18next（语言文件在 `packages/web/i18n/`，默认语言：zh-CN）
+- **集成：** OnlyOffice 文档编辑器，Sentry，Ant Design 主题（`ant-theme`），dayjs，exceljs，dom-to-image
+- **Node 版本：** ^20.19.0 或 >=22.12.0
+
+### 构建命令
+```bash
+npm install              # 安装依赖
+npm run dev              # 启动开发服务器（web 包）
+npm run build            # 完整构建：lint → SDK → web → OFUploadPlugin
+npm run build-web        # 仅构建 web
+npm run build-sdk        # 仅构建 SDK
+npm run lint             # TypeScript 类型检查 + ESLint --fix + Stylelint --fix
+npm run preview          # 预览构建产物
+```
+
+### Monorepo 结构（npm workspaces）
+- `packages/web` — 主 Web 应用（`@aio/web`）
+- `packages/aio-sdk` — 共享 SDK 库（`@aio/sdk`），需先于 web 构建
+- `packages/OFUploadPlugin` — OnlyOffice 文件上传插件（`@aio/OFUploadPlugin`）
+
+### ESLint 规则（关键约定）
+- **禁止 `any`：** `@typescript-eslint/no-explicit-any` 为 error
+- **禁止 `useContext`：** 使用 React 19 的 `use()` 代替
+- **禁止 `forwardRef`：** 将 `ref` 作为普通 prop 传递（React 19 风格）
+- **严格未使用变量：** error，忽略参数使用 `_` 前缀
+- **导入排序：** 通过 `simple-import-sort` 强制执行
+- **严格相等：** `eqeqeq` 为 error
+- **最大行长：** 150 字符（warn）
+- **分号：** 必需，单引号，1tbs 大括号风格
+
+### 部署
+- Nginx 从 `/var/www/project/` 提供静态文件
+- 与后端相同的 GitLab CI 模式：`testserver` / `master` 分支
+
+## 环境地址
+- 生产环境：`https://xcollabspace.yottastudios.com`
+- 测试环境：`http://xcollabspace-test.xtool-staging.yottastudios.com`
+- API 文档（测试）：`http://xcollabspace-test.xtool-staging.yottastudios.com/api/v1/doc.html`
+
+## Git 工作流
+- 每个子项目有独立的 git 仓库（非顶层 monorepo）
+- 主要分支：`master`（生产），`testserver`（测试环境）
+- collabspace-web 配置了 Husky pre-commit 钩子
+
+## 代码审查原则
+- 审查代码时，对于看似不对称的逻辑，先分析业务原因再下结论，不做机械的对称性推断
+- 代码审查不凑数量，每个问题必须自证成立后再输出，宁可少报不误报

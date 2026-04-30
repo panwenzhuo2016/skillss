@@ -1,0 +1,32 @@
+# Task 3: 通用基础设施
+
+**Status:** ✅ Done
+
+**Files:**
+- Create: `exam-system/src/main/java/com/exam/dto/Result.java`
+- Create: `exam-system/src/main/java/com/exam/exception/ErrorCode.java`
+- Create: `exam-system/src/main/java/com/exam/exception/BizException.java`
+- Create: `exam-system/src/main/java/com/exam/exception/GlobalExceptionHandler.java`
+- Create: `exam-system/src/main/java/com/exam/util/JwtUtil.java`
+- Create: `exam-system/src/main/java/com/exam/config/SecurityConfig.java`
+- Create: `exam-system/src/main/java/com/exam/config/JwtAuthenticationFilter.java`
+- Create: `exam-system/src/main/java/com/exam/config/MyBatisPlusConfig.java`
+- Create: `exam-system/src/main/java/com/exam/config/CorsConfig.java`
+
+## Steps
+
+- [x] **Step 1:** Result<T> 统一返回体（ok/fail 静态方法）
+- [x] **Step 2:** ErrorCode 错误码枚举（13 个业务错误码）
+- [x] **Step 3:** BizException 业务异常
+- [x] **Step 4:** GlobalExceptionHandler 统一异常处理
+- [x] **Step 5:** JwtUtil JWT 工具类（JJWT 0.12.x）
+- [x] **Step 6:** JwtAuthenticationFilter JWT 过滤器
+- [x] **Step 7:** SecurityConfig 安全配置（CSRF关闭、无状态、路径权限、自定义401/403）
+- [x] **Step 8:** MyBatisPlusConfig 分页插件
+- [x] **Step 9:** CorsConfig 跨域配置
+
+## 实现记录
+
+- SecurityConfig: /api/auth/oauth2/** permitAll, /api/admin/** 需 ROLE_ADMIN, 其余 /api/** authenticated
+- JWT 过滤器注册在 UsernamePasswordAuthenticationFilter 之前
+- 自定义 authenticationEntryPoint 和 accessDeniedHandler 返回 JSON

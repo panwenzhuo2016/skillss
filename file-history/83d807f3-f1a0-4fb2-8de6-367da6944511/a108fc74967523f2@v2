@@ -1,0 +1,412 @@
+package com.yottastudios.ns.collabspace.workspace.manager.query.impl;
+
+import cn.hutool.core.util.StrUtil;
+import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
+import com.yottastudios.ns.collabspace.base.manager.TreeNodeTemplate;
+import com.yottastudios.ns.collabspace.control.entity.ControlEntity;
+import com.yottastudios.ns.collabspace.control.entity.ControlRoleEntity;
+import com.yottastudios.ns.collabspace.control.infrastructure.ControlRoleDict;
+import com.yottastudios.ns.collabspace.control.infrastructure.ControlTemplate;
+import com.yottastudios.ns.collabspace.control.infrastructure.role.*;
+import com.yottastudios.ns.collabspace.control.service.IControlRoleService;
+import com.yottastudios.ns.collabspace.control.service.IControlService;
+import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
+import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+import com.yottastudios.ns.collabspace.shared.util.page.PageHelper;
+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+import com.yottastudios.ns.collabspace.space.enums.SpaceException;
+import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
+import com.yottastudios.ns.collabspace.space.service.ISpaceAppRelService;
+import com.yottastudios.ns.collabspace.space.vo.TeamMemberVo;
+import com.yottastudios.ns.collabspace.workspace.dto.NodeShareProps;
+import com.yottastudios.ns.collabspace.workspace.dto.SimpleNodeInfo;
+import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeException;
+import com.yottastudios.ns.collabspace.workspace.manager.query.NodeRoleQueryManager;
+import com.yottastudios.ns.collabspace.workspace.ro.GetAppNodesRoleRo;
+import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
+import com.yottastudios.ns.collabspace.workspace.transfer.NodeRoleTransfer;
+import com.yottastudios.ns.collabspace.workspace.vo.NodeCollaboratorsVo;
+import com.yottastudios.ns.collabspace.workspace.vo.NodeRoleUnit;
+import com.yottastudios.ns.collabspace.workspace.vo.TeamRoleTreeVo;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import com.yottastudios.ns.collabspace.workspace.entity.NodeShareEntity;
+import com.yottastudios.ns.collabspace.workspace.service.INodeShareService;
+
+@Slf4j
+@Service
+public class NodeRoleQueryManagerImpl implements NodeRoleQueryManager {
+
+    @Resource
+    private ISpaceNodeService spaceNodeService;
+
+    @Resource
+    private ISpaceAppRelService spaceAppRelService;
+
+    @Resource
+    private IControlService controlService;
+
+    @Resource
+    private IControlRoleService controlRoleService;
+
+    @Resource
+    private TreeNodeTemplate treeNodeTemplate;
+
+    @Resource
+    private NodeRoleTransfer nodeRoleTransfer;
+
+    @Resource
+    private SpaceQueryManager spaceQueryManager;
+
+    @Resource
+    private IApitableGrpcClientService apitableGrpcClientService;
+
+    @Resource
+    private ControlTemplate controlTemplate;
+
+    @Resource
+    private INodeShareService nodeShareService;
+
+    @Override
+    public NodeCollaboratorsVo getNodeRoles(Long userId, String spaceId, Long spaceNodeId) {
+        NodeCollaboratorsVo result = new NodeCollaboratorsVo();
+        SpaceNodeEntity spaceNode = spaceNodeService.getById(spaceNodeId);
+        ExceptionUtil.isNotNull(spaceNode, SpaceNodeException.NOT_EXIST);
+        Long roleNodeId;
+        List<NodeRoleUnit> units;
+        // 该节点没被设置过权限时, 需要继承父节点权限, 此时extend为true
+        boolean extend = !controlService.existsByControlId(spaceNodeId.toString());
+        result.setExtend(extend);
+        if (extend) {
+            // 当前节点没有分配角色，需要向上查找父节点的角色
+            roleNodeId = getNodeExtendNodeId(spaceNodeId);
+            if (roleNodeId == null) {
+                // 没找到父节点, 返回空间站组的角色
+                units = getSpaceNodeRoleUnitList(spaceId);
+                result.setExtendNodeName(units.getFirst().getUnitName());
+            } else {
+                SpaceNodeEntity extendNode = spaceNodeService.getById(roleNodeId);
+                result.setExtendNodeName(extendNode.getName());
+                units = getNodeRoleUnitList(roleNodeId);
+            }
+        } else {
+            // 当前节点有分配角色，不需要向上查找父节点的角色
+            roleNodeId = spaceNodeId;
+            units = getNodeRoleUnitList(roleNodeId);
+        }
+
+        result.setRoleUnits(units);
+
+        List<Long> adminIds = spaceQueryManager.getAdminUsersWithWorkBenchManagePermission(spaceId);
+        // 可以考虑将toUnitMemberVos的结果复用, 减少toUnitMemberVo的调用次数
+        result.setAdmins(nodeRoleTransfer.toUnitMemberVos(adminIds, spaceId));
+        result.setSelf(nodeRoleTransfer.toUnitMemberVo(userId, spaceId));
+        result.setBelongRootFolder(treeNodeTemplate.isNodeBelongRootFolder(spaceNodeId));
+
+        return result;
+    }
+
+    private List<NodeRoleUnit> getSpaceNodeRoleUnitList(String spaceId) {
+        Long rootTeamUnitId = apitableGrpcClientService.getRootTeamUnitId(spaceId);
+        List<NodeRoleUnit> nodeRoleUnitList = apitableGrpcClientService.getNodeRoleUnitList(spaceId, List.of(rootTeamUnitId));
+        for (NodeRoleUnit nodeRoleUnit : nodeRoleUnitList) {
+            nodeRoleUnit.setRole(RoleConstants.SpaceNode.DEFAULT_ROLE);// space default role
+        }
+        return nodeRoleUnitList;
+    }
+
+    private List<NodeRoleUnit> getNodeRoleUnitList(Long roleNodeId) {
+        List<ControlRoleEntity> controlRoleUnits = controlRoleService.getByControlId(roleNodeId.toString());
+        if (CollectionUtils.isEmpty(controlRoleUnits)) return List.of();
+        return nodeRoleTransfer.toNodeRoleUnits(roleNodeId, controlRoleUnits);
+    }
+
+    @Override
+    public Long getNodeExtendNodeId(Long spaceNodeId) {
+        List<NodeEntity> parentTreeNodesFromParentToRoot = treeNodeTemplate.getParentNodesByRelId(spaceNodeId);
+        for (NodeEntity parentTreeNode : parentTreeNodesFromParentToRoot) {
+            if (parentTreeNode.getRelId().equals(spaceNodeId)) {
+                continue;// exclude self
+            }
+            Long parentSpaceNodeId = parentTreeNode.getRelId();
+            if (controlService.existsByControlId(parentSpaceNodeId.toString())) {
+                // first parent node has perm
+                return parentTreeNode.getRelId();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<SimpleNodeInfo> getNodeInfoWithPermissionStatus(List<Long> spaceNodeIds) {
+        if (CollectionUtils.isEmpty(spaceNodeIds)) return List.of();
+        List<NodeEntity> nodes = treeNodeTemplate.getParentPathNodesByRelIds(spaceNodeIds);
+        if (CollectionUtils.isEmpty(nodes)) return List.of();
+
+        List<String> controlIds = nodes.stream().map(node -> String.valueOf(node.getRelId())).toList();
+        List<ControlEntity> existedControls = controlService.getByControlIds(controlIds);
+        List<Long> existedControlIds = CollectionUtils.isNotEmpty(existedControls)
+                ? existedControls.stream().map(e -> Long.valueOf(e.getControlId())).toList()
+                : List.of();
+
+        return nodes.stream()
+                .map(node -> new SimpleNodeInfo(node.getId(), node.getParentId(), node.getRelId(),
+                        !existedControlIds.contains(node.getRelId())))
+                .toList();
+    }
+
+    @Override
+    public void checkInSpace(String spaceId, List<Long> unitIds) {
+        List<NodeRoleUnit> unitList = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+        if (Objects.equals(unitList.size(), unitIds.size())) {
+            return;
+        }
+        throw new BusinessException(SpaceException.UNIT_NOT_EXIST);
+    }
+
+    @Override
+    public ControlRoleDict getAppNodesRole(GetAppNodesRoleRo ro, Long userId) {
+        ControlRoleDict result = ControlRoleDict.create();
+        // ExcludeDeleted: includes is_deleted=0 and is_deleted=NULL (OnlyOffice nodes),
+        // excludes is_deleted=1 (properly deleted nodes).
+        List<SpaceNodeEntity> spaceNodeEntities = spaceNodeService.listByAppSpaceNodeIdsExcludeDeleted(ro.getAppNodeIds());
+        if (CollectionUtils.isEmpty(spaceNodeEntities)) {
+            return result;
+        }
+        List<Long> spaceNodeIds = spaceNodeEntities.stream().map(SpaceNodeEntity::getId).toList();
+        ControlRoleDict controlRoleDict = controlTemplate.fetchSpaceNodeRole(userId, spaceNodeIds);
+
+        Map<String, String> idToAppSpaceNodeIdMap = spaceNodeEntities.stream()
+                .collect(Collectors.toMap(
+                        entity -> entity.getId().toString(),
+                        SpaceNodeEntity::getAppSpaceNodeId
+                ));
+
+        // 替换key为appSpaceNodeId
+        for (Map.Entry<String, ControlRole> entry : controlRoleDict.entrySet()) {
+            String id = entry.getKey();
+            String appSpaceNodeId = idToAppSpaceNodeIdMap.get(id);
+            if (appSpaceNodeId != null) {
+                result.put(appSpaceNodeId, entry.getValue());
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public ControlRoleDict getShareRole(String shareId, Long userId) {
+        ControlRoleDict result = ControlRoleDict.create();
+        if (userId == null) {
+            log.error("getShareRole userId is null, shareId: {}", shareId);
+            return result;
+        } // todo user share scope
+        NodeShareEntity nodeShareEntity = nodeShareService.getByShareId(shareId);
+        if (nodeShareEntity == null || Boolean.FALSE.equals(nodeShareEntity.getIsEnabled())) {
+            log.error("getShareRole nodeShareEntity is null, shareId: {}", shareId);
+            return result;
+        }
+        SpaceNodeEntity spaceNodeEntity = spaceNodeService.getById(nodeShareEntity.getSpaceNodeId());
+        if (spaceNodeEntity == null) {
+            log.error("getShareRole spaceNodeEntity is null, spaceNodeId: {}", nodeShareEntity.getSpaceNodeId());
+            return result;
+        }
+        String appSpaceNodeId = spaceNodeEntity.getAppSpaceNodeId();
+
+        NodeShareProps props = NodeShareProps.fromBits(nodeShareEntity.getPropsBits());
+        if (props.getOnlyRead()) {
+            result.put(appSpaceNodeId, new NodeReaderRole());
+            return result;
+        }
+        if (props.getCanBeEdited()) {
+            result.put(appSpaceNodeId, new NodeEditorRole());
+            return result;
+        }
+        if (props.getCanBeStored()) {
+            result.put(appSpaceNodeId, new NodeManagerRole());
+            return result;
+        }
+        log.error("props not contains role, shareId: {}, props: {}", shareId, props);
+        return result;
+    }
+
+    @Override
+    public PageInfo<TeamRoleTreeVo> listTeamRoles(Long userId, String spaceId, Long spaceNodeId, String keyword, int pageNo, int pageSize) {
+        // 1. 获取空间站小组树
+        List<TeamMemberVo> teamTree = apitableGrpcClientService.getTeamMembers(spaceId, userId);
+
+        // 2. 获取当前节点的权限数据（考虑继承）
+        TeamRoleMaps roleMaps = getTeamRoleMaps(spaceId, spaceNodeId);
+
+        // 3. 转换为 TeamRoleTreeVo
+        List<TeamRoleTreeVo> tree = convertToTeamRoleTree(teamTree, roleMaps);
+
+        // 4. 搜索过滤
+        List<TeamRoleTreeVo> result;
+        if (StrUtil.isNotBlank(keyword)) {
+            result = flattenAndFilter(tree, keyword);
+        } else {
+            result = flattenTree(tree);
+        }
+
+        // 5. 内存分页
+        int total = result.size();
+        int fromIndex = Math.min((pageNo - 1) * pageSize, total);
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        List<TeamRoleTreeVo> pageRecords = result.subList(fromIndex, toIndex);
+
+        return PageHelper.build(pageNo, pageSize, total, pageRecords);
+    }
+
+    /**
+     * 小组权限查询结果，包含 teamId->role 和 teamId->unitId 两个映射
+     */
+    private record TeamRoleMaps(Map<Long, String> teamIdToRole, Map<Long, Long> teamIdToUnitId) {
+        static TeamRoleMaps empty() {
+            return new TeamRoleMaps(Map.of(), Map.of());
+        }
+    }
+
+    /**
+     * 获取节点的小组权限映射 (teamId -> roleCode) 和 (teamId -> unitId)
+     */
+    private TeamRoleMaps getTeamRoleMaps(String spaceId, Long spaceNodeId) {
+        String controlId;
+        if (controlService.existsByControlId(spaceNodeId.toString())) {
+            controlId = spaceNodeId.toString();
+        } else {
+            Long extendNodeId = getNodeExtendNodeId(spaceNodeId);
+            controlId = extendNodeId != null ? extendNodeId.toString() : null;
+        }
+
+        if (controlId == null) {
+            return TeamRoleMaps.empty();
+        }
+
+        List<ControlRoleEntity> controlRoles = controlRoleService.getByControlId(controlId);
+        if (CollectionUtils.isEmpty(controlRoles)) {
+            return TeamRoleMaps.empty();
+        }
+
+        List<Long> unitIds = controlRoles.stream().map(ControlRoleEntity::getUnitId).toList();
+        List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+
+        // unitType=1 means Department/Team
+        Map<Long, Long> unitIdToRefId = unitInfos.stream()
+                .filter(u -> u.getUnitType() != null && u.getUnitType() == 1)
+                .collect(Collectors.toMap(NodeRoleUnit::getUnitId, NodeRoleUnit::getUnitRefId, (a, b) -> a));
+
+        Map<Long, String> unitIdToRole = controlRoles.stream()
+                .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+
+        // teamId(unitRefId) -> roleCode, teamId -> unitId
+        Map<Long, String> teamIdToRole = new HashMap<>();
+        Map<Long, Long> teamIdToUnitId = new HashMap<>();
+        unitIdToRefId.forEach((unitId, teamId) -> {
+            String role = unitIdToRole.get(unitId);
+            if (role != null) {
+                teamIdToRole.put(teamId, role);
+            }
+            teamIdToUnitId.put(teamId, unitId);
+        });
+        return new TeamRoleMaps(teamIdToRole, teamIdToUnitId);
+    }
+
+    private List<TeamRoleTreeVo> convertToTeamRoleTree(List<TeamMemberVo> teamTree, TeamRoleMaps roleMaps) {
+        List<TeamRoleTreeVo> result = new ArrayList<>();
+        for (TeamMemberVo team : teamTree) {
+            TeamRoleTreeVo vo = new TeamRoleTreeVo();
+            vo.setTeamId(team.getTeamId());
+            vo.setUnitId(roleMaps.teamIdToUnitId().get(team.getTeamId()));
+            vo.setTeamName(team.getTeamName());
+            vo.setParentId(team.getParentTeamId());
+            vo.setMemberCount(team.getMemberCount());
+            vo.setRole(roleMaps.teamIdToRole().get(team.getTeamId()));
+            if (CollectionUtils.isNotEmpty(team.getChildrenList())) {
+                vo.setChildren(convertToTeamRoleTree(team.getChildrenList(), roleMaps));
+            } else {
+                vo.setChildren(List.of());
+            }
+            result.add(vo);
+        }
+        return result;
+    }
+
+    /** 平铺树为列表（前序遍历） */
+    private List<TeamRoleTreeVo> flattenTree(List<TeamRoleTreeVo> tree) {
+        List<TeamRoleTreeVo> result = new ArrayList<>();
+        for (TeamRoleTreeVo node : tree) {
+            result.add(node);
+            if (CollectionUtils.isNotEmpty(node.getChildren())) {
+                result.addAll(flattenTree(node.getChildren()));
+            }
+        }
+        return result;
+    }
+
+    /** 搜索过滤：按 teamName 模糊匹配，平铺返回 */
+    private List<TeamRoleTreeVo> flattenAndFilter(List<TeamRoleTreeVo> tree, String keyword) {
+        List<TeamRoleTreeVo> result = new ArrayList<>();
+        String lowerKeyword = keyword.toLowerCase();
+        for (TeamRoleTreeVo node : tree) {
+            if (node.getTeamName() != null && node.getTeamName().toLowerCase().contains(lowerKeyword)) {
+                result.add(node);
+            }
+            if (CollectionUtils.isNotEmpty(node.getChildren())) {
+                result.addAll(flattenAndFilter(node.getChildren(), keyword));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public PageInfo<NodeRoleUnit> listMemberRoles(String spaceId, Long spaceNodeId, String keyword, int pageNo, int pageSize) {
+        // 只查当前节点手动设置的权限（不含继承）
+        String controlId = spaceNodeId.toString();
+        List<ControlRoleEntity> controlRoles = controlRoleService.getByControlId(controlId);
+        if (CollectionUtils.isEmpty(controlRoles)) {
+            return PageHelper.build(pageNo, pageSize, 0, List.of());
+        }
+
+        List<Long> unitIds = controlRoles.stream().map(ControlRoleEntity::getUnitId).toList();
+        List<NodeRoleUnit> allUnits = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+
+        // unitType=3 means Member
+        Map<Long, String> unitIdToRole = controlRoles.stream()
+                .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+
+        List<NodeRoleUnit> memberUnits = allUnits.stream()
+                .filter(u -> u.getUnitType() != null && u.getUnitType() == 3)
+                .peek(u -> u.setRole(unitIdToRole.get(u.getUnitId())))
+                .toList();
+
+        // 搜索过滤
+        List<NodeRoleUnit> filtered = memberUnits;
+        if (StrUtil.isNotBlank(keyword)) {
+            String lowerKeyword = keyword.toLowerCase();
+            filtered = memberUnits.stream()
+                    .filter(u -> (u.getUnitName() != null && u.getUnitName().toLowerCase().contains(lowerKeyword))
+                            || (u.getNickName() != null && u.getNickName().toLowerCase().contains(lowerKeyword)))
+                    .toList();
+        }
+
+        // 内存分页
+        int total = filtered.size();
+        int fromIndex = Math.min((pageNo - 1) * pageSize, total);
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        List<NodeRoleUnit> pageRecords = filtered.subList(fromIndex, toIndex);
+
+        return PageHelper.build(pageNo, pageSize, total, pageRecords);
+    }
+}

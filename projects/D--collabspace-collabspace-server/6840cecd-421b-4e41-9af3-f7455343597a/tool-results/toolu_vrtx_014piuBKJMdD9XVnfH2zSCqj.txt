@@ -1,0 +1,671 @@
+     1→<?xml version="1.0" encoding="UTF-8"?>
+     2→<databaseChangeLog
+     3→        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+     4→        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     5→        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+     6→
+     7→    <changeSet id="001-1" author="admin">
+     8→        <sql>
+     9→            CREATE DATABASE IF NOT EXISTS `collabspace`;
+    10→            USE `collabspace`;
+    11→
+    12→            CREATE TABLE IF NOT EXISTS `collabspace`.`collabspace_asset` (
+    13→                `id` BIGINT NOT NULL COMMENT 'Primary key',
+    14→                `checksum` VARCHAR(255) NULL COMMENT 'Hash and MD5 summary of the whole file',
+    15→                `head_sum` VARCHAR(255) NULL COMMENT 'Base64 of the first 32 bytes of the resource file',
+    16→                `bucket` VARCHAR(50) NULL COMMENT 'Bucket Tag',
+    17→                `bucket_name` VARCHAR(50) DEFAULT '' NULL COMMENT 'Bucket name',
+    18→                `file_size` INT NOT NULL COMMENT 'File size (unit: byte)',
+    19→                `file_url` VARCHAR(255) NOT NULL COMMENT 'Cloud file storage path',
+    20→                `mime_type` VARCHAR(255) NULL COMMENT 'MimeType',
+    21→                `extension_name` VARCHAR(255) NOT NULL COMMENT 'File extension',
+    22→                `preview` VARCHAR(255) NULL COMMENT 'Preview Token',
+    23→                `is_template` TINYINT UNSIGNED DEFAULT '0' NOT NULL COMMENT 'Is it a template attachment(0:No,1:Yes)',
+    24→                `height` INT NULL COMMENT 'Image Height',
+    25→                `width` INT NULL COMMENT 'Image Width',
+    26→                `frame_rates`     decimal(10, 2)                             null comment '帧率',
+    27→                `file_name`      varchar(255)                               null comment '文件名',
+    28→                `is_deleted` TINYINT UNSIGNED DEFAULT '0' NOT NULL COMMENT 'Delete tag(0:No,1:Yes)',
+    29→                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+    30→                PRIMARY KEY (`id`),
+    31→                UNIQUE KEY `uk_checksum` (`checksum`)
+    32→                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Resource Table';
+    33→
+    34→            CREATE INDEX `k_file_url` ON `collabspace`.`collabspace_asset` (`file_url`(20)) COMMENT 'Attachment url index';
+    35→
+    36→            CREATE TABLE IF NOT EXISTS `collabspace`.`collabspace_developer_asset` (
+    37→                `id` BIGINT UNSIGNED NOT NULL COMMENT 'Primary Key',
+    38→                `bucket_name` VARCHAR(50) DEFAULT '' NULL COMMENT 'Bucket name',
+    39→                `type` TINYINT UNSIGNED NOT NULL COMMENT 'Type (0: widget)',
+    40→                `source_name` VARCHAR(255) NOT NULL COMMENT 'Source file name, the file name of this upload',
+    41→                `asset_id` BIGINT NULL COMMENT 'Resource ID(link#xxxx_asset#id)',
+    42→                `asset_checksum` VARCHAR(255) NULL COMMENT '[Redundancy]md5 Abstract',
+    43→                `file_size` INT NOT NULL COMMENT '[Redundancy]File size (unit: byte)',
+    44→                `is_deleted` TINYINT UNSIGNED DEFAULT '0' NOT NULL COMMENT 'Delete Tag(0: No, 1: Yes)',
+    45→                `created_by` BIGINT NULL COMMENT 'Creator',
+    46→                `updated_by` BIGINT NULL COMMENT 'Last Update By',
+    47→                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+    48→                `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time',
+    49→                PRIMARY KEY (`id`)
+    50→                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Workbench-Develop Asset Table';
+    51→
+    52→            CREATE TABLE IF NOT EXISTS `collabspace`.`collabspace_asset_audit` (
+    53→                `id` BIGINT NOT NULL COMMENT 'Primary Key',
+    54→                `asset_id` BIGINT NOT NULL COMMENT 'Resource ID(link#xxxx_asset#id)',
+    55→                `asset_file_url` VARCHAR(255) NOT NULL COMMENT 'Cloud File Storage Path',
+    56→                `asset_checksum` VARCHAR(255) NOT NULL COMMENT '[Redundancy]md5 Abstract',
+    57→                `audit_result_score` FLOAT(8, 8) NULL COMMENT 'Audit result score',
+    58→                `audit_result_suggestion` VARCHAR(255) NULL COMMENT 'Audit Result Suggestion, include:["block","review","pass"]',
+    59→                `audit_scenes` VARCHAR(10) NULL COMMENT 'Audit Scenes,Currently supported:pul/terror/politician/ads',
+    60→                `auditor_openid` VARCHAR(255) NULL COMMENT 'Auditor OpenId',
+    61→                `auditor_name` VARCHAR(255) NULL COMMENT 'Auditor Name',
+    62→                `is_audited` TINYINT UNSIGNED DEFAULT '0' NOT NULL COMMENT 'Is Audited(0:No, 1:Yes)',
+    63→                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+    64→                `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'
+    65→                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT 'Resource Audit Table';
+    66→
+    67→            CREATE INDEX `idx_digest` ON `collabspace`.`collabspace_asset_audit` (`asset_checksum`);
+    68→            CREATE INDEX `idx_file_url` ON `collabspace`.`collabspace_asset_audit` (`asset_file_url`);
+    69→
+    70→            create table collabspace_space
+    71→            (
+    72→                id         bigint                                     not null comment 'Primary Key'
+    73→                    primary key,
+    74→                space_id   varchar(255)                               not null comment 'Space ID',
+    75→                name       varchar(255)                               not null comment 'Space Name',
+    76→                owner      bigint                                     not null comment 'Space Main Admin ID',
+    77→                is_forbid  tinyint unsigned default '0'               not null comment 'Do you want to prohibit all employees from export table(0:No,1:Yes)',
+    78→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+    79→                created_by varchar(255)                               null comment 'Created by',
+    80→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+    81→                updated_by varchar(255)                               null comment 'Updated by',
+    82→                is_deleted tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+    83→            )
+    84→                comment 'Space Table' collate = utf8mb4_unicode_ci;
+    85→
+    86→            create unique index index_space_id
+    87→                on collabspace_space (space_id);
+    88→
+    89→            create index index_owner
+    90→                on collabspace_space (owner);
+    91→
+    92→            create table collabspace_space_app_rel
+    93→            (
+    94→                id          bigint                                      not null comment 'Primary Key'
+    95→                    primary key,
+    96→                space_id    varchar(255)                                not null comment 'Space ID',
+    97→                app_type    int                                         not null comment 'Application Type',
+    98→                app_space_id varchar(255)                               not null comment 'Application Space ID',
+    99→                created_at  timestamp        default CURRENT_TIMESTAMP  not null comment 'Create Time',
+   100→                created_by  varchar(255)                                null comment 'Created by',
+   101→                updated_at  timestamp        default CURRENT_TIMESTAMP  null on update CURRENT_TIMESTAMP comment 'Update Time',
+   102→                updated_by  varchar(255)                                null comment 'Updated by',
+   103→                is_deleted  tinyint unsigned default '0'                not null comment 'Delete tag (0: No, 1: Yes)'
+   104→            )
+   105→                comment 'Space App Relation Table' collate = utf8mb4_unicode_ci;
+   106→
+   107→            create index index_space_id
+   108→                on collabspace_space_app_rel (space_id);
+   109→
+   110→            create index index_app_type
+   111→                on collabspace_space_app_rel (app_type);
+   112→
+   113→            create index index_app_space_id
+   114→                on collabspace_space_app_rel (app_space_id);
+   115→
+   116→
+   117→            create table collabspace_space_user_resource_rel
+   118→            (
+   119→                id              bigint                                     not null comment 'Primary Key'
+   120→                    primary key,
+   121→                space_id        varchar(255)                               not null comment 'Space ID',
+   122→                user_id         bigint                                     not null comment 'User ID',
+   123→                resource_code   varchar(255)                               not null comment 'Resource Code',
+   124→                created_at      timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   125→                created_by      varchar(255)                               null comment 'Created by',
+   126→                updated_at      timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   127→                updated_by      varchar(255)                               null comment 'Updated by',
+   128→                is_deleted      tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   129→            )
+   130→                comment 'Space User Resource Relation Table' collate = utf8mb4_unicode_ci;
+   131→
+   132→            create index index_space_user
+   133→                on collabspace_space_user_resource_rel (space_id, user_id);
+   134→
+   135→            create index index_user_resource
+   136→                on collabspace_space_user_resource_rel (user_id, resource_code);
+   137→
+   138→
+   139→            create table collabspace_space_node
+   140→            (
+   141→                id                bigint                                     not null comment 'Primary Key'
+   142→                    primary key,
+   143→                space_id          varchar(255)                               not null comment 'Space ID',
+   144→                name              varchar(255)                               not null comment 'Name',
+   145→                description       varchar(255)                               not null comment 'Description',
+   146→                app_space_node_id varchar(255)                               not null comment 'Application Space Node ID',
+   147→                type              int                                        not null comment 'Type',
+   148→                icon              varchar(1024)    default ''                not null comment '文件emoji',
+   149→                is_snapshot       tinyint          default 0                 not null,
+   150→                created_at        timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   151→                created_by        varchar(255)                               null comment 'Created by',
+   152→                updated_at        timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   153→                updated_by        varchar(255)                               null comment 'Updated by',
+   154→                is_deleted        tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   155→            )
+   156→                comment 'Space Node Table' collate = utf8mb4_unicode_ci;
+   157→
+   158→            create index index_space_id
+   159→                on collabspace_space_node (space_id);
+   160→
+   161→            create index idx_app_space_node_id
+   162→                ON collabspace.collabspace_space_node (app_space_node_id);
+   163→
+   164→            create index idx_created_by
+   165→                ON collabspace.collabspace_space_node (created_by);
+   166→
+   167→            create index idx_space_id_is_snapshot
+   168→                ON collabspace.collabspace_space_node (space_id, is_snapshot);
+   169→
+   170→
+   171→            create table collabspace_node
+   172→            (
+   173→                id                 bigint                                     not null comment 'Primary Key'
+   174→                    primary key,
+   175→                parent_id          bigint                                     not null default 0  comment 'Parent Node ID',
+   176→                pre_id             bigint                                     not null default 0 comment 'Previous Node ID',
+   177→                tree_id            varchar(255)                               not null comment 'Tree ID',
+   178→                rel_id             bigint                                     not null comment 'Related Object ID',
+   179→                node_key           int                                        not null comment 'Node Key',
+   180→                node_type          varchar(255)                               not null comment 'Node Type',
+   181→                created_at         timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   182→                created_by         varchar(255)                               null comment 'Created by',
+   183→                updated_at         timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   184→                updated_by         varchar(255)                               null comment 'Updated by',
+   185→                is_deleted         tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)',
+   186→                constraint uq_node_rel_id
+   187→                    unique (rel_id)
+   188→            )
+   189→                comment 'Node Table' collate = utf8mb4_unicode_ci;
+   190→
+   191→            create index index_tree_id_node_key_parent_id_pre_id
+   192→                on collabspace_node (tree_id, node_key, parent_id, pre_id);
+   193→
+   194→
+   195→            create table collabspace_space_node_visit
+   196→            (
+   197→                id             bigint                                     not null comment 'Primary Key'
+   198→                    primary key,
+   199→                space_node_id  bigint                                     not null comment 'Space Node ID',
+   200→                user_id        bigint                                     not null comment 'User ID',
+   201→                created_at     timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   202→                created_by     varchar(255)                               null comment 'Created by',
+   203→                updated_at     timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   204→                updated_by     varchar(255)                               null comment 'Updated by',
+   205→                is_deleted     tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   206→            )
+   207→                comment 'Space Node Visit Table' collate = utf8mb4_unicode_ci;
+   208→
+   209→            create unique index index_user_id_space_node_id
+   210→                on collabspace_space_node_visit (user_id, space_node_id);
+   211→
+   212→            create index index_user_id_updated_at
+   213→                on collabspace_space_node_visit (user_id, updated_at desc);
+   214→
+   215→
+   216→            create table collabspace_space_node_visit_record
+   217→            (
+   218→                id              bigint                                     not null comment 'Primary Key'
+   219→                    primary key,
+   220→                space_node_id   bigint                                     not null comment 'Space Node ID',
+   221→                space_node_type int                                        not null comment 'Space Node Type',
+   222→                space_id        varchar(255)                               not null comment 'Space ID',
+   223→                ip              varchar(255)                               null comment 'IP Address',
+   224→                created_at      timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   225→                created_by      varchar(255)                               null comment 'Created by',
+   226→                updated_at      timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   227→                updated_by      varchar(255)                               null comment 'Updated by',
+   228→                is_deleted      tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   229→            )
+   230→                comment 'Space Node Visit Record Table' collate = utf8mb4_unicode_ci;
+   231→
+   232→            create index index_space_node_id
+   233→                on collabspace_space_node_visit_record (space_node_id);
+   234→
+   235→            create index index_space_id
+   236→                on collabspace_space_node_visit_record (space_id);
+   237→
+   238→
+   239→            create table collabspace_space_node_star
+   240→            (
+   241→                id             bigint                                     not null comment 'Primary Key'
+   242→                    primary key,
+   243→                space_node_id  bigint                                     not null comment 'Space Node ID',
+   244→                user_id        bigint                                     not null comment 'User ID',
+   245→                created_at     timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   246→                created_by     varchar(255)                               null comment 'Created by',
+   247→                updated_at     timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   248→                updated_by     varchar(255)                               null comment 'Updated by',
+   249→                is_deleted     tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   250→            )
+   251→                comment 'Space Node Star Table' collate = utf8mb4_unicode_ci;
+   252→
+   253→            create index index_space_node_id
+   254→                on collabspace_space_node_star (space_node_id);
+   255→
+   256→            create index index_user_id
+   257→                on collabspace_space_node_star (user_id);
+   258→
+   259→
+   260→            create table collabspace_control
+   261→            (
+   262→                id           bigint unsigned                            not null comment 'Primary Key'
+   263→                    primary key,
+   264→                space_id     varchar(50)                                not null comment 'Space ID',
+   265→                control_id   varchar(255)                               not null comment 'Resource Control Tag',
+   266→                control_type tinyint unsigned default '0'               not null comment 'Resource control type (0: workbench node ID, 1: data table field, 2: data table view)',
+   267→                is_deleted   tinyint unsigned default '0'               not null comment 'Delete Tag (0: No, 1: Yes)',
+   268→                created_by   bigint                                     null comment 'Creator',
+   269→                updated_by   bigint                                     null comment 'Last Update By',
+   270→                created_at   timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   271→                updated_at   timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time'
+   272→            )
+   273→                comment 'Control Table' collate = utf8mb4_unicode_ci;
+   274→
+   275→            create index index_control_id
+   276→                on collabspace_control (control_id(18));
+   277→
+   278→            create index index_space_id
+   279→                on collabspace_control (space_id);
+   280→
+   281→
+   282→            create table collabspace_control_role
+   283→            (
+   284→                id         bigint unsigned                            not null comment 'Primary Key'
+   285→                    primary key,
+   286→                control_id varchar(255)                               not null comment 'Resource Control Tag',
+   287→                unit_id    bigint unsigned                            not null comment 'Unit ID',
+   288→                role_code  varchar(50)                                not null comment 'Role Code',
+   289→                is_deleted tinyint unsigned default '0'               not null comment 'Delete Tag (0: No, 1: Yes)',
+   290→                created_by bigint                                     null comment 'Creator',
+   291→                updated_by bigint                                     null comment 'Last Update By',
+   292→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   293→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   294→            )
+   295→                comment 'Control Role Table' collate = utf8mb4_unicode_ci;
+   296→
+   297→            create index index_unit_id
+   298→                on collabspace_control_role (unit_id);
+   299→
+   300→
+   301→            create table collabspace_control_setting
+   302→            (
+   303→                id         bigint unsigned                            not null comment 'Primary Key'
+   304→                    primary key,
+   305→                control_id varchar(255)                               not null comment 'Resource Control Tag',
+   306→                props      json             default (_utf8mb4'{}')    not null comment 'Option parameters',
+   307→                is_deleted tinyint unsigned default '0'               not null comment 'Delete Tag (0: No, 1: Yes)',
+   308→                created_by bigint                                     null comment 'Creator',
+   309→                updated_by bigint                                     null comment 'Last Update By',
+   310→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   311→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time'
+   312→            )
+   313→                comment 'Control Setting Table' collate = utf8mb4_unicode_ci;
+   314→
+   315→            create table collabspace_space_node_recycle_bin
+   316→            (
+   317→                id              bigint                                     not null comment 'Primary Key'
+   318→                    primary key,
+   319→                space_id        varchar(255)                               not null comment 'Space ID',
+   320→                space_node_id   bigint                                     not null comment 'Space Node ID',
+   321→                space_node_name varchar(255)                               not null comment 'Space Node Name',
+   322→                created_at      timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   323→                created_by      varchar(255)                               null comment 'Created by',
+   324→                updated_at      timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   325→                updated_by      varchar(255)                               null comment 'Updated by',
+   326→                is_deleted      tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   327→            )
+   328→                comment '回收站记录' collate = utf8mb4_unicode_ci;
+   329→
+   330→            create index index_space_id_space_node_id
+   331→                on collabspace_space_node_recycle_bin (space_id, space_node_id);
+   332→
+   333→            create table collabspace_management_space
+   334→            (
+   335→                id         bigint                                     not null comment 'Primary Key'
+   336→                    primary key,
+   337→                space_id   varchar(255) charset latin1                not null comment 'Space ID',
+   338→                manager_id bigint                                     not null comment '管理者ID',
+   339→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   340→                created_by varchar(255) charset latin1                null comment 'Created by',
+   341→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   342→                updated_by varchar(255) charset latin1                null comment 'Updated by',
+   343→                is_deleted tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   344→            )
+   345→                comment '管理后台空间站关联表' collate = utf8mb4_unicode_ci;
+   346→
+   347→            create index index_user_id
+   348→                on collabspace_management_space (manager_id);
+   349→
+   350→            create table collabspace_management_invite_temp
+   351→            (
+   352→                id         bigint                                     not null comment 'Primary Key'
+   353→                    primary key,
+   354→                manager_id bigint                                     null comment '管理者id',
+   355→                temp_name  varchar(255)                               not null comment '模板名称',
+   356→                content    json                                       null comment '模板内容',
+   357→                is_deleted tinyint unsigned default '0'               null comment 'Delete Tag (0: No, 1: Yes)',
+   358→                created_by bigint                                     null comment 'Creator',
+   359→                updated_by bigint                                     null comment 'Last Update By',
+   360→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   361→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time'
+   362→            )
+   363→                comment '管理后台邀请模板' collate = utf8mb4_unicode_ci
+   364→                               row_format = DYNAMIC;
+   365→
+   366→            create index idx_manager_id
+   367→                on collabspace_management_invite_temp (manager_id);
+   368→
+   369→            create table collabspace_management_invite_log
+   370→            (
+   371→                id         bigint                                     not null comment 'Primary Key'
+   372→                    primary key,
+   373→                manager_id bigint                                     null comment '管理者id',
+   374→                space_id   varchar(50)                                not null comment '空间站id',
+   375→                user_id    bigint                                     null comment '被邀请者User ID',
+   376→                team_ids   json             default (_utf8mb4'[]')    not null comment '被邀请的teamId',
+   377→                type       tinyint unsigned                           not null comment '0为邀请，1为移除',
+   378→                is_deleted tinyint unsigned default '0'               null comment 'Delete Tag (0: No, 1: Yes)',
+   379→                created_by bigint                                     null comment 'Creator',
+   380→                updated_by bigint                                     null comment 'Last Update By',
+   381→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   382→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time'
+   383→            )
+   384→                comment '管理后台邀请历史' collate = utf8mb4_unicode_ci
+   385→                               row_format = DYNAMIC;
+   386→
+   387→            create index idx_manager_id_space_id
+   388→                on collabspace_management_invite_log (manager_id, space_id);
+   389→
+   390→            create table collabspace_user_project
+   391→            (
+   392→                id           bigint                                     not null comment 'Primary Key'
+   393→                    primary key,
+   394→                project_name varchar(255)                               not null comment 'Project Name',
+   395→                created_at   timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   396→                created_by   varchar(255)                               null comment 'Created by',
+   397→                updated_at   timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   398→                updated_by   varchar(255)                               null comment 'Updated by',
+   399→                is_deleted   tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   400→            )
+   401→                comment '用户管理项目组' collate = utf8mb4_unicode_ci;
+   402→
+   403→            create table collabspace_user_project_team_rel
+   404→            (
+   405→                id         bigint                                     not null comment 'Primary Key'
+   406→                    primary key,
+   407→                project_id bigint                                     not null comment 'Project Id',
+   408→                team_id    bigint                                     not null comment 'Team Id',
+   409→                is_common  tinyint          default 0                 not null comment '是否通用组 (0: No, 1: Yes)',
+   410→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   411→                created_by varchar(255)                               null comment 'Created by',
+   412→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   413→                updated_by varchar(255)                               null comment 'Updated by',
+   414→                is_deleted tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   415→            )
+   416→                comment '项目组用户组关联' collate = utf8mb4_unicode_ci;
+   417→
+   418→            create index index_project_id
+   419→                on collabspace_user_project_team_rel (project_id);
+   420→
+   421→            create index index_team_id
+   422→                on collabspace_user_project_team_rel (team_id);
+   423→
+   424→            create table collabspace_user_team
+   425→            (
+   426→                id         bigint                                     not null comment 'Primary Key'
+   427→                    primary key,
+   428→                team_name  varchar(255)                               not null comment 'Team Name',
+   429→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   430→                created_by varchar(255)                               null comment 'Created by',
+   431→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   432→                updated_by varchar(255)                               null comment 'Updated by',
+   433→                is_deleted tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   434→            )
+   435→                comment '用户管理小组' collate = utf8mb4_unicode_ci;
+   436→
+   437→            create table collabspace_user_team_user_rel
+   438→            (
+   439→                id         bigint                                     not null comment 'Primary Key'
+   440→                    primary key,
+   441→                team_id    bigint                                     not null comment 'Team ID',
+   442→                user_id    bigint                                     not null comment 'User ID',
+   443→                is_leader  tinyint unsigned default '0'               not null comment '是否组长 (0: No, 1: Yes)',
+   444→                created_at timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   445→                created_by varchar(255)                               null comment 'Created by',
+   446→                updated_at timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   447→                updated_by varchar(255)                               null comment 'Updated by',
+   448→                is_deleted tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   449→            )
+   450→                comment '用户组关联' collate = utf8mb4_unicode_ci;
+   451→
+   452→            create index index_team_id
+   453→                on collabspace_user_team_user_rel (team_id);
+   454→
+   455→            create index index_user_id
+   456→                on collabspace_user_team_user_rel (user_id);
+   457→
+   458→            create table collabspace_user_team_app_rel
+   459→            (
+   460→                id           bigint                                     not null comment 'Primary Key'
+   461→                    primary key,
+   462→                team_id      bigint                                     not null comment 'Team Id',
+   463→                space_id     varchar(255)                               null,
+   464→                app_space_id varchar(255)                               null,
+   465→                app_team_id  varchar(255)                               not null comment 'Application Space ID',
+   466→                app_type     int                                        null,
+   467→                created_at   timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   468→                created_by   varchar(255)                               null comment 'Created by',
+   469→                updated_at   timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   470→                updated_by   varchar(255)                               null comment 'Updated by',
+   471→                is_deleted   tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   472→            )
+   473→                comment '用户管理小组 app rel' collate = utf8mb4_unicode_ci;
+   474→
+   475→            create index index_app_team_id_app_space_id
+   476→                on collabspace_user_team_app_rel (app_team_id, app_space_id);
+   477→
+   478→            create index index_team_id
+   479→                on collabspace_user_team_app_rel (team_id);
+   480→
+   481→            create table collabspace_method_log
+   482→            (
+   483→                id              bigint                                     not null comment 'Primary Key'
+   484→                    primary key,
+   485→                trace_id        varchar(64)                                null comment 'Trace ID',
+   486→                space_id        varchar(255)                               null comment 'Space ID',
+   487→                class_name      varchar(255)                               not null comment 'Class Name',
+   488→                method_name     varchar(255)                               not null comment 'Method Name',
+   489→                args            json                                       null comment 'Method Arguments',
+   490→                return_value    json                                       null comment 'Return Value',
+   491→                is_success      tinyint unsigned default '1'               not null comment 'Success flag (0: No, 1: Yes)',
+   492→                duration_ms     bigint           default 0                 not null comment 'Duration (ms)',
+   493→                ip              varchar(255)                               null comment 'IP Address',
+   494→                error_message   varchar(1024)                              null comment 'Error Message',
+   495→                created_at      timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   496→                created_by      varchar(255)                               null comment 'Created by',
+   497→                updated_at      timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   498→                updated_by      varchar(255)                               null comment 'Updated by',
+   499→                is_deleted      tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   500→            )
+   501→                comment '通用方法调用日志' collate = utf8mb4_unicode_ci
+   502→                               row_format = DYNAMIC;
+   503→
+   504→            create index idx_method_log_trace_id
+   505→                on collabspace_method_log (trace_id);
+   506→
+   507→            create index idx_method_log_method_class
+   508→                on collabspace_method_log (method_name, class_name);
+   509→
+   510→            create index idx_method_log_created_at
+   511→                on collabspace_method_log (created_at);
+   512→
+   513→            create table collabspace_node_share
+   514→            (
+   515→                id              bigint                                     not null comment 'Primary Key'
+   516→                    primary key,
+   517→                space_node_id   bigint                                     not null comment 'Space Node ID',
+   518→                share_id        varchar(255)                               not null comment 'Share Unique ID (also the identifier of the share link)',
+   519→                is_enabled      tinyint unsigned default '1'               not null comment 'Whether sharing is enabled (0: No, 1: Yes)',
+   520→                props_bits      bigint           default '0'               not null comment 'Share Props bits',
+   521→                share_type      int                                        null comment 'Share Type',
+   522→                app_share_url   varchar(500)                               null comment 'Third application share link',
+   523→                expire_time     timestamp                                  null comment 'Expiration time',
+   524→                created_at      timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   525→                created_by      varchar(255)                               null comment 'Created by',
+   526→                updated_at      timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   527→                updated_by      varchar(255)                               null comment 'Updated by',
+   528→                is_deleted      tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   529→            )
+   530→                comment 'Node Share Base Table' collate = utf8mb4_unicode_ci;
+   531→
+   532→            create unique index index_share_id
+   533→                on collabspace_node_share (share_id);
+   534→
+   535→            create index idx_node_share_space_node_props
+   536→                on collabspace_node_share (space_node_id, props_bits);
+   537→
+   538→            create table collabspace_node_share_scope
+   539→            (
+   540→                id               bigint                                     not null comment 'Primary Key'
+   541→                    primary key,
+   542→                space_node_id    bigint                                     not null comment 'Space Node ID',
+   543→                allowed_emails   json             default (_utf8mb4'[]')    null comment 'List of allowed user emails (JSON array format)',
+   544→                app_config       json             default (_utf8mb4'{}')    null comment 'Custom configuration within third application (JSON format)',
+   545→                created_at       timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   546→                created_by       varchar(255)                               null comment 'Created by',
+   547→                updated_at       timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   548→                updated_by       varchar(255)                               null comment 'Updated by',
+   549→                is_deleted       tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   550→            )
+   551→                comment 'Node Level Share Scope Configuration Table' collate = utf8mb4_unicode_ci;
+   552→
+   553→            create unique index index_space_node_id_node_share_scope
+   554→                on collabspace_node_share_scope (space_node_id);
+   555→
+   556→            create table collabspace_share_scope
+   557→            (
+   558→                id                       bigint                                     not null comment 'Primary Key'
+   559→                    primary key,
+   560→                share_id                 varchar(255)                               not null comment 'Share ID',
+   561→                allowed_emails           json             default (_utf8mb4'[]')    null comment 'List of allowed user emails (JSON array format)',
+   562→                app_config               json             default (_utf8mb4'{}')    null comment 'Custom configuration within third application (JSON format)',
+   563→                is_knock_notify_enabled  tinyint unsigned default '0'               not null comment 'Whether Knock notification is enabled (0: No, 1: Yes)',
+   564→                created_at               timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   565→                created_by               varchar(255)                               null comment 'Created by',
+   566→                updated_at               timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   567→                updated_by               varchar(255)                               null comment 'Updated by',
+   568→                is_deleted               tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   569→            )
+   570→                comment 'Share Level Scope Configuration Table' collate = utf8mb4_unicode_ci;
+   571→
+   572→            create index index_share_id_share_scope
+   573→                on collabspace_share_scope (share_id);
+   574→
+   575→            create table collabspace_space_node_migration_task
+   576→            (
+   577→                id              bigint                                     not null comment 'Primary Key'
+   578→                    primary key,
+   579→                task_id         varchar(255)                               not null comment 'Task ID',
+   580→                source_space_id varchar(255)                               not null comment 'Source Space ID',
+   581→                target_space_id varchar(255)                               not null comment 'Target Space ID',
+   582→                email          varchar(255)                               not null comment 'Operator Email',
+   583→                status         tinyint unsigned default '0'               not null comment 'Task Status (0: Pending, 1: Processing, 2: Completed, 3: Failed)',
+   584→                error_message  varchar(255)                               null comment 'Error Message',
+   585→                origin_tree    json             default (_utf8mb4'[]')    not null comment 'Original Tree Structure',
+   586→                source_space_app_rels json      default (_utf8mb4'[]')    not null comment 'sourceSpaceId 对应各个子应用的 appSpaceId 信息',
+   587→                type           int                                        null comment 'Migration Type, 1: Cross Server, 2: Intra Server',
+   588→                is_remained     tinyint          default 1                 not null comment '是否保留原文件 1 保留 0 不保留 默认是1',
+   589→                created_at     timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   590→                created_by     varchar(255)                               null comment 'Created by',
+   591→                updated_at     timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   592→                updated_by     varchar(255)                               null comment 'Updated by',
+   593→                is_deleted     tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   594→            )
+   595→                comment 'Space Node Migration Task Table' collate = utf8mb4_unicode_ci;
+   596→
+   597→            create unique index index_task_id
+   598→                on collabspace_space_node_migration_task (task_id);
+   599→
+   600→            create table collabspace_space_node_import_task
+   601→            (
+   602→                id                 bigint                                     not null comment 'Primary Key'
+   603→                    primary key,
+   604→                task_id            varchar(255)                               not null comment 'Import Task ID',
+   605→                space_id           varchar(255)                               not null comment 'Space ID',
+   606→                target_parent_id   bigint                                     null comment 'target parent node id',
+   607→                target_pre_id      bigint                                     null comment 'target previous node id',
+   608→                import_tree        json             default (_utf8mb4'[]')    not null comment 'Tree Structure to import',
+   609→                origin_import_tree json             default (_utf8mb4'[]')    not null comment 'Origin Tree Structure to import from ro',
+   610→                status             tinyint unsigned   default 0               not null comment '0:Created,1:Committing,2:TreeInserting,3:Completed,4:Failed,5:Aborted',
+   611→                total_files        int                default 0               not null comment 'files count to import',
+   612→                committed_files    int                default 0               not null comment 'imported files count',
+   613→                expire_time        timestamp                                  null comment 'expire time',
+   614→                error_message      varchar(1024)                               null comment 'Error Message',
+   615→                created_at         timestamp          default CURRENT_TIMESTAMP not null comment 'Create Time',
+   616→                created_by         varchar(255)                               null comment 'Created by',
+   617→                updated_at         timestamp          default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   618→                updated_by         varchar(255)                               null comment 'Updated by',
+   619→                is_deleted         tinyint unsigned   default '0'             not null comment 'Delete tag (0: No, 1: Yes)'
+   620→            )
+   621→                comment 'Space Node Import Task Table' collate = utf8mb4_unicode_ci;
+   622→
+   623→            create unique index index_task_id
+   624→                on collabspace_space_node_import_task (task_id);
+   625→
+   626→            create index idx_space_user_created_at
+   627→                on collabspace_space_node_import_task (space_id, created_by, created_at);
+   628→
+   629→            create table collabspace_space_permission_policy
+   630→            (
+   631→                id            bigint                                     not null comment 'Primary Key'
+   632→                    primary key,
+   633→                space_id      varchar(255)                               not null comment 'Space ID',
+   634→                code          varchar(255)                               not null comment 'Permission Code',
+   635→                type          int                 default 0              not null comment 'Control Type',
+   636→                min_role_tag  varchar(255)                               not null comment 'Permission Code`s min Role Tag',
+   637→                created_at    timestamp        default CURRENT_TIMESTAMP not null comment 'Create Time',
+   638→                created_by    varchar(255)                               null comment 'Created by',
+   639→                updated_at    timestamp        default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   640→                updated_by    varchar(255)                               null comment 'Updated by',
+   641→                is_deleted    tinyint unsigned default '0'               not null comment 'Delete tag (0: No, 1: Yes)'
+   642→            )
+   643→                comment 'Space Permission Policy Table' collate = utf8mb4_unicode_ci;
+   644→
+   645→            create index index_space_id
+   646→                on collabspace_space_permission_policy (space_id, type);
+   647→
+   648→            create unique index index_space_id_code
+   649→                on collabspace_space_permission_policy (space_id, code, type);
+   650→
+   651→            create table if not exists `collabspace`.`collabspace_link`
+   652→            (
+   653→                id          bigint                                     not null comment 'Primary Key'
+   654→                    primary key,
+   655→                link        varchar(500)          default ''           not null comment 'Link content',
+   656→                created_at  timestamp              default CURRENT_TIMESTAMP not null comment 'Create Time',
+   657→                created_by  varchar(255)                               null comment 'Created by',
+   658→                updated_at  timestamp              default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment 'Update Time',
+   659→                updated_by  varchar(255)                               null comment 'Updated by',
+   660→                is_deleted  tinyint unsigned       default '0'         not null comment 'Delete tag (0: No, 1: Yes)'
+   661→            )
+   662→                comment 'Link Table' collate = utf8mb4_unicode_ci;
+   663→
+   664→        </sql>
+   665→    </changeSet>
+   666→</databaseChangeLog>
+   667→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

@@ -1,0 +1,600 @@
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/controller/DocumentPermissionRequestController.java b/src/main/java/com/yottastudios/ns/collabspace/control/controller/DocumentPermissionRequestController.java
+new file mode 100644
+index 00000000..f91807d4
+--- /dev/null
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/controller/DocumentPermissionRequestController.java
+@@ -0,0 +1,46 @@
++package com.yottastudios.ns.collabspace.control.controller;
++
++import com.yottastudios.ns.collabspace.control.ro.DocumentPermissionRequestRo;
++import com.yottastudios.ns.collabspace.control.service.IPermissionRequestService;
++import com.yottastudios.ns.collabspace.control.vo.PermissionRequestVo;
++import com.yottastudios.ns.collabspace.core.support.ResponseData;
++import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.ApiResource;
++import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.PostResource;
++import io.swagger.v3.oas.annotations.Operation;
++import io.swagger.v3.oas.annotations.Parameter;
++import io.swagger.v3.oas.annotations.tags.Tag;
++import jakarta.annotation.Resource;
++import jakarta.validation.Valid;
++import lombok.extern.slf4j.Slf4j;
++import org.springframework.web.bind.annotation.PathVariable;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RestController;
++
++/**
++ * Document permission request API.
++ */
++@Slf4j
++@RestController
++@Tag(name = "Permission Request")
++@ApiResource(path = "/documents")
++public class DocumentPermissionRequestController {
++
++    @Resource
++    private IPermissionRequestService permissionRequestService;
++
++    /**
++     * Submit document permission request.
++     * <p>Accepts either: node_id (dst prefix) or primary key id (Long).
++     * When user has no doc permission, frontend only has spaceNodeId (pk) from URL, not dst id.</p>
++     */
++    @PostResource(path = "/{nodeIdOrPk}/permission-requests", requiredPermission = false)
++    @Operation(summary = "Submit document permission request")
++    public ResponseData<PermissionRequestVo> submitRequest(
++        @Parameter(description = "Node ID (dstxxx) or primary key id (number, e.g. spaceNodeId)")
++        @PathVariable("nodeIdOrPk") String nodeIdOrPk,
++        @Valid @RequestBody DocumentPermissionRequestRo ro) {
++        log.info("[1822-PermApply] submit entry nodeIdOrPk={} requestedType={}", nodeIdOrPk, ro != null ? ro.getRequestedPermissionType() : null);
++        PermissionRequestVo vo = permissionRequestService.submitRequest(nodeIdOrPk, ro);
++        return ResponseData.success(vo);
++    }
++}
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/controller/NotificationApprovalController.java b/src/main/java/com/yottastudios/ns/collabspace/control/controller/NotificationApprovalController.java
+new file mode 100644
+index 00000000..a85299a1
+--- /dev/null
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/controller/NotificationApprovalController.java
+@@ -0,0 +1,120 @@
++package com.yottastudios.ns.collabspace.control.controller;
++
++import com.yottastudios.ns.collabspace.control.service.IPermissionRequestService;
++import com.yottastudios.ns.collabspace.core.exception.BusinessException;
++import com.yottastudios.ns.collabspace.core.support.ResponseData;
++import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
++import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.ApiResource;
++import com.yottastudios.ns.collabspace.shared.component.scanner.annotation.PostResource;
++import com.yottastudios.ns.collabspace.shared.context.SessionContext;
++import io.swagger.v3.oas.annotations.Operation;
++import io.swagger.v3.oas.annotations.tags.Tag;
++import jakarta.annotation.Resource;
++import lombok.extern.slf4j.Slf4j;
++import org.springframework.web.bind.annotation.PathVariable;
++import org.springframework.web.bind.annotation.RestController;
++
++import java.util.Map;
++
++/**
++ * Notification approval controller.
++ * Handles permission request approval actions: approve, reject, ignore, reapprove.
++ * All four require validating against collabspace permission_request table (migrated from apitable).
++ * notificationId is the apitable player_notification.id.
++ * This controller resolves requestId via gRPC call to apitable before delegating to service.
++ */
++@Slf4j
++@RestController
++@Tag(name = "Notification Approval")
++@ApiResource(path = "/player/notification")
++public class NotificationApprovalController {
++
++    private static final String DOCUMENT_PERMISSION_REQUEST = "document_permission_request";
++
++    @Resource
++    private IPermissionRequestService permissionRequestService;
++
++    @Resource
++    private IApitableGrpcClientService apitableGrpcClientService;
++
++    /**
++     * Approve a permission request.
++     */
++    @PostResource(path = "/{notificationId}/approve", requiredPermission = false)
++    @Operation(summary = "Approve permission request")
++    public ResponseData<Void> approve(@PathVariable("notificationId") Long notificationId) {
++        Long userId = SessionContext.getUserId();
++        log.info("[1822-Approval] APPROVE entry notificationId={} approverUserId={}", notificationId, userId);
++        String requestId = resolveRequestId(notificationId, userId);
++        permissionRequestService.approveByRequestId(requestId, notificationId, userId);
++        return ResponseData.success();
++    }
++
++    /**
++     * Reject a permission request.
++     */
++    @PostResource(path = "/{notificationId}/reject", requiredPermission = false)
++    @Operation(summary = "Reject permission request")
++    public ResponseData<Void> reject(@PathVariable("notificationId") Long notificationId) {
++        Long userId = SessionContext.getUserId();
++        log.info("[1822-Approval] REJECT entry notificationId={} approverUserId={}", notificationId, userId);
++        String requestId = resolveRequestId(notificationId, userId);
++        permissionRequestService.rejectByRequestId(requestId, notificationId, userId);
++        return ResponseData.success();
++    }
++
++    /**
++     * Ignore - mark notification as read.
++     */
++    @PostResource(path = "/{notificationId}/ignore", requiredPermission = false)
++    @Operation(summary = "Ignore permission request")
++    public ResponseData<Void> ignore(@PathVariable("notificationId") Long notificationId) {
++        Long userId = SessionContext.getUserId();
++        log.info("[1822-Approval] IGNORE entry notificationId={} approverUserId={}", notificationId, userId);
++        String requestId = resolveRequestId(notificationId, userId);
++        permissionRequestService.ignoreByRequestId(requestId, notificationId, userId);
++        return ResponseData.success();
++    }
++
++    /**
++     * Reapprove - mark notification as unread so admin can re-handle.
++     */
++    @PostResource(path = "/{notificationId}/reapprove", requiredPermission = false)
++    @Operation(summary = "Reapprove (un-ignore) permission request")
++    public ResponseData<Void> reapprove(@PathVariable("notificationId") Long notificationId) {
++        Long userId = SessionContext.getUserId();
++        log.info("[1822-Approval] REAPPROVE entry notificationId={} approverUserId={}", notificationId, userId);
++        String requestId = resolveRequestId(notificationId, userId);
++        permissionRequestService.reapproveByRequestId(requestId, notificationId, userId);
++        return ResponseData.success();
++    }
++
++    /**
++     * 通过 gRPC 到 apitable 查通知 body extras，取出 requestId.
++     */
++    private String resolveRequestId(Long notificationId, Long approverUserId) {
++        Map<String, String> extras = apitableGrpcClientService.getNotificationExtras(notificationId, approverUserId);
++        if (extras == null || extras.isEmpty()) {
++            log.warn("[1822-Approval] resolveRequestId: getNotificationExtras returned empty notificationId={} approverUserId={}",
++                    notificationId, approverUserId);
++            throw new BusinessException(
++                com.yottastudios.ns.collabspace.control.enums.PermissionRequestException.NOTIFICATION_NOT_VALID);
++        }
++        String templateId = extras.get("templateId");
++        if (!DOCUMENT_PERMISSION_REQUEST.equals(templateId)) {
++            log.warn("[1822-Approval] resolveRequestId: not a permission request notification notificationId={} templateId={}",
++                    notificationId, templateId);
++            throw new BusinessException(
++                com.yottastudios.ns.collabspace.control.enums.PermissionRequestException.NOTIFICATION_NOT_VALID);
++        }
++        String requestId = extras.get("requestId");
++        if (requestId == null || requestId.isBlank()) {
++            log.warn("[1822-Approval] resolveRequestId: requestId missing in extras notificationId={}",
++                    notificationId);
++            throw new BusinessException(
++                com.yottastudios.ns.collabspace.control.enums.PermissionRequestException.NOTIFICATION_NOT_VALID);
++        }
++        log.info("[1822-Approval] resolveRequestId ok notificationId={} requestId={}", notificationId, requestId);
++        return requestId;
++    }
++}
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/service/impl/PermissionRequestServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/control/service/impl/PermissionRequestServiceImpl.java
+new file mode 100644
+index 00000000..94409a1f
+--- /dev/null
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/service/impl/PermissionRequestServiceImpl.java
+@@ -0,0 +1,726 @@
++package com.yottastudios.ns.collabspace.control.service.impl;
++
++import cn.hutool.core.collection.CollUtil;
++import cn.hutool.core.util.IdUtil;
++import cn.hutool.json.JSONUtil;
++import com.baomidou.mybatisplus.core.metadata.IPage;
++import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
++import com.yottastudios.ns.collabspace.control.entity.ControlRoleEntity;
++import com.yottastudios.ns.collabspace.control.entity.PermissionRequestEntity;
++import com.yottastudios.ns.collabspace.control.enums.PermissionRequestException;
++import com.yottastudios.ns.collabspace.control.mapper.PermissionRequestMapper;
++import com.yottastudios.ns.collabspace.control.ro.DocumentPermissionRequestRo;
++import com.yottastudios.ns.collabspace.control.service.IControlRoleService;
++import com.yottastudios.ns.collabspace.control.service.IControlService;
++import com.yottastudios.ns.collabspace.control.service.IPermissionRequestService;
++import com.yottastudios.ns.collabspace.control.vo.PermissionRequestVo;
++import com.yottastudios.ns.collabspace.core.exception.BusinessException;
++import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
++import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
++import com.yottastudios.ns.collabspace.organization.vo.UnitMemberVo;
++import com.yottastudios.ns.collabspace.shared.context.SessionContext;
++import com.yottastudios.ns.collabspace.space.entity.SpaceEntity;
++import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
++import com.yottastudios.ns.collabspace.space.service.ISpaceService;
++import com.yottastudios.ns.collabspace.space.vo.SpaceMemberVo;
++import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
++import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
++import com.yottastudios.ns.collabspace.workspace.vo.NodeRoleUnit;
++import com.yottastudios.ns.collabspace.workspace.manager.query.NodeRoleQueryManager;
++import com.yottastudios.ns.collabspace.workspace.manager.update.NodeRoleUpdateManager;
++import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
++import jakarta.annotation.Resource;
++import lombok.extern.slf4j.Slf4j;
++import org.springframework.data.redis.core.RedisTemplate;
++import org.springframework.scheduling.annotation.Async;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Transactional;
++
++import java.time.LocalDateTime;
++import java.util.*;
++import java.util.concurrent.TimeUnit;
++import java.util.stream.Collectors;
++
++import static com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.Node.EDITOR;
++import static com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.Node.MANAGER;
++import static com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.Node.READER;
++
++/**
++ * Permission request service implementation.
++ * Full implementation migrated from apitable-backend-server.
++ * All notifications are sent to apitable via gRPC.
++ */
++@Slf4j
++@Service
++public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestMapper, PermissionRequestEntity>
++    implements IPermissionRequestService {
++
++    private static final String STATUS_PENDING = "PENDING";
++    private static final String STATUS_APPROVED = "APPROVED";
++    private static final String STATUS_REJECTED = "REJECTED";
++    private static final String REQUEST_ID_PREFIX = "req_";
++
++    private static final String REDIS_DEBOUNCE_PREFIX = "permission_apply_debounce:";
++    private static final long DEBOUNCE_SECONDS = 10;
++
++    private static final String DOCUMENT_PERMISSION_REQUEST = "document_permission_request";
++    private static final String BODY_EXTRAS = "extras";
++
++    @Resource
++    private IControlService controlService;
++
++    @Resource
++    private ISpaceService spaceService;
++
++    @Resource
++    private ISpaceNodeService spaceNodeService;
++
++    @Resource
++    private SpaceQueryManager spaceQueryManager;
++
++    @Resource
++    private IApitableGrpcClientService apitableGrpcClientService;
++
++    @Resource
++    private RedisTemplate<String, Object> redisTemplate;
++
++    @Resource
++    private NodeRoleUpdateManager nodeRoleUpdateManager;
++
++    @Resource
++    private NodeRoleQueryManager nodeRoleQueryManager;
++
++    @Resource
++    private IControlRoleService controlRoleService;
++
++    // ========== submitRequest ==========
++
++    @Override
++    @Transactional(rollbackFor = Exception.class)
++    public PermissionRequestVo submitRequest(String documentId, DocumentPermissionRequestRo ro) {
++        Long applicantUserId = SessionContext.getUserId();
++        ExceptionUtil.isNotNull(applicantUserId, PermissionRequestException.NODE_ACCESS_DENIED);
++        ExceptionUtil.isNotNull(documentId, PermissionRequestException.NODE_NOT_EXIST);
++
++        // 1. Check node exists and get spaceId; resolve numeric pk to appSpaceNodeId
++        SpaceNodeEntity spaceNode = getSpaceNodeByNodeId(documentId);
++        String resolvedDocumentId = spaceNode.getAppSpaceNodeId();
++        String spaceId = spaceNode.getSpaceId();
++        String documentName = spaceNode.getName();
++
++        // 2. Check user is in space
++        boolean isInSpace = spaceQueryManager.isUserInSpace(applicantUserId, spaceId);
++        ExceptionUtil.isTrue(isInSpace, PermissionRequestException.MEMBER_NOT_IN_SPACE);
++
++        // 3. Check no pending request for same document
++        PermissionRequestEntity pending = baseMapper.selectPendingByDocumentAndApplicant(resolvedDocumentId, applicantUserId);
++        ExceptionUtil.isNull(pending, PermissionRequestException.ALREADY_SUBMITTED_REQUEST);
++
++        // 4. Check user does not already have node permission
++        boolean hasPermission = checkUserHasNodePermission(spaceId, applicantUserId, resolvedDocumentId);
++        ExceptionUtil.isFalse(hasPermission, PermissionRequestException.ALREADY_HAVE_PERMISSION);
++
++        // 5. Debounce: short period repeated submissions only processed once
++        String debounceKey = REDIS_DEBOUNCE_PREFIX + applicantUserId + ":" + resolvedDocumentId;
++        Boolean firstSubmit = redisTemplate.opsForValue().setIfAbsent(debounceKey, "1", DEBOUNCE_SECONDS, TimeUnit.SECONDS);
++        if (Boolean.FALSE.equals(firstSubmit)) {
++            log.info("[1822-PermApply] debounce applicantUserId={} documentId={}", applicantUserId, documentId);
++            throw new BusinessException(PermissionRequestException.ALREADY_SUBMITTED_REQUEST);
++        }
++
++        // 6. Create permission request record
++        String requestId = REQUEST_ID_PREFIX + IdUtil.getSnowflakeNextId();
++        PermissionRequestEntity entity = PermissionRequestEntity.builder()
++            .id(requestId)
++            .applicantUserId(applicantUserId)
++            .documentId(resolvedDocumentId)
++            .documentName(documentName)
++            .spaceId(spaceId)
++            .requestedPermissionType(ro.getRequestedPermissionType())
++            .status(STATUS_PENDING)
++            .isDeleted(0)
++            .createdAt(LocalDateTime.now())
++            .updatedAt(LocalDateTime.now())
++            .build();
++
++        boolean flag = save(entity);
++        if (!flag) {
++            log.error("[1822-PermApply] ERROR CREATE insert failed applicantUserId={} documentId={} spaceId={}",
++                applicantUserId, resolvedDocumentId, spaceId);
++            throw new BusinessException(PermissionRequestException.INSERT_ERROR);
++        }
++        log.info("[1822-PermApply] CREATE request requestId={} applicantUserId={} documentId={} spaceId={} requestedType={}",
++            requestId, applicantUserId, resolvedDocumentId, spaceId, ro.getRequestedPermissionType());
++
++        // 7. Get space name and applicant nickname
++        SpaceEntity space = spaceService.getBySpaceId(spaceId);
++        String spaceName = space != null && space.getName() != null ? space.getName() : "";
++        String applicantNickName = getApplicantNickName(applicantUserId);
++
++        // 8. Notify admins & applicant via apitable gRPC (async)
++        notifyAdminsAsync(entity, documentName, applicantNickName, spaceName);
++        notifyApplicantAsync(entity, documentName, spaceName);
++
++        return buildVo(entity, documentName, spaceName);
++    }
++
++    private SpaceNodeEntity getSpaceNodeByNodeId(String nodeId) {
++        ExceptionUtil.isNotNull(nodeId, PermissionRequestException.NODE_NOT_EXIST);
++        // Always try appSpaceNodeId first (including deleted rows): OnlyOffice nodes use a numeric
++        // fileId as appSpaceNodeId, which must NOT be treated as the collabspace pk.
++        List<SpaceNodeEntity> byAppId = spaceNodeService.listByAppSpaceNodeIdsAllStatus(Collections.singletonList(nodeId));
++        if (CollUtil.isNotEmpty(byAppId)) return byAppId.get(0);
++        // Fallback: treat as collabspace pk if numeric (non-OnlyOffice node sent its own pk)
++        if (nodeId.matches("^\\d+$")) {
++            SpaceNodeEntity node = spaceNodeService.getByIdAllStatus(Long.parseLong(nodeId));
++            ExceptionUtil.isNotNull(node, PermissionRequestException.NODE_NOT_EXIST);
++            return node;
++        }
++        ExceptionUtil.isNotNull(null, PermissionRequestException.NODE_NOT_EXIST);
++        return null; // unreachable
++    }
++
++    private SpaceNodeEntity getSpaceNodeByNodeIdSafe(String nodeId) {
++        if (nodeId == null) return null;
++        // Always try by appSpaceNodeId column first (including deleted rows).
++        List<SpaceNodeEntity> nodes = spaceNodeService.listByAppSpaceNodeIdsAllStatus(Collections.singletonList(nodeId));
++        if (CollUtil.isNotEmpty(nodes)) return nodes.get(0);
++        // Fallback: treat as pk if numeric — only reached for non-OnlyOffice nodes.
++        if (nodeId.matches("^\\d+$")) {
++            return spaceNodeService.getByIdAllStatus(Long.parseLong(nodeId));
++        }
++        return null;
++    }
++
++    /**
++     * Check if user has at least READ permission on the node.
++     */
++    private boolean checkUserHasNodePermission(String spaceId, Long userId, String documentId) {
++        try {
++            boolean exists = controlService.existsByControlId(documentId);
++            if (!exists) {
++                return false;
++            }
++            UnitMemberVo memberVo = apitableGrpcClientService.findUnitMemberVo(List.of(userId), spaceId)
++                .stream().findFirst().orElse(null);
++            if (memberVo == null || memberVo.getUnitId() == null) {
++                return false;
++            }
++            List<ControlRoleEntity> roles = controlRoleService.getByControlIdAndUnitIds(
++                documentId, Collections.singletonList(memberVo.getUnitId()));
++            return CollUtil.isNotEmpty(roles);
++        } catch (Exception e) {
++            log.debug("[1822-PermApply] checkUserHasNodePermission error userId={} documentId={}", userId, documentId);
++            return false;
++        }
++    }
++
++    private String getApplicantNickName(Long userId) {
++        try {
++            UserSimpleInfoVo user = apitableGrpcClientService.getUserById(userId);
++            if (user != null && user.getNickName() != null) {
++                return user.getNickName();
++            }
++            return "用户" + userId;
++        } catch (Exception e) {
++            log.warn("[1822-PermApply] getApplicantNickName error userId={}", userId, e);
++            return "用户" + userId;
++        }
++    }
++
++    // ========== Notification via gRPC ==========
++
++    @Async
++    public void notifyAdminsAsync(PermissionRequestEntity request, String documentName,
++                                   String applicantNickName, String spaceName) {
++        try {
++            // Space-level admins (owner + workbench manage permission holders)
++            List<Long> adminUserIds = spaceQueryManager.getAdminUsersWithWorkBenchManagePermission(request.getSpaceId());
++
++            // Document-level MANAGE permission holders (may differ from space admins)
++            List<Long> docManagerUserIds = getDocumentManagerUserIds(request.getDocumentId(), request.getSpaceId());
++
++            // Merge and deduplicate; exclude the applicant (they shouldn't get notified as approver)
++            Set<Long> toNotifySet = new LinkedHashSet<>();
++            toNotifySet.addAll(adminUserIds);
++            toNotifySet.addAll(docManagerUserIds);
++            toNotifySet.remove(request.getApplicantUserId());
++            List<Long> allNotifyUserIds = new ArrayList<>(toNotifySet);
++
++            if (CollUtil.isEmpty(allNotifyUserIds)) {
++                log.warn("[1822-PermApply] notifyAdmins no recipients spaceId={} documentId={}",
++                    request.getSpaceId(), request.getDocumentId());
++                return;
++            }
++            log.info("[1822-PermApply] notifyAdmins requestId={} documentId={} spaceAdminCount={} docManagerCount={} totalNotify={}",
++                request.getId(), request.getDocumentId(), adminUserIds.size(), docManagerUserIds.size(), allNotifyUserIds.size());
++
++            Map<String, Object> extras = new HashMap<>();
++            extras.put("requestId", request.getId());
++            extras.put("spaceName", spaceName);
++            extras.put("applicantUserId", String.valueOf(request.getApplicantUserId()));
++            extras.put("applicantNickName", applicantNickName);
++            extras.put("documentId", request.getDocumentId());
++            extras.put("documentName", documentName);
++            extras.put("requestedPermissionType", request.getRequestedPermissionType());
++            extras.put("documentAuth", mapPermissionTypeToLabel(request.getRequestedPermissionType()));
++            extras.put("status", request.getStatus());
++
++            Map<String, Object> bodyMap = new HashMap<>();
++            bodyMap.put(BODY_EXTRAS, extras);
++            String bodyJson = JSONUtil.toJsonStr(bodyMap);
++
++            apitableGrpcClientService.createNotification(
++                DOCUMENT_PERMISSION_REQUEST,
++                String.valueOf(request.getApplicantUserId()),
++                allNotifyUserIds.stream().map(String::valueOf).collect(Collectors.toList()),
++                request.getDocumentId(),
++                request.getSpaceId(),
++                bodyJson,
++                true
++            );
++
++            log.info("[1822-PermApply] notifyAdmins done requestId={} totalNotified={}", request.getId(), allNotifyUserIds.size());
++        } catch (Exception e) {
++            log.error("[1822-PermApply] ERROR notifyAdmins requestId={} error={}", request.getId(), e.getMessage(), e);
++        }
++    }
++
++    @Async
++    public void notifyApplicantAsync(PermissionRequestEntity request, String documentName, String spaceName) {
++        try {
++            Map<String, Object> extras = new HashMap<>();
++            extras.put("requestId", request.getId());
++            extras.put("documentId", request.getDocumentId());
++            extras.put("documentName", documentName);
++            extras.put("spaceId", request.getSpaceId());
++            extras.put("spaceName", spaceName);
++            extras.put("requestedPermissionType", request.getRequestedPermissionType());
++            extras.put("status", request.getStatus());
++
++            Map<String, Object> bodyMap = new HashMap<>();
++            bodyMap.put(BODY_EXTRAS, extras);
++            String bodyJson = JSONUtil.toJsonStr(bodyMap);
++
++            // fromUserId = "0" avoids apitable's "don't notify self" filter
++            apitableGrpcClientService.createNotification(
++                "permission_apply_submitted",
++                "0",
++                Collections.singletonList(String.valueOf(request.getApplicantUserId())),
++                request.getDocumentId(),
++                request.getSpaceId(),
++                bodyJson,
++                false
++            );
++
++            log.info("[1822-PermApply] notifyApplicant requestId={} applicantUserId={} documentId={}",
++                request.getId(), request.getApplicantUserId(), request.getDocumentId());
++        } catch (Exception e) {
++            log.error("[1822-PermApply] ERROR notifyApplicant requestId={} error={}", request.getId(), e.getMessage(), e);
++        }
++    }
++
++    // ========== List / Count ==========
++
++    @Override
++    public List<PermissionRequestVo> getMyRequests(Long userId, String status, int page, int pageSize) {
++        int offset = (page - 1) * pageSize;
++        List<PermissionRequestEntity> entities = baseMapper.selectByApplicantUserId(userId, status, offset, pageSize);
++        if (CollUtil.isEmpty(entities)) {
++            return Collections.emptyList();
++        }
++        return entities.stream().map(e -> {
++            String docName = "";
++            String spaceName = "";
++            try {
++                SpaceNodeEntity node = getSpaceNodeByNodeIdSafe(e.getDocumentId());
++                docName = node != null ? node.getName() : "";
++            } catch (Exception ex) {
++                log.debug("[1822-PermApply] Node not found: {}", e.getDocumentId());
++            }
++            try {
++                SpaceEntity space = spaceService.getBySpaceId(e.getSpaceId());
++                spaceName = space != null && space.getName() != null ? space.getName() : "";
++            } catch (Exception ex) {
++                log.debug("[1822-PermApply] Space not found: {}", e.getSpaceId());
++            }
++            return buildVo(e, docName, spaceName);
++        }).collect(Collectors.toList());
++    }
++
++    @Override
++    public int countMyRequests(Long userId, String status) {
++        return baseMapper.countByApplicantUserId(userId, status);
++    }
++
++    // ========== Legacy methods (not used - kept for interface compatibility) ==========
++
++    @Override
++    public void approve(Long notificationId, Long approverUserId) {
++        throw new UnsupportedOperationException("Use approveByRequestId instead");
++    }
++
++    @Override
++    public void reject(Long notificationId, Long approverUserId) {
++        throw new UnsupportedOperationException("Use rejectByRequestId instead");
++    }
++
++    // ========== Approve / Reject (by requestId) ==========
++
++    @Override
++    @Transactional(rollbackFor = Exception.class)
++    public void approveByRequestId(String requestId, Long notificationId, Long approverUserId) {
++        PermissionRequestEntity request = validateAndGetRequest(requestId, approverUserId);
++
++        UserSimpleInfoVo approverInfo = getApproverInfo(approverUserId);
++        String approverNickName = approverInfo != null && approverInfo.getNickName() != null ? approverInfo.getNickName() : "";
++        String approverUuid = approverInfo != null && approverInfo.getUuid() != null ? approverInfo.getUuid() : String.valueOf(approverUserId);
++
++        // Get applicant unitId
++        UnitMemberVo applicantMember = apitableGrpcClientService.findUnitMemberVo(
++                List.of(request.getApplicantUserId()), request.getSpaceId())
++            .stream().findFirst().orElse(null);
++        ExceptionUtil.isNotNull(applicantMember, PermissionRequestException.APPLICANT_UNIT_NOT_FOUND);
++        Long unitId = applicantMember.getUnitId();
++        ExceptionUtil.isNotNull(unitId, PermissionRequestException.APPLICANT_UNIT_NOT_FOUND);
++
++        // Map permission type to node role
++        String nodeRole = mapPermissionTypeToNodeRole(request.getRequestedPermissionType());
++        log.info("[1822-PermApply] APPROVE mapRole requestId={} requestedType={} nodeRole={} unitId={} documentId={}",
++            request.getId(), request.getRequestedPermissionType(), nodeRole, unitId, request.getDocumentId());
++
++        // Add node role
++        Long spaceNodeId = parseSpaceNodeId(request.getDocumentId());
++        if (spaceNodeId != null) {
++            nodeRoleUpdateManager.addNodeRole(approverUserId, request.getSpaceId(), spaceNodeId, nodeRole,
++                Collections.singletonList(unitId));
++            log.info("[1822-PermApply] APPROVE addNodeRole ok spaceNodeId={} nodeRole={} unitId={}", spaceNodeId, nodeRole, unitId);
++        } else {
++            log.warn("[1822-PermApply] APPROVE WARN spaceNodeId not found for documentId={}, node permission grant SKIPPED",
++                request.getDocumentId());
++        }
++
++        // Update permission request status in collabspace
++        int rows = baseMapper.updateStatusById(request.getId(), STATUS_APPROVED, approverUserId);
++        log.info("[1822-PermApply] APPROVE DB updateStatus requestId={} status=APPROVED approverUserId={} rows={}",
++            request.getId(), approverUserId, rows);
++
++        // Update notification extras in apitable (via gRPC) — updates shared notification record for all recipients
++        apitableGrpcClientService.updateNotificationExtras(notificationId, STATUS_APPROVED,
++            approverUuid, approverNickName);
++
++        // Mark approver's own notification as read
++        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, true);
++
++        // Mark all other admin/manager recipients' notifications as read (same shared notificationId)
++        markOtherRecipientNotificationsRead(notificationId, request, approverUserId);

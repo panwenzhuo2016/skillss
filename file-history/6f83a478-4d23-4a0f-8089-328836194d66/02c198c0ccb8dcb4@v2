@@ -1,0 +1,308 @@
+package com.yottastudios.ns.collabspace.workspace.manager.update.impl;
+
+import com.yottastudios.ns.collabspace.control.entity.ControlRoleEntity;
+import com.yottastudios.ns.collabspace.control.infrastructure.ControlType;
+import com.yottastudios.ns.collabspace.control.infrastructure.role.NodeRoleLevel;
+import com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.SpaceNode;
+import com.yottastudios.ns.collabspace.control.service.IControlRoleService;
+import com.yottastudios.ns.collabspace.control.service.IControlService;
+import com.yottastudios.ns.collabspace.core.constants.RedisConstants;
+import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+import com.yottastudios.ns.collabspace.interfaces.eventbus.facade.EventBusFacade;
+import com.yottastudios.ns.collabspace.interfaces.eventbus.model.permission.NodePolicyChangeEvent;
+import com.yottastudios.ns.collabspace.organization.vo.UnitMemberVo;
+import com.yottastudios.ns.collabspace.shared.redis.LockService;
+import com.yottastudios.ns.collabspace.workspace.manager.query.NodeRoleQueryManager;
+import com.yottastudios.ns.collabspace.workspace.manager.update.NodeRoleUpdateManager;
+import com.yottastudios.ns.collabspace.workspace.service.INodePermissionLogService;
+import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
+import com.yottastudios.ns.collabspace.workspace.transfer.NodeRoleTransfer;
+import com.yottastudios.ns.collabspace.workspace.vo.EditRoleResultVo;
+import com.yottastudios.ns.collabspace.workspace.vo.NodeRoleUnit;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.ROLE_DISPLAY_MAP;
+import static com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.SpaceNode.MANAGER;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
+
+@Service
+@Slf4j
+public class NodeRoleUpdateManagerImpl implements NodeRoleUpdateManager {
+
+    @Resource
+    private IApitableGrpcClientService apitableGrpcClientService;
+
+    @Resource
+    private IControlService controlService;
+
+    @Resource
+    private IControlRoleService controlRoleService;
+
+    @Resource
+    private NodeRoleQueryManager nodeRoleQueryManager;
+
+    @Resource
+    private ISpaceNodeService spaceNodeService;
+
+    @Resource
+    private EventBusFacade eventBusFacade;
+
+    @Resource
+    private NodeRoleTransfer nodeRoleTransfer;
+
+    @Resource
+    private INodePermissionLogService nodePermissionLogService;
+
+    @Resource
+    private LockService lockService;
+
+    @Override
+    public void addNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds) {
+        String lockKey = RedisConstants.getControlRoleLockKey(spaceNodeId.toString());
+        lockService.tryLockWithRetry(lockKey, () -> {
+            log.info("[1822-PermApply] addNodeRole spaceNodeId={} role={} unitIds={} userId={}", spaceNodeId, role, unitIds, userId);
+            spaceNodeService.checkSpaceNodeExist(spaceNodeId);
+            doEnableNodeRoleIfNotExist(userId, spaceId, spaceNodeId, true);
+            controlRoleService.saveOrUpdateControlRole(userId, spaceNodeId.toString(), unitIds, role);
+            publishNodePolicyChangeEvent(spaceId, spaceNodeId, unitIds, role);
+            log.info("[1822-PermApply] addNodeRole done spaceNodeId={} role={} unitIds={}", spaceNodeId, role, unitIds);
+            // 记录权限变更日志
+            String operatorName = getOperatorName(userId, spaceId);
+            List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+            logPermissionChange(spaceNodeId, spaceId, userId, operatorName, unitInfos, "set", null, role);
+            return null;
+        });
+    }
+
+    @Override
+    public EditRoleResultVo updateNodeRole(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds) {
+        String lockKey = RedisConstants.getControlRoleLockKey(spaceNodeId.toString());
+        return lockService.tryLockWithRetry(lockKey, () -> {
+            log.info("[6466-Collabspace][Permission][UPDATE] 编辑权限, spaceNodeId={}, role={}, unitIds={}, userId={}", spaceNodeId, role, unitIds, userId);
+            spaceNodeService.checkSpaceNodeExist(spaceNodeId);
+            doEnableNodeRoleIfNotExist(userId, spaceId, spaceNodeId, false);
+
+            // 记录旧角色用于日志
+            List<ControlRoleEntity> oldRoles = controlRoleService.getByControlIdAndUnitIds(spaceNodeId.toString(), unitIds);
+            Map<Long, String> oldRoleMap = oldRoles.stream()
+                    .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+
+            controlRoleService.saveOrUpdateControlRole(userId, spaceNodeId.toString(), unitIds, role);
+            publishNodePolicyChangeEvent(spaceId, spaceNodeId, unitIds, role);
+
+            // 一次性查询 unitInfos 和 operatorName，供日志和冲突检测共用
+            String operatorName = getOperatorName(userId, spaceId);
+            List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+
+            // 记录权限变更日志
+            logPermissionChangeWithOldRoles(spaceNodeId, spaceId, userId, operatorName, unitInfos, role, oldRoleMap);
+
+            // 权限冲突校验（复用已查询的 unitInfos）
+            EditRoleResultVo result = checkMemberTeamConflict(spaceId, spaceNodeId, role, unitInfos);
+            if (result.getHasConflict()) {
+                log.warn("[6466-Collabspace][Permission][CONFLICT] 权限冲突, spaceNodeId={}, role={}, conflictTeam={}, " +
+                                "conflictRole={}",
+                        spaceNodeId, role, result.getConflictTeamName(), result.getConflictTeamRole());
+            }
+            return result;
+        });
+    }
+
+    @Override
+    public void enableNodeRoleIfNotExist(Long userId, String spaceId, Long spaceNodeId, boolean includeExtend) {
+        // Controller 直接调用时需要加锁；从 addNodeRole/updateNodeRole 内部调用时已持有锁，Redisson 可重入不会死锁
+        String lockKey = RedisConstants.getControlRoleLockKey(spaceNodeId.toString());
+        lockService.tryLockWithRetry(lockKey, () -> {
+            doEnableNodeRoleIfNotExist(userId, spaceId, spaceNodeId, includeExtend);
+            return null;
+        });
+    }
+
+    /** 内部方法，调用前必须已持有 controlId 对应的分布式锁 */
+    private void doEnableNodeRoleIfNotExist(Long userId, String spaceId, Long spaceNodeId, boolean includeExtend) {
+        if (controlService.existsByControlId(spaceNodeId.toString())) {
+            log.info("Node role already exists, spaceId: {}, spaceNodeId: {}", spaceId, spaceNodeId);
+            return;
+        }
+
+        if (includeExtend) {
+            // copy parent roles to this node
+            Map<String, Set<Long>> roleToUnitIds = getParentRoleToUnitIds(spaceId, spaceNodeId);
+            roleToUnitIds.forEach((role, unitIds) ->
+                    controlRoleService.saveOrUpdateControlRole(userId, spaceNodeId.toString(), new ArrayList<>(unitIds), role));
+        }
+        controlService.create(userId, spaceId, spaceNodeId.toString(), ControlType.SPACE_NODE);
+        publishNodePolicyChangeEvent(spaceId, spaceNodeId, null, null);
+    }
+
+    @Override
+    public void disableNodeRole(String spaceId, Long spaceNodeId) {
+        String lockKey = RedisConstants.getControlRoleLockKey(spaceNodeId.toString());
+        lockService.tryLockWithRetry(lockKey, () -> {
+            controlService.removeControl(List.of(spaceNodeId.toString()));
+            controlRoleService.removeControl(List.of(spaceNodeId.toString()));
+            publishNodePolicyChangeEvent(spaceId, spaceNodeId, null, null);
+            return null;
+        });
+    }
+
+    @Override
+    public void deleteNodeRoles(Long userId, String spaceId, Long spaceNodeId, List<Long> unitIds) {
+        String lockKey = RedisConstants.getControlRoleLockKey(spaceNodeId.toString());
+        lockService.tryLockWithRetry(lockKey, () -> {
+            log.info("[6466-Collabspace][Permission][DELETE] 删除权限, spaceNodeId={}, unitIds={}, userId={}", spaceNodeId, unitIds, userId);
+            // 记录旧角色用于日志
+            List<ControlRoleEntity> oldRoles = controlRoleService.getByControlIdAndUnitIds(spaceNodeId.toString(), unitIds);
+            Map<Long, String> oldRoleMap = oldRoles.stream()
+                    .collect(Collectors.toMap(ControlRoleEntity::getUnitId, ControlRoleEntity::getRoleCode, (a, b) -> a));
+
+            // 删除前查询 unitInfos（删除后可能查不到关联信息）
+            String operatorName = getOperatorName(userId, spaceId);
+            List<NodeRoleUnit> unitInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, unitIds);
+
+            controlRoleService.removeByControlIdAndUnitIds(spaceNodeId.toString(), unitIds);
+            publishNodePolicyChangeEvent(spaceId, spaceNodeId, unitIds, null);
+
+            // 记录权限变更日志
+            logPermissionRemove(spaceNodeId, spaceId, userId, operatorName, unitInfos, oldRoleMap);
+            return null;
+        });
+    }
+
+    private Map<String, Set<Long>> getParentRoleToUnitIds(String spaceId, Long spaceNodeId) {
+        Long parentNodeId = nodeRoleQueryManager.getNodeExtendNodeId(spaceNodeId);
+        List<ControlRoleEntity> controlRoleUnits;
+        if (parentNodeId == null) {
+            // No parent node has enabled permissions, default workbench role, load root department information
+            Long rootTeamUnitId = apitableGrpcClientService.getRootTeamUnitId(spaceId);
+            ControlRoleEntity defaultRoleUnit = ControlRoleEntity.builder()
+                    .roleCode(SpaceNode.DEFAULT_ROLE)
+                    .unitId(rootTeamUnitId)
+                    .build();
+
+            controlRoleUnits = List.of(defaultRoleUnit);
+        } else {
+            // load parent node role
+            controlRoleUnits =
+                    controlRoleService.getByControlId(parentNodeId.toString());
+        }
+        return controlRoleUnits.stream()
+                .collect(groupingBy(ControlRoleEntity::getRoleCode,
+                        mapping(ControlRoleEntity::getUnitId, toSet())));
+    }
+
+    private void publishNodePolicyChangeEvent(String spaceId, Long spaceNodeId, List<Long> unitIds, String roleCode) {
+        NodePolicyChangeEvent event = NodePolicyChangeEvent.builder()
+                .spaceId(spaceId)
+                .spaceNodeId(spaceNodeId)
+                .unitIds(unitIds)
+                .roleCode(roleCode)
+                .build();
+        eventBusFacade.onEventAfterCommit(event);
+    }
+    @Override
+    public void handleRoleByCreate(Long userId, String spaceId, Long spaceNodeId){
+        UnitMemberVo unitMemberVo = nodeRoleTransfer.toUnitMemberVo(userId, spaceId);
+        addNodeRole(userId,spaceId,spaceNodeId,MANAGER,List.of(unitMemberVo.getUnitId()));
+    }
+
+    /**
+     * 权限冲突校验：检查成员所在小组权限是否高于成员本身被设置的权限
+     */
+    private EditRoleResultVo checkMemberTeamConflict(String spaceId, Long spaceNodeId, String newRole, List<NodeRoleUnit> unitInfos) {
+        List<NodeRoleUnit> memberUnits = unitInfos.stream()
+                .filter(u -> u.getUnitType() != null && u.getUnitType() == 3)
+                .toList();
+
+        if (memberUnits.isEmpty()) {
+            return EditRoleResultVo.noConflict();
+        }
+
+        NodeRoleLevel newLevel = NodeRoleLevel.fromRoleTag(newRole);
+
+        // 批量收集所有成员关联的 unitId，减少 gRPC 调用次数
+        Set<Long> allMemberUnitIds = new HashSet<>();
+        for (NodeRoleUnit memberUnit : memberUnits) {
+            List<Long> memberAllUnitIds = apitableGrpcClientService.getUnitsByMember(memberUnit.getUnitRefId(), spaceId);
+            if (CollectionUtils.isNotEmpty(memberAllUnitIds)) {
+                allMemberUnitIds.addAll(memberAllUnitIds);
+            }
+        }
+        // 排除本次操作的 unitId
+        Set<Long> currentUnitIds = unitInfos.stream().map(NodeRoleUnit::getUnitId).collect(Collectors.toSet());
+        allMemberUnitIds.removeAll(currentUnitIds);
+        if (allMemberUnitIds.isEmpty()) {
+            return EditRoleResultVo.noConflict();
+        }
+
+        // 一次性查询所有关联 unit 在该节点上的权限
+        List<ControlRoleEntity> teamRoles = controlRoleService.getByControlIdAndUnitIds(
+                spaceNodeId.toString(), new ArrayList<>(allMemberUnitIds));
+
+        // 找出权限高于本次设置的小组
+        for (ControlRoleEntity teamRole : teamRoles) {
+            NodeRoleLevel teamLevel = NodeRoleLevel.fromRoleTag(teamRole.getRoleCode());
+            if (teamLevel.getLevel() > newLevel.getLevel()) {
+                // 一次性查询冲突小组信息
+                List<NodeRoleUnit> teamInfos = apitableGrpcClientService.getNodeRoleUnitList(spaceId, List.of(teamRole.getUnitId()));
+                String teamName = CollectionUtils.isNotEmpty(teamInfos) ? teamInfos.getFirst().getUnitName() : "未知小组";
+                String teamRoleDisplay = ROLE_DISPLAY_MAP.getOrDefault(teamRole.getRoleCode(), teamRole.getRoleCode());
+
+                return EditRoleResultVo.builder()
+                        .hasConflict(true)
+                        .conflictTeamName(teamName)
+                        .conflictTeamRole(teamRole.getRoleCode())
+                        .conflictMessage("因为用户所处的组对文档有" + teamRoleDisplay + "权限，所以本次操作后用户依旧对文档有"
+                                + teamRoleDisplay + "权限，如果想要彻底改变用户权限，请将用户移出所在组，或改变其所在组权限")
+                        .build();
+            }
+        }
+        return EditRoleResultVo.noConflict();
+    }
+
+    /** 记录权限变更日志（新增场景） */
+    private void logPermissionChange(Long spaceNodeId, String spaceId, Long userId, String operatorName,
+                                      List<NodeRoleUnit> unitInfos, String action, String oldRole, String newRole) {
+        for (NodeRoleUnit unit : unitInfos) {
+            nodePermissionLogService.log(spaceNodeId, spaceId, userId, operatorName,
+                    unit.getUnitName(), unit.getUnitType(), action, oldRole, newRole);
+        }
+    }
+
+    /** 记录权限变更日志（编辑场景，带旧角色映射） */
+    private void logPermissionChangeWithOldRoles(Long spaceNodeId, String spaceId, Long userId, String operatorName,
+                                                  List<NodeRoleUnit> unitInfos, String newRole, Map<Long, String> oldRoleMap) {
+        for (NodeRoleUnit unit : unitInfos) {
+            String oldRole = oldRoleMap.get(unit.getUnitId());
+            nodePermissionLogService.log(spaceNodeId, spaceId, userId, operatorName,
+                    unit.getUnitName(), unit.getUnitType(), "set", oldRole, newRole);
+        }
+    }
+
+    /** 记录权限移除日志 */
+    private void logPermissionRemove(Long spaceNodeId, String spaceId, Long userId, String operatorName,
+                                      List<NodeRoleUnit> unitInfos, Map<Long, String> oldRoleMap) {
+        for (NodeRoleUnit unit : unitInfos) {
+            String oldRole = oldRoleMap.get(unit.getUnitId());
+            nodePermissionLogService.log(spaceNodeId, spaceId, userId, operatorName,
+                    unit.getUnitName(), unit.getUnitType(), "remove", oldRole, null);
+        }
+    }
+
+    private String getOperatorName(Long userId, String spaceId) {
+        UnitMemberVo memberVo = nodeRoleTransfer.toUnitMemberVo(userId, spaceId);
+        return memberVo.getMemberName() != null ? memberVo.getMemberName() : memberVo.getNickName();
+    }
+}

@@ -1,0 +1,718 @@
+<?php
+
+namespace App\Lr\Controllers;
+
+use App\Exceptions\ExceptionCode;
+use App\Http\Controllers\Controller;
+// use App\Jobs\UpdateLoanReversalRequestNextReplaceCache;
+use App\Http\Controllers\Oa\ApprovalManagementController;
+use App\Lr\Builders\ActionerQueryBuilder;
+use App\Lr\Builders\LoanStakeholderQueryBuilder;
+use App\Lr\Builders\StakeholderQueryBuilder;
+use App\Lr\Common\Action;
+use App\Lr\Common\CommonConst;
+use App\Lr\Common\CommonService;
+use App\Lr\Common\Helper;
+use App\Lr\Common\Registry;
+use App\Lr\Common\State as CommonState;
+use App\Lr\Const\LoanConst;
+use App\Lr\Exceptions\WorkflowException;
+use App\Lr\Models\CommonRequest;
+use App\Lr\Models\CommonRequestDetail;
+use App\Lr\Models\CommonRequestLockDetail;
+use App\Lr\Models\CommonRequestLog;
+use App\Lr\Models\CommonRequestStakeholder;
+use App\Lr\Models\CommonSpecialStakeholder;
+use App\Lr\Models\CommonUser;
+use App\Lr\Models\CommonUserData;
+use App\Lr\Service\RequestService;
+use App\Lr\States\Loan as LoanState;
+use App\Lr\Utils\LoanUserList;
+use App\Models\OverseaWhiteList;
+use App\Models\Sfuser;
+use App\Service\Misc\SfuserHash2IdMapService;
+use App\Service\NotifyNumberService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+
+class LoanApprovalManagementController extends Controller
+{
+    /**
+     * @apiName 【借款申请员工端】 费用分摊主体 获取业务组-业务分支表
+     *
+     * @return JsonResponse
+     */
+    public function getDepartmentBranchMap()
+    {
+        $data = LoanState::getDepartmentBranchMap();
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 检查用户花名是否在借款名单.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function userExists(Request $request): JsonResponse
+    {
+        $input = $request->only(['sfuser_info', 'nickname_hash_filter']);
+        $exists = false;
+        $sfuser = Sfuser::whereIn('nickname_hash', $input['nickname_hash_filter'])->first();
+        if ($sfuser) {
+            $exists = LoanUserList::userExists($sfuser->id)
+                || OverseaWhiteList::whereItemType(OverseaWhiteList::ITEM_TYPE_LOAN_AND_REVERSAL)->whereSfuserId($sfuser->id)->whereIsClosed(0)->exists();
+        }
+        return $this->responseJsonSuccess(['exists' => $exists]);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 待办事项.（数目统计）.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function todoList(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $disableCache = $request->input('disable_cache', false);
+
+        $issuedButNotCompleted = 0; // 我发起的（待审批、待冲账）的数目
+        $toBeApprovedByMe = 0; // 待我审批数目
+        $myApproval = 0; // 我的审批数目
+        $cc2Me = 0; // 抄送我的并且未读的数目
+
+        if ($disableCache) {    // 不走缓存
+            $issuedButNotCompleted = (new StakeholderQueryBuilder(Registry::LOAN))->filterByRequesterIds($sfuserId)->notInTodoList()->asRequester()->unlocked()->count();
+            $toBeApprovedByMe = (new ActionerQueryBuilder(Registry::LOAN))->filterByUserId($sfuserId)->toBeApproved()->actionStateNotIn(CommonState::REVERSAL_PENDING)->unlocked()->count();
+            $cc2Me = (new StakeholderQueryBuilder(Registry::LOAN))->filterByUserId($sfuserId)->asCCer()->unread()->count();
+        } else {                // 走缓存（默认）
+            $data = NotifyNumberService::app()->getIndividual($sfuserId);
+            $issuedButNotCompleted = $data['loan_issued'] ?? 0;
+            $toBeApprovedByMe = $data['loan_to_be_approved'] ?? 0;
+            $cc2Me = $data['loan_cc'] ?? 0;
+        }
+
+        // 查询个人数据
+        $userData = CommonUserData::firstOrCreate(['sfuser_id' => $sfuserId], [
+            'sfuser_id' => $sfuserId, 'to_be_approved_by_me' => 0, 'cc_to_me' => 0,
+        ]);
+
+        // 更新个人数据
+        $update = [];
+        if (!$userData->to_be_approved_by_me && $toBeApprovedByMe) {
+            $update['to_be_approved_by_me'] = 1;
+        }
+        if (!$userData->cc_to_me && $cc2Me) {
+            $update['cc_to_me'] = 1;
+        }
+        if (!empty($update)) {
+            $userData->update($update);
+        }
+
+        // 如果从来没有过就不返回（待我审批、抄送给我）
+        $ret = [
+            'countingIssuedButNotCompleted' => $issuedButNotCompleted,
+        ];
+        if ($userData->to_be_approved_by_me) {
+            $ret['countingToBeApprovedByMe'] = $toBeApprovedByMe;
+        }
+        if ($userData->cc_to_me) {
+            $ret['countingCc2Me'] = $cc2Me;
+        }
+        $ret = ApprovalManagementController::dealLessThan0($ret);
+        return $this->responseJsonSuccess($ret);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 加密文件名.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function echoFileName(Request $request): JsonResponse
+    {
+        $fileNames = $request->input('file_names', []);
+
+        return $this->responseJsonSuccess([
+            'file_names' => $fileNames,
+        ]);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 开启一个审批流程。
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function startProcess(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'loan_request_id', 'start', 'context', 'files',
+            'cc_nickname_hash_filter', 'info',
+        ]) + ['process_key' => Registry::LOAN];
+
+        if (Arr::has($input, 'cc_nickname_hash_filter')) {
+            $input['cc_ids'] = SfuserHash2IdMapService::app()->getSfuserIdsViaNicknameHashes($input['cc_nickname_hash_filter']);
+        }
+
+        $wr = RequestService::make(
+            $input['process_key'],
+            $input['sfuser_info']['id'],
+            $input['loan_request_id'],
+            (bool)$input['start'] ?? false,
+            $input['cc_ids'] ?? [],
+            $input['context'] ?? [],        // data列内容
+            $input['files'] ?? [],
+            $input['info'] ?? [],
+        );
+        $msg = implode('', $wr->messageBag);
+
+        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'request_id' => $wr->getRequest()->id, 'msg' => $msg]);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 对一个审批授权.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function authorizeRequestToken(Request $request): JsonResponse
+    {
+        $requestId = $request->input('loan_request_id');
+        $sfuserId = $request->input('sfuser_info.id');
+        $token = $request->input('authorized_token');   // 来自中心服务器
+
+        $isSuccess = RequestService::authorizeToken(Registry::LOAN, $requestId, $sfuserId, $token);
+
+        return $this->responseJsonSuccess(['success' => $isSuccess]);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 对一个流程进行预检，对参数进行必要的检查，生成流程图 nodes.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function preflightProcess(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'context', 'version',
+        ]);
+
+        $sfuserId = $input['sfuser_info']['id'];
+
+        $data = RequestService::preflightProcess(Registry::LOAN, $sfuserId, $input['context'], $input['version'] ?? 0);
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 获取审批元数据.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function metaData(Request $request): JsonResponse
+    {
+        $data = Helper::metaData() + [
+            'processes' => Registry::LOAN_PROCESSES,
+            'loan_department_list' => CommonConst::LOAN_REVERSAL_DEPARTMENT_LIST,
+            'social_insurance_company_list' => LoanConst::SOCIAL_INSURANCE_COMPANY_LIST,
+            'management_side_states' => CommonState::MANAGEMENT_SIDE_TYPES[Registry::LOAN],
+        ];
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 获取请求列表. [开发使用,没提供对外接口.] [这个文件下都是员工端用的].
+     *
+     * @param string $type
+     * @param array $input
+     * @return JsonResponse
+     */
+    public function getRequests(string $type, array $input): JsonResponse
+    {
+        $processKey = Registry::LOAN;
+        $input = Arr::only($input, [
+            'sfuser_info', 'per_page', 'no', 'nickname_hash_filter', 'department', 'social_insurance_company',
+            'plan_reversal_date_start', 'plan_reversal_date_end', 'approval_statuses', 'lock_status',
+        ]) + ['per_page' => 50];
+
+        $sfuserId = $input['sfuser_info']['id'];
+
+        $sq = new LoanStakeholderQueryBuilder();
+        $aq = new ActionerQueryBuilder($processKey);
+
+        switch ($type) {
+            case 'issued':          // 我发起的
+                $sq->filterByUserId($sfuserId)->asRequester()->notCCer();
+                break;
+            case 'approving':       // 待我审批
+                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+                $aq->toBeApproved()->filterByUserId($sfuserId);
+                break;
+            // case 'resolved':        // 我已审批
+            //     $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+            //     $aq->resolved()->filterByUserId($sfuserId);
+            //     break;
+            case 'otherApproving':  // 他人审批
+                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+                $aq->toBeApproved()->filterByNotUserId($sfuserId);
+                break;
+            case 'cc':              // 抄送我的
+                $sq->filterByUserId($sfuserId)->asCCer();
+                break;
+            case 'approvingOrResolved': // 我的审批
+                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+                break;
+            default:
+                throw new WorkflowException('Invalid type given');
+        }
+
+        // 预排序
+        $queryBuilder = $sq->orderBy('plan_reversal_date', 'asc');
+
+        // 按申请人筛选
+        if (Arr::has($input, 'nickname_hash_filter')) {
+            $userIds = CommonUser::whereIn('nickname_hash', $input['nickname_hash_filter'])->pluck('sfuser_id')->toArray();
+            $queryBuilder->filterByRequesterIds($userIds);
+        }
+
+        // 按编号筛选
+        if ($no = Arr::get($input, 'no')) {
+            $queryBuilder->filterByNo($no);
+        }
+
+        // 按审批状态筛选
+        if (!in_array($type, ['approving', 'otherApproving']) && $approvalStatuses = Arr::get($input, 'approval_statuses')) {
+            $queryBuilder->stateIn($approvalStatuses);
+        }
+
+        // 按锁住状态筛选(作废)
+        $lockStatus = Arr::get($input, 'lock_status', -1);
+        if ($lockStatus != -1) {
+            $queryBuilder->lockStatus($lockStatus);
+        }
+
+        // 按照社保所属公司查找
+        if ($socialInsuranceCompany = Arr::get($input, 'social_insurance_company')) {
+            $queryBuilder->filterBySocialInsuranceCompany($socialInsuranceCompany);
+        }
+
+        // 按照部门搜索
+        if ($departments = Arr::get($input, 'department')) {
+            $queryBuilder->filterByDepartment($departments);
+        }
+
+        // 按照计划冲账时间搜索
+        $queryBuilder->planReversalDateAfter(Arr::get($input, 'plan_reversal_date_start', ''))
+            ->planReversalDateBefore(Arr::get($input, 'plan_reversal_date_end', ''));
+
+        $requests = [];
+
+        $columns = '`loan_requests`.`id`, `loan_requests`.`sfuser_id`, `is_locked`, `version`, `is_read`, `submitted_at`,
+                    `process_key`, `no`,  `current_state_id`, `info`, `token`, `department`, `total_money`, `nickname`,
+                    `plan_reversal_date`, `remark`, `type`, `related_reversal_request_no`';
+
+        $columnsGroup = '`loan_requests`.`id`, `loan_requests`.`sfuser_id`, `is_locked`, `version`, `is_read`, `submitted_at`,
+                        `process_key`, `no`, `current_state_id`, `info`, `token`, `department`, `total_money`, `nickname`,
+                        `plan_reversal_date`, `remark`, GROUP_CONCAT(`type` SEPARATOR ",") as type, `related_reversal_request_no`';
+
+        switch ($type) {
+            case 'issued':  // 我发起的
+            case 'cc':  // 抄送我的
+                $requests = $queryBuilder->queryBuilder()->selectRaw($columns)->paginate($input['per_page'])->toArray();
+                break;
+            case 'approving':       // 待我审批
+            // case 'resolved':        // 我已审批
+            case 'otherApproving':  // 他人审批
+                $selectedRequestIds = $aq->queryBuilder()->groupBy('loan_requests.id')->pluck('loan_requests.id')->toArray();
+                $approvalStatuses = Arr::get($input, 'approval_statuses', []);
+                if ($approvalStatuses && $selectedRequestIds) {
+                    $queryBuilder->filterByStatesOrRequestIds($approvalStatuses, $selectedRequestIds);
+                } elseif ($selectedRequestIds) {
+                    $queryBuilder->filterByRequestIds($selectedRequestIds);
+                } elseif ($approvalStatuses) {
+                    $queryBuilder->stateIn($approvalStatuses);
+                } else {
+                    $requests = [
+                        'per_page' => $input['per_page'] ?? 50,
+                        'current_page' => 1,
+                        'total' => 0,
+                        'data' => [],
+                    ];
+                    break;
+                }
+                $requests = $queryBuilder->queryBuilder()
+                    ->selectRaw($columnsGroup)
+                    ->groupBy('loan_requests.id')   // 保证申请记录唯一
+                    ->paginate($input['per_page'])
+                    ->toArray();
+                break;
+            case 'approvingOrResolved': // 我的审批
+                $resolved = (clone $queryBuilder->queryBuilder())->whereIn(
+                    'loan_requests.id',
+                    (new ActionerQueryBuilder($processKey))->resolved()->filterByUserId($sfuserId)->queryBuilder()->select('loan_requests.id')
+                )
+                    ->selectRaw($columnsGroup.', 2 as status')
+                    ->groupBy('loan_requests.id');
+                $requests = $queryBuilder->queryBuilder()->whereIn(
+                    'loan_requests.id',
+                    (new ActionerQueryBuilder($processKey))->toBeApproved()->filterByUserId($sfuserId)->queryBuilder()->select('loan_requests.id')
+                )
+                    ->selectRaw($columnsGroup.', 1 as status')
+                    ->groupBy('loan_requests.id')
+                    ->union($resolved)->orderBy('status')->orderBy('plan_reversal_date', 'asc') // 按status正序排，即待我审批在前
+                    ->paginate($input['per_page'])->toArray();
+                break;
+        }
+
+        $sfuserIds = array_values(array_unique(array_column($requests['data'], 'sfuser_id')));
+        $socialInsuranceCompanyValues = Sfuser::whereIn('id', $sfuserIds)->pluck('social_insurance_company', 'id')->toArray();
+
+        $items = $requests['data'];
+        $itemIds = Arr::pluck($items, 'id');
+        $actions = Action::validActions($processKey, $sfuserId, $itemIds);
+        $operatorTypes = Action::currentToBeApprovedOperatorTypes($processKey, $itemIds);
+
+        foreach ($items as &$item) {
+            $item = CommonRequest::normalizeWorkflowRequest($item); // 手动cast
+            $types = explode(',', $item['type']);
+            $item['type'] = array_pop($types);
+            // 不返回 data 和 files
+            $item['actions'] = ($item['is_locked']) ? [] : Arr::get($actions, $item['id'], []);
+            // 只有审批中的才有审批人
+            $item['curr_operator_type'] = in_array($item['current_state_id'], CommonState::COMMON_TYPES) ? 0 : Arr::get($operatorTypes, $item['id'], []);
+        }
+        unset($item);
+
+        $tokens = [];
+        foreach ($items as &$item) {
+            $item['info'] = is_string($item['info']) ? my_json_decode($item['info']) : $item['info'];
+            if (!empty($item['token'])) {
+                $tokens[] = $item['token'];
+            }
+            unset($item['token']);
+
+            $processKey = $item['process_key'];
+            $stateClassName = Registry::PROCESS_MAPS[$processKey];
+            /** @phpstan-ignore-next-line */
+            $stateClass = new $stateClassName($item['version']);
+            $specialActions = Arr::get($stateClass->specialActions, $item['current_state_id'].'.'.$item['type'], []);
+
+            $item['special_actions'] = $specialActions;
+            $item['department_name'] = Arr::get(CommonConst::LOAN_REVERSAL_DEPARTMENT_LIST[$item['department'] - 1], 'label');
+            $socialInsuranceCompanyIndex = $socialInsuranceCompanyValues[$item['sfuser_id']] - 1;
+            $item['social_insurance_company'] = Arr::get(CommonConst::SOCIAL_INSURANCE_COMPANY_LIST, "{$socialInsuranceCompanyIndex}.label", '');
+        }
+        unset($item);
+
+        $res = [
+            'current_page' => $requests['current_page'],
+            'per_page' => $requests['per_page'],
+            'total' => $requests['total'],
+            'requests' => $items,
+        ];
+
+        if ($type != 'issued' && count($tokens)) { // 不是我发起的，并且存在 token，则通过 Token 解密。
+            $res['decrypt_config'] = [
+                'tokens' => $tokens,
+            ];
+        }
+
+        return $this->responseJsonSuccess($res);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 我发起的.
+     */
+    public function issuedRequests(Request $request)
+    {
+        return $this->getRequests('issued', $request->all());
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 我的审批.
+     */
+    public function myRequests(Request $request)
+    {
+        $input = $request->all();
+        if (Arr::has($input, 'type')) {
+            switch ($input['type']) {
+                case 'approving':
+                    return $this->getRequests('approving', $input);
+                case 'otherApproving':
+                    return $this->getRequests('otherApproving', $input);
+            }
+        }
+        return $this->getRequests('approvingOrResolved', $input);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 抄送我的.
+     */
+    public function ccRequests(Request $request)
+    {
+        return $this->getRequests('cc', $request->all());
+    }
+
+    // /**
+    //  * @apiName 【借款申请员工端】 待我审批.
+    //  */
+    // public function approvingRequests(Request $request)
+    // {
+    //     return $this->getRequests('approving', $request->all());
+    // }
+
+    // /**
+    //  * @apiName 【借款申请员工端】 我已审批.
+    //  */
+    // public function resolvedRequests(Request $request)
+    // {
+    //     return $this->getRequests('resolved', $request->all());
+    // }
+
+    /**
+     * @apiName 【借款申请员工端】 获取审批详情.[单个审批].
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function request(Request $request)
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $requestId = $request->input('loan_request_id', 0);
+        $no = $request->input('no', '');
+
+        // 在 OA 端，只有可见，才能查看详情
+        if (empty($requestId) && $no) {
+            $requestId = CommonRequest::whereNo($no)->first()->id;
+        }
+
+        if (!$requestId) {
+            throw new WorkflowException(__('my_api.workflow_request_not_found'), ExceptionCode::ERR_RESOURCE_MISSING);
+        }
+
+        $wrs = (new CommonRequestStakeholder())
+            ->where('request_id', $requestId)
+            ->first();
+
+        if (!$wrs) {
+            throw new WorkflowException(__('my_api.workflow_request_not_found'), ExceptionCode::ERR_RESOURCE_MISSING);
+        }
+
+        $wr = new RequestService(Registry::LOAN, $requestId, $sfuserId);
+
+        $detail = $wr->detail(true);
+
+        if (Arr::has($detail, 'basic') && $detail['basic']['process_key'] == Registry::LOAN) {
+            $requestId = $detail['basic']['id'];
+            $requestDetail = CommonRequestDetail::whereRequestId($requestId)->first();
+
+            // 大写借款金额
+            $detail['basic']['data']['total_money'] = ($requestDetail == null) ? '' : $requestDetail->total_money;  // 借款金额
+            $detail['basic']['data']['uppercase_total_money'] = Helper::num2rmb($detail['basic']['data']['total_money']);
+            // $detail['basic']['data']['uppercase_total_money_eng'] = Helper::num2eng($detail['basic']['data']['uppercase_total_money']);
+            // 部门中文
+            $detail['basic']['data']['department_name'] = Arr::get(CommonConst::LOAN_REVERSAL_DEPARTMENT_LIST[$detail['basic']['data']['department'] - 1], 'label');
+            // 社保所属公司
+            $socialInsuranceCompanyValue = Sfuser::whereId($detail['basic']['sfuser_id'])->first()->social_insurance_company - 1;
+            $detail['basic']['data']['social_insurance_company'] = Arr::get(CommonConst::SOCIAL_INSURANCE_COMPANY_LIST, "{$socialInsuranceCompanyValue}.label", '');
+            // 计划冲账时间
+            $detail['basic']['plan_reversal_date'] = ($requestDetail == null) ? '' : $requestDetail->plan_reversal_date;
+            // 审批通过时间
+            $detail['basic']['approval_date'] = ($requestDetail == null) ? '' : $requestDetail->approval_date;
+            // 审批完成时间
+            $detail['basic']['complete_date'] = ($requestDetail == null) ? '' : $requestDetail->complete_date;
+            // 付款凭证 TODO: 是否限制可见范围？
+            $detail['basic']['pay_proof'] = ($requestDetail == null) ? [] : $requestDetail->pay_proof;
+            $detail['basic']['related_reversal_request_no'] = ($requestDetail == null) ? '' : $requestDetail->related_reversal_request_no;
+
+            // 作废详情
+            if ($detail['basic']['is_locked']) {
+                $lockDetail = (new CommonRequestLockDetail())->where('request_id', $requestId)->first();
+                $detail['basic']['lock_detail'] = ($lockDetail == null) ? [] : $lockDetail->toArray();
+            }
+
+            // 管理端审批人花名
+            $types = CommonSpecialStakeholder::MANAGEMENT_SIDE_AUTHORIZE_TYPES[Registry::LOAN];
+            $stateClass = $wr->getStateClass();
+            foreach ($types as $operatorType) {
+                $specialSfusers = $stateClass->fetchSpecialSfuser(Registry::LOAN, $operatorType, $detail['basic']['data']);
+                $detail['special_nicknames'][] = [
+                    'operator_type' => $operatorType,
+                    'nicknames' => $specialSfusers['nicknames'],
+                ];
+            }
+        }
+        $res = ['detail' => $detail];
+
+        // 有 Token，并且不是本人的话，需要通过 Token 解密
+        if ($wr->getRequest()->token && $sfuserId != $wr->getRequest()->sfuser_id) {
+            $res['decrypt_config'] = [
+                'tokens' => Arr::wrap($wr->getRequest()->token),
+            ];
+        }
+
+        return $this->responseJsonSuccess($res);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 执行动作.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function performAction(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['sfuser_info', 'loan_request_id', 'action_id', 'remark']);
+        $sfuserId = $input['sfuser_info']['id'];
+
+        if ($input['action_id'] == Action::DELETE) {
+            return $this->responseJsonFail(__('my_api.invalid_action_given'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        $request = new RequestService(Registry::LOAN, $input['loan_request_id'], $sfuserId);
+
+        $msg = $request->performActionWithMsg($input['action_id'], $input['remark'] ?? '');
+
+        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'msg' => $msg]);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 执行特殊动作.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function performSpecialAction(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'loan_request_id', 'special_action_id', 'money', 'file',
+        ]);
+
+        $sfuserId = Arr::get($input, 'sfuser_info.id');
+
+        $errMsg = __('my_api.lack_permission');
+        $lackParam = false;
+        $success = true;
+
+        // TODO:
+        switch ($input['special_action_id']) {
+            default:
+                break;
+        }
+
+        if ($lackParam) {
+            return $this->responseJsonFail(__('my_api.lack_required_param'), ExceptionCode::ERR_COMMON_MISSING_PARAMETERS);
+        }
+        if (!$success) {
+            return $this->responseJsonFail($errMsg, ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+
+    /**
+     * @apiName 【借款申请员工端】 重新编辑.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function reEdit(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'loan_request_id', 'start', 'context', 'files', 'cc_nickname_hash_filter', 'authorized_token', 'info',
+        ]);
+        $input['process_key'] = Registry::LOAN;
+        $sfuserId = $input['sfuser_info']['id'];
+
+        // 抄送人
+        if (Arr::has($input, 'cc_nickname_hash_filter')) {
+            $input['cc_ids'] = SfuserHash2IdMapService::app()->getSfuserIdsViaNicknameHashes($input['cc_nickname_hash_filter']);
+        }
+
+        $updateColumns = Arr::only($input, ['files', 'cc_ids', 'info']);
+        if (array_key_exists('authorized_token', $input)) {
+            $updateColumns['token'] = $input['authorized_token'];
+        }
+        // 旧借款金额
+        $beforeTotalMoney = CommonRequestDetail::whereRequestId($input['loan_request_id'])->first()->before_total_money;
+
+        $wr = new RequestService(Registry::LOAN, $input['loan_request_id'], $sfuserId);
+
+        // 流程不能改变
+        // if ($input['process_key'] != $wr->getRequest()->process_key) {
+        //     throw new WorkflowException('process_key cannot be changed');
+        // }
+
+        if (array_key_exists('context', $input)) {
+            RequestService::checkInput($input['process_key'], $sfuserId, $input['context'], $wr->getRequest()->version);
+
+            // 重新编辑不可更改的字段
+            $persistColumns = ['nickname'];    // 'related_reversal_request_no'
+            if (CommonRequestLog::whereRequestId($input['loan_request_id'])->whereIn('action_id', [Action::CANCEL, Action::REJECT])->exists()) {
+                $persistColumns[] = 'department';
+            }
+            foreach ($persistColumns as $column) {
+                if (Arr::get($wr->getRequest()->data, $column) != $input['context'][$column]) {
+                    throw new WorkflowException(sprintf('[%s] cannot be changed', $column));
+                }
+            }
+            $updateColumns['data'] = $input['context'];
+        }
+
+        // 检查 files 格式
+        [$errNo, $needSupplementFiles, $hasSupplementFiles] = RequestService::checkFiles($updateColumns['files'] ?? []);
+        if ($errNo != 0) {
+            throw new WorkflowException(__('my_api.check_files_failed', ['err' => $errNo]));
+        }
+
+        $wr->getRequest()->update($updateColumns);
+
+        // 重新编辑，更改状态与数据
+        $wr->performAction(Action::REEDIT);
+
+        $msg = '';
+        // start = 1  在re-edit接口，流程往下走
+        if (Arr::get($input, 'start', false)) {
+            if ($wr->getRequest()->round != 1 && abs($input['context']['total_money'] - $beforeTotalMoney) < 1e-4) {    //  金额相等，流程自动重走
+                $wr->goOnToApprove();
+            } else {
+                $msg = $wr->performActionWithMsg(Action::APPROVE);
+            }
+        }
+        $wr->requestFilesCreated();
+
+        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'msg' => $msg]);
+    }
+
+    public function getPersonalInfo(Request $request)
+    {
+        $sfuserId = Arr::get($request->input(), 'sfuser_info.id');
+        $socialInsuranceCompany = Sfuser::whereId($sfuserId)->first()->social_insurance_company;
+        $companyName = CommonConst::SOCIAL_INSURANCE_COMPANY_LIST[$socialInsuranceCompany - 1]['label'];
+        $accessibleDepartments = CommonUser::whereSfuserId($sfuserId)->first()->departments;
+        $res = [
+            'social_insurance_company_name' => $companyName,
+            'accessible_departments' => $accessibleDepartments,
+        ];
+        return $this->responseJsonSuccess(['success' => true, 'data' => $res]);
+    }
+
+    /**
+     * 获取冲账申请id.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getReversalRequestId(Request $request): JsonResponse
+    {
+        return $this->responseJsonSuccess([
+            'reversal_request_id' => CommonService::app()->getRequestId(Registry::REVERSAL, $request->input('reversal_no')),
+        ]);
+    }
+}

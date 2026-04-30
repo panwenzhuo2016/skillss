@@ -1,0 +1,1277 @@
+     1→     1→<template>
+     2→     2→    <div class="ai-chat-root">
+     3→     3→        <!-- 悬浮按钮 -->
+     4→     4→        <div class="ai-fab" @click="panelVisible = !panelVisible">
+     5→     5→            <i class="el-icon-chat-dot-round" />
+     6→     6→        </div>
+     7→     7→
+     8→     8→        <!-- 遮罩 -->
+     9→     9→        <transition name="panel-fade">
+    10→    10→            <div v-if="panelVisible" class="ai-overlay" @click.self="panelVisible = false" />
+    11→    11→        </transition>
+    12→    12→
+    13→    13→        <!-- 面板 -->
+    14→    14→        <transition name="panel-fade">
+    15→    15→            <div v-if="panelVisible" class="ai-panel">
+    16→    16→                <!-- 左栏：角色列表 -->
+    17→    17→                <div class="panel-left">
+    18→    18→                    <div class="left-header">
+    19→    19→                        <span>{{ $t('aiChat.roleListTitle') }}</span>
+    20→    20→                        <i class="el-icon-plus add-icon" @click="openRoleModal(null)" />
+    21→    21→                    </div>
+    22→    22→                    <div class="role-list">
+    23→    23→                        <template v-if="rolesLoading">
+    24→    24→                            <div v-for="n in 3" :key="n" class="skeleton-item">
+    25→    25→                                <div class="sk-avatar" />
+    26→    26→                                <div class="sk-lines">
+    27→    27→                                    <div class="sk-line" style="width:70%" />
+    28→    28→                                </div>
+    29→    29→                            </div>
+    30→    30→                        </template>
+    31→    31→                        <template v-else>
+    32→    32→                            <div
+    33→    33→                                v-for="role in roles"
+    34→    34→                                :key="role.id"
+    35→    35→                                :class="['role-item', { active: currentRole && currentRole.id === role.id }]"
+    36→    36→                                @click="selectRole(role)"
+    37→    37→                            >
+    38→    38→                                <i class="el-icon-user role-icon" />
+    39→    39→                                <span class="role-name">{{ role.name }}</span>
+    40→    40→                                <span class="role-actions">
+    41→    41→                                    <i class="el-icon-edit" @click.stop="openRoleModal(role)" />
+    42→    42→                                    <i class="el-icon-delete" @click.stop="removeRole(role.id)" />
+    43→    43→                                </span>
+    44→    44→                            </div>
+    45→    45→                            <div v-if="!roles.length" class="role-empty">{{ $t('aiChat.roleEmpty') }}</div>
+    46→    46→                        </template>
+    47→    47→                    </div>
+    48→    48→                </div>
+    49→    49→
+    50→    50→                <!-- 中栏：聊天区域 -->
+    51→    51→                <div class="panel-center">
+    52→    52→                    <div class="center-header">
+    53→    53→                        <div class="chat-title-wrap">
+    54→    54→                            <i class="el-icon-chat-dot-round chat-icon" />
+    55→    55→                            <div>
+    56→    56→                                <div class="chat-title">{{ currentRole ? currentRole.name : $t('aiChat.noRoleSelected') }}</div>
+    57→    57→                                <div class="chat-sub">{{ $t('aiChat.aiGenerated') }}</div>
+    58→    58→                            </div>
+    59→    59→                        </div>
+    60→    60→                        <div class="header-actions">
+    61→    61→                            <i class="el-icon-plus header-btn" :title="$t('aiChat.newSession')" @click="newSession" />
+    62→    62→                            <i class="el-icon-close header-btn" :title="$t('aiChat.close')" @click="panelVisible = false" />
+    63→    63→                        </div>
+    64→    64→                    </div>
+    65→    65→
+    66→    66→                    <div ref="msgList" class="msg-list">
+    67→    67→                        <div v-if="messagesLoading" class="msg-loading">
+    68→    68→                            <i class="el-icon-loading" />
+    69→    69→                            <span>{{ $t('aiChat.loading') }}</span>
+    70→    70→                        </div>
+    71→    71→                        <template v-else-if="messages.length">
+    72→    72→                            <div
+    73→    73→                                v-for="(m, i) in messages"
+    74→    74→                                :key="i"
+    75→    75→                                :class="['msg-item', m.role]"
+    76→    76→                            >
+    77→    77→                                <template v-if="m.role === 'context'">
+    78→    78→                                    <div class="context-card" :class="{ collapsed: !m._expanded }">
+    79→    79→                                        <div class="context-card-header" @click="$set(m, '_expanded', !m._expanded)">
+    80→    80→                                            <i class="el-icon-document" /> {{ $t('aiChat.contextCardTitle') }}
+    81→    81→                                            <i :class="m._expanded ? 'el-icon-arrow-up' : 'el-icon-arrow-down'" class="toggle-icon" />
+    82→    82→                                        </div>
+    83→    83→                                        <div v-show="m._expanded" class="context-card-body">
+    84→    84→                                            <div v-html="m.content"></div>
+    85→    85→                                            <div v-if="m._truncated" class="context-load-more">
+    86→    86→                                                <el-button
+    87→    87→                                                    type="text"
+    88→    88→                                                    :loading="m._loading"
+    89→    89→                                                    @click="loadMoreContext(m)"
+    90→    90→                                                >{{ m._loading ? '加载中...' : '加载更多' }}</el-button>
+    91→    91→                                            </div>
+    92→    92→                                        </div>
+    93→    93→                                    </div>
+    94→    94→                                </template>
+    95→    95→                                <div v-else-if="m.content || (isStreaming && i === messages.length - 1 && m.role === 'assistant')" class="bubble">
+    96→    96→                    <!-- 等待首个 token：转圈 -->
+    97→    97→                    <span v-if="isStreaming && i === messages.length - 1 && m.role === 'assistant' && !m.content" class="ai-thinking">
+    98→    98→                        <span class="ai-thinking-dot" /><span class="ai-thinking-dot" /><span class="ai-thinking-dot" />
+    99→    99→                    </span>
+   100→   100→                    <!-- 生成中：内容 + 竖线光标 -->
+   101→   101→                    <template v-else>
+   102→   102→                        <span v-if="m.role === 'assistant'" v-html="renderMd(m.content)"></span>
+   103→   103→                        <span v-else>{{ m.content }}</span>
+   104→   104→                        <span v-if="isStreaming && i === messages.length - 1 && m.role === 'assistant'" class="typing-cursor" />
+   105→   105→                    </template>
+   106→   106→                </div>
+   107→   107→                            </div>
+   108→   108→                        </template>
+   109→   109→                        <div v-else class="msg-empty">
+   110→   110→                            <i class="el-icon-magic-stick" style="font-size:46px;color:#606266" />
+   111→   111→                            <p style="font-size:20px;color:#606266" >{{ $t('aiChat.emptyHint') }}</p>
+   112→   112→                        </div>
+   113→   113→                    </div>
+   114→   114→
+   115→   115→                    <div class="input-area">
+   116→   116→                        <div v-if="reportContext" class="sync-chip-row">
+   117→   117→                            <span class="sync-chip">
+   118→   118→                                <i class="el-icon-document" /> {{ $t('aiChat.syncChipLabel') }}
+   119→   119→                                <i class="el-icon-close chip-close" @click="reportContext = ''" />
+   120→   120→                            </span>
+   121→   121→                        </div>
+   122→   122→                        <div class="input-row">
+   123→   123→                            <div class="input-box">
+   124→   124→                                <el-input
+   125→   125→                                    v-model="inputText"
+   126→   126→                                    type="textarea"
+   127→   127→                                    :autosize="{ minRows: 2 }"
+   128→   128→                                    :placeholder="$t('aiChat.inputPlaceholder')"
+   129→   129→                                    :disabled="!currentRole || isStreaming"
+   130→   130→                                    @keydown.native="onKeydown"
+   131→   131→                                />
+   132→   132→                            </div>
+   133→   133→                            <el-button
+   134→   134→                                type="primary"
+   135→   135→                                :disabled="!currentRole || !inputText.trim() || isStreaming"
+   136→   136→                                :loading="isStreaming"
+   137→   137→                                class="send-btn"
+   138→   138→                                @click="sendMessage"
+   139→   139→                            >
+   140→   140→                                <i v-if="!isStreaming" class="el-icon-s-promotion" />
+   141→   141→                            </el-button>
+   142→   142→                        </div>
+   143→   143→                        <div class="input-links">
+   144→   144→                            <AiPromptPopover
+   145→   145→                                :prompts="prompts"
+   146→   146→                                @select="insertPrompt"
+   147→   147→                                @created="prompts.push($event)"
+   148→   148→                                @deleted="removePrompt"
+   149→   149→                            >
+   150→   150→                                <span class="input-link">
+   151→   151→                                    <i class="el-icon-document" /> {{ $t('aiChat.commonPrompts') }}
+   152→   152→                                </span>
+   153→   153→                            </AiPromptPopover>
+   154→   154→                        </div>
+   155→   155→                    </div>
+   156→   156→                </div>
+   157→   157→
+   158→   158→                <!-- 右栏：System Prompt + 历史会话 -->
+   159→   159→                <div class="panel-right">
+   160→   160→                    <div class="right-section right-prompt">
+   161→   161→                        <div class="section-title">
+   162→   162→                            <i class="el-icon-star-on" style="color:#f5a623" /> System Prompt
+   163→   163→                        </div>
+   164→   164→                        <el-input
+   165→   165→                            v-model="editingSystemPrompt"
+   166→   166→                            type="textarea"
+   167→   167→                            :rows="6"
+   168→   168→                            :placeholder="$t('aiChat.systemPromptPlaceholder')"
+   169→   169→                            :disabled="!currentRole"
+   170→   170→                            @blur="saveSystemPrompt"
+   171→   171→                        />
+   172→   172→                        <p class="save-hint">{{ $t('aiChat.systemPromptHint') }}</p>
+   173→   173→                    </div>
+   174→   174→
+   175→   175→                    <div class="right-section right-sessions">
+   176→   176→                        <div class="section-title">
+   177→   177→                            <i class="el-icon-time" /> {{ $t('aiChat.sessionListTitle') }}
+   178→   178→                        </div>
+   179→   179→                        <div class="session-list">
+   180→   180→                            <template v-if="sessionsLoading">
+   181→   181→                                <div v-for="n in 3" :key="n" class="skeleton-item">
+   182→   182→                                    <div class="sk-avatar" />
+   183→   183→                                    <div class="sk-lines">
+   184→   184→                                        <div class="sk-line" style="width:80%" />
+   185→   185→                                        <div class="sk-line" style="width:50%;margin-top:5px;height:9px" />
+   186→   186→                                    </div>
+   187→   187→                                </div>
+   188→   188→                            </template>
+   189→   189→                            <template v-else>
+   190→   190→                                <div
+   191→   191→                                    v-for="s in sessions"
+   192→   192→                                    :key="s.id"
+   193→   193→                                    :class="['session-item', { active: currentSessionId === s.id }]"
+   194→   194→                                    @click="loadSession(s.id)"
+   195→   195→                                >
+   196→   196→                                    <i class="el-icon-chat-line-round session-icon" />
+   197→   197→                                    <div class="session-info">
+   198→   198→                                        <div class="session-title">{{ s.title || $t('aiChat.sessionUntitled') }}</div>
+   199→   199→                                        <div class="session-time">{{ formatTime(s.updated_at) }}</div>
+   200→   200→                                    </div>
+   201→   201→                                </div>
+   202→   202→                                <div v-if="!sessions.length" class="session-empty">{{ $t('aiChat.sessionEmpty') }}</div>
+   203→   203→                            </template>
+   204→   204→                        </div>
+   205→   205→<!--                        <el-button size="mini" style="margin-top:8px;width:100%" @click="newSession">-->
+   206→   206→<!--                            + 新建会话-->
+   207→   207→<!--                        </el-button>-->
+   208→   208→                    </div>
+   209→   209→                </div>
+   210→   210→            </div>
+   211→   211→        </transition>
+   212→   212→
+   213→   213→        <!-- 角色管理弹窗 -->
+   214→   214→        <AiRoleModal
+   215→   215→            :visible="roleModalVisible"
+   216→   216→            :role="editingRole"
+   217→   217→            @close="roleModalVisible = false"
+   218→   218→            @saved="onRoleSaved"
+   219→   219→        />
+   220→   220→
+   221→   221→        <!-- 同步日报弹窗 -->
+   222→   222→        <AiSyncModal
+   223→   223→            :visible="syncModalVisible"
+   224→   224→            :groups="groupOptions"
+   225→   225→            :sys-site="sysSite"
+   226→   226→            @close="syncModalVisible = false"
+   227→   227→            @synced="onSynced"
+   228→   228→        />
+   229→   229→    </div>
+   230→   230→</template>
+   231→   231→
+   232→   232→<script lang="ts">
+   233→   233→import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
+   234→   234→import { dailyReportAiApis, AiRole, AiPrompt, AiSession, AiMessage, ExtractSlotsResult } from '@/apis'
+   235→   235→import { dailyReportApis } from '@/apis'
+   236→   236→import AiRoleModal from './AiRoleModal.vue'
+   237→   237→import AiSyncModal from './AiSyncModal.vue'
+   238→   238→import AiPromptPopover from './AiPromptPopover.vue'
+   239→   239→import { compressDailyContext } from './aiContextUtils'
+   240→   240→import MarkdownIt from 'markdown-it'
+   241→   241→import moment from 'moment'
+   242→   242→
+   243→   243→const md = new MarkdownIt({ breaks: true, linkify: true })
+   244→   244→
+   245→   245→@Component({
+   246→   246→    name: 'AiChatPanel',
+   247→   247→    components: { AiRoleModal, AiSyncModal, AiPromptPopover },
+   248→   248→})
+   249→   249→export default class extends Vue {
+   250→   250→    // 从 OthersReports 传入的分组信息，用于同步日报（value 为该分组的花名数组）
+   251→   251→    @Prop({ default: () => [] }) groupOptions!: { label: string; value: string[] }[]
+   252→   252→    @Prop({ default: 'CHN' }) sysSite!: string
+   253→   253→
+   254→   254→    panelVisible = false
+   255→   255→
+   256→   256→    // 角色
+   257→   257→    roles: AiRole[] = []
+   258→   258→    currentRole: AiRole | null = null
+   259→   259→    roleModalVisible = false
+   260→   260→    editingRole: AiRole | null = null
+   261→   261→
+   262→   262→    // 提示词
+   263→   263→    prompts: AiPrompt[] = []
+   264→   264→
+   265→   265→    // 会话 & 消息
+   266→   266→    sessions: AiSession[] = []
+   267→   267→    currentSessionId: number | null = null
+   268→   268→    messages: { role: 'user' | 'assistant' | 'context'; content: string; _id?: number; _truncated?: boolean; _fullLength?: number; _fullContent?: string; _loading?: boolean }[] = []
+   269→   269→
+   270→   270→    // loading 状态
+   271→   271→    rolesLoading = false
+   272→   272→    sessionsLoading = false
+   273→   273→    messagesLoading = false
+   274→   274→
+   275→   275→    // 聊天输入
+   276→   276→    inputText = ''
+   277→   277→    isStreaming = false
+   278→   278→    reportContext = ''
+   279→   279→    private streamAbort: AbortController | null = null
+   280→   280→
+   281→   281→    // 意图识别状态
+   282→   282→    private slotsConversationId = ''
+   283→   283→    // 上一次成功提取的槽位结果，用于续查模式
+   284→   284→    private lastSlotResult: ExtractSlotsResult | null = null
+   285→   285→
+   286→   286→    // System Prompt 编辑
+   287→   287→    editingSystemPrompt = ''
+   288→   288→
+   289→   289→    renderMd(text: string): string {
+   290→   290→        // 去掉 AI 返回的 ```text ... ``` 包裹，直接展示纯文本内容
+   291→   291→        let s = text || ''
+   292→   292→        s = s.replace(/```text\s*\n?([\s\S]*?)```/g, '$1')
+   293→   293→        return md.render(s)
+   294→   294→    }
+   295→   295→
+   296→   296→    // gzip 压缩字符串，返回 "gz:<base64>"
+   297→   297→    async compressContext(str: string): Promise<string> {
+   298→   298→        if (!str) return str
+   299→   299→        // 先去除多余空白，减少压缩前体积
+   300→   300→        str = str.replace(/\n{3,}/g, '\n\n').trim()
+   301→   301→        const stream = new (window as any).CompressionStream('gzip')
+   302→   302→        const writer = stream.writable.getWriter()
+   303→   303→        writer.write(new TextEncoder().encode(str))
+   304→   304→        writer.close()
+   305→   305→        const chunks: Uint8Array[] = []
+   306→   306→        const reader = stream.readable.getReader()
+   307→   307→        while (true) {
+   308→   308→            const { done, value } = await reader.read()
+   309→   309→            if (done) break
+   310→   310→            chunks.push(value)
+   311→   311→        }
+   312→   312→        const merged = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0))
+   313→   313→        let offset = 0
+   314→   314→        for (const c of chunks) { merged.set(c, offset); offset += c.length }
+   315→   315→        let binary = ''
+   316→   316→        for (let i = 0; i < merged.length; i++) binary += String.fromCharCode(merged[i])
+   317→   317→        return 'gz:' + btoa(binary)
+   318→   318→    }
+   319→   319→
+   320→   320→    // 弹窗
+   321→   321→    syncModalVisible = false
+   322→   322→
+   323→   323→    @Watch('panelVisible')
+   324→   324→    async onPanelOpen(val: boolean) {
+   325→   325→        if (val) {
+   326→   326→            await this.loadRoles()
+   327→   327→            await this.loadPrompts()
+   328→   328→            // 数据加载完后再滚一次，确保 v-if 面板 DOM 已渲染
+   329→   329→            this.$nextTick(() => this.scrollToBottom())
+   330→   330→        }
+   331→   331→    }
+   332→   332→
+   333→   333→    @Watch('currentRole')
+   334→   334→    async onRoleChange(role: AiRole | null) {
+   335→   335→        this.editingSystemPrompt = role?.system_prompt ?? ''
+   336→   336→        this.sessions = []
+   337→   337→        this.currentSessionId = null
+   338→   338→        this.messages = []
+   339→   339→        if (role) await this.loadSessions(true)
+   340→   340→    }
+   341→   341→
+   342→   342→    // ---- 角色 ----
+   343→   343→    async loadRoles() {
+   344→   344→        this.rolesLoading = true
+   345→   345→        try {
+   346→   346→            this.roles = await dailyReportAiApis.getRoleList()
+   347→   347→            if (this.roles.length && !this.currentRole) {
+   348→   348→                this.selectRole(this.roles[0])
+   349→   349→            }
+   350→   350→        } finally {
+   351→   351→            this.rolesLoading = false
+   352→   352→        }
+   353→   353→    }
+   354→   354→
+   355→   355→    selectRole(role: AiRole) {
+   356→   356→        this.currentRole = role
+   357→   357→    }
+   358→   358→
+   359→   359→    openRoleModal(role: AiRole | null) {
+   360→   360→        this.editingRole = role
+   361→   361→        this.roleModalVisible = true
+   362→   362→    }
+   363→   363→
+   364→   364→    onRoleSaved(role: AiRole) {
+   365→   365→        const idx = this.roles.findIndex(r => r.id === role.id)
+   366→   366→        if (idx >= 0) {
+   367→   367→            this.$set(this.roles, idx, role)
+   368→   368→            if (this.currentRole?.id === role.id) {
+   369→   369→                this.currentRole = role
+   370→   370→                this.editingSystemPrompt = role.system_prompt
+   371→   371→            }
+   372→   372→        } else {
+   373→   373→            this.roles.push(role)
+   374→   374→            this.selectRole(role)
+   375→   375→        }
+   376→   376→    }
+   377→   377→
+   378→   378→    async removeRole(id: number) {
+   379→   379→        await this.$confirm(this.$t('aiChat.confirmDeleteRole') as string, this.$t('aiChat.confirmTitle') as string)
+   380→   380→        await dailyReportAiApis.deleteRole(id)
+   381→   381→        this.roles = this.roles.filter(r => r.id !== id)
+   382→   382→        if (this.currentRole?.id === id) {
+   383→   383→            this.currentRole = this.roles[0] ?? null
+   384→   384→        }
+   385→   385→    }
+   386→   386→
+   387→   387→    async saveSystemPrompt() {
+   388→   388→        if (!this.currentRole) return
+   389→   389→        if (this.editingSystemPrompt === this.currentRole.system_prompt) return
+   390→   390→        await dailyReportAiApis.updateRole({
+   391→   391→            id: this.currentRole.id,
+   392→   392→            system_prompt: this.editingSystemPrompt,
+   393→   393→        })
+   394→   394→        this.currentRole = { ...this.currentRole, system_prompt: this.editingSystemPrompt }
+   395→   395→        const idx = this.roles.findIndex(r => r.id === this.currentRole!.id)
+   396→   396→        if (idx >= 0) this.$set(this.roles, idx, this.currentRole)
+   397→   397→    }
+   398→   398→
+   399→   399→    // ---- 提示词 ----
+   400→   400→    async loadPrompts() {
+   401→   401→        this.prompts = await dailyReportAiApis.getPromptList()
+   402→   402→    }
+   403→   403→
+   404→   404→    insertPrompt(content: string) {
+   405→   405→        this.inputText = this.inputText ? this.inputText + ' ' + content : content
+   406→   406→    }
+   407→   407→
+   408→   408→    removePrompt(id: number) {
+   409→   409→        this.prompts = this.prompts.filter(p => p.id !== id)
+   410→   410→    }
+   411→   411→
+   412→   412→    // ---- 会话 ----
+   413→   413→    async loadSessions(showLoading = false) {
+   414→   414→        if (!this.currentRole) return
+   415→   415→        if (showLoading) this.sessionsLoading = true
+   416→   416→        try {
+   417→   417→            this.sessions = await dailyReportAiApis.getSessionList(this.currentRole.id)
+   418→   418→        } finally {
+   419→   419→            this.sessionsLoading = false
+   420→   420→        }
+   421→   421→    }
+   422→   422→
+   423→   423→    async loadSession(sessionId: number) {
+   424→   424→        // 切换会话时中断正在进行的流式请求
+   425→   425→        if (this.streamAbort) {
+   426→   426→            this.streamAbort.abort()
+   427→   427→            this.streamAbort = null
+   428→   428→        }
+   429→   429→        this.isStreaming = false
+   430→   430→        this.currentSessionId = sessionId
+   431→   431→        // 切换会话时重置意图识别状态，防止残留上一次的槽位结果
+   432→   432→        this.slotsConversationId = ''
+   433→   433→        this.lastSlotResult = null
+   434→   434→        this.reportContext = ''
+   435→   435→        this.pendingSlotMessages = []
+   436→   436→        this.messagesLoading = true
+   437→   437→        try {
+   438→   438→            const msgs = await dailyReportAiApis.getSessionMessages(sessionId)
+   439→   439→            this.messages = msgs.map(m => ({
+   440→   440→                role: m.role,
+   441→   441→                content: m.content,
+   442→   442→                _id: m.id,
+   443→   443→                _truncated: m.is_truncated || false,
+   444→   444→                _fullLength: m.full_length || 0,
+   445→   445→            }))
+   446→   446→            this.$nextTick(() => {
+   447→   447→                this.scrollToBottom()
+   448→   448→                // markdown 渲染后高度可能变化，再滚一次
+   449→   449→                setTimeout(() => this.scrollToBottom(), 100)
+   450→   450→            })
+   451→   451→        } finally {
+   452→   452→            this.messagesLoading = false
+   453→   453→        }
+   454→   454→    }
+   455→   455→
+   456→   456→    newSession() {
+   457→   457→        this.currentSessionId = null
+   458→   458→        this.messages = []
+   459→   459→        this.slotsConversationId = ''
+   460→   460→        this.lastSlotResult = null
+   461→   461→        this.reportContext = ''
+   462→   462→        this.pendingSlotMessages = []
+   463→   463→    }
+   464→   464→
+   465→   465→    // ---- 聊天 ----
+   466→   466→    onKeydown(e: KeyboardEvent) {
+   467→   467→        if (e.key === 'Enter' && !e.shiftKey) {
+   468→   468→            e.preventDefault()
+   469→   469→            this.sendMessage()
+   470→   470→        }
+   471→   471→    }
+   472→   472→
+   473→   473→    async sendMessage() {
+   474→   474→        const text = this.inputText.trim()
+   475→   475→        if (!text || !this.currentRole || this.isStreaming) return
+   476→   476→
+   477→   477→        // 有手动同步的 reportContext 且从未做过意图识别 → 直接问答（跳过意图识别）
+   478→   478→        if (this.reportContext && !this.lastSlotResult) {
+   479→   479→            await this.sendAskMessage(text)
+   480→   480→        } else {
+   481→   481→            // 走意图识别：LLM 判断是分析已有数据还是查询新数据
+   482→   482→            await this.sendExtractSlots(text)
+   483→   483→        }
+   484→   484→    }
+   485→   485→
+   486→   486→    /**
+   487→   487→     * 意图识别流程：提取槽位，槽位齐全后自动拉日报数据再调 ask
+   488→   488→     */
+   489→   489→    // 收集意图识别阶段待落库的消息
+   490→   490→    private pendingSlotMessages: { role: string; content: string }[] = []
+   491→   491→
+   492→   492→    /**
+   493→   493→     * 将意图识别阶段的消息落库（创建或复用会话）
+   494→   494→     */
+   495→   495→    private async flushSlotMessages() {
+   496→   496→        if (!this.pendingSlotMessages.length || !this.currentRole) return
+   497→   497→        const sessionId = await dailyReportAiApis.saveMessages({
+   498→   498→            role_id: this.currentRole.id,
+   499→   499→            session_id: this.currentSessionId,
+   500→   500→            messages: this.pendingSlotMessages,
+   501→   501→        })
+   502→   502→        if (sessionId && !this.currentSessionId) {
+   503→   503→            this.currentSessionId = sessionId
+   504→   504→            await this.loadSessions()
+   505→   505→        }
+   506→   506→        this.pendingSlotMessages = []
+   507→   507→    }
+   508→   508→
+   509→   509→    private async sendExtractSlots(text: string) {
+   510→   510→        this.messages.push({ role: 'user', content: text })
+   511→   511→        this.pendingSlotMessages.push({ role: 'user', content: text })
+   512→   512→        this.inputText = ''
+   513→   513→        this.$nextTick(this.scrollToBottom)
+   514→   514→
+   515→   515→        const assistantIdx = this.messages.length
+   516→   516→        this.messages.push({ role: 'assistant', content: '' })
+   517→   517→        this.isStreaming = true
+   518→   518→
+   519→   519→        try {
+   520→   520→            // 收集可用分组名和所有成员花名
+   521→   521→            const availableGroups = this.groupOptions.map(g => g.label)
+   522→   522→            const availableMembers = [...new Set(this.groupOptions.flatMap(g => g.value))].filter(Boolean)
+   523→   523→            // 续查模式：传入上次的槽位结果
+   524→   524→            const previousContext = this.lastSlotResult ? {
+   525→   525→                member_type: this.lastSlotResult.member_type,
+   526→   526→                members: this.lastSlotResult.members,
+   527→   527→                period_start: this.lastSlotResult.period_start,
+   528→   528→                period_end: this.lastSlotResult.period_end,
+   529→   529→            } : undefined
+   530→   530→            const hasExistingContext = this.messages.some(m => m.role === 'context')
+   531→   531→            const result = await dailyReportAiApis.extractSlots({
+   532→   532→                message: text,
+   533→   533→                conversation_id: this.slotsConversationId || undefined,
+   534→   534→                has_existing_context: hasExistingContext || undefined,
+   535→   535→                available_groups: availableGroups,
+   536→   536→                available_members: availableMembers,
+   537→   537→                previous_context: previousContext,
+   538→   538→            })
+   539→   539→
+   540→   540→            if (!result) {
+   541→   541→                this.messages[assistantIdx].content = this.$t('aiChat.errorMsg') as string
+   542→   542→                this.pendingSlotMessages.push({ role: 'assistant', content: this.messages[assistantIdx].content })
+   543→   543→                await this.flushSlotMessages()
+   544→   544→                return
+   545→   545→            }
+   546→   546→
+   547→   547→            // 保存 conversation_id 用于多轮
+   548→   548→            this.slotsConversationId = result.conversation_id
+   549→   549→
+   550→   550→            // 意图为分析已有数据 → 直接走问答，不重新取数据
+   551→   551→            if (result.intent === 'analyze') {
+   552→   552→                // 移除占位的 assistant 消息，sendAskMessage 会重新创建
+   553→   553→                this.messages.splice(assistantIdx, 1)
+   554→   554→                this.isStreaming = false
+   555→   555→                await this.flushSlotMessages()
+   556→   556→                await this.sendAskMessage(text, true)
+   557→   557→                return
+   558→   558→            }
+   559→   559→
+   560→   560→            if (!result.slots_complete) {
+   561→   561→                // 槽位不完整，显示反问
+   562→   562→                this.messages[assistantIdx].content = result.reply
+   563→   563→                this.pendingSlotMessages.push({ role: 'assistant', content: result.reply })
+   564→   564→                await this.flushSlotMessages()
+   565→   565→                return
+   566→   566→            }
+   567→   567→
+   568→   568→            // 槽位完整，保存结果用于续查
+   569→   569→            this.lastSlotResult = result
+   570→   570→            // 回显意图识别结果
+   571→   571→            const nicknames = this.resolveMembers(result)
+   572→   572→            const memberLabel = result.member_type === 'group'
+   573→   573→                ? `分组：${result.members.join('、')}`
+   574→   574→                : `成员：${result.members.join('、')}`
+   575→   575→            const countLabel = nicknames.length >= 10 ? `，共 ${nicknames.length} 人` : ''
+   576→   576→            const periodLabel = `${result.period_start} ~ ${result.period_end}`
+   577→   577→            const slotSummary = `查询对象：${memberLabel}${countLabel}\n时间范围：${periodLabel}${result.period_raw ? `（${result.period_raw}）` : ''}`
+   578→   578→            this.messages[assistantIdx].content = slotSummary + '\n\n正在同步日报数据...'
+   579→   579→            this.pendingSlotMessages.push({ role: 'assistant', content: slotSummary })
+   580→   580→            this.$nextTick(this.scrollToBottom)
+   581→   581→
+   582→   582→            if (!nicknames.length) {
+   583→   583→                const errMsg = `未找到匹配的成员「${result.members.join('、')}」，请尝试使用花名或先手动同步数据。`
+   584→   584→                this.messages[assistantIdx].content = errMsg
+   585→   585→                this.pendingSlotMessages.push({ role: 'assistant', content: errMsg })
+   586→   586→                await this.flushSlotMessages()
+   587→   587→                return
+   588→   588→            }
+   589→   589→
+   590→   590→            const context = await this.fetchReportContext(nicknames, result.period_start, result.period_end)
+   591→   591→            if (!context) {
+   592→   592→                this.messages[assistantIdx].content = '该时间段内没有找到日报数据。'
+   593→   593→                this.pendingSlotMessages.push({ role: 'assistant', content: '该时间段内没有找到日报数据。' })
+   594→   594→                await this.flushSlotMessages()
+   595→   595→                return
+   596→   596→            }
+   597→   597→
+   598→   598→            // 重置意图识别状态
+   599→   599→            this.slotsConversationId = ''
+   600→   600→
+   601→   601→            // 意图识别消息先落库（会创建 session）
+   602→   602→            await this.flushSlotMessages()
+   603→   603→
+   604→   604→            // 保留意图识别结果消息，走正常 ask 流程
+   605→   605→            this.reportContext = context
+   606→   606→            // 意图已由 extract-slots 处理，ask 只需分析同步好的日报数据
+   607→   607→            await this.sendAskMessage('请根据以上日报数据进行分析')
+   608→   608→        } catch (e: any) {
+   609→   609→            this.messages[assistantIdx].content = this.$t('aiChat.errorMsg') as string
+   610→   610→            this.pendingSlotMessages.push({ role: 'assistant', content: this.messages[assistantIdx].content })
+   611→   611→            await this.flushSlotMessages()
+   612→   612→        } finally {
+   613→   613→            this.isStreaming = false
+   614→   614→        }
+   615→   615→    }
+   616→   616→
+   617→   617→    /**
+   618→   618→     * 根据槽位结果解析出 nicknames 列表
+   619→   619→     */
+   620→   620→    private resolveMembers(result: ExtractSlotsResult): string[] {
+   621→   621→        if (result.member_type === 'group') {
+   622→   622→            // 匹配 groupOptions 的 label，展开为花名列表
+   623→   623→            const matched = this.groupOptions.filter(g =>
+   624→   624→                result.members.some(m => g.label.includes(m) || m.includes(g.label))
+   625→   625→            )
+   626→   626→            return [...new Set(matched.flatMap(g => g.value))].filter(Boolean)
+   627→   627→        }
+   628→   628→        // individual：LLM 返回的成员名必须在花名列表中匹配到，匹配不到则丢弃
+   629→   629→        const allMembers = this.groupOptions.flatMap(g => g.value).filter(Boolean)
+   630→   630→        return result.members
+   631→   631→            .map(name => allMembers.find(m => m.includes(name) || name.includes(m)))
+   632→   632→            .filter((n): n is string => !!n)
+   633→   633→    }
+   634→   634→
+   635→   635→    /**
+   636→   636→     * 根据 nicknames + 日期范围拉取日报数据，返回聚合后的文本上下文
+   637→   637→     */
+   638→   638→    private async fetchReportContext(nicknames: string[], startDate: string, endDate: string): Promise<string> {
+   639→   639→        const days = moment(endDate).diff(moment(startDate), 'day') + 1
+   640→   640→        const perPage = Math.max(200, days + 10)
+   641→   641→
+   642→   642→        const results = await Promise.all(
+   643→   643→            nicknames.map(nickname =>
+   644→   644→                dailyReportApis.getOtherReportsAPI({
+   645→   645→                    start_date: startDate,
+   646→   646→                    end_date: endDate,
+   647→   647→                    nickname,
+   648→   648→                    per_page: perPage,
+   649→   649→                    page: 1,
+   650→   650→                    show_rest: 1,
+   651→   651→                    sys_site: this.sysSite,
+   652→   652→                } as any)
+   653→   653→            )
+   654→   654→        )
+   655→   655→
+   656→   656→        const dateMap: Record<string, string[]> = {}
+   657→   657→        results.forEach((res, idx) => {
+   658→   658→            if (!res) return
+   659→   659→            const name = nicknames[idx].replace(/\[.+]/, '')
+   660→   660→            ;(res.reports ?? []).forEach((item: any) => {
+   661→   661→                const date = item.date ?? ''
+   662→   662→                if (!dateMap[date]) dateMap[date] = []
+   663→   663→                if (item.report) {
+   664→   664→                    dateMap[date].push(`${name}：\n${item.report.content ?? ''}`)
+   665→   665→                } else if ([4, 5].includes(item.type_id)) {
+   666→   666→                    dateMap[date].push(`${name}：休息日`)
+   667→   667→                } else {
+   668→   668→                    dateMap[date].push(`${name}：未提交`)
+   669→   669→                }
+   670→   670→            })
+   671→   671→        })
+   672→   672→
+   673→   673→        const sortedDates = Object.keys(dateMap).sort((a, b) => b.localeCompare(a))
+   674→   674→        return sortedDates
+   675→   675→            .map(date => `【${date}】\n${dateMap[date].join('\n\n')}`)
+   676→   676→            .join('\n\n---\n\n')
+   677→   677→    }
+   678→   678→
+   679→   679→    /**
+   680→   680→     * 正常问答流程：带 reportContext 调 askAi（SSE 流式）
+   681→   681→     */
+   682→   682→    private async sendAskMessage(text: string, skipUserPush = false) {
+   683→   683→        const contextToSend = this.reportContext
+   684→   684→        if (contextToSend) {
+   685→   685→            const contextLimit = 5000
+   686→   686→            const isTruncated = contextToSend.length > contextLimit
+   687→   687→            this.messages.push({
+   688→   688→                role: 'context',
+   689→   689→                content: isTruncated ? contextToSend.slice(0, contextLimit) : contextToSend,
+   690→   690→                _truncated: isTruncated,
+   691→   691→                _fullLength: contextToSend.length,
+   692→   692→                _fullContent: isTruncated ? contextToSend : undefined,
+   693→   693→            })
+   694→   694→            this.reportContext = ''
+   695→   695→        }
+   696→   696→        if (!skipUserPush) {
+   697→   697→            this.messages.push({ role: 'user', content: text })
+   698→   698→            this.inputText = ''
+   699→   699→        }
+   700→   700→        this.$nextTick(this.scrollToBottom)
+   701→   701→
+   702→   702→        const assistantIdx = this.messages.length
+   703→   703→        this.messages.push({ role: 'assistant', content: '' })
+   704→   704→        this.isStreaming = true
+   705→   705→
+   706→   706→        this.streamAbort = new AbortController()
+   707→   707→        try {
+   708→   708→            const history = this.messages.slice(0, -2).filter(m => m.role !== 'context' && !!m.content).slice(-10) as { role: 'user' | 'assistant'; content: string }[]
+   709→   709→            const processedContext = contextToSend ? compressDailyContext(contextToSend) : ''
+   710→   710→            if (processedContext) {
+   711→   711→                console.log('[AiChat] 压缩前上下文:\n', processedContext)
+   712→   712→            }
+   713→   713→            const compressedContext = processedContext ? await this.compressContext(processedContext) : ''
+   714→   714→            const response = await dailyReportAiApis.askAi({
+   715→   715→                role_id: this.currentRole!.id,
+   716→   716→                session_id: this.currentSessionId,
+   717→   717→                message: text,
+   718→   718→                report_context: compressedContext,
+   719→   719→                report_context_raw: contextToSend ? await this.compressContext(contextToSend) : undefined,
+   720→   720→                history,
+   721→   721→            }, this.streamAbort.signal)
+   722→   722→
+   723→   723→            const reader = response.body!.getReader()
+   724→   724→            const decoder = new TextDecoder()
+   725→   725→            let buffer = ''
+   726→   726→
+   727→   727→            while (true) {
+   728→   728→                const { done, value } = await reader.read()
+   729→   729→                if (done) break
+   730→   730→                buffer += decoder.decode(value, { stream: true })
+   731→   731→                const lines = buffer.split('\n')
+   732→   732→                buffer = lines.pop() ?? ''
+   733→   733→
+   734→   734→                for (const line of lines) {
+   735→   735→                    if (!line.startsWith('data: ')) continue
+   736→   736→                    try {
+   737→   737→                        const parsed = JSON.parse(line.slice(6))
+   738→   738→                        if (parsed.error_code !== 0) {
+   739→   739→                            this.messages[assistantIdx].content = this.$t('aiChat.errorMsg') as string
+   740→   740→                            break
+   741→   741→                        }
+   742→   742→                        const data = parsed.data
+   743→   743→                        if (data.type === 'session_id') {
+   744→   744→                            if (!this.currentSessionId) {
+   745→   745→                                this.currentSessionId = Number(data.session_id)
+   746→   746→                                await this.loadSessions()
+   747→   747→                            }
+   748→   748→                        } else if (data.type === 'chat' && data.content) {
+   749→   749→                            this.messages[assistantIdx].content += data.content
+   750→   750→                            this.$nextTick(this.scrollToBottom)
+   751→   751→                        }
+   752→   752→                    } catch (_) {}
+   753→   753→                }
+   754→   754→            }
+   755→   755→        } catch (e: any) {
+   756→   756→            if (e?.name !== 'AbortError') {
+   757→   757→                this.messages[assistantIdx].content = this.$t('aiChat.errorMsg') as string
+   758→   758→            }
+   759→   759→        } finally {
+   760→   760→            if (!this.messages[assistantIdx]?.content && this.streamAbort && !this.streamAbort.signal.aborted) {
+   761→   761→                this.messages[assistantIdx].content = this.$t('aiChat.errorMsg') as string
+   762→   762→            }
+   763→   763→            this.streamAbort = null
+   764→   764→            this.isStreaming = false
+   765→   765→            // 错误消息落库：后端可能未保存（网络中断、前端超时等），前端兜底
+   766→   766→            const finalContent = this.messages[assistantIdx]?.content
+   767→   767→            const errorMsg = this.$t('aiChat.errorMsg') as string
+   768→   768→            if (finalContent === errorMsg && this.currentSessionId) {
+   769→   769→                await dailyReportAiApis.saveMessages({
+   770→   770→                    role_id: this.currentRole!.id,
+   771→   771→                    session_id: this.currentSessionId,
+   772→   772→                    messages: [{ role: 'assistant', content: finalContent }],
+   773→   773→                })
+   774→   774→            }
+   775→   775→            await this.loadSessions()
+   776→   776→        }
+   777→   777→    }
+   778→   778→
+   779→   779→    // 加载更多 context 内容
+   780→   780→    async loadMoreContext(m: { content: string; _id?: number; _truncated?: boolean; _fullLength?: number; _fullContent?: string; _loading?: boolean }) {
+   781→   781→        if (!m._truncated || m._loading) return
+   782→   782→        const chunkSize = 5000
+   783→   783→
+   784→   784→        // 实时场景：完整内容在本地 _fullContent 中，直接截取
+   785→   785→        if (m._fullContent) {
+   786→   786→            const offset = m.content.length
+   787→   787→            const nextChunk = m._fullContent.slice(offset, offset + chunkSize)
+   788→   788→            m.content += nextChunk
+   789→   789→            m._truncated = (offset + chunkSize) < m._fullContent.length
+   790→   790→            if (!m._truncated) m._fullContent = undefined // 加载完毕，释放内存
+   791→   791→            return
+   792→   792→        }
+   793→   793→
+   794→   794→        // 历史场景：从后端分段加载
+   795→   795→        if (!m._id) return
+   796→   796→        this.$set(m, '_loading', true)
+   797→   797→        try {
+   798→   798→            const offset = m.content.length
+   799→   799→            const result = await dailyReportAiApis.getContextMore(m._id, offset)
+   800→   800→            if (result) {
+   801→   801→                m.content += result.content
+   802→   802→                m._truncated = result.has_more
+   803→   803→                m._fullLength = result.full_length
+   804→   804→            }
+   805→   805→        } finally {
+   806→   806→            this.$set(m, '_loading', false)
+   807→   807→        }
+   808→   808→    }
+   809→   809→
+   810→   810→    // 同步日报回调
+   811→   811→    onSynced(context: string) {
+   812→   812→        this.reportContext = context
+   813→   813→    }
+   814→   814→
+   815→   815→    scrollToBottom() {
+   816→   816→        const el = this.$refs.msgList as HTMLElement
+   817→   817→        if (el) el.scrollTop = el.scrollHeight
+   818→   818→    }
+   819→   819→
+   820→   820→    scrollToActiveSession() {
+   821→   821→        this.$nextTick(() => {
+   822→   822→            const list = this.$el.querySelector('.session-list')
+   823→   823→            const active = this.$el.querySelector('.session-item.active')
+   824→   824→            if (list && active) {
+   825→   825→                (active as HTMLElement).scrollIntoView({ block: 'nearest' })
+   826→   826→            }
+   827→   827→        })
+   828→   828→    }
+   829→   829→
+   830→   830→    formatTime(str: string) {
+   831→   831→        if (!str) return ''
+   832→   832→        const d = new Date(str)
+   833→   833→        const pad = (n: number) => String(n).padStart(2, '0')
+   834→   834→        return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+   835→   835→    }
+   836→   836→}
+   837→   837→</script>
+   838→   838→
+   839→   839→<style lang="less" scoped>
+   840→   840→// 悬浮按钮
+   841→   841→.ai-chat-root {
+   842→   842→    position: fixed;
+   843→   843→    right: 24px;
+   844→   844→    bottom: 24px;
+   845→   845→    z-index: 2000;
+   846→   846→}
+   847→   847→
+   848→   848→.ai-fab {
+   849→   849→    display: flex;
+   850→   850→    align-items: center;
+   851→   851→    gap: 6px;
+   852→   852→    background: #409eff;
+   853→   853→    color: #fff;
+   854→   854→    border-radius: 24px;
+   855→   855→    padding: 10px 18px;
+   856→   856→    cursor: pointer;
+   857→   857→    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
+   858→   858→    font-size: 14px;
+   859→   859→    user-select: none;
+   860→   860→    &:hover { background: #337ecc; }
+   861→   861→    i { font-size: 18px; }
+   862→   862→}
+   863→   863→
+   864→   864→// 遮罩
+   865→   865→.ai-overlay {
+   866→   866→    position: fixed;
+   867→   867→    inset: 0;
+   868→   868→    background: rgba(0, 0, 0, 0.4);
+   869→   869→    backdrop-filter: blur(3px);
+   870→   870→    z-index: 2000;
+   871→   871→}
+   872→   872→
+   873→   873→// 面板
+   874→   874→.ai-panel {
+   875→   875→    position: fixed;
+   876→   876→    top: 50%;
+   877→   877→    left: 50%;
+   878→   878→    transform: translate(-50%, -50%);
+   879→   879→    width: min(1100px, 88vw);
+   880→   880→    height: min(750px, 82vh);
+   881→   881→    background: #fff;
+   882→   882→    border-radius: 12px;
+   883→   883→    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+   884→   884→    display: flex;
+   885→   885→    overflow: hidden;
+   886→   886→    z-index: 2001;
+   887→   887→}
+   888→   888→
+   889→   889→// 左栏
+   890→   890→.panel-left {
+   891→   891→    width: 200px;
+   892→   892→    flex-shrink: 0;
+   893→   893→    border-right: 1px solid #f0f0f0;
+   894→   894→    display: flex;
+   895→   895→    flex-direction: column;
+   896→   896→    background: #fafafa;
+   897→   897→}
+   898→   898→.left-header {
+   899→   899→    display: flex;
+   900→   900→    justify-content: space-between;
+   901→   901→    align-items: center;
+   902→   902→    padding: 14px 12px 10px;
+   903→   903→    font-size: 13px;
+   904→   904→    font-weight: 600;
+   905→   905→    color: #303133;
+   906→   906→    border-bottom: 1px solid #f0f0f0;
+   907→   907→    .add-icon { cursor: pointer; color: #409eff; font-size: 16px; &:hover { color: #337ecc; } }
+   908→   908→}
+   909→   909→.role-list { flex: 1; overflow-y: auto; padding: 6px; }
+   910→   910→.role-item {
+   911→   911→    display: flex;
+   912→   912→    align-items: center;
+   913→   913→    padding: 8px 10px;
+   914→   914→    cursor: pointer;
+   915→   915→    border-radius: 8px;
+   916→   916→    margin-bottom: 4px;
+   917→   917→    font-size: 14px;
+   918→   918→    color: #303133;
+   919→   919→    background: #f5f7fa;
+   920→   920→    border: 1px solid #e8eaed;
+   921→   921→    &:hover { background: #ecf5ff; border-color: #d9ecff; .role-actions { opacity: 1; } }
+   922→   922→    &.active { background: #ecf5ff; border-color: #b3d8ff; color: #409eff; font-weight: 500; }
+   923→   923→    .role-icon {
+   924→   924→        width: 24px;
+   925→   925→        height: 24px;
+   926→   926→        border-radius: 6px;
+   927→   927→        background: #409eff;
+   928→   928→        color: #fff;
+   929→   929→        display: flex;
+   930→   930→        align-items: center;
+   931→   931→        justify-content: center;
+   932→   932→        font-size: 12px;
+   933→   933→        flex-shrink: 0;
+   934→   934→        margin-right: 8px;
+   935→   935→    }
+   936→   936→    .role-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+   937→   937→    .role-actions {
+   938→   938→        opacity: 0;
+   939→   939→        display: flex;
+   940→   940→        gap: 6px;
+   941→   941→        i { font-size: 13px; &:hover { color: #409eff; } }
+   942→   942→    }
+   943→   943→}
+   944→   944→.role-empty { text-align: center; color: #606266; font-size: 13px; padding: 20px 10px; }
+   945→   945→
+   946→   946→// 中栏
+   947→   947→.panel-center {
+   948→   948→    flex: 1;
+   949→   949→    display: flex;
+   950→   950→    flex-direction: column;
+   951→   951→    min-width: 0;
+   952→   952→}
+   953→   953→.center-header {
+   954→   954→    padding: 10px 16px;
+   955→   955→    border-bottom: 1px solid #f0f0f0;
+   956→   956→    display: flex;
+   957→   957→    align-items: center;
+   958→   958→    justify-content: space-between;
+   959→   959→    .chat-title-wrap { display: flex; align-items: center; gap: 8px; }
+   960→   960→    .chat-icon { font-size: 20px; color: #409eff; }
+   961→   961→    .chat-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
+   962→   962→    .chat-sub { font-size: 11px; color: #909399; }
+   963→   963→    .header-actions { display: flex; gap: 2px; }
+   964→   964→    .header-btn {
+   965→   965→        width: 28px; height: 28px;
+   966→   966→        display: flex; align-items: center; justify-content: center;
+   967→   967→        border-radius: 6px;
+   968→   968→        cursor: pointer; font-size: 15px; color: #909399;
+   969→   969→        &:hover { background: #f0f2f5; color: #409eff; }
+   970→   970→    }
+   971→   971→}
+   972→   972→.msg-list {
+   973→   973→    flex: 1;
+   974→   974→    overflow-y: auto;
+   975→   975→    padding: 16px;
+   976→   976→    display: flex;
+   977→   977→    flex-direction: column;
+   978→   978→    gap: 12px;
+   979→   979→}
+   980→   980→.msg-empty {
+   981→   981→    flex: 1;
+   982→   982→    display: flex;
+   983→   983→    flex-direction: column;
+   984→   984→    align-items: center;
+   985→   985→    justify-content: center;
+   986→   986→    color: #606266;
+   987→   987→    font-size: 17px;
+   988→   988→    font-weight: 500;
+   989→   989→    gap: 8px;
+   990→   990→}
+   991→   991→.msg-item {
+   992→   992→    display: flex;
+   993→   993→    &.user { justify-content: flex-end; }
+   994→   994→    &.assistant { justify-content: flex-start; }
+   995→   995→    &.context { display: block; }
+   996→   996→    .bubble {
+   997→   997→        max-width: 80%;
+   998→   998→        padding: 8px 12px;
+   999→   999→        border-radius: 10px;
+  1000→  1000→        font-size: 13px;
+  1001→  1001→        line-height: 1.6;
+  1002→  1002→        word-break: break-word;
+  1003→  1003→    }
+  1004→  1004→    &.user .bubble { background: #409eff; color: #fff; border-top-right-radius: 2px; white-space: pre-wrap; }
+  1005→  1005→    &.assistant .bubble {
+  1006→  1006→        background: #e8edf2;
+  1007→  1007→        color: #303133;
+  1008→  1008→        border-top-left-radius: 2px;
+  1009→  1009→
+  1010→  1010→        // markdown 渲染样式
+  1011→  1011→        :deep(p) { margin: 0 0 6px; &:last-child { margin-bottom: 0; } }
+  1012→  1012→        :deep(h1), :deep(h2), :deep(h3), :deep(h4) { margin: 8px 0 4px; font-weight: 600; line-height: 1.4; }
+  1013→  1013→        :deep(h1) { font-size: 16px; }
+  1014→  1014→        :deep(h2) { font-size: 15px; }
+  1015→  1015→        :deep(h3) { font-size: 14px; }
+  1016→  1016→        :deep(ul), :deep(ol) { margin: 4px 0; padding-left: 20px; }
+  1017→  1017→        :deep(li) { margin: 2px 0; }
+  1018→  1018→        :deep(table) { border-collapse: collapse; margin: 6px 0; font-size: 12px; }
+  1019→  1019→        :deep(th), :deep(td) { border: 1px solid #c5cdd9; padding: 4px 8px; }
+  1020→  1020→        :deep(th) { background: #d0d8e4; }
+  1021→  1021→        :deep(code) { background: #d0d8e4; border-radius: 3px; padding: 1px 4px; font-size: 12px; }
+  1022→  1022→        :deep(pre) { background: #d0d8e4; border-radius: 6px; padding: 8px 12px; overflow-x: auto; margin: 6px 0; }
+  1023→  1023→        :deep(pre code) { background: none; padding: 0; }
+  1024→  1024→        :deep(strong) { font-weight: 600; }
+  1025→  1025→        :deep(hr) { border: none; border-top: 1px solid #c5cdd9; margin: 8px 0; }
+  1026→  1026→        :deep(a) { color: #409eff; }
+  1027→  1027→    }
+  1028→  1028→}
+  1029→  1029→.context-card {
+  1030→  1030→    border: 1px solid #d9ecff;
+  1031→  1031→    border-radius: 8px;
+  1032→  1032→    overflow: hidden;
+  1033→  1033→    background: #f0f7ff;
+  1034→  1034→
+  1035→  1035→    &.collapsed .context-card-header { border-bottom: none; }
+  1036→  1036→
+  1037→  1037→    .context-card-header {
+  1038→  1038→        display: flex;
+  1039→  1039→        align-items: center;
+  1040→  1040→        gap: 6px;
+  1041→  1041→        padding: 7px 12px;
+  1042→  1042→        background: #ecf5ff;
+  1043→  1043→        font-size: 12px;
+  1044→  1044→        font-weight: 600;
+  1045→  1045→        color: #409eff;
+  1046→  1046→        border-bottom: 1px solid #d9ecff;
+  1047→  1047→        cursor: pointer;
+  1048→  1048→        user-select: none;
+  1049→  1049→        &:hover { background: #d9ecff; }
+  1050→  1050→        .toggle-icon { margin-left: auto; font-size: 12px; }
+  1051→  1051→    }
+  1052→  1052→
+  1053→  1053→    .context-card-body {
+  1054→  1054→        padding: 10px 12px;
+  1055→  1055→        font-size: 12px;
+  1056→  1056→        line-height: 1.7;
+  1057→  1057→        color: #606266;
+  1058→  1058→        white-space: pre-wrap;
+  1059→  1059→        word-break: break-all;
+  1060→  1060→    }
+  1061→  1061→
+  1062→  1062→    .context-load-more {
+  1063→  1063→        text-align: center;
+  1064→  1064→        padding: 6px 0 2px;
+  1065→  1065→        border-top: 1px dashed #e4e7ed;
+  1066→  1066→        margin-top: 8px;
+  1067→  1067→    }
+  1068→  1068→}
+  1069→  1069→.input-area {
+  1070→  1070→    border-top: 1px solid #f0f0f0;
+  1071→  1071→    padding: 10px 12px 8px;
+  1072→  1072→}
+  1073→  1073→.input-row {
+  1074→  1074→    display: flex;
+  1075→  1075→    gap: 8px;
+  1076→  1076→    align-items: flex-end;
+  1077→  1077→}
+  1078→  1078→.input-box {
+  1079→  1079→    flex: 1;
+  1080→  1080→    position: relative;
+  1081→  1081→    /deep/ .el-textarea__inner { resize: none; padding-left: 8px; }
+  1082→  1082→}
+  1083→  1083→.sync-chip-row {
+  1084→  1084→    margin-bottom: 6px;
+  1085→  1085→}
+  1086→  1086→.sync-chip {
+  1087→  1087→    display: inline-flex;
+  1088→  1088→    align-items: center;
+  1089→  1089→    gap: 5px;
+  1090→  1090→    font-size: 12px;
+  1091→  1091→    color: #409eff;
+  1092→  1092→    background: #ecf5ff;
+  1093→  1093→    border: 1px solid #d9ecff;
+  1094→  1094→    border-radius: 12px;
+  1095→  1095→    padding: 2px 10px 2px 8px;
+  1096→  1096→    .chip-close { cursor: pointer; font-size: 11px; &:hover { color: #f56c6c; } }
+  1097→  1097→}
+  1098→  1098→.send-btn {
+  1099→  1099→    height: 52px;
+  1100→  1100→    width: 52px;
+  1101→  1101→    padding: 0;
+  1102→  1102→    font-size: 18px;
+  1103→  1103→    flex-shrink: 0;
+  1104→  1104→    border-radius: 10px !important;
+  1105→  1105→}
+  1106→  1106→.input-links {
+  1107→  1107→    display: flex;
+  1108→  1108→    gap: 16px;
+  1109→  1109→    margin-top: 6px;
+  1110→  1110→}
+  1111→  1111→.input-link {
+  1112→  1112→    font-size: 12px;
+  1113→  1113→    color: #909399;
+  1114→  1114→    cursor: pointer;
+  1115→  1115→    display: inline-flex;
+  1116→  1116→    align-items: center;
+  1117→  1117→    gap: 3px;
+  1118→  1118→    &:hover { color: #409eff; }
+  1119→  1119→}
+  1120→  1120→
+  1121→  1121→// 右栏
+  1122→  1122→.panel-right {
+  1123→  1123→    width: 242px;
+  1124→  1124→    flex-shrink: 0;
+  1125→  1125→    border-left: 1px solid #f0f0f0;
+  1126→  1126→    display: flex;
+  1127→  1127→    flex-direction: column;
+  1128→  1128→    padding: 12px;
+  1129→  1129→    gap: 16px;
+  1130→  1130→    overflow: hidden;
+  1131→  1131→    background: #fafafa;
+  1132→  1132→}
+  1133→  1133→.right-section {
+  1134→  1134→    display: flex;
+  1135→  1135→    flex-direction: column;
+  1136→  1136→    gap: 8px;
+  1137→  1137→}
+  1138→  1138→.section-title {
+  1139→  1139→    font-size: 13px;
+  1140→  1140→    font-weight: 600;
+  1141→  1141→    color: #303133;
+  1142→  1142→    display: flex;
+  1143→  1143→    align-items: center;
+  1144→  1144→    gap: 4px;
+  1145→  1145→}
+  1146→  1146→.save-hint { font-size: 11px; color: oklch(70.4% .04 256.788); text-align: right; }
+  1147→  1147→.session-list { display: flex; flex-direction: column; gap: 4px; max-height: 400px; overflow-y: auto; padding: 2px; }
+  1148→  1148→.session-item {
+  1149→  1149→    display: flex;
+  1150→  1150→    align-items: center;
+  1151→  1151→    gap: 8px;
+  1152→  1152→    font-size: 12px;
+  1153→  1153→    color: #606266;
+  1154→  1154→    padding: 8px 10px;
+  1155→  1155→    border-radius: 8px;
+  1156→  1156→    cursor: pointer;
+  1157→  1157→    background: #f5f7fa;
+  1158→  1158→    border: 1px solid #e8eaed;
+  1159→  1159→    flex-shrink: 0;
+  1160→  1160→    &:hover { background: #ecf5ff; border-color: #d9ecff; }
+  1161→  1161→    &.active { background: #ecf5ff; border-color: #b3d8ff; color: #409eff; }
+  1162→  1162→    .session-icon {
+  1163→  1163→        width: 24px;
+  1164→  1164→        height: 24px;
+  1165→  1165→        line-height: 24px;
+  1166→  1166→        text-align: center;
+  1167→  1167→        border-radius: 6px;
+  1168→  1168→        background: #409eff;
+  1169→  1169→        color: #fff;
+  1170→  1170→        font-size: 12px;
+  1171→  1171→        flex-shrink: 0;
+  1172→  1172→    }
+  1173→  1173→    &.active .session-icon { background: #337ecc; }
+  1174→  1174→    .session-info {
+  1175→  1175→        flex: 1;
+  1176→  1176→        min-width: 0;
+  1177→  1177→    }
+  1178→  1178→    .session-title {
+  1179→  1179→        overflow: hidden;
+  1180→  1180→        text-overflow: ellipsis;
+  1181→  1181→        white-space: nowrap;
+  1182→  1182→        font-size: 12px;
+  1183→  1183→        line-height: 1.4;
+  1184→  1184→    }
+  1185→  1185→    .session-time {
+  1186→  1186→        font-size: 10px;
+  1187→  1187→        color: #c0c4cc;
+  1188→  1188→        margin-top: 2px;
+  1189→  1189→        line-height: 1;
+  1190→  1190→    }
+  1191→  1191→    &.active .session-time { color: #79bbff; }
+  1192→  1192→}
+  1193→  1193→.session-empty { font-size: 12px; color: #c0c4cc; text-align: center; padding: 10px 0; }
+  1194→  1194→
+  1195→  1195→// 消息区 loading
+  1196→  1196→.msg-loading {
+  1197→  1197→    flex: 1;
+  1198→  1198→    display: flex;
+  1199→  1199→    flex-direction: column;
+  1200→  1200→    align-items: center;
+  1201→  1201→    justify-content: center;
+  1202→  1202→    gap: 8px;
+  1203→  1203→    color: #c0c4cc;
+  1204→  1204→    font-size: 13px;
+  1205→  1205→    i { font-size: 24px; color: #409eff; animation: spin 1s linear infinite; }
+  1206→  1206→}
+  1207→  1207→@keyframes spin { to { transform: rotate(360deg); } }
+  1208→  1208→
+  1209→  1209→// AI 思考中（三点跳动）
+  1210→  1210→.ai-thinking {
+  1211→  1211→    display: inline-flex;
+  1212→  1212→    align-items: center;
+  1213→  1213→    gap: 4px;
+  1214→  1214→    padding: 2px 0;
+  1215→  1215→}
+  1216→  1216→.ai-thinking-dot {
+  1217→  1217→    width: 7px;
+  1218→  1218→    height: 7px;
+  1219→  1219→    border-radius: 50%;
+  1220→  1220→    background: #909399;
+  1221→  1221→    animation: thinking-bounce 1.2s ease-in-out infinite;
+  1222→  1222→    &:nth-child(1) { animation-delay: 0s; }
+  1223→  1223→    &:nth-child(2) { animation-delay: 0.2s; }
+  1224→  1224→    &:nth-child(3) { animation-delay: 0.4s; }
+  1225→  1225→}
+  1226→  1226→@keyframes thinking-bounce {
+  1227→  1227→    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  1228→  1228→    40% { transform: translateY(-5px); opacity: 1; }
+  1229→  1229→}
+  1230→  1230→
+  1231→  1231→// 打字光标
+  1232→  1232→.typing-cursor {
+  1233→  1233→    display: inline-block;
+  1234→  1234→    width: 2px;
+  1235→  1235→    height: 13px;
+  1236→  1236→    background: currentColor;
+  1237→  1237→    margin-left: 2px;
+  1238→  1238→    vertical-align: text-bottom;
+  1239→  1239→    animation: blink .7s step-end infinite;
+  1240→  1240→}
+  1241→  1241→@keyframes blink { 50% { opacity: 0; } }
+  1242→  1242→
+  1243→  1243→// 骨架屏
+  1244→  1244→.skeleton-item {
+  1245→  1245→    display: flex;
+  1246→  1246→    align-items: center;
+  1247→  1247→    gap: 8px;
+  1248→  1248→    padding: 8px 10px;
+  1249→  1249→    border-radius: 8px;
+  1250→  1250→    background: #f5f7fa;
+  1251→  1251→    border: 1px solid #e8eaed;
+  1252→  1252→    margin-bottom: 4px;
+  1253→  1253→}
+  1254→  1254→.sk-avatar {
+  1255→  1255→    width: 24px;
+  1256→  1256→    height: 24px;
+  1257→  1257→    border-radius: 6px;
+  1258→  1258→    background: linear-gradient(90deg, #e8eaed 25%, #f5f7fa 50%, #e8eaed 75%);
+  1259→  1259→    background-size: 200% 100%;
+  1260→  1260→    animation: shimmer 1.2s infinite;
+  1261→  1261→    flex-shrink: 0;
+  1262→  1262→}
+  1263→  1263→.sk-lines { flex: 1; }
+  1264→  1264→.sk-line {
+  1265→  1265→    height: 11px;
+  1266→  1266→    border-radius: 4px;
+  1267→  1267→    background: linear-gradient(90deg, #e8eaed 25%, #f5f7fa 50%, #e8eaed 75%);
+  1268→  1268→    background-size: 200% 100%;
+  1269→  1269→    animation: shimmer 1.2s infinite;
+  1270→  1270→}
+  1271→  1271→@keyframes shimmer { to { background-position: -200% 0; } }
+  1272→  1272→
+  1273→  1273→// 动画
+  1274→  1274→.panel-fade-enter-active, .panel-fade-leave-active { transition: opacity .2s, transform .2s; }
+  1275→  1275→.panel-fade-enter, .panel-fade-leave-to { opacity: 0; transform: translateY(12px); }
+  1276→  1276→</style>
+  1277→  1277→

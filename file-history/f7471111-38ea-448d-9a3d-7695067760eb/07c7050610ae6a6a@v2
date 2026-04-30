@@ -1,0 +1,210 @@
+/**
+ * 文档设置权限功能优化 - 接口测试脚本
+ *
+ * 用法:
+ *   1. 浏览器登录测试环境，F12 → Application → Cookies → 复制 SESSION 值
+ *   2. 填入下方 CONFIG.cookie
+ *   3. node test-api.mjs
+ */
+
+// ========== 配置 ==========
+const CONFIG = {
+  baseUrl: 'http://xcollabspace-test.xtool-staging.yottastudios.com/api/v1/node/role',
+  cookie: 'SESSION=你的session值',
+  spaceId: 'spcFKY26VSy2P',
+  spaceNodeId: '1934538201599315970',
+  // 用于 editRole 冲突校验测试的成员 unitId（unitType=3）
+  memberUnitId: '1623148087983276034',
+};
+
+// ========== 工具函数 ==========
+const headers = {
+  'x-space-id': CONFIG.spaceId,
+  'cookie': CONFIG.cookie,
+  'content-type': 'application/json',
+};
+
+async function api(method, path, body) {
+  const url = `${CONFIG.baseUrl}${path}`;
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  return res.json();
+}
+
+function GET(path) { return api('GET', path); }
+function POST(path, body) { return api('POST', path, body); }
+
+let passed = 0;
+let failed = 0;
+
+function assert(name, condition, detail) {
+  if (condition) {
+    console.log(`  ✅ ${name}`);
+    passed++;
+  } else {
+    console.log(`  ❌ ${name}`);
+    if (detail !== undefined) console.log(`     实际值:`, detail);
+    failed++;
+  }
+}
+
+// ========== 测试用例 ==========
+
+async function testListTeamRoles() {
+  console.log('\n📋 1. listTeamRoles - 小组权限列表');
+
+  const res = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+  assert('接口返回 success', res.success === true, res);
+  assert('data 不为 null', res.data != null, res.data);
+  assert('包含分页字段 total', typeof res.data?.total === 'number', res.data?.total);
+  assert('包含分页字段 records', Array.isArray(res.data?.records), res.data?.records);
+
+  if (res.data?.records?.length > 0) {
+    const first = res.data.records[0];
+    assert('记录包含 teamId', first.teamId != null, first.teamId);
+    assert('记录包含 teamName', typeof first.teamName === 'string', first.teamName);
+    assert('记录包含 parentId', first.parentId != null, first.parentId);
+    assert('记录包含 memberCount', typeof first.memberCount === 'number', first.memberCount);
+    assert('记录包含 role（string 或 null）',
+      first.role === null || typeof first.role === 'string', first.role);
+    assert('记录包含 children（数组）', Array.isArray(first.children), first.children);
+  } else {
+    console.log('  ⚠️  无数据，跳过字段校验');
+  }
+
+  // 搜索测试
+  const searchRes = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=不存在的小组xxx&pageNo=1&pageSize=20`);
+  assert('搜索不存在关键词返回空列表', searchRes.success && searchRes.data?.records?.length === 0, searchRes.data);
+
+  // 分页边界
+  const pageRes = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=9999&pageSize=20`);
+  assert('超大页码返回空列表', pageRes.success && pageRes.data?.records?.length === 0, pageRes.data);
+}
+
+async function testListMemberRoles() {
+  console.log('\n👤 2. listMemberRoles - 成员权限列表');
+
+  const res = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  assert('接口返回 success', res.success === true, res);
+  assert('data 不为 null', res.data != null, res.data);
+  assert('包含分页字段 total', typeof res.data?.total === 'number', res.data?.total);
+  assert('包含分页字段 records', Array.isArray(res.data?.records), res.data?.records);
+
+  if (res.data?.records?.length > 0) {
+    const first = res.data.records[0];
+    assert('记录包含 unitId', first.unitId != null, first.unitId);
+    assert('记录包含 unitName', typeof first.unitName === 'string', first.unitName);
+    assert('unitType 固定为 3（成员）', first.unitType === 3, first.unitType);
+    assert('记录包含 role', typeof first.role === 'string', first.role);
+    assert('role 值合法', ['reader', 'editor', 'manager'].includes(first.role), first.role);
+  } else {
+    console.log('  ⚠️  该节点无手动设置的成员权限，跳过字段校验');
+  }
+
+  // 搜索测试
+  const searchRes = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=不存在的成员xxx&pageNo=1&pageSize=20`);
+  assert('搜索不存在关键词返回空列表', searchRes.success && searchRes.data?.records?.length === 0, searchRes.data);
+}
+
+async function testPermissionLogs() {
+  console.log('\n📜 3. permissionLogs - 权限变更历史');
+
+  const res = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+  assert('接口返回 success', res.success === true, res);
+  assert('data 不为 null', res.data != null, res.data);
+  assert('包含分页字段 total', typeof res.data?.total === 'number', res.data?.total);
+  assert('包含分页字段 records', Array.isArray(res.data?.records), res.data?.records);
+
+  if (res.data?.records?.length > 0) {
+    const first = res.data.records[0];
+    assert('记录包含 operatorName', typeof first.operatorName === 'string', first.operatorName);
+    assert('记录包含 createdAt', typeof first.createdAt === 'string', first.createdAt);
+    assert('记录包含 targetName', typeof first.targetName === 'string', first.targetName);
+    assert('记录包含 description', typeof first.description === 'string', first.description);
+    assert('记录包含 newRoleDisplay', typeof first.newRoleDisplay === 'string', first.newRoleDisplay);
+    assert('createdAt 格式正确', /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(first.createdAt), first.createdAt);
+  } else {
+    console.log('  ⚠️  暂无变更日志（后续 editRole 测试会产生）');
+  }
+}
+
+async function testEditRoleConflict() {
+  console.log('\n⚡ 4. editRole - 权限冲突校验');
+
+  const res = await POST('/editRole', {
+    spaceNodeId: CONFIG.spaceNodeId,
+    unitId: CONFIG.memberUnitId,
+    role: 'reader',
+  });
+  assert('接口返回 success', res.success === true, res);
+  assert('data 不为 null', res.data != null, res.data);
+  assert('包含 hasConflict 字段', typeof res.data?.hasConflict === 'boolean', res.data?.hasConflict);
+
+  if (res.data?.hasConflict) {
+    assert('有冲突时包含 conflictMessage', typeof res.data.conflictMessage === 'string', res.data.conflictMessage);
+    assert('有冲突时包含 conflictTeamName', typeof res.data.conflictTeamName === 'string', res.data.conflictTeamName);
+    assert('有冲突时包含 conflictTeamRole', typeof res.data.conflictTeamRole === 'string', res.data.conflictTeamRole);
+    console.log(`  ℹ️  冲突信息: ${res.data.conflictMessage}`);
+  } else {
+    console.log('  ℹ️  未触发冲突（该成员不在更高权限的小组中）');
+  }
+}
+
+async function testEditRoleCreatesLog() {
+  console.log('\n📝 5. 验证 editRole 产生了变更日志');
+
+  const res = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+  assert('接口返回 success', res.success === true, res);
+
+  if (res.data?.records?.length > 0) {
+    const latest = res.data.records[0];
+    assert('最新日志 description 不为空', !!latest.description, latest.description);
+    console.log(`  ℹ️  最新日志: ${latest.description} (${latest.createdAt})`);
+  } else {
+    console.log('  ⚠️  未查到变更日志，请确认 editRole 是否执行成功');
+  }
+}
+
+async function testParamValidation() {
+  console.log('\n🔒 6. 参数校验');
+
+  const res1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=0&pageSize=20`);
+  assert('pageNo=0 应返回错误', res1.success === false, res1);
+
+  const res2 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=101`);
+  assert('pageSize=101 应返回错误', res2.success === false, res2);
+}
+
+// ========== 执行 ==========
+async function main() {
+  console.log('🚀 文档设置权限功能优化 - 接口测试');
+  console.log(`   环境: ${CONFIG.baseUrl}`);
+  console.log(`   空间: ${CONFIG.spaceId}`);
+  console.log(`   节点: ${CONFIG.spaceNodeId}`);
+
+  try {
+    await testListTeamRoles();
+    await testListMemberRoles();
+    await testPermissionLogs();
+    await testEditRoleConflict();
+    await testEditRoleCreatesLog();
+    await testParamValidation();
+  } catch (e) {
+    if (e.message?.includes('Invalid URL') || e.cause?.code === 'ECONNREFUSED') {
+      console.log('\n❌ 无法连接测试环境，请检查网络或 BASE_URL');
+    } else if (e.message?.includes('fetch')) {
+      console.log('\n❌ 请使用 Node.js 18+ 运行（需要原生 fetch 支持）');
+    } else {
+      console.log(`\n❌ 异常: ${e.message}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`\n=============================`);
+  console.log(`✅ 通过: ${passed}  ❌ 失败: ${failed}  📊 总计: ${passed + failed}`);
+  console.log(`=============================`);
+  process.exit(failed > 0 ? 1 : 0);
+}
+
+main();

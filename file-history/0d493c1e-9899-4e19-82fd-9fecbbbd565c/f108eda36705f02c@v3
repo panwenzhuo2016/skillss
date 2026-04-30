@@ -1,0 +1,964 @@
+<template>
+    <oa-template-content
+        v-loading="isLoading"
+        :show-back-btn="false"
+        :header-title="getTitle()"
+        :show-header="showHeader"
+        :show-footer="true"
+        :show-save-btn="true"
+        :is-confirm-disabled="isConfirmDisabled"
+        class="OCApprovalApplicationManagements"
+        @cancel="cancelSubmit"
+        @confirm="submitForm"
+        @back="cancelSubmit"
+        @save="submitForm(true)"
+    >
+        <OCSeal
+            v-if="applicationParams.process_key === 'stamp'"
+            ref="sealApplication"
+            :re-edit-data="reEditData"
+            @changeApplicationParams="e => (applicationParams = e)"
+        />
+
+        <OCPayment
+            v-if="applicationParams.process_key === 'payment'"
+            :re-edit-data="reEditData"
+            @changeApplicationParams="e => (applicationParams = e)"
+            @changeConfirmDisabled="changeConfirmDisabled"
+        />
+        <!-- 审批流程展示 -->
+        <ProcessCard :path="path" />
+
+        <el-dialog
+            :title="$t('t544')"
+            :visible.sync="paymentWarning.showPaymentWarning"
+            :modal="false"
+            :close-on-click-modal="false"
+            :close-on-press-escape="false"
+            :show-close="false"
+            width="400px"
+            :destroy-on-close="true"
+        >
+            <template #default>
+                <div class="dialog">
+                    {{ $t('t379') }}
+                </div>
+            </template>
+            <template #footer>
+                <span slot="footer" class="dialog-footer">
+                    <el-button @click="cancelPayment">{{ $t('cancel') }}</el-button>
+                    <el-button type="primary" @click="confirmPayment">{{ $t('t486') }}</el-button>
+                </span>
+            </template>
+        </el-dialog>
+    </oa-template-content>
+</template>
+
+<script lang="ts">
+import deepCopy from 'deep-copy'
+import _ from 'lodash'
+import { Vue, Component, Prop, Watch, Emit } from 'vue-property-decorator'
+
+import { OCApprovalApis, OCSealApprovalApis } from '@/apis'
+import OaTemplateContent from '@/app/PC/Common/OaCommTemplate/OaTemplateContent.vue'
+import { showMessageWarning, showMessageSuccess } from '@/app/PC/Common/ShowMessage/showMessage'
+import i18n from '@/i18n'
+import store from '@/store'
+import { generateUniqueName } from '@/utils'
+
+import OCApprovalCM from './components'
+import {
+    applicationRequestParamsData,
+    nodesItemT,
+    getOCStaffMap,
+    getOCSealStaffMap,
+} from './utils/OCApplicationsRequestTS'
+import { operatorOption } from './utils/OCRequest'
+
+@Component({
+    name: 'OCApplication',
+    components: {
+        OaTemplateContent,
+        OCSeal: OCApprovalCM.OCSeal,
+        OCPayment: OCApprovalCM.OCPayment,
+        ProcessCard: OCApprovalCM.ProcessCard,
+    },
+
+    created() {
+        this.operationType = this.operationT ? this.operationT : this.$route.path.split('/')[3]
+        this.applicationParams.process_key = operatorOption.filter(
+            item => item.operationType === this.operationType
+        )[0].process_key
+    },
+})
+export default class extends Vue {
+    // 避免操作时改变原字典数据中的函数
+    @Prop({ type: Object, default: () => ({}) }) readonly reEditData: Record<string, any>
+    @Prop({ type: Boolean, default: true }) readonly showHeader: boolean
+    @Prop({ type: String, default: '' }) readonly operationT: 'OCPayment' | 'OCSeal'
+    operationType = '' // 操作类型，管理端根据组件传参，员工端根据路由判断
+
+    isLoading = false
+    path = []
+    // 确认提交后按钮置灰，防抖
+    ARPData = deepCopy(applicationRequestParamsData)
+    isConfirmDisabled = false
+    applicationParams: any = {}
+    paymentWarning = {
+        showPaymentWarning: false,
+        fn: null,
+    }
+
+    timeCount = 0 // 请求审批流程的定时器
+
+    // 发起当前流程的参数信息
+    get requestParamsData() {
+        return this.ARPData[this.applicationParams.process_key]
+    }
+
+    @Emit('close')
+    closeReEdit(e) {
+        return e
+    }
+
+    @Emit('changePageType')
+    changePageType(e) {
+        return e
+    }
+
+    @Watch('applicationParams', { immediate: true, deep: true })
+    handlerApplicationParams(val) {
+        if (!val.process_key) {
+            return
+        }
+
+        // 必须的参数
+        const requireParamsArr = this.requestParamsData.filter(item => item.isRequired)
+        // 在某种关联条件下必须的参数
+        const relativeParamsArr = this.requestParamsData.filter(item => item.isRelative)
+
+        if (this.timeCount) {
+            clearTimeout(this.timeCount)
+        }
+        // 如果没有直接主管/部门主管，直接返回
+        const info = store.state.profileInfo
+        if (!info.supervisor || !info.direct_supervisor) {
+            showMessageWarning(`${this.$t('t565')}`)
+            return
+        }
+
+        for (const item of requireParamsArr) {
+            if (item.type === 'Array') {
+                if (!val[item.value]) {
+                    return
+                }
+
+                if (JSON.stringify(val[item.value]) === '[]') {
+                    return
+                }
+            } else if (item.type === 'Object') {
+                if (!val[item.value]) {
+                    return
+                }
+
+                if (JSON.stringify(val[item.value]) === '{}') {
+                    return
+                }
+            } else if (item.type === 'Number') {
+                if (!val[item.value] && val[item.value] !== 0) {
+                    return
+                }
+            } else if (!val[item.value]) {
+                return
+            }
+        }
+
+        for (const item of relativeParamsArr) {
+            if (item.relative_fun(val[item.relative_value])) {
+                if (item.type === 'Array') {
+                    if (!val[item.value]) {
+                        return
+                    }
+                    if (JSON.stringify(val[item.value]) === '[]') {
+                        return
+                    }
+                } else if (item.type === 'Object') {
+                    if (!val[item.value]) {
+                        return
+                    }
+                    if (JSON.stringify(val[item.value]) === '{}') {
+                        return
+                    }
+                } else if (item.type === 'Number') {
+                    if (!val[item.value] && val[item.value] !== 0) {
+                        return
+                    }
+                } else if (!val[item.value]) {
+                    return
+                }
+            }
+        }
+
+        // 盖章申请的额外校验
+        if (val.process_key === 'stamp') {
+            const checkRes = (this.$refs.sealApplication as any).validator()
+            if (!checkRes) {
+                return
+            }
+        }
+
+        this.timeCount = window.setTimeout(async () => {
+            if (val.process_key === 'payment') {
+                const OCMap = await getOCStaffMap()
+                const params = {
+                    process_key: val.process_key,
+                    sys_site: OCMap.getMapByName('pay_company_list').filter(
+                        item => item.value === val.pay_company
+                    )[0]?.site,
+                    context: { ...val },
+                    encrypt_config: {
+                        obj: 'context',
+                        res_type: 'sfuser',
+                        non_encrypt_columns: [
+                            'department',
+                            'pay_type',
+                            'pay_company',
+                            'recipient',
+                            'payment_method',
+                            'invoice_type',
+                            'apply_reason',
+                            'is_credit',
+                            'currency',
+                            'allocation_details',
+                            'total_money',
+                            'plan_pay_date',
+                            'priority',
+                        ],
+                        hash_columns: ['supplier_info.supplier_company'],
+                        dup_check_columns: ['nickname'],
+                    },
+                }
+                delete params.context.process_key
+                const res = await OCApprovalApis.setPreflightProcessAPI(params)
+                if (res) {
+                    this.handlerPreflight({ res })
+                }
+            } else if (val.process_key === 'stamp') {
+                const OCMap = await getOCSealStaffMap()
+                const params = {
+                    process_key: val.process_key,
+                    sys_site: OCMap.getMapByName('pay_company_list').filter(
+                        item => item.value === val.pay_company
+                    )[0]?.site,
+                    context: { ...val },
+                    encrypt_config: {
+                        obj: 'context',
+                        res_type: 'sfuser',
+                        non_encrypt_columns: [
+                            'department',
+                            'pay_company',
+                            'stamp_type',
+                            'stamp_file',
+                            'stamp_file_num',
+                            'need_scan',
+                            'need_post',
+                            'priority',
+                            'plan_stamp_date',
+                            'is_contract',
+                            'need_supplement',
+                            // 审批流程修改，增加version传参
+                            'version',
+                        ],
+                        dup_check_columns: ['nickname'],
+                    },
+                    version: undefined,
+                }
+                // 重新编辑增加version参数
+                if (this.reEditData?.isReEdit) {
+                    params.version = this.reEditData.version
+                }
+                delete params.context.process_key
+                const res = await OCSealApprovalApis.setOCSealPreflightProcessAPI(params)
+                if (res) {
+                    this.handlerPreflight({ res })
+                }
+            }
+        }, 1000)
+    }
+
+    async submitForm(isSave = false) {
+        // 如果没有直接主管/部门主管，直接返回
+        const info = store.state.profileInfo
+        if (!info.supervisor || !info.direct_supervisor) {
+            showMessageWarning(`${this.$t('t565')}`)
+            this.isConfirmDisabled = false
+            return
+        }
+
+        const requireParamsArr = this.requestParamsData.filter(item => item.isRequired)
+        const relativeParamsArr = this.requestParamsData.filter(item => item.isRelative)
+
+        this.isConfirmDisabled = true
+
+        // 检查信息是否填完整
+        for (const item of requireParamsArr) {
+            if (item.type === 'Array') {
+                if (
+                    !this.applicationParams[item.value] ||
+                    JSON.stringify(this.applicationParams[item.value]) === '[]'
+                ) {
+                    showMessageWarning(`${this.$t('t566')}`)
+                    this.isConfirmDisabled = false
+                    return
+                }
+            } else if (item.type === 'Object') {
+                if (
+                    !this.applicationParams[item.value] ||
+                    JSON.stringify(this.applicationParams[item.value]) === '{}'
+                ) {
+                    showMessageWarning(`${this.$t('t566')}`)
+                    this.isConfirmDisabled = false
+                    return
+                }
+            } else if (item.type === 'Number') {
+                if (!this.applicationParams[item.value] && this.applicationParams[item.value] !== 0) {
+                    return
+                }
+            } else if (!this.applicationParams[item.value]) {
+                showMessageWarning(`${this.$t('t566')}`)
+                this.isConfirmDisabled = false
+                return
+            }
+        }
+
+        for (const item of relativeParamsArr) {
+            if (item.relative_fun(this.applicationParams[item.relative_value])) {
+                if (item.type === 'Array') {
+                    if (
+                        !this.applicationParams[item.value] ||
+                        JSON.stringify(this.applicationParams[item.value]) === '[]'
+                    ) {
+                        showMessageWarning(`${this.$t('t566')}`)
+                        this.isConfirmDisabled = false
+                        return
+                    }
+                } else if (item.type === 'Object') {
+                    if (
+                        !this.applicationParams[item.value] ||
+                        JSON.stringify(this.applicationParams[item.value]) === '{}'
+                    ) {
+                        showMessageWarning(`${this.$t('t566')}`)
+                        this.isConfirmDisabled = false
+                        return
+                    }
+                } else if (item.type === 'Number') {
+                    if (!this.applicationParams[item.value] && this.applicationParams[item.value] !== 0) {
+                        showMessageWarning(`${this.$t('t566')}`)
+                        this.isConfirmDisabled = false
+                        return
+                    }
+                } else if (!this.applicationParams[item.value]) {
+                    showMessageWarning(`${this.$t('t566')}`)
+                    this.isConfirmDisabled = false
+                    return
+                }
+            }
+        }
+
+        if (this.operationType === 'OCPayment') {
+            const OCMap = await getOCStaffMap()
+            const params = {
+                process_key: this.applicationParams.process_key,
+                sys_site: OCMap.getMapByName('pay_company_list').filter(
+                    item => item.value === this.applicationParams.pay_company
+                )[0]?.site,
+                context: JSON.parse(JSON.stringify(this.applicationParams)),
+            }
+
+            params.process_key = this.applicationParams.process_key
+            delete params.context.process_key
+
+            const handlerP = {
+                ..._.cloneDeep(params),
+                encrypt_config: {
+                    obj: 'context',
+                    res_type: 'sfuser',
+                    non_encrypt_columns: [
+                        'department',
+                        'pay_type',
+                        'pay_company',
+                        'recipient',
+                        'payment_method',
+                        'invoice_type',
+                        'apply_reason',
+                        'is_credit',
+                        'currency',
+                        'allocation_details',
+                        'total_money',
+                        'plan_pay_date',
+                        'priority',
+                    ],
+                    hash_columns: ['supplier_info.supplier_company'],
+                    dup_check_columns: ['nickname'],
+                },
+            }
+
+            const res = await OCApprovalApis.setPreflightProcessAPI(handlerP)
+            if (res) {
+                if (this.timeCount) {
+                    clearTimeout(this.timeCount)
+                }
+                this.handlerPreflight({ res, isSubmit: true, params, isSave })
+            } else {
+                showMessageWarning(`${this.$t('t568')}`)
+                this.isConfirmDisabled = false
+            }
+        } else if (this.operationType === 'OCSeal') {
+            // 盖章申请的额外校验
+            const checkRes = (this.$refs.sealApplication as any).validator()
+
+            if (!checkRes) {
+                showMessageWarning(`${this.$t('t566')}`)
+                this.isConfirmDisabled = false
+                return
+            }
+
+            const OCMap = await getOCSealStaffMap()
+            const params = {
+                process_key: this.applicationParams.process_key,
+                sys_site: OCMap.getMapByName('pay_company_list').filter(
+                    item => item.value === this.applicationParams.pay_company
+                )[0]?.site,
+                context: JSON.parse(JSON.stringify(this.applicationParams)),
+            }
+
+            params.process_key = this.applicationParams.process_key
+            delete params.context.process_key
+
+            const handlerP = {
+                ..._.cloneDeep(params),
+                encrypt_config: {
+                    obj: 'context',
+                    res_type: 'sfuser',
+                    non_encrypt_columns: [
+                        'department',
+                        'pay_company',
+                        'stamp_type',
+                        'stamp_file',
+                        'stamp_file_num',
+                        'need_scan',
+                        'need_post',
+                        'priority',
+                        'plan_stamp_date',
+                        'is_contract',
+                        'need_supplement',
+                        'version',
+                    ],
+                    dup_check_columns: ['nickname'],
+                },
+                version: undefined,
+            }
+            // 重新编辑增加version参数
+            if (this.reEditData?.isReEdit) {
+                handlerP.version = this.reEditData.version
+            }
+            const res = await OCSealApprovalApis.setOCSealPreflightProcessAPI(handlerP)
+            if (res) {
+                if (this.timeCount) {
+                    clearTimeout(this.timeCount)
+                }
+                this.handlerPreflight({ res, isSubmit: true, params, isSave })
+            } else {
+                showMessageWarning(`${this.$t('t568')}`)
+                this.isConfirmDisabled = false
+            }
+        }
+    }
+
+    // 确认按钮是否可点击
+    changeConfirmDisabled(bool) {
+        this.isConfirmDisabled = bool
+    }
+
+    getTitle() {
+        return operatorOption.filter(item => item.operationType === this.operationType)[0]?.label
+    }
+
+    cancelSubmit() {
+        if (this.reEditData?.isReEdit) {
+            // 重新编辑
+            this.closeReEdit('withoutRefresh')
+        } else {
+            // 初次请求
+            this.changePageType('TableList')
+        }
+        this.path = []
+    }
+
+    initPage() {
+        if (this.timeCount) {
+            clearTimeout(this.timeCount)
+        }
+        this.path = []
+        this.applicationParams = {}
+        this.changeConfirmDisabled(false)
+    }
+
+    showPath({ cc, nodes, special_nicknames }) {
+        const templateNodes = []
+        // 如果相邻两个审批流人员相同，流程图中保留一个
+        nodes.forEach(item => {
+            if (!templateNodes.length) {
+                templateNodes.push({ ...item })
+            } else {
+                templateNodes[templateNodes.length - 1].operator !== item.operator
+                    ? templateNodes.push({ ...item })
+                    : ''
+            }
+        })
+
+        if (this.applicationParams.process_key === 'payment') {
+            // 付款申请中最后申请人冲账步骤不展示
+            if (templateNodes[templateNodes.length - 1].operator_type === 'requester') {
+                templateNodes.pop()
+            }
+            templateNodes.forEach(item => {
+                if (item.operator_type === 'financial_handel') {
+                    item.showName = this.$t('t292')
+                    if (!item.operator.length) {
+                        item.operator = special_nicknames.filter(
+                            s_name => s_name.operator_type === 'financial_handel'
+                        )[0].nicknames
+                    }
+                } else if (item.operator_type === 'financial_payment') {
+                    item.showName = this.$t('t294')
+                    if (!item.operator.length) {
+                        item.operator = special_nicknames.filter(
+                            s_name => s_name.operator_type === 'financial_payment'
+                        )[0].nicknames
+                    }
+                }
+                if ([5, 9].includes(this.applicationParams.department)) {
+                    if (item.operator_type === 'requester') {
+                        item.cc = cc
+                        item.showName = i18n.t('t373')
+                    }
+                } else if (_.lowerCase(item.operator_type) === 'ceo') {
+                    item.cc = cc
+                }
+            })
+        } else if (this.applicationParams.process_key === 'stamp') {
+            // 付款申请中最后申请人冲账步骤不展示
+            if (templateNodes[templateNodes.length - 1].operator_type === 'requester') {
+                templateNodes.pop()
+            }
+            templateNodes.forEach(item => {
+                if (item.operator_type === 'stamp_handel') {
+                    item.showName = this.$t('Receive')
+                    if (!item.operator.length) {
+                        item.operator = special_nicknames.filter(
+                            s_name => s_name.operator_type === 'stamp_handel'
+                        )[0].nicknames
+                    }
+                } else if (item.operator_type === 'stamp_execute') {
+                    item.showName = this.$t('execute')
+                    if (!item.operator.length) {
+                        item.operator = special_nicknames.filter(
+                            s_name => s_name.operator_type === 'stamp_execute'
+                        )[0].nicknames
+                    }
+                } else if (_.lowerCase(item.operator_type) === 'ceo') {
+                    item.cc = cc
+                } else if (_.lowerCase(item.operator_type) === 'legal_pending') {
+                    item.showName = this.$t('legalAffairs')
+                }
+            })
+        }
+
+        this.path = templateNodes
+    }
+
+    // 查询是否重复付款单据
+    async testDuplicatedPayment() {
+        const OCMap = await getOCStaffMap()
+        const params = {
+            pay_company: this.applicationParams.pay_company,
+            total_money: this.applicationParams.total_money,
+            sys_site: OCMap.getMapByName('pay_company_list').filter(
+                item => item.value === this.applicationParams.pay_company
+            )[0]?.site,
+            receive_money_company: [this.applicationParams.supplier_info.supplier_company],
+            intact_columns: ['pay_company', 'total_money', 'receive_money_company'],
+            hash_filter: {
+                obj: '$this',
+                columns: ['receive_money_company'],
+            },
+        }
+        const res = await OCApprovalApis.checkDuplicatedAPI(params)
+        if (res && res.duplicate) {
+            if (
+                this.reEditData?.isReEdit &&
+                res.requests.length === 1 &&
+                res.requests[0].id === this.reEditData.oc_request_id
+            ) {
+                return 'confirmPayment'
+            }
+            this.paymentWarning.showPaymentWarning = true
+            return new Promise(resolve => {
+                this.paymentWarning.fn = e => {
+                    if (e === 'confirmPayment') {
+                        resolve(e)
+                    } else {
+                        resolve('')
+                    }
+                }
+            })
+        }
+        return 'confirmPayment'
+    }
+
+    cancelPayment() {
+        this.paymentWarning.fn('cancelPayment')
+    }
+
+    confirmPayment() {
+        this.paymentWarning.fn('confirmPayment')
+    }
+
+    // 预检接口数据处理 + 提交审批  res: 预检接口的返回值
+    handlerPreflight({ res, isSubmit = false, params = {}, isSave = false }) {
+        let nodes: nodesItemT[] = []
+        let initNodes: nodesItemT[] = []
+        const cc = this.applicationParams.extraCC ? this.applicationParams.extraCC : []
+        const special_nicknames = res.special_nicknames
+        if (!this.reEditData?.isReEdit) {
+            // 如果是首次申请,相关花名根据后端预检接口确定
+            initNodes = res.nodes.map((item, key) => {
+                if (item.operator_type === 'requester') {
+                    return {
+                        operator_type: item.operator_type,
+                        operator: [store.state.userInfo.nickname],
+                        order: key,
+                    }
+                } else if (
+                    ['financial_handel', 'financial_payment', 'stamp_handel', 'stamp_execute'].includes(
+                        item.operator_type
+                    )
+                ) {
+                    return {
+                        operator_type: item.operator_type,
+                        operator: [],
+                        order: key,
+                    }
+                }
+                return {
+                    operator_type: item.operator_type,
+                    operator: _.filter(res.types, ['operator_type', item.operator_type])[0].nicknames,
+                    order: key,
+                }
+            })
+        } else {
+            // 如果是重新编辑,相关花名取首次申请时存储的数据
+            initNodes = this.reEditData.initNodes
+        }
+        nodes = res.nodes.map((item, key) => ({
+            operator_type: item.operator_type,
+            operator: _.filter(initNodes, ['operator_type', item.operator_type])[0].operator,
+            order: key,
+        }))
+
+        this.showPath({ cc, nodes, special_nicknames })
+        if (isSubmit) {
+            const submitParams = this.encryptParams({ params, initNodes, isSave })
+            this.takeProcess(submitParams, initNodes)
+        }
+    }
+
+    // 处理发起流程的参数
+    encryptParams({ params, initNodes, isSave }) {
+        const newParam = _.cloneDeep(params)
+        // 付款部门为人事部(1)/行政部(10)时，自动将艾莎加入抄送列表
+        const OC_HR_ADMIN_DEPT_IDS = [1, 10]
+        const AISHA_NICKNAME = '艾莎'
+        const ocDeptId = newParam.context.department
+        const userNickname = store.state.userInfo.nickname
+        if (OC_HR_ADMIN_DEPT_IDS.includes(ocDeptId) && userNickname !== AISHA_NICKNAME) {
+            if (!newParam.context.extraCC) {
+                newParam.context.extraCC = []
+            }
+            if (!newParam.context.extraCC.includes(AISHA_NICKNAME)) {
+                newParam.context.extraCC.push(AISHA_NICKNAME)
+            }
+        }
+        if (params.process_key === 'payment') {
+            newParam.encrypt_config = {
+                obj: '$this',
+                res_type: 'oc_request',
+                non_encrypt_columns: [
+                    'process_key',
+                    'start',
+                    'cc_nickname',
+                    'sys_site',
+                    'context.department',
+                    'context.pay_type',
+                    'context.pay_company',
+                    'context.recipient',
+                    'context.payment_method',
+                    'context.invoice_type',
+                    'context.apply_reason',
+                    'context.is_credit',
+                    'context.currency',
+                    'context.allocation_details',
+                    'context.total_money',
+                    'context.plan_pay_date',
+                    'context.priority',
+                    'info.initNodes.*.operator_type',
+                    'info.initNodes.*.order',
+                    'version',
+                ],
+                hash_columns: ['context.supplier_info.supplier_company'],
+                dup_check_columns: ['context.nickname'],
+            }
+            newParam.hash_filter = {
+                obj: '$this',
+                columns: ['cc_nickname'],
+            }
+            newParam.cc_nickname = params.context.extraCC ? [...params.context.extraCC] : []
+            newParam.files = [
+                ...params.context.invoiceAppend.map(item => ({
+                    value: item.uniqueName,
+                    name: item.name,
+                    disk: item.disk,
+                    key: 'OCInvoiceAppend',
+                })),
+                ...params.context.appendix.map(item => ({
+                    value: item.uniqueName,
+                    name: item.name,
+                    disk: item.disk,
+                    key: 'OCAppendix',
+                })),
+            ]
+            newParam.info = { initNodes }
+            newParam.start = isSave ? 0 : 1
+            newParam.pay_company_id = params.context.pay_company
+            newParam.oc_request_id = generateUniqueName()
+        } else if (params.process_key === 'stamp') {
+            newParam.encrypt_config = {
+                obj: '$this',
+                res_type: 'st_request',
+                non_encrypt_columns: [
+                    'process_key',
+                    'start',
+                    'cc_nickname',
+                    'context.department',
+                    'context.pay_company',
+                    'context.stamp_type',
+                    'context.stamp_file',
+                    'context.stamp_file_num',
+                    'context.need_scan',
+                    'context.need_post',
+                    'context.priority',
+                    'context.plan_stamp_date',
+                    'context.is_contract',
+                    'context.need_supplement',
+                    'info.initNodes.*.operator_type',
+                    'info.initNodes.*.order',
+                ],
+                dup_check_columns: ['context.nickname'],
+            }
+            newParam.hash_filter = {
+                obj: '$this',
+                columns: ['cc_nickname'],
+            }
+            newParam.cc_nickname = params.context.extraCC ? [...params.context.extraCC] : []
+            newParam.files = [
+                ...params.context.supplementary_appendix.map(item => ({
+                    value: item.uniqueName,
+                    name: item.name,
+                    disk: item.disk,
+                    key: 'OCSealSupplementaryAppendix',
+                })),
+                // ...params.context.appendix.map(item => ({
+                //     value: item.uniqueName,
+                //     name: item.name,
+                //     disk: item.disk,
+                //     key: 'OCSealAppendix',
+                // })),
+                ...params.context.contract.map(item => ({
+                    value: item.uniqueName,
+                    name: item.name,
+                    disk: item.disk,
+                    key: 'OCSealContract',
+                })),
+                ...params.context.legal_contract.map(item => ({
+                    value: item.uniqueName,
+                    name: item.name,
+                    disk: item.disk,
+                    key: 'OCSealLegalContract',
+                })),
+                ...params.context.all_contract.map(item => ({
+                    value: item.uniqueName,
+                    name: item.name,
+                    disk: item.disk,
+                    key: 'OCSealAllContract',
+                })),
+            ]
+            newParam.type_id = params.context.stamp_type
+            newParam.info = { initNodes }
+            newParam.start = isSave ? 0 : 1
+            newParam.pay_company_id = params.context.pay_company
+            newParam.st_request_id = generateUniqueName()
+        }
+
+        return newParam
+    }
+
+    // 加密授权
+    async authorizeRequest({ initNodes, request_id, params }) {
+        const { process_key, sys_site } = params
+        const extraCC = params.context.extraCC
+        const allUsers = _.uniq(_.flatten([...initNodes.map(item => item.operator), ...extraCC]))
+        if (process_key === 'payment') {
+            const oc_request_id = request_id
+            const authorizeRequestP = {
+                sys_site,
+                oc_request_id: oc_request_id,
+                intact_columns: ['oc_request_id'],
+                authorize_config: {
+                    res_type: 'oc_request',
+                    sfusers: allUsers,
+                    emails: [],
+                    items: [oc_request_id],
+                    operations: ['send_email', 'response'],
+                    expire_time: 3600 * 24 * 366 * 3,
+                },
+            }
+            return await OCApprovalApis.authorizeRequestAPI(authorizeRequestP)
+        } else if (process_key === 'stamp') {
+            const st_request_id = request_id
+            const authorizeRequestP = {
+                sys_site,
+                st_request_id: st_request_id,
+                intact_columns: ['st_request_id'],
+                authorize_config: {
+                    res_type: 'st_request',
+                    sfusers: allUsers,
+                    emails: [],
+                    items: [st_request_id],
+                    operations: ['send_email', 'response'],
+                    expire_time: 3600 * 24 * 366 * 3,
+                },
+            }
+            return await OCSealApprovalApis.authorizeOCSealRequestAPI(authorizeRequestP)
+        }
+    }
+
+    // 发起一个新的申请流程
+    async takeProcess(params, initNodes) {
+        this.isLoading = true
+
+        if (params.process_key === 'payment' && params.start) {
+            const res = await this.testDuplicatedPayment()
+            this.paymentWarning.showPaymentWarning = false
+            if (!res) {
+                this.changeConfirmDisabled(false)
+                this.paymentWarning.fn = null
+                return
+            }
+        }
+
+        if (this.reEditData?.isReEdit) {
+            // 重新编辑
+            let res = null
+            const extraCC = params.context.extraCC
+            const allUsers = _.uniq(_.flatten([...initNodes.map(item => item.operator), ...extraCC]))
+            // 按oc审批类型不同
+            if (params.process_key === 'payment') {
+                params.oc_request_id = Number(this.reEditData.oc_request_id)
+                res = await OCApprovalApis.setReEditAPI({
+                    ...params,
+                    authorize_config: {
+                        res_type: 'oc_request',
+                        sfusers: allUsers,
+                        emails: [],
+                        items: [params.oc_request_id],
+                        operations: ['send_email', 'response'],
+                        expire_time: 3600 * 24 * 366 * 3,
+                    },
+                })
+            } else if (params.process_key === 'stamp') {
+                params.st_request_id = Number(this.reEditData.st_request_id)
+                res = await OCSealApprovalApis.setOCSealReEditAPI({
+                    ...params,
+                    version: this.reEditData.version,
+                    authorize_config: {
+                        res_type: 'st_request',
+                        sfusers: allUsers,
+                        emails: [],
+                        items: [params.st_request_id],
+                        operations: ['send_email', 'response'],
+                        expire_time: 3600 * 24 * 366 * 3,
+                    },
+                })
+            }
+            if (res) {
+                const message = params.start ? this.$t('t564') : this.$t('t586')
+                showMessageSuccess(`${message}`)
+                this.closeReEdit('refresh')
+            } else {
+                showMessageWarning(`${this.$t('t568')}`)
+                this.changeConfirmDisabled(false)
+            }
+        } else {
+            // 初次请求
+            let res = null
+            // 按oc审批类型不同
+            if (params.process_key === 'payment') {
+                res = await OCApprovalApis.setStartProcessAPI(params)
+            } else if (params.process_key === 'stamp') {
+                res = await OCSealApprovalApis.setOCSealStartProcessAPI(params)
+            }
+            if (res) {
+                const authorize_param = { params, initNodes, request_id: res.request_id }
+                const authorize = await this.authorizeRequest(authorize_param)
+                if (authorize && authorize.success) {
+                    const message = params.start ? this.$t('t562') : this.$t('t586')
+                    showMessageSuccess(`${message}`)
+                    this.cancelSubmit()
+                } else {
+                    showMessageWarning(`${this.$t('t563')}`)
+                    this.changeConfirmDisabled(false)
+                }
+            } else {
+                this.changeConfirmDisabled(false)
+            }
+        }
+
+        // 发起成功后更新待办事项数量
+        // 按oc审批类型不同
+        if (params.process_key === 'payment' && params.start) {
+            const res = await OCApprovalApis.getOCTodoListAPI()
+            if (res) {
+                store.commit('setOCTodoList', res)
+            }
+        } else if (params.process_key === 'stamp' && params.start) {
+            const res = await OCSealApprovalApis.getOCSealTodoListAPI()
+            if (res) {
+                store.commit('setOCSealTodoList', res)
+            }
+        }
+
+        this.isLoading = false
+    }
+}
+</script>
+
+<style lang="less">
+@import '../../Common/OaCommTemplate/OaTemplate.less';
+@import './style/OCApplicationManagements.less';
+/* 报销重新编辑时下拉框被element弹窗遮盖 */
+.vxe-table--ignore-clear.is--transfer {
+    z-index: 99999 !important;
+}
+</style>
+<style scoped lang="less"></style>

@@ -1,0 +1,74 @@
+2026-04-15T09:32:20.346Z [DEBUG] Watching for changes in setting files C:\Users\luobeilin\.claude, D:\project\info-gitlab\hr\.claude...
+2026-04-15T09:32:20.352Z [DEBUG] [init] configureGlobalMTLS starting
+2026-04-15T09:32:20.352Z [DEBUG] [init] configureGlobalMTLS complete
+2026-04-15T09:32:20.352Z [DEBUG] [init] configureGlobalAgents starting
+2026-04-15T09:32:20.352Z [DEBUG] [init] configureGlobalAgents complete
+2026-04-15T09:32:20.372Z [DEBUG] Using bash path: "C:\Program Files\Git\bin\bash.exe"
+2026-04-15T09:32:20.387Z [DEBUG] Applying permission update: Adding 1 allow rule(s) to destination 'localSettings': ["mcp__hr-testdb__mysql_query"]
+2026-04-15T09:32:20.388Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-04-15T09:32:20.391Z [DEBUG] [ToolSearch:optimistic] mode=tst-auto, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-04-15T09:32:20.392Z [DEBUG] [ToolSearch:optimistic] mode=tst-auto, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-04-15T09:32:20.392Z [DEBUG] [STARTUP] Running setup()...
+2026-04-15T09:32:20.393Z [DEBUG] Found 0 plugins (0 enabled, 0 disabled)
+2026-04-15T09:32:20.396Z [DEBUG] Loading skills from: managed=C:\ProgramData\ClaudeCode\.claude\skills, user=C:\Users\luobeilin\.claude\skills, project=[]
+2026-04-15T09:32:20.398Z [DEBUG] Error log sink initialized
+2026-04-15T09:32:20.404Z [DEBUG] getPluginSkills: Processing 0 enabled plugins
+2026-04-15T09:32:20.404Z [DEBUG] Total plugin skills loaded: 0
+2026-04-15T09:32:20.404Z [DEBUG] Total plugin commands loaded: 0
+2026-04-15T09:32:20.404Z [DEBUG] Registered 0 hooks from 0 plugins
+2026-04-15T09:32:20.404Z [DEBUG] [STARTUP] setup() completed in 12ms
+2026-04-15T09:32:20.405Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-04-15T09:32:20.407Z [DEBUG] [claudeai-mcp] Checking gate (cached)...
+2026-04-15T09:32:20.407Z [DEBUG] [claudeai-mcp] Gate returned: false
+2026-04-15T09:32:20.407Z [DEBUG] [claudeai-mcp] Disabled via gate
+2026-04-15T09:32:20.422Z [DEBUG] Total plugin agents loaded: 0
+2026-04-15T09:32:20.424Z [DEBUG] Loaded 0 unique skills (managed: 0, user: 0, project: 0, legacy commands: 0)
+2026-04-15T09:32:20.424Z [DEBUG] getSkills returning: 0 skill dir commands, 0 plugin skills, 0 bundled skills
+2026-04-15T09:32:20.426Z [DEBUG] [STARTUP] Commands and agents loaded in 21ms
+2026-04-15T09:32:20.427Z [DEBUG] [LSP MANAGER] initializeLspServerManager() called
+2026-04-15T09:32:20.427Z [DEBUG] [LSP MANAGER] Created manager instance, state=pending
+2026-04-15T09:32:20.427Z [DEBUG] [LSP MANAGER] Starting async initialization (generation 1)
+2026-04-15T09:32:20.429Z [DEBUG] Total LSP servers loaded: 0
+2026-04-15T09:32:20.429Z [DEBUG] [STARTUP] MCP configs loaded in 41ms
+2026-04-15T09:32:20.442Z [DEBUG] MCP server "hr-testdb": Starting connection with timeout of 30000ms
+2026-04-15T09:32:20.456Z [DEBUG] MCP server "oa-testdb": Starting connection with timeout of 30000ms
+2026-04-15T09:32:20.471Z [DEBUG] MCP server "collabspace-testdb": Starting connection with timeout of 30000ms
+2026-04-15T09:32:20.483Z [DEBUG] [LSP SERVER MANAGER] getAllLspServers returned 0 server(s)
+2026-04-15T09:32:20.483Z [DEBUG] LSP manager initialized with 0 servers
+2026-04-15T09:32:20.484Z [DEBUG] LSP server manager initialized successfully
+2026-04-15T09:32:20.484Z [DEBUG] LSP notification handlers registered successfully for all 0 server(s)
+2026-04-15T09:32:20.496Z [DEBUG] Ripgrep first use test: FAILED (mode=builtin, path=C:\Users\luobeilin\.claude-code-plus\cli\vendor\ripgrep\x64-win32\rg.exe)
+2026-04-15T09:32:20.506Z [DEBUG] Watching for changes in skill/command directories: C:\Users\luobeilin\.claude\commands...
+2026-04-15T09:32:23.055Z [DEBUG] MCP server "hr-testdb": Successfully connected to undefined server in 2622ms
+2026-04-15T09:32:23.055Z [DEBUG] MCP server "hr-testdb": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":true,"serverVersion":{"name":"MySQL MCP Server","version":"1.0.0"}}
+2026-04-15T09:32:23.492Z [DEBUG] MCP server "oa-testdb": Successfully connected to undefined server in 3037ms
+2026-04-15T09:32:23.492Z [DEBUG] MCP server "oa-testdb": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":true,"serverVersion":{"name":"MySQL MCP Server","version":"1.0.0"}}
+2026-04-15T09:32:23.500Z [DEBUG] MCP server "collabspace-testdb": Successfully connected to undefined server in 3030ms
+2026-04-15T09:32:23.500Z [DEBUG] MCP server "collabspace-testdb": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":true,"serverVersion":{"name":"MySQL MCP Server","version":"1.0.0"}}
+2026-04-15T09:32:24.575Z [DEBUG] MCP server "surveyking-testdb": Starting connection with timeout of 30000ms
+2026-04-15T09:32:24.587Z [DEBUG] MCP server "apitable-testdb": Starting connection with timeout of 30000ms
+2026-04-15T09:32:26.581Z [DEBUG] MCP server "surveyking-testdb": Successfully connected to undefined server in 2007ms
+2026-04-15T09:32:26.581Z [DEBUG] MCP server "surveyking-testdb": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":true,"serverVersion":{"name":"MySQL MCP Server","version":"1.0.0"}}
+2026-04-15T09:32:26.589Z [DEBUG] MCP server "apitable-testdb": Successfully connected to undefined server in 2003ms
+2026-04-15T09:32:26.589Z [DEBUG] MCP server "apitable-testdb": Connection established with capabilities: {"hasTools":true,"hasPrompts":false,"hasResources":true,"serverVersion":{"name":"MySQL MCP Server","version":"1.0.0"}}
+2026-04-15T09:32:27.497Z [DEBUG] Loaded 1 installed plugins from C:\Users\luobeilin\.claude\plugins\installed_plugins.json
+2026-04-15T09:32:27.497Z [DEBUG] Initialized versioned plugins system with 1 plugins
+2026-04-15T09:32:27.501Z [DEBUG] [Perfetto] initializePerfettoTracing called, env value: undefined
+2026-04-15T09:32:27.751Z [DEBUG] Stats cache is up to date
+2026-04-15T09:32:27.752Z [DEBUG] Plugin autoupdate: skipped (auto-updater disabled)
+2026-04-15T09:32:27.756Z [DEBUG] Writing to temp file: C:\Users\luobeilin\.claude\todos\74b6ea4e-5f19-4c8c-b9a4-e733ae92178a-agent-74b6ea4e-5f19-4c8c-b9a4-e733ae92178a.json.tmp.30168.1776245547756
+2026-04-15T09:32:27.756Z [DEBUG] Temp file written successfully, size: 2 bytes
+2026-04-15T09:32:27.756Z [DEBUG] Renaming C:\Users\luobeilin\.claude\todos\74b6ea4e-5f19-4c8c-b9a4-e733ae92178a-agent-74b6ea4e-5f19-4c8c-b9a4-e733ae92178a.json.tmp.30168.1776245547756 to C:\Users\luobeilin\.claude\todos\74b6ea4e-5f19-4c8c-b9a4-e733ae92178a-agent-74b6ea4e-5f19-4c8c-b9a4-e733ae92178a.json
+2026-04-15T09:32:27.757Z [DEBUG] File C:\Users\luobeilin\.claude\todos\74b6ea4e-5f19-4c8c-b9a4-e733ae92178a-agent-74b6ea4e-5f19-4c8c-b9a4-e733ae92178a.json written atomically
+2026-04-15T09:32:27.769Z [DEBUG] Getting matching hook commands for SessionStart with query: startup
+2026-04-15T09:32:27.769Z [DEBUG] Found 0 hook matchers in settings
+2026-04-15T09:32:27.769Z [DEBUG] Matched 0 unique hooks for query "startup" (0 before deduplication)
+2026-04-15T09:32:27.779Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: D:\project\info-gitlab\hr\.claude\settings.json
+2026-04-15T09:32:27.830Z [DEBUG] Total plugin output styles loaded: 0
+2026-04-15T09:57:18.696Z [DEBUG] Getting matching hook commands for SessionEnd with query: other
+2026-04-15T09:57:18.696Z [DEBUG] Found 0 hook matchers in settings
+2026-04-15T09:57:18.696Z [DEBUG] Matched 0 unique hooks for query "other" (0 before deduplication)
+2026-04-15T09:57:18.708Z [DEBUG] LSP server manager shut down successfully
+2026-04-15T09:57:18.709Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-15T09:57:18.709Z [DEBUG] BigQuery metrics exporter flush complete
+2026-04-15T09:57:18.709Z [DEBUG] BigQuery metrics exporter shutdown complete

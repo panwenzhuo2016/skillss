@@ -1,0 +1,514 @@
+diff --git a/backend-server/application/src/main/java/com/apitable/player/service/impl/PlayerNotificationServiceImpl.java b/backend-server/application/src/main/java/com/apitable/player/service/impl/PlayerNotificationServiceImpl.java
+index b30eaa824..72f6f95ca 100644
+--- a/backend-server/application/src/main/java/com/apitable/player/service/impl/PlayerNotificationServiceImpl.java
++++ b/backend-server/application/src/main/java/com/apitable/player/service/impl/PlayerNotificationServiceImpl.java
+@@ -297,11 +297,17 @@ public class PlayerNotificationServiceImpl extends ServiceImpl<PlayerNotificatio
+         List<PlayerNotificationEntity> creatEntities = new ArrayList<>();
+         List<PlayerNotificationEntity> notifyEntities = new ArrayList<>();
+         List<Long> mailUserIds = new ArrayList<>();
++        // 对于“我的申请”这类消息，需要发给自己（to_tag = myself），不能做“不给自己发站内信”的过滤
++        boolean isPermissionApplySubmitted =
++            NotificationTemplateId.PERMISSION_APPLY_SUBMITTED.equals(NotificationTemplateId.getValue(template.getId()));
+         for (Long userId : userIds) {
+             // Record the sending frequency, and judge that it is recorded if it is not sent successfully because the data can be recovered --redis delete key
+             String nonce = StrUtil.blankToDefault(ro.getSpaceId(), "") + StrUtil.blankToDefault(ro.getNodeId(), "");
+-            if (!notificationFactory.frequencyLimited(userId, template, DigestUtil.md5Hex(nonce))) {
+-                if (ObjectUtil.isNotNull(userId) && !userId.equals(Convert.toLong(ro.getFromUserId()))) {
++            boolean limited = notificationFactory.frequencyLimited(userId, template, DigestUtil.md5Hex(nonce));
++            if (!limited || isPermissionApplySubmitted) {
++                // 默认情况下不向自己发送站内信；但对于“permission_apply_submitted”这种需要投递给申请人的模板，允许 from == to
++                if (ObjectUtil.isNotNull(userId)
++                    && (!userId.equals(Convert.toLong(ro.getFromUserId())) || isPermissionApplySubmitted)) {
+                     PlayerNotificationEntity entity = getCreateEntity(userId, template, ro);
+                     // Send notifications and create records
+                     if (template.isNotification()) {
+@@ -372,13 +378,17 @@ public class PlayerNotificationServiceImpl extends ServiceImpl<PlayerNotificatio
+ 
+     @Override
+     public List<NotificationDetailVo> pageList(NotificationPageRo notificationPageRo, LoginUserDto toUser) {
+-        Integer totalCount = baseMapper.selectTotalCountByRoAndToUser(notificationPageRo, toUser.getUserId()) + 1;
+-        if (null == notificationPageRo.getRowNo()) {
+-            // reverse order
++        List<String> templateIds =
++            NotificationCategoryHelper.getTemplateIdsByCategory(notificationPageRo.getCategory());
++        Integer totalCount =
++            baseMapper.selectTotalCountByRoAndToUser(notificationPageRo, toUser.getUserId(), templateIds) + 1;
++        if (null == notificationPageRo.getRowNo() || Integer.valueOf(0).equals(notificationPageRo.getRowNo())) {
++            // reverse order: rowNo=0 or null means first page (newest items)
+             notificationPageRo.setRowNo(totalCount);
+         }
+         List<NotificationModelDTO> dtos =
+-                baseMapper.selectPlayerNotificationPage(notificationPageRo, toUser.getUserId(), totalCount);
++                baseMapper.selectPlayerNotificationPage(notificationPageRo, toUser.getUserId(), totalCount,
++                    templateIds);
+         return formatDetailVos(dtos, toUser.getUuid());
+     }
+ 
+@@ -468,6 +478,18 @@ public class PlayerNotificationServiceImpl extends ServiceImpl<PlayerNotificatio
+         return true;
+     }
+ 
++    @Override
++    public int ignoreAllApprovalUnhandled(Long userId) {
++        List<String> approvalTemplateIds =
++            NotificationCategoryHelper.getTemplateIdsByCategory(NotificationCategoryHelper.CATEGORY_APPROVAL);
++        if (CollUtil.isEmpty(approvalTemplateIds)) {
++            return 0;
++        }
++        int count = baseMapper.updateReadByUserIdAndTemplateIds(userId, approvalTemplateIds);
++        log.info("[1822-PermApply] IGNORE_ALL userId={} count={}", userId, count);
++        return count;
++    }
++
+     @Override
+     public void sendMailNotifyBatch(NotificationTemplate template, List<Long> userIds, Dict dict) {
+         List<UserLangDTO> emailsWithLang = iUserService.getLangAndEmailByIds(userIds, LocaleContextHolder.getLocale().toLanguageTag());
+@@ -491,6 +513,7 @@ public class PlayerNotificationServiceImpl extends ServiceImpl<PlayerNotificatio
+                     .rowNo(dto.getRowNo()).toUserId(uuid).toUuid(uuid).createdAt(dto.getCreatedAt())
+                     .updatedAt(dto.getUpdatedAt()).isRead(dto.getIsRead()).notifyType(dto.getNotifyType())
+                     .templateId(dto.getTemplateId())
++                    .category(NotificationCategoryHelper.getCategoryByTemplateId(dto.getTemplateId()))
+                     .fromUser(notificationFactory.formatFromUser(dto.getFromUser(), dto.getSpaceId(), renderField)).build();
+             detailVo.setNotifyBody(formatNotificationDetailBodyVo(dto, renderField));
+             SpaceEntity space = spaceEntityList.stream().filter(o -> o.getSpaceId().equals(dto.getSpaceId())).findFirst().orElse(null);
+@@ -531,8 +554,16 @@ public class PlayerNotificationServiceImpl extends ServiceImpl<PlayerNotificatio
+     public NotificationStatisticsVo statistic(Long userId) {
+         Integer readCount = baseMapper.selectCountByUserIdAndIsRead(userId, 1);
+         Integer totalCount = baseMapper.selectTotalCountByUserId(userId);
+-        return NotificationStatisticsVo.builder().readCount(readCount).totalCount(totalCount)
+-                .unReadCount(totalCount - readCount).build();
++        List<String> approvalTemplateIds =
++            NotificationCategoryHelper.getTemplateIdsByCategory(NotificationCategoryHelper.CATEGORY_APPROVAL);
++        Integer approvalPendingCount = CollUtil.isEmpty(approvalTemplateIds) ? 0
++            : baseMapper.selectCountByUserIdIsReadAndTemplateIds(userId, 0, approvalTemplateIds);
++        return NotificationStatisticsVo.builder()
++                .readCount(readCount)
++                .totalCount(totalCount)
++                .unReadCount(totalCount - readCount)
++                .approvalPendingCount(approvalPendingCount != null ? approvalPendingCount : 0)
++                .build();
+     }
+ 
+     @Override
+@@ -848,6 +879,20 @@ public class PlayerNotificationServiceImpl extends ServiceImpl<PlayerNotificatio
+                 msg = MessageFormat.format(format, fromMemberName, nodeName, url);
+                 break;
+             }
++            case "document_permission_request": {
++                JSONObject extras = notificationCreateRo.getBody().getJSONObject("extras");
++                String applicantNick = extras != null ? extras.getStr("applicantNickName") : "";
++                if (StrUtil.isBlank(applicantNick)) applicantNick = fromMemberName;
++                String spaceNameVal = extras != null ? extras.getStr("spaceName") : "";
++                if (StrUtil.isBlank(spaceNameVal)) spaceNameVal = spaceName;
++                String docName = extras != null ? extras.getStr("documentName") : nodeName;
++                String permType = extras != null ? extras.getStr("requestedPermissionType") : "READ";
++                String permLabel = "READ".equals(permType) ? "查看" : "EDIT".equals(permType) ? "编辑" : "MANAGE".equals(permType) ? "管理" : "查看";
++                String format = "[{0}]申请获取[{1}]内[{2}]文档的{3}权限，点此快捷审批：{4}";
++                String approvalUrl = collabSpaceHost + "/#/aio/workbench/" + spaceId + "?openNotification=APPROVAL&notificationUnread=1";
++                msg = MessageFormat.format(format, applicantNick, spaceNameVal, docName, permLabel, approvalUrl);
++                break;
++            }
+             default: {
+                 // 没有配置通知，就直接返回
+                 return;
+@@ -857,19 +902,27 @@ public class PlayerNotificationServiceImpl extends ServiceImpl<PlayerNotificatio
+         try {
+             List<UserEntity> users = userMapper.selectByIds(userIds);
+ 
+-            // 内网发 mattermost 消息，外网发 knock 消息
+-            if(constProperties.isInternalNetwork()) {
++            // 内网发 mattermost 消息，外网发 knock 消息（与 BackendServingServiceImpl.sendWorkspaceApplyNotify 一致）
++            if (constProperties.isInternalNetwork()) {
+                 Set<String> emails = new HashSet<>();
+                 for (UserEntity user : users) {
+-                    emails.add(user.getEmail());
++                    if (StrUtil.isNotBlank(user.getEmail())) {
++                        emails.add(user.getEmail());
++                    }
++                }
++                if (!emails.isEmpty()) {
++                    matterMsgSvc.sendMessageByEmails(emails, msg);
+                 }
+-                matterMsgSvc.sendMessageByEmails(emails, msg);
+             } else {
+                 Set<String> nicknames = new HashSet<>();
+                 for (UserEntity user : users) {
+-                    nicknames.add(user.getNickName());
++                    if (StrUtil.isNotBlank(user.getNickName())) {
++                        nicknames.add(user.getNickName());
++                    }
++                }
++                if (!nicknames.isEmpty()) {
++                    knockMsgSvc.sendKnockMessage(nicknames, msg);
+                 }
+-                knockMsgSvc.sendKnockMessage(nicknames, msg);
+             }
+         } catch (Exception err) {
+             log.error("sendKnockNotification-3 发送失败: {}", err);
+diff --git a/backend-server/application/src/main/java/com/apitable/shared/grpc/BackendServingServiceImpl.java b/backend-server/application/src/main/java/com/apitable/shared/grpc/BackendServingServiceImpl.java
+index 5e0bb8c15..e1c5f98dd 100644
+--- a/backend-server/application/src/main/java/com/apitable/shared/grpc/BackendServingServiceImpl.java
++++ b/backend-server/application/src/main/java/com/apitable/shared/grpc/BackendServingServiceImpl.java
+@@ -46,6 +46,7 @@ import com.apitable.organization.ro.TeamAddMemberRo;
+ import com.apitable.organization.service.*;
+ import com.apitable.organization.vo.MemberPageVo;
+ import com.apitable.organization.vo.TeamTreeVo;
++import com.apitable.player.entity.PlayerNotificationEntity;
+ import com.apitable.player.ro.NotificationCreateRo;
+ import com.apitable.player.service.impl.PlayerNotificationServiceImpl;
+ import com.apitable.schedule.entity.ScheduleTemplateEntity;
+@@ -72,6 +73,8 @@ import com.apitable.space.ro.SpaceUpdateOpRo;
+ import com.apitable.space.service.ISpaceRoleService;
+ import com.apitable.space.service.ISpaceService;
+ import com.apitable.thrid.feign.ApitableOpenapiService;
++import com.apitable.thrid.service.KnockMessageService;
++import com.apitable.thrid.service.MattermostMessageService;
+ import com.apitable.thrid.req.CopyAllRobotsRequest;
+ import com.apitable.timedelay.dto.DelayFilterItem;
+ import com.apitable.timedelay.dto.TimeDelayRobotDto;
+@@ -212,6 +215,9 @@ public class BackendServingServiceImpl extends ApiServingServiceGrpc.ApiServingS
+     @Resource
+     private PlayerNotificationServiceImpl playerNotificationService;
+ 
++    @Resource
++    private com.apitable.player.mapper.PlayerNotificationMapper playerNotificationMapper;
++
+     @Resource
+     private MemberMapper memberMapper;
+ 
+@@ -250,6 +256,11 @@ public class BackendServingServiceImpl extends ApiServingServiceGrpc.ApiServingS
+     @Resource
+     private UnitMapper unitMapper;
+ 
++    @Resource
++    private KnockMessageService knockMessageService;
++
++    @Resource
++    private MattermostMessageService mattermostMessageService;
+ 
+     @Value("${apitable.apitable-private-host}")
+     private String privateHost;// 用于内网apitable-mirror访问apitable-private
+@@ -2603,4 +2614,244 @@ public class BackendServingServiceImpl extends ApiServingServiceGrpc.ApiServingS
+         responseObserver.onCompleted();
+     }
+ 
++    @Override
++    public void sendWorkspaceApplyNotify(SendWorkspaceApplyNotifyRequest request,
++                                        StreamObserver<BasicResult> responseObserver) {
++        List<Long> adminUserIds = request.getAdminUserIdsList();
++        String message = request.getMessage();
++        log.info("[1822-WorkspaceApply] sendNotify start adminCount={} messageLen={}",
++                adminUserIds != null ? adminUserIds.size() : 0, message != null ? message.length() : 0);
++        try {
++            if (CollectionUtils.isEmpty(adminUserIds) || StringUtils.isBlank(message)) {
++                log.warn("[1822-WorkspaceApply] sendNotify invalid adminEmpty={} messageBlank={}",
++                        CollectionUtils.isEmpty(adminUserIds), StringUtils.isBlank(message));
++                responseObserver.onNext(BasicResult.newBuilder().setCode(0).build());
++                responseObserver.onCompleted();
++                return;
++            }
++            List<UserEntity> users = userMapper.selectByIds(adminUserIds);
++            if (CollectionUtils.isEmpty(users)) {
++                log.warn("[1822-WorkspaceApply] sendNotify no users in DB adminCount={}", adminUserIds != null ? adminUserIds.size() : 0);
++                responseObserver.onNext(BasicResult.newBuilder().setCode(0).build());
++                responseObserver.onCompleted();
++                return;
++            }
++            boolean isInternal = constProperties.isInternalNetwork();
++            if (isInternal) {
++                java.util.Set<String> emails = new java.util.HashSet<>();
++                for (UserEntity user : users) {
++                    if (StringUtils.isNotBlank(user.getEmail())) {
++                        emails.add(user.getEmail());
++                    }
++                }
++                if (emails.isEmpty()) {
++                    log.warn("[1822-WorkspaceApply] sendNotify no valid emails adminCount={} userCount={}", adminUserIds.size(), users.size());
++                } else {
++                    mattermostMessageService.sendMessageByEmails(emails, message);
++                    log.info("[1822-WorkspaceApply] sendNotify SUCCESS channel=mattermost recipients={}", emails.size());
++                }
++            } else {
++                java.util.Set<String> nicknames = new java.util.HashSet<>();
++                for (UserEntity user : users) {
++                    if (StringUtils.isNotBlank(user.getNickName())) {
++                        nicknames.add(user.getNickName());
++                    }
++                }
++                if (nicknames.isEmpty()) {
++                    log.warn("[1822-WorkspaceApply] sendNotify no valid nicknames adminCount={} userCount={}", adminUserIds.size(), users.size());
++                } else {
++                    knockMessageService.sendKnockMessage(nicknames, message);
++                    log.info("[1822-WorkspaceApply] sendNotify SUCCESS channel=knock recipients={}", nicknames.size());
++                }
++            }
++            responseObserver.onNext(BasicResult.newBuilder().setCode(0).build());
++        } catch (Exception e) {
++            log.error("[1822-WorkspaceApply] ERROR sendNotify error={}", e.getMessage(), e);
++            responseObserver.onNext(BasicResult.newBuilder().setCode(-1).setMessage(e.getMessage()).build());
++        }
++        responseObserver.onCompleted();
++    }
++
++    // ========== Notification gRPC for collabspace ==========
++
++    /**
++     * 通用创建通知，供 collabspace 调用.
++     * 透传给 PlayerNotificationService.createNotify
++     */
++    @Override
++    public void createNotification(CreateNotificationRequest request,
++                                   StreamObserver<CreateNotificationResponse> responseObserver) {
++        log.info("[collabspace-notify] createNotification templateId={} fromUser={} toUsers={} nodeId={}",
++                request.getTemplateId(), request.getFromUserId(), request.getToUserIdsList(), request.getNodeId());
++        CreateNotificationResponse.Builder responseBuilder = CreateNotificationResponse.newBuilder();
++        try {
++            NotificationCreateRo ro = new NotificationCreateRo();
++            ro.setTemplateId(request.getTemplateId());
++            ro.setFromUserId(request.getFromUserId());
++            ro.setToUserId(request.getToUserIdsList());
++            ro.setNodeId(request.getNodeId());
++            ro.setSpaceId(request.getSpaceId());
++            if (!request.getNotifyBody().isEmpty()) {
++                ro.setBody(cn.hutool.json.JSONUtil.parseObj(request.getNotifyBody()));
++            }
++            ro.setSendKnockNotification(request.getSendKnockNotification());
++
++            playerNotificationService.createNotify(ro);
++
++            // 取第一条通知的 ID 返回（用于审批关联）
++            // createNotify 内部会 insert，故通过查询获取
++            // 由于 createNotify 不返回 ID，这里简单返回 0，让调用方不依赖此 ID
++            responseBuilder.setSuccess(true)
++                    .setMessage("notification created")
++                    .setFirstNotificationId(0L);
++        } catch (BusinessException e) {
++            log.error("[collabspace-notify] createNotification failed: {}", e.getMessage(), e);
++            responseBuilder.setSuccess(false).setMessage(e.getMessage());
++        } catch (Exception e) {
++            log.error("[collabspace-notify] createNotification error: {}", e.getMessage(), e);
++            responseBuilder.setSuccess(false).setMessage("internal error");
++        }
++        responseObserver.onNext(responseBuilder.build());
++        responseObserver.onCompleted();
++    }
++
++    /**
++     * 更新通知 body extras（审批后写入 status、approver 信息）.
++     * 1. 从审批人的通知中提取 requestId
++     * 2. 通过 requestId 找到所有关联通知（所有管理员收到的申请通知）
++     * 3. 对每条通知做 extras 合并（保留原有字段，只覆盖 status/approver 相关字段）
++     * 4. 将所有关联通知标记为已读
++     */
++    @Override
++    public void updateNotificationExtras(UpdateNotificationExtrasRequest request,
++                                         StreamObserver<com.apitable.integration.grpc.BasicResult> responseObserver) {
++        log.info("[collabspace-notify] updateNotificationExtras notificationId={} status={}",
++                request.getNotificationId(), request.getStatus());
++        try {
++            // 1. 从审批人通知里提取 requestId
++            String requestId = null;
++            String approverBody = playerNotificationMapper.selectNotifyBodyById(request.getNotificationId());
++            if (approverBody != null && !approverBody.isEmpty()) {
++                cn.hutool.json.JSONObject parsed = cn.hutool.json.JSONUtil.parseObj(approverBody);
++                cn.hutool.json.JSONObject parsedExtras = parsed.getJSONObject("extras");
++                if (parsedExtras != null) {
++                    requestId = parsedExtras.getStr("requestId");
++                }
++            }
++
++            // 2. 找所有关联通知 ID（所有收到该申请通知的管理员）
++            List<Long> allIds;
++            if (requestId != null && !requestId.isEmpty()) {
++                allIds = playerNotificationMapper.selectIdsByRequestId(requestId);
++                log.info("[collabspace-notify] updateNotificationExtras requestId={} relatedCount={}", requestId, allIds.size());
++            } else {
++                allIds = java.util.Collections.singletonList(request.getNotificationId());
++            }
++
++            // 3. 对每条通知合并 extras（保留原有字段，只覆盖审批相关字段）
++            for (Long id : allIds) {
++                String existingBody = playerNotificationMapper.selectNotifyBodyById(id);
++                cn.hutool.json.JSONObject bodyJson = (existingBody != null && !existingBody.isEmpty())
++                        ? cn.hutool.json.JSONUtil.parseObj(existingBody)
++                        : new cn.hutool.json.JSONObject();
++                cn.hutool.json.JSONObject extras = bodyJson.getJSONObject("extras");
++                if (extras == null) {
++                    extras = new cn.hutool.json.JSONObject();
++                }
++                extras.set("status", request.getStatus());
++                extras.set("approverUserId", request.getApproverUserId());
++                extras.set("approverNickName", request.getApproverNickName());
++                bodyJson.set("extras", extras);
++                playerNotificationMapper.updateNotifyBodyById(id, bodyJson.toString());
++                log.info("[collabspace-notify] updateNotificationExtras UPDATE id={} status={} approverUserId={}",
++                        id, request.getStatus(), request.getApproverUserId());
++            }
++
++            // 4. 将所有关联通知标记为已读
++            if (!allIds.isEmpty()) {
++                playerNotificationMapper.updateReadIsTrueByIds(
++                        allIds.stream().map(String::valueOf).toArray(String[]::new));
++                log.info("[collabspace-notify] updateNotificationExtras markRead count={}", allIds.size());
++            }
++
++            responseObserver.onNext(com.apitable.integration.grpc.BasicResult.newBuilder()
++                    .setCode(0).build());
++        } catch (Exception e) {
++            log.error("[collabspace-notify] updateNotificationExtras failed notificationId={} error={}",
++                    request.getNotificationId(), e.getMessage(), e);
++            responseObserver.onNext(com.apitable.integration.grpc.BasicResult.newBuilder()
++                    .setCode(-1).setMessage(e.getMessage()).build());
++        }
++        responseObserver.onCompleted();
++    }
++
++    /**
++     * 查询通知 body extras（审批时通过 notificationId 反查 requestId）.
++     */
++    @Override
++    public void getNotificationExtras(GetNotificationExtrasRequest request,
++                                      StreamObserver<GetNotificationExtrasResponse> responseObserver) {
++        log.info("[collabspace-notify] getNotificationExtras notificationId={} toUser={}",
++                request.getNotificationId(), request.getToUserId());
++        GetNotificationExtrasResponse.Builder responseBuilder = GetNotificationExtrasResponse.newBuilder();
++        try {
++            PlayerNotificationEntity notification = playerNotificationMapper.selectById(request.getNotificationId());
++            if (notification == null) {
++                responseBuilder.setSuccess(false).setMessage("notification not found");
++                responseObserver.onNext(responseBuilder.build());
++                responseObserver.onCompleted();
++                return;
++            }
++            if (request.getToUserId() != notification.getToUser()) {
++                responseBuilder.setSuccess(false).setMessage("toUser mismatch");
++                responseObserver.onNext(responseBuilder.build());
++                responseObserver.onCompleted();
++                return;
++            }
++            responseBuilder.setSuccess(true);
++            responseBuilder.setTemplateId(notification.getTemplateId() != null ? notification.getTemplateId() : "");
++            if (notification.getNotifyBody() != null && !notification.getNotifyBody().isEmpty()) {
++                cn.hutool.json.JSONObject body = cn.hutool.json.JSONUtil.parseObj(notification.getNotifyBody());
++                cn.hutool.json.JSONObject extras = body.getJSONObject("extras");
++                if (extras != null) {
++                    responseBuilder.setRequestId(extras.getStr("requestId") != null ? extras.getStr("requestId") : "");
++                    responseBuilder.setSpaceId(extras.getStr("spaceId") != null ? extras.getStr("spaceId") : "");
++                }
++            }
++            responseBuilder.setMessage("ok");
++        } catch (Exception e) {
++            log.error("[collabspace-notify] getNotificationExtras failed notificationId={} error={}",
++                    request.getNotificationId(), e.getMessage(), e);
++            responseBuilder.setSuccess(false).setMessage(e.getMessage());
++        }
++        responseObserver.onNext(responseBuilder.build());
++        responseObserver.onCompleted();
++    }
++
++    /**
++     * 标记通知已读/未读.
++     */
++    @Override
++    public void setNotificationRead(SetNotificationReadRequest request,
++                                    StreamObserver<com.apitable.integration.grpc.BasicResult> responseObserver) {
++        log.info("[collabspace-notify] setNotificationRead notificationId={} toUser={} isRead={}",
++                request.getNotificationId(), request.getToUserId(), request.getIsRead());
++        try {
++            if (request.getIsRead()) {
++                playerNotificationMapper.updateReadIsTrueByIds(new String[]{String.valueOf(request.getNotificationId())});
++            } else {
++                playerNotificationMapper.updateReadIsFalseByIdAndToUser(
++                        request.getNotificationId(), request.getToUserId());
++            }
++            responseObserver.onNext(com.apitable.integration.grpc.BasicResult.newBuilder()
++                    .setCode(0).build());
++        } catch (Exception e) {
++            log.error("[collabspace-notify] setNotificationRead failed notificationId={} error={}",
++                    request.getNotificationId(), e.getMessage(), e);
++            responseObserver.onNext(com.apitable.integration.grpc.BasicResult.newBuilder()
++                    .setCode(-1).setMessage(e.getMessage()).build());
++        }
++        responseObserver.onCompleted();
++    }
++
+ }
+diff --git a/backend-server/application/src/main/java/com/apitable/shared/grpc/CollabspaceGrpcClientServiceImpl.java b/backend-server/application/src/main/java/com/apitable/shared/grpc/CollabspaceGrpcClientServiceImpl.java
+index cc2777803..8a3d5d6b3 100644
+--- a/backend-server/application/src/main/java/com/apitable/shared/grpc/CollabspaceGrpcClientServiceImpl.java
++++ b/backend-server/application/src/main/java/com/apitable/shared/grpc/CollabspaceGrpcClientServiceImpl.java
+@@ -310,11 +310,54 @@ public class CollabspaceGrpcClientServiceImpl implements ICollabspaceGrpcClientS
+             long spaceNodeId = result.getSpaceNodeId();
+             return spaceNodeId == 0L ? null : spaceNodeId;
+         } catch (StatusRuntimeException e) {
+-            log.error("grpc getSpaceNodeIdByNodeId error", e);
++            log.error("[1822-PermApply] ERROR getSpaceNodeIdByNodeId nodeId={} error={}", nodeId, e.getMessage(), e);
+             return null;
+         }
+     }
+ 
++    @Override
++    public String getNodeIdBySpaceNodeId(Long spaceNodeId) {
++        if (spaceNodeId == null) {
++            return null;
++        }
++        try {
++            GetNodeIdBySpaceNodeIdRequest request = GetNodeIdBySpaceNodeIdRequest.newBuilder()
++                    .setSpaceNodeId(spaceNodeId)
++                    .build();
++            GetNodeIdBySpaceNodeIdResult result = collabspaceStub.getNodeIdBySpaceNodeId(request);
++            String appNodeId = result.getAppNodeId();
++            return (appNodeId == null || appNodeId.isEmpty()) ? null : appNodeId;
++        } catch (StatusRuntimeException e) {
++            log.error("[1822-PermApply] ERROR getNodeIdBySpaceNodeId spaceNodeId={} error={}", spaceNodeId, e.getMessage(), e);
++            return null;
++        }
++    }
++
++    @Override
++    public void grantNodePermission(Long userId, String spaceId, Long spaceNodeId, String role, List<Long> unitIds) {
++        if (userId == null || spaceId == null || spaceNodeId == null || unitIds == null || unitIds.isEmpty()) {
++            log.warn("[1822-PermApply] grantNodePermission invalid userId={} spaceId={} spaceNodeId={}", userId, spaceId, spaceNodeId);
++            return;
++        }
++        try {
++            GrantNodePermissionRequest request = GrantNodePermissionRequest.newBuilder()
++                    .setUserId(userId)
++                    .setSpaceId(spaceId)
++                    .setSpaceNodeId(spaceNodeId)
++                    .setRole(role)
++                    .addAllUnitIds(unitIds)
++                    .build();
++            BasicResult result = collabspaceStub.grantNodePermission(request);
++            if (!result.getSuccess()) {
++                log.error("[1822-PermApply] ERROR grantNodePermission failed code={} msg={}", result.getCode(), result.getMessage());
++            } else {
++                log.info("[1822-PermApply] grantNodePermission success userId={} spaceId={} spaceNodeId={} role={}", userId, spaceId, spaceNodeId, role);
++            }
++        } catch (StatusRuntimeException e) {
++            log.error("[1822-PermApply] ERROR grantNodePermission userId={} spaceId={} spaceNodeId={} error={}", userId, spaceId, spaceNodeId, e.getMessage(), e);
++        }
++    }
++
+     @Override
+     public void logMethod(String traceId, String spaceId, String className, String methodName, Long userId) {
+         try {
+diff --git a/backend-server/shared/core/src/main/java/com/apitable/shared/support/serializer/LocalDateTimeToMilliSerializer.java b/backend-server/shared/core/src/main/java/com/apitable/shared/support/serializer/LocalDateTimeToMilliSerializer.java
+index f40d3cead..4e9df4267 100644
+--- a/backend-server/shared/core/src/main/java/com/apitable/shared/support/serializer/LocalDateTimeToMilliSerializer.java
++++ b/backend-server/shared/core/src/main/java/com/apitable/shared/support/serializer/LocalDateTimeToMilliSerializer.java
+@@ -49,7 +49,13 @@ public class LocalDateTimeToMilliSerializer extends JsonSerializer<LocalDateTime
+     public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider)
+         throws IOException {
+         // Get user timeZone
+-        Long userId = SessionContext.getUserIdWithoutException();
++        // SessionContext requires an HTTP request context — gracefully fall back in async threads
++        Long userId;
++        try {
++            userId = SessionContext.getUserIdWithoutException();
++        } catch (Exception e) {
++            userId = null;
++        }
+         String userTimeZone;
+         
+         ZoneId serverTimeZoneId = (serverConfig != null) ? serverConfig.getTimeZoneId() : ZoneId.of("Asia/Shanghai");

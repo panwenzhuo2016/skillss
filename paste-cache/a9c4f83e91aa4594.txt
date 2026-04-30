@@ -1,0 +1,11 @@
+53477:[2026-04-01 09:56:43+08:00] (TID:1475541) production.INFO: [DifyAsk] report_context size {"bytes":231,"chars":161}
+53478:[2026-04-01 09:56:43+08:00] (TID:1475541) production.INFO: [DifyAsk] request {"url":"http://10.57.0.29:10880/v1/chat-messages","session":100,"user":"oa-session-100"}
+53479:[2026-04-01 09:56:43+08:00] (TID:1475541) production.INFO: [DifyAsk] done {"session":100,"http_code":200,"curl_error":"transfer closed with outstanding read data remaining","reply_len":0,"buffer_left":"","raw_response_len":13}
+--
+53482:[2026-04-01 09:57:12+08:00] (TID:1475543) production.INFO: [DifyAsk] report_context size {"bytes":231,"chars":161}
+53483:[2026-04-01 09:57:12+08:00] (TID:1475543) production.INFO: [DifyAsk] request {"url":"http://10.57.0.29:10880/v1/chat-messages","session":100,"user":"oa-session-100"}
+53484:[2026-04-01 09:57:13+08:00] (TID:1475543) production.INFO: [DifyAsk] done {"session":100,"http_code":200,"curl_error":"transfer closed with outstanding read data remaining","reply_len":0,"buffer_left":"","raw_response_len":13}
+--
+53487:[2026-04-01 09:58:29+08:00] (TID:1475545) production.INFO: [DifyAsk] report_context size {"bytes":231,"chars":161}
+53488:[2026-04-01 09:58:29+08:00] (TID:1475545) production.INFO: [DifyAsk] request {"url":"http://10.57.0.29:10880/v1/chat-messages","session":100,"user":"oa-session-100"}
+53489:[2026-04-01 09:58:29+08:00] (TID:1475545) production.INFO: [DifyAsk] done {"session":100,"http_code":200,"curl_error":"transfer closed with outstanding read data remaining","reply_len":0,"buffer_left":"","raw_response_len":13}

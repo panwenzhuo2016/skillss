@@ -1,0 +1,356 @@
+/**
+ * 文档设置权限功能优化 - 接口测试脚本
+ *
+ * 用法: node test-api.js
+ * 要求: Node.js 18+（原生 fetch）
+ * 自动登录测试环境，无需手动填 Cookie
+ */
+
+// ========== 配置 ==========
+const CONFIG = {
+  host: 'http://xcollabspace-test.xtool-staging.yottastudios.com',
+  loginEmail: 'test@yottastudios.com',
+  spaceId: 'spcrGFWok5gx2',
+  spaceNodeId: '1980884945824628737',
+};
+
+// ========== 测试框架 ==========
+let passed = 0;
+let failed = 0;
+let cookie = '';
+let xsrfToken = '';
+
+function assert(name, condition, detail) {
+  if (condition) {
+    console.log(`  ✅ ${name}`);
+    passed++;
+  } else {
+    console.log(`  ❌ ${name}`);
+    if (detail !== undefined) console.log(`     实际值:`, typeof detail === 'object' ? JSON.stringify(detail).slice(0, 200) : detail);
+    failed++;
+  }
+}
+
+// ========== HTTP 工具 ==========
+
+/** 从 set-cookie 头中提取 cookie 值 */
+function parseCookies(res) {
+  const cookies = {};
+  const setCookieHeaders = res.headers.getSetCookie?.() || [];
+  for (const header of setCookieHeaders) {
+    const [kv] = header.split(';');
+    const [k, v] = kv.split('=');
+    cookies[k.trim()] = v.trim();
+  }
+  return cookies;
+}
+
+async function rawFetch(method, url, body) {
+  const headers = {
+    'x-space-id': CONFIG.spaceId,
+    'content-type': 'application/json',
+  };
+  if (cookie) headers['cookie'] = cookie;
+  if (xsrfToken) headers['x-xsrf-token'] = xsrfToken;
+
+  const opts = { method, headers, redirect: 'manual' };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(url, opts);
+}
+
+async function GET(path) {
+  const res = await rawFetch('GET', `${CONFIG.host}/api/v1/node/role${path}`);
+  return res.json();
+}
+
+async function POST(path, body) {
+  const res = await rawFetch('POST', `${CONFIG.host}/api/v1/node/role${path}`, body);
+  return res.json();
+}
+
+// ========== 登录 ==========
+async function login() {
+  console.log(`🔑 登录 ${CONFIG.loginEmail} ...`);
+  const res = await fetch(`${CONFIG.host}/api/v1/testLogin/${CONFIG.loginEmail}`, { redirect: 'manual' });
+  const cookies = parseCookies(res);
+
+  if (!cookies.SESSION) {
+    console.log('❌ 登录失败：未获取到 SESSION cookie');
+    console.log('   响应头:', Object.fromEntries(res.headers.entries()));
+    process.exit(1);
+  }
+  xsrfToken = cookies['XSRF-TOKEN'] || '';
+  cookie = `SESSION=${cookies.SESSION}; XSRF-TOKEN=${xsrfToken}`;
+  console.log(`   ✅ 登录成功\n`);
+}
+
+// ========== 测试用例 ==========
+
+async function testListTeamRoles() {
+  console.log('📋 1. listTeamRoles - 小组权限列表');
+
+  const res = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+  assert('接口返回 success', res.success === true, res);
+  assert('data 不为 null', res.data != null, res.data);
+  assert('包含 total', typeof res.data?.total === 'number', res.data?.total);
+  assert('包含 records 数组', Array.isArray(res.data?.records), res.data?.records);
+
+  if (res.data?.records?.length > 0) {
+    const first = res.data.records[0];
+    assert('记录含 teamId', first.teamId != null, first.teamId);
+    assert('记录含 teamName (string)', typeof first.teamName === 'string', first.teamName);
+    assert('记录含 parentId', first.parentId != null, first.parentId);
+    assert('记录含 memberCount (number)', typeof first.memberCount === 'number', first.memberCount);
+    assert('role 为 string 或 null', first.role === null || typeof first.role === 'string', first.role);
+    assert('children 为数组', Array.isArray(first.children), first.children);
+  } else {
+    console.log('  ⚠️  无数据，跳过字段校验');
+  }
+}
+
+async function testListTeamRolesSearch() {
+  console.log('\n🔍 2. listTeamRoles - 搜索');
+
+  // 先拿一个真实的 teamName 来搜
+  const all = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+  if (all.data?.records?.length > 0) {
+    const realName = all.data.records[0].teamName;
+    const res = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(realName)}&pageNo=1&pageSize=20`);
+    assert(`搜索 "${realName}" 有结果`, res.success && res.data?.records?.length > 0, res.data?.total);
+    // 验证搜索结果的 teamName 都包含关键词
+    const allMatch = res.data.records.every(r => r.teamName.toLowerCase().includes(realName.toLowerCase()));
+    assert('搜索结果 teamName 都包含关键词', allMatch, res.data.records.map(r => r.teamName));
+  } else {
+    console.log('  ⚠️  无小组数据，跳过搜索测试');
+  }
+
+  const empty = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent('不存在的xxx')}&pageNo=1&pageSize=20`);
+  assert('搜索不存在关键词返回空', empty.success && empty.data?.records?.length === 0, empty.data?.total);
+}
+
+async function testListTeamRolesPagination() {
+  console.log('\n📄 3. listTeamRoles - 分页');
+
+  const page1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=2`);
+  assert('pageSize=2 返回最多2条', page1.success && page1.data?.records?.length <= 2, page1.data?.records?.length);
+
+  if (page1.data?.total > 2) {
+    const page2 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=2&pageSize=2`);
+    assert('第2页有数据', page2.success && page2.data?.records?.length > 0, page2.data?.records?.length);
+    // 第1页和第2页数据不重复
+    const ids1 = new Set(page1.data.records.map(r => r.teamId));
+    const overlap = page2.data.records.some(r => ids1.has(r.teamId));
+    assert('第1页和第2页数据不重复', !overlap, { page1: [...ids1], page2: page2.data.records.map(r => r.teamId) });
+  }
+
+  const bigPage = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=9999&pageSize=20`);
+  assert('超大页码返回空列表', bigPage.success && bigPage.data?.records?.length === 0, bigPage.data?.total);
+}
+
+async function testListMemberRoles() {
+  console.log('\n👤 4. listMemberRoles - 成员权限列表');
+
+  const res = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  assert('接口返回 success', res.success === true, res);
+  assert('包含 total', typeof res.data?.total === 'number', res.data?.total);
+  assert('包含 records 数组', Array.isArray(res.data?.records), res.data?.records);
+
+  if (res.data?.records?.length > 0) {
+    const first = res.data.records[0];
+    assert('记录含 unitId', first.unitId != null, first.unitId);
+    assert('记录含 unitName (string)', typeof first.unitName === 'string', first.unitName);
+    assert('unitType 固定为 3', first.unitType === 3, first.unitType);
+    assert('所有记录 unitType 都为 3', res.data.records.every(r => r.unitType === 3), res.data.records.map(r => r.unitType));
+    assert('role 值合法', ['reader', 'editor', 'manager'].includes(first.role), first.role);
+    assert('记录含 avatar', 'avatar' in first, first.avatar);
+    assert('记录含 teams', 'teams' in first, first.teams);
+    assert('记录含 nickName', 'nickName' in first, first.nickName);
+
+    // 搜索真实成员名
+    const realName = first.unitName;
+    const searchRes = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=${encodeURIComponent(realName)}&pageNo=1&pageSize=20`);
+    assert(`搜索 "${realName}" 有结果`, searchRes.success && searchRes.data?.records?.length > 0, searchRes.data?.total);
+  } else {
+    console.log('  ⚠️  该节点无手动设置的成员权限，跳过字段校验');
+  }
+
+  const empty = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=${encodeURIComponent('不存在的xxx')}&pageNo=1&pageSize=20`);
+  assert('搜索不存在关键词返回空', empty.success && empty.data?.records?.length === 0, empty.data?.total);
+}
+
+async function testPermissionLogs() {
+  console.log('\n📜 5. permissionLogs - 权限变更历史');
+
+  const res = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+  assert('接口返回 success', res.success === true, res);
+  assert('包含 total', typeof res.data?.total === 'number', res.data?.total);
+  assert('包含 records 数组', Array.isArray(res.data?.records), res.data?.records);
+
+  if (res.data?.records?.length > 0) {
+    const first = res.data.records[0];
+    assert('记录含 operatorName (string)', typeof first.operatorName === 'string', first.operatorName);
+    assert('记录含 createdAt (string)', typeof first.createdAt === 'string', first.createdAt);
+    assert('createdAt 格式 yyyy-MM-dd HH:mm:ss', /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(first.createdAt), first.createdAt);
+    assert('记录含 targetName (string)', typeof first.targetName === 'string', first.targetName);
+    assert('记录含 description (string)', typeof first.description === 'string', first.description);
+    assert('记录含 newRoleDisplay (string)', typeof first.newRoleDisplay === 'string', first.newRoleDisplay);
+    assert('newRoleDisplay 值合法', ['可管理', '可编辑', '可阅读', '移除所有权限'].includes(first.newRoleDisplay), first.newRoleDisplay);
+
+    // 验证按时间倒序
+    if (res.data.records.length >= 2) {
+      const t1 = new Date(first.createdAt).getTime();
+      const t2 = new Date(res.data.records[1].createdAt).getTime();
+      assert('按时间倒序排列', t1 >= t2, { first: first.createdAt, second: res.data.records[1].createdAt });
+    }
+  } else {
+    console.log('  ⚠️  暂无变更日志（editRole 测试后会有）');
+  }
+}
+
+async function testEditRoleAndLog() {
+  console.log('\n⚡ 6. editRole - 冲突校验 + 日志记录');
+
+  // 先查当前成员列表，找一个可用的成员 unitId
+  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  if (!members.data?.records?.length) {
+    console.log('  ⚠️  该节点无成员权限数据，跳过 editRole 测试');
+    return;
+  }
+
+  const member = members.data.records[0];
+  const unitId = member.unitId;
+  const originalRole = member.role;
+  const newRole = originalRole === 'reader' ? 'editor' : 'reader';
+  console.log(`  ℹ️  测试对象: ${member.unitName} (${unitId}), ${originalRole} -> ${newRole}`);
+
+  // 记录变更前日志数量
+  const logsBefore = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+  const totalBefore = logsBefore.data?.total || 0;
+
+  // 执行 editRole
+  const editRes = await POST('/editRole', {
+    spaceNodeId: CONFIG.spaceNodeId,
+    unitId,
+    role: newRole,
+  });
+  assert('editRole 返回 success', editRes.success === true, editRes);
+  assert('包含 hasConflict (boolean)', typeof editRes.data?.hasConflict === 'boolean', editRes.data?.hasConflict);
+
+  if (editRes.data?.hasConflict) {
+    assert('冲突时含 conflictMessage', typeof editRes.data.conflictMessage === 'string', editRes.data.conflictMessage);
+    assert('冲突时含 conflictTeamName', typeof editRes.data.conflictTeamName === 'string', editRes.data.conflictTeamName);
+    assert('冲突时含 conflictTeamRole', typeof editRes.data.conflictTeamRole === 'string', editRes.data.conflictTeamRole);
+    console.log(`  ℹ️  冲突: ${editRes.data.conflictMessage}`);
+  }
+
+  // 验证权限已变更
+  const membersAfter = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  const updated = membersAfter.data?.records?.find(r => r.unitId === unitId);
+  assert('权限已变更', updated?.role === newRole, { expected: newRole, actual: updated?.role });
+
+  // 验证日志写入
+  const logsAfter = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+  assert('日志数量增加', (logsAfter.data?.total || 0) > totalBefore, { before: totalBefore, after: logsAfter.data?.total });
+
+  if (logsAfter.data?.records?.length > 0) {
+    const latest = logsAfter.data.records[0];
+    assert('最新日志 targetName 匹配', latest.targetName === member.unitName, latest.targetName);
+    console.log(`  ℹ️  日志: ${latest.description}`);
+  }
+
+  // 改回原角色
+  const restoreRes = await POST('/editRole', {
+    spaceNodeId: CONFIG.spaceNodeId,
+    unitId,
+    role: originalRole,
+  });
+  assert('还原权限成功', restoreRes.success === true, restoreRes);
+  console.log(`  ℹ️  已还原 ${member.unitName} 为 ${originalRole}`);
+}
+
+async function testPermissionLogSearch() {
+  console.log('\n🔍 7. permissionLogs - 搜索');
+
+  const all = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+  if (!all.data?.records?.length) {
+    console.log('  ⚠️  无日志数据，跳过搜索测试');
+    return;
+  }
+
+  // 按操作人名称搜索
+  const operatorName = all.data.records[0].operatorName;
+  const res1 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent(operatorName)}&pageNo=1&pageSize=20`);
+  assert(`搜索操作人 "${operatorName}" 有结果`, res1.success && res1.data?.records?.length > 0, res1.data?.total);
+
+  // 按对象名称搜索
+  const targetName = all.data.records[0].targetName;
+  const res2 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent(targetName)}&pageNo=1&pageSize=20`);
+  assert(`搜索对象 "${targetName}" 有结果`, res2.success && res2.data?.records?.length > 0, res2.data?.total);
+
+  // 搜索不存在
+  const res3 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent('不存在zzz')}&pageNo=1&pageSize=20`);
+  assert('搜索不存在关键词返回空', res3.success && res3.data?.records?.length === 0, res3.data?.total);
+}
+
+async function testParamValidation() {
+  console.log('\n🔒 8. 参数校验');
+
+  const res1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=0&pageSize=20`);
+  assert('pageNo=0 应返回错误', res1.success === false, res1);
+
+  const res2 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=101`);
+  assert('pageSize=101 应返回错误', res2.success === false, res2);
+
+  const res3 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=-1&pageSize=20`);
+  assert('pageNo=-1 应返回错误', res3.success === false, res3);
+}
+
+async function testNoPermissionNode() {
+  console.log('\n🚫 9. 无权限数据的节点');
+
+  // 用一个不存在但合法的 Long 值节点ID（不超过 Long.MAX_VALUE）
+  const fakeNodeId = '1';
+  const res1 = await GET(`/${fakeNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+  assert('不存在节点 listTeamRoles 不报500', res1.success === true || (res1.code && res1.code !== 500), res1);
+
+  const res2 = await GET(`/${fakeNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  assert('不存在节点 listMemberRoles 不报500', res2.success === true || (res2.code && res2.code !== 500), res2);
+
+  const res3 = await GET(`/${fakeNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+  assert('不存在节点 permissionLogs 返回空', res3.success && res3.data?.records?.length === 0, res3.data?.total);
+}
+
+// ========== 执行 ==========
+async function main() {
+  console.log('🚀 文档设置权限功能优化 - 接口测试');
+  console.log(`   环境: ${CONFIG.host}`);
+  console.log(`   空间: ${CONFIG.spaceId}`);
+  console.log(`   节点: ${CONFIG.spaceNodeId}\n`);
+
+  try {
+    await login();
+    await testListTeamRoles();
+    await testListTeamRolesSearch();
+    await testListTeamRolesPagination();
+    await testListMemberRoles();
+    await testPermissionLogs();
+    await testEditRoleAndLog();
+    await testPermissionLogSearch();
+    await testParamValidation();
+    await testNoPermissionNode();
+  } catch (e) {
+    if (e.cause?.code === 'ECONNREFUSED') {
+      console.log('\n❌ 无法连接测试环境，请检查网络');
+    } else {
+      console.log(`\n❌ 异常: ${e.stack || e.message}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`\n=============================`);
+  console.log(`✅ 通过: ${passed}  ❌ 失败: ${failed}  📊 总计: ${passed + failed}`);
+  console.log(`=============================`);
+  process.exit(failed > 0 ? 1 : 0);
+}
+
+main();

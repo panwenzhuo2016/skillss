@@ -1,0 +1,174 @@
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-14-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-15-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-16-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-17-@NoArgsConstructor
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-18-@AllArgsConstructor
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java:19:public class TreeNode<T extends RelIdProvider> implements Tree {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-20-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-21-    @JsonSerialize(using = LongToStringSerializer.class)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-22-    @Schema(description = "ID", example = "1")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-23-    private Long id;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-24-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-90-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-91-    public TreeNode(NodeEntity entity, T nodeData) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-92-        this.id = entity.getId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-93-        this.parentId = entity.getParentId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-94-        this.preId = entity.getPreId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java:95:        this.relId = entity.getRelId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-96-        this.nodeKey = entity.getNodeKey();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-97-        this.nodeType = entity.getNodeType();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-98-        this.treeId = entity.getTreeId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-99-        this.data = nodeData;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-100-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-101-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-102-    public TreeNode(NodeEntity entity) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-103-        this.id = entity.getId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-104-        this.parentId = entity.getParentId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-105-        this.preId = entity.getPreId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java:106:        this.relId = entity.getRelId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-107-        this.nodeKey = entity.getNodeKey();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-108-        this.nodeType = entity.getNodeType();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-109-        this.treeId = entity.getTreeId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-110-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\TreeNode.java-111-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-87-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-88-    public NodeTreeVo(NodeEntity entity, Object nodeData) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-89-        this.id = entity.getId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-90-        this.parentId = entity.getParentId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-91-        this.preId = entity.getPreId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java:92:        this.relId = entity.getRelId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-93-        this.nodeKey = entity.getNodeKey();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-94-        this.nodeType = entity.getNodeType();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-95-        this.treeId = entity.getTreeId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-96-        this.data = nodeData;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-97-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-98-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-99-    public NodeTreeVo(NodeEntity entity) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-100-        this.id = entity.getId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-101-        this.parentId = entity.getParentId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-102-        this.preId = entity.getPreId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java:103:        this.relId = entity.getRelId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-104-        this.nodeKey = entity.getNodeKey();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-105-        this.nodeType = entity.getNodeType();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-106-        this.treeId = entity.getTreeId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-107-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\vo\NodeTreeVo.java-108-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\RelIdProvider.java-1-package com.yottastudios.ns.collabspace.base.service;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\RelIdProvider.java-2-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\RelIdProvider.java-3-public interface RelIdProvider {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\RelIdProvider.java:4:    Long getRelId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\RelIdProvider.java-5-}
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-30-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-31-import static com.yottastudios.ns.collabspace.core.support.tree.v2.DefaultTreeBuildFactory.ROOT_PARENT_ID;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-32-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-33-@Service
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-34-@Slf4j
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:35:public class TreeNodeTemplateImpl implements TreeNodeTemplate {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-36-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-37-    @Resource
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-38-    private INodeService nodeService;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-39-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-40-    @Resource
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-45-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-46-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-47-    public <T extends RelIdProvider> List<TreeNode<T>> buildNodeTree(List<T> list) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-48-        if (CollectionUtils.isEmpty(list)) return new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-49-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:50:        List<Long> ids = list.stream().map(RelIdProvider::getRelId).collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-51-        List<NodeEntity> nodeEntities = nodeService.listByRelIds(ids);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-52-        return buildNodeTree(list, nodeEntities, ROOT_PARENT_ID);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-53-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-54-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-55-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-56-    public <T extends RelIdProvider> List<TreeNode<T>> buildNodeTree(List<T> list, List<NodeEntity> nodeEntities, Long rootId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-57-        List<TreeNode<T>> nodeTrees = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-58-        if (CollectionUtils.isEmpty(list)) return nodeTrees;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-59-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-60-        Map<Long, NodeEntity> nodeMap = nodeEntities.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:61:                .collect(Collectors.toMap(NodeEntity::getRelId, nodeEntity -> nodeEntity));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-62-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-63-        nodeTrees = list.stream()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-64-                .map(item -> {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:65:                    Long relId = item.getRelId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-66-                    NodeEntity nodeEntity = nodeMap.get(relId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-67-                    return new TreeNode<>(nodeEntity, item);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-68-                }).collect(Collectors.toList());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-69-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-70-        return TreeUtil.build(nodeTrees, rootId);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-126-        );
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-127-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-128-        for (NodeEntity node : results) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-129-            EventBusEvent event = TreeNodeAddedEvent.builder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-130-                    .nodeId(node.getId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:131:                    .relId(node.getRelId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-132-                    .treeId(treeId)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-133-                    .nodeKey(nodeKey)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-134-                    .entityClassName(entityClass.getName())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-135-                    .parentId(node.getParentId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-136-                    .build();
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-241-        NodeEntity current = null;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-242-        Map<Long, NodeEntity> idToNode = new HashMap<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-243-        for (NodeEntity n : ancestors) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-244-            if (n == null || n.getId() == null) continue;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-245-            idToNode.put(n.getId(), n);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:246:            if (Objects.equals(n.getRelId(), relId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-247-                current = n;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-248-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-249-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-250-        if (current == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-251-            return ancestors;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-497-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-498-        // 循环校验：目标父不能是任一移动节点或其子孙
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-499-        // todo 减少开销
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-500-        for (NodeEntity e : topLevelToMove) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-501-            ExceptionUtil.isFalse(Objects.equals(e.getId(), targetParentId), TreeNodeException.PARENT_CYCLE);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:502:            List<NodeEntity> subtree = nodeService.listSubtreeByRelId(e.getRelId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-503-            boolean parentInSubtree = subtree.stream().anyMatch(n -> Objects.equals(n.getId(), targetParentId));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-504-            ExceptionUtil.isFalse(parentInSubtree, TreeNodeException.PARENT_IN_SUBTREE);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-505-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-506-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-507-        Map<Long, Long> nodeIdToOldParentId = new HashMap<>();
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-526-        List<TreeNodeBatchMovedEvent.MovedNodeInfo> movedInfoList = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-527-        for (NodeEntity e : topLevelToMove) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-528-            Long oldParentId = nodeIdToOldParentId.get(e.getId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-529-            if (!Objects.equals(oldParentId, targetParentId)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-530-                movedInfoList.add(TreeNodeBatchMovedEvent.MovedNodeInfo.builder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java:531:                        .relId(e.getRelId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-532-                        .oldParentId(oldParentId)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-533-                        .nodeId(e.getId())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-534-                        .build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-535-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\manager\impl\TreeNodeTemplateImpl.java-536-        }
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-49-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-50-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-51-    public NodeEntity getByRelId(Long relId) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-52-        QueryWrapper<NodeEntity> queryWrapper = new QueryWrapper<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-53-        queryWrapper.lambda()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java:54:                .eq(NodeEntity::getRelId, relId)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-55-                .getSqlFirst();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-56-        return getOne(queryWrapper);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-57-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-58-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-59-    @Override
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-61-        if (CollectionUtils.isEmpty(ids)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-62-            return List.of();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-63-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-64-        QueryWrapper<NodeEntity> queryWrapper = new QueryWrapper<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-65-        queryWrapper.lambda()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java:66:                .in(NodeEntity::getRelId, ids);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-67-        return list(queryWrapper);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-68-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-69-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-70-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\base\service\impl\NodeServiceImpl.java-71-    public NodeEntity getFirstChildNodeByParentId(Long parentId, String treeId, Integer nodeKey) {

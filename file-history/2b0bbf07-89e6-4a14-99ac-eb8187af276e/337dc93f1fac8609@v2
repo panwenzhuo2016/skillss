@@ -1,0 +1,75 @@
+# 智能表格视图类型统计接口
+
+## 业务背景
+
+智能表格（apitable）支持 7 种视图类型，每个表格可以创建多个不同类型的视图。本接口统计所有智能表格中各视图类型的存量数量，为后续视图相关功能优化提供数据支撑。
+
+### 视图类型说明
+
+| 视图类型 | 用途 |
+|---------|------|
+| 表格视图 (Grid) | 默认视图，类似 Excel 的行列展示，每个智能表格至少有一个 |
+| 看板视图 (Kanban) | 按分组字段分栏展示，适合任务管理、流程跟踪 |
+| 相册视图 (Gallery) | 卡片式展示，适合图文内容浏览 |
+| 日历视图 (Calendar) | 按日期字段在日历上展示记录 |
+| 甘特视图 (Gantt) | 时间轴展示，适合项目进度管理 |
+| 架构视图 (Architecture) | 树形组织架构图展示 |
+| 层级视图 (Hierarchy) | 层级关系展示 |
+
+## 接口信息
+
+- **路径：** `GET /api/v1/node/statistics/view/count`
+- **认证：** 无需登录
+- **说明：** 查询当前环境下所有智能表格中各视图类型的使用数量（数据来源于每日定时统计）
+
+## 请求
+
+无参数。
+
+## 响应
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+    "gridViewNum": 4387,
+    "kanbanViewNum": 150,
+    "galleryViewNum": 282,
+    "calendarViewNum": 109,
+    "ganttViewNum": 294,
+    "architectureViewNum": 67,
+    "hierarchyViewNum": 106,
+    "statisticsDay": "2026-04-01"
+  }
+}
+```
+
+## 字段说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| gridViewNum | Long | 表格视图数量（默认视图，数量最多） |
+| kanbanViewNum | Long | 看板视图数量 |
+| galleryViewNum | Long | 相册视图数量 |
+| calendarViewNum | Long | 日历视图数量 |
+| ganttViewNum | Long | 甘特视图数量 |
+| architectureViewNum | Long | 架构视图数量 |
+| hierarchyViewNum | Long | 层级视图数量 |
+| statisticsDay | String | 统计日期（yyyy-MM-dd），数据截止到该日 |
+
+## 环境地址
+
+| 环境 | URL |
+|------|-----|
+| 测试 | `http://xcollabspace-test.xtool-staging.yottastudios.com/api/v1/node/statistics/view/count` |
+| 生产（外网） | `https://xcollabspace.yottastudios.com/api/v1/node/statistics/view/count` |
+| 生产（内网） | 内网域名 + `/api/v1/node/statistics/view/count` |
+
+## 备注
+
+- 数据每日定时更新，非实时统计
+- 内外网各自独立部署，返回各自环境的数据
+- 统计范围：未被删除的有效视图，无论是否被用户实际访问过
+- 数据来源：apitable 的 `datasheet_meta` 表中 JSON 元数据里的 views 数组，按 type 字段分类计数

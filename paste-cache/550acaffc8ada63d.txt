@@ -1,0 +1,11 @@
+curl ^"http://oa-core.info-staging.xinyoudi.com/sfuser-api/approval-management/preflight-process^" ^
+  -H ^"Accept: application/json, text/plain, */*^" ^
+  -H ^"Accept-Language: zh-CN,zh;q=0.9^" ^
+  -H ^"Connection: keep-alive^" ^
+  -H ^"Content-Type: application/json^" ^
+  -H ^"Cookie: oa_core_staging_session=RwkohHvI0DgGO9mFbF8Q3NVSVnl86ScGs92kKoLM^" ^
+  -H ^"Origin: http://oa.info-staging.xinyoudi.com^" ^
+  -H ^"Referer: http://oa.info-staging.xinyoudi.com/^" ^
+  -H ^"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36^" ^
+  --data-raw ^"^{^\^"process_key^\^":^\^"personnel_reimbursement^\^",^\^"context^\^":^{^\^"department^\^":10,^\^"branch^\^":0,^\^"total_money^\^":^\^"12.00^\^",^\^"remark^\^":^\^"1212121212111211221212^\^",^\^"realName^\^":^\^"1212^\^",^\^"invoicesNum^\^":^\^"1212^\^",^\^"reimbursement_detail^\^":^[^{^\^"reimbursement_type^\^":14,^\^"reimbursement_money^\^":^\^"12.00^\^",^\^"invoice^\^":^[^{^\^"title^\^":^\^"baf3b9f5e745474b212daa91b7b5797a52ea06ed_knock_capture_image.jpg^\^",^\^"file_name^\^":^\^"1775210301796_1768549385988_9239-baf3b9f5e745474b212daa91b7b5797a52ea06ed_knock_capture_image.jpg^\^",^\^"url^\^":^\^"http://oa-chn.info-staging.xinyoudi.com/public-api/common/download-public-file?file_name=1775210301796_1768549385988_9239-baf3b9f5e745474b212daa91b7b5797a52ea06ed_knock_capture_image.jpg^&disk=expense^\^",^\^"need_to_be_identified^\^":0,^\^"is_identified^\^":0,^\^"invoice_name^\^":^\^"^\^",^\^"buyerName^\^":^\^"^\^",^\^"invoice_number^\^":^\^"^\^",^\^"isRepeatWithDatabase^\^":false,^\^"isRepeatWithOtherInvoice^\^":false,^\^"notMatchConfig^\^":false^}^],^\^"remark^\^":^\^"12^\^"^}^]^},^\^"decrypt_config^\^":^{^\^"obj^\^":^\^"^$this^\^",^\^"decrypt_columns^\^":^[^\^"all_nodes.profile^\^"^]^},^\^"sfuser_id^\^":851999,^\^"intact_columns^\^":^[^\^"process_key^\^",^\^"context^\^",^\^"sfuser_id^\^"^],^\^"sys_lang^\^":^\^"zh_CN^\^",^\^"version_info^\^":1775209345794^}^" ^
+  --insecure

@@ -1,0 +1,153 @@
+/* eslint-disable unicorn/prefer-module */
+/* eslint-disable @typescript-eslint/naming-convention */
+
+import { execSync } from 'node:child_process'
+import path from 'node:path'
+
+import HtmlWebpackPlugin from 'html-webpack-plugin'
+import { DefinePlugin } from 'webpack'
+import webpackMerge from 'webpack-merge'
+
+import baseConfig from './webpack.base'
+
+import 'webpack-dev-server'
+
+/* 开发模式下锁定为 master */
+
+console.log('当前所在分支：', execSync('git rev-parse --abbrev-ref HEAD').toString())
+
+const dev = webpackMerge(baseConfig, {
+    mode: 'development',
+
+    entry: {
+        // 开发时，有时需要调试验证 三方库 或者 三方组件/他人组件，所以建立画廊页面
+        // 既用于开发时的调试，也可以将调试的代码保留，作为组件使用样例
+        gallery: path.resolve(__dirname, './vue3-upgrade/src/gallery/main.ts'),
+    },
+
+    output: {
+        publicPath: '/',
+        pathinfo: false, // 不输出路径信息，这样开发时热更新速度更快
+    },
+
+    stats: 'normal',
+    cache: {
+        // 缓存到硬盘上，可以加快冷启动速度
+        type: 'filesystem',
+        // 这里设置 unused 的缓存最多保留 7day 时间，目的是减小缓存文件夹的体积及文件数量
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
+    /* 用于标记编译文件与源文件对应位置，便于调试，该模式 eval 比 inline-source-map 快 */
+    devtool: 'source-map',
+    optimization: {
+        /* 开发模式下如下设置 可提升热更新速度 */
+        moduleIds: 'deterministic',
+        chunkIds: 'deterministic',
+        runtimeChunk: 'single',
+        /* 开发模式下仍然打开 treeshake */
+        usedExports: true,
+        sideEffects: true,
+        /* 开发模式下仍然 split 可以提升热更新速度 */
+        splitChunks: {
+            chunks: 'all',
+            cacheGroups: {
+                vendors: {
+                    test: /node_modules/,
+                    priority: 10,
+                },
+            },
+        },
+    },
+
+    watchOptions: {
+        aggregateTimeout: 200,
+        ignored: /node_modules/,
+    },
+
+    devServer: {
+        // host: 'local-ipv4',
+        // host: 'localhost',
+        // host: '0.0.0.0',
+        hot: true,
+        open: true,
+        port: 41902,
+        client: {
+            logging: 'warn',
+            overlay: {
+                errors: true,
+                warnings: false,
+                runtimeErrors: false, // 没必要开，ResizeObserver 的错误信息会显示在遮罩上
+            },
+        },
+        devMiddleware: {
+            writeToDisk: false, // 是否写入磁盘，在 debug 的时候，可以打开看输出文件
+        },
+        static: {
+            watch: false, // 静态文件变化不要触发页面刷新
+            directory: path.resolve(__dirname, './dist'), // 没有静态文件加载的时候，没什么用
+        },
+        /** chat gpt 在 event stream 返回时，必须要关闭压缩，否则无法一个个字符显示 */
+        compress: false,
+
+        // 404的页面会自动跳转到/页面
+        historyApiFallback: {
+            rewrites: [
+                { from: /^\/gallery($|\/.*)/, to: '/gallery.html' },
+                { from: /.*/, to: '/index.html' },
+            ],
+        },
+
+        proxy: [
+            {
+                context: ['/web-api', '/sfuser-api'],
+                target: 'http://oa-core.info-staging.xinyoudi.com',
+                // target: 'http://oa-core.staging.xinyoudi.com/',
+                // target: 'http://oa-core.staging.xinyoudi.com/',
+                changeOrigin: true,
+            },
+            {
+                // 内推地址
+                context: ['/introversion-api'],
+                target: 'http://yotta-hr.info-staging.xinyoudi.com',
+                changeOrigin: true,
+                pathRewrite: {
+                    '^/introversion-api': '/web-api',
+                },
+            },
+            {
+                context: ['/public-api'],
+                target: 'http://oa-chn.info-staging.xinyoudi.com/',
+                // target: 'http://hrmgt.staging.xinyoudi.com/',
+                changeOrigin: true,
+            },
+            {
+                // 发票校验地址
+                context: ['/invoice'],
+                target: 'http://oa-invoice.info-staging.xinyoudi.com',
+                changeOrigin: true,
+            },
+        ],
+    },
+
+    plugins: [
+        new DefinePlugin({
+            // https://github.com/vuejs/core/tree/main/packages/vue#bundler-build-feature-flags
+            __VUE_OPTIONS_API__: true, // 是否启用 vue options api
+            __VUE_PROD_DEVTOOLS__: true, // 是否支持 vue dev tools
+            __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: true, // 启用/禁用生产环境构建下 (hydration) 不匹配的详细警告
+
+            // https://vue-i18n.intlify.dev/guide/advanced/optimization.html#reduce-bundle-size-with-feature-build-flags
+            __VUE_I18N_FULL_INSTALL__: true,
+            __VUE_I18N_LEGACY_API__: true,
+            __INTLIFY_PROD_DEVTOOLS__: true, // 是否打开 i18n dev tools
+        }),
+
+        new HtmlWebpackPlugin({
+            filename: 'gallery.html',
+            template: path.resolve(__dirname, './static/gallery.ejs'),
+            chunks: ['gallery'],
+        }),
+    ],
+})
+
+export default dev

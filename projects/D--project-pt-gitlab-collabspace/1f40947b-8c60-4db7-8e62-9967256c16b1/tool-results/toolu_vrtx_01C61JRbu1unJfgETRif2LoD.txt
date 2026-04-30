@@ -1,0 +1,125 @@
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-75-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-76-  rpc RecoverNode(RecoverNodeRequest) returns (RecoverNodeResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-77-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-78-  rpc DeleteNodeTotally(DeleteNodeTotalRequest) returns (grpc.common.BasicResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-79-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-80-  rpc EmailInvitationRelTeam(EmailInvitationRelTeamRequest) returns (EmailInvitationRelTeamResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-81-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-82-  rpc RemoveFromSpaceByEmail(RemoveFromSpaceByEmailRequest) returns (grpc.common.BasicResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-83-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-84-  rpc SelectTeamByIdsIgnoreDelete(GetTeamByIdsRequest) returns (GetTeamByIdsResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-85-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-86-  rpc GetAllValidUsers (GetUserByIdRo) returns (UserInfosResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-87-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-88-  rpc GetAllExistUsers (GetUserByIdRo) returns (UserInfosResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-89-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto:90:  rpc GetUsersLikeNickname (GetUsersLikeNicknameRequest) returns (UserInfosResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-91-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto:92:  rpc GetExistUsersByNicknameLike (GetUsersLikeNicknameRequest) returns (UserInfosResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-93-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-94-  rpc DepartUserByEmail (DepartUserByEmailRequest) returns (grpc.common.BasicResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-95-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-96-  rpc DepartUsersInEmails (DepartUsersInEmailsRequest) returns (grpc.common.BasicResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-97-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-98-  rpc RecoverUserByEmail (DepartUserByEmailRequest) returns (grpc.common.BasicResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-99-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-100-  rpc RecoverUsersInEmails (DepartUsersInEmailsRequest) returns (grpc.common.BasicResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-101-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-102-  rpc importLuckysheetNode (ImportLuckysheetNodeRequest) returns (ImportLuckysheetNodeResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-103-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-104-  rpc SelectTeamsBySpaceIds(GetTeamsBySpaceIdsRequest) returns (GetTeamByIdsResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-105-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-106-  rpc AddUsersToTeam(OperateUsersOfTeamRequest) returns (grpc.common.BasicResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-107-
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-476-}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-477-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-478-message GetTeamByIdsResult {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-479-  repeated TeamInfoResult teamInfos = 1;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-480-}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-481-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-482-message TeamInfoResult {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-483-  int64 id=1;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-484-  string spaceId=2;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-485-  int64 parentId=3;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-486-  string teamName=4;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-487-  int32 teamLevel=5;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-488-  int32 sequence=6;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-489-}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-490-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto:491:message GetUsersLikeNicknameRequest {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-492-  string nickname = 1;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-493-}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-494-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-495-message DepartUserByEmailRequest {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-496-  string email = 1;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-497-  int64 opUserId = 2;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-498-  bool isMmSync = 3;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-499-}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-500-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-501-message DepartUsersInEmailsRequest {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-502-  repeated string emails = 1;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-503-  bool isMmSync = 2;
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-504-}
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-505-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\proto\serving\BackendServingService.proto-506-message ImportLuckysheetNodeRequest {
+--
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-963-                        .setEmail(u.getEmail()!=null?u.getEmail():"")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-964-                        .setAvatar(u.getAvatar() != null ? u.getAvatar() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-965-                        .setIsExpat(u.getIsExpat() != null ? u.getIsExpat() : false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-966-                        .setIsMmSync(u.getIsMmSync() != null ? u.getIsMmSync() : false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-967-                        .build());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-968-            });
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-969-            UserInfosResult userInfosResult = UserInfosResult.newBuilder().addAllUserInfos(userInfos).build();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-970-            responseObserver.onNext(userInfosResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-971-            responseObserver.onCompleted();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-972-        } else {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-973-            responseObserver.onError(new RuntimeException("no user"));
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-974-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-975-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-976-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-977-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java:978:    public void getUsersLikeNickname(GetUsersLikeNicknameRequest ro,StreamObserver<UserInfosResult> responseObserver) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-979-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-980-        String nickname=ro.getNickname();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-981-        List<UserEntity> userEntities = iUserService.selectUsersByNicknameLike(nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-982-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-983-        if (CollectionUtils.isNotEmpty(userEntities)) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-984-            ArrayList<UserInfo> userInfos = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-985-            userEntities.forEach(u->{
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-986-                userInfos.add(UserInfo.newBuilder()
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-987-                        .setId(u.getId())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-988-                        .setUuid(u.getUuid() != null ? u.getUuid() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-989-                        .setNickName(u.getNickName() != null ? u.getNickName() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-990-                        .setStatus(u.getStatus())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-991-                        .setIsPaused(u.getIsPaused())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-992-                        .setEmail(u.getEmail())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-993-                        .setAvatar(u.getAvatar() != null ? u.getAvatar() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-994-                        .setIsExpat(u.getIsExpat() != null ? u.getIsExpat() : false)
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-995-                        .build());
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-996-            });
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-997-            UserInfosResult userInfosResult = UserInfosResult.newBuilder().addAllUserInfos(userInfos).build();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-998-            responseObserver.onNext(userInfosResult);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-999-        } else {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1000-            responseObserver.onError(new RuntimeException("no user"));
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1001-        }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1002-        responseObserver.onCompleted();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1003-    }
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1004-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1005-    @Override
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java:1006:    public void getExistUsersByNicknameLike(GetUsersLikeNicknameRequest ro,StreamObserver<UserInfosResult> responseObserver) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1007-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1008-        String nickname=ro.getNickname();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1009-        List<UserEntity> userEntities = iUserService.selectExistUsersByNicknameLike(nickname);
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1010-
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1011-        if (CollectionUtils.isNotEmpty(userEntities)) {
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1012-            ArrayList<UserInfo> userInfos = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1013-            userEntities.forEach(u->{
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1014-                userInfos.add(UserInfo.newBuilder()
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1015-                        .setId(u.getId())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1016-                        .setUuid(u.getUuid() != null ? u.getUuid() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1017-                        .setNickName(u.getNickName() != null ? u.getNickName() : "")
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1018-                        .setStatus(u.getStatus())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1019-                        .setIsPaused(u.getIsPaused())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1020-                        .setEmail(u.getEmail())
+D:\project\pt-gitlab\collabspace\apitable\backend-server\application\src\main\java\com\apitable\shared\grpc\BackendServingServiceImpl.java-1021-                        .setAvatar(u.getAvatar() != null ? u.getAvatar() : "")

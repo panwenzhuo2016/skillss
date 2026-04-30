@@ -1,0 +1,219 @@
+package com.yottastudios.ns.collabspace.feedback.service.impl;
+
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yottastudios.ns.collabspace.feedback.entity.FeedbackEntity;
+import com.yottastudios.ns.collabspace.feedback.enums.FeedbackSource;
+import com.yottastudios.ns.collabspace.feedback.enums.FeedbackStatus;
+import com.yottastudios.ns.collabspace.feedback.mapper.FeedbackMapper;
+import com.yottastudios.ns.collabspace.feedback.ro.FeedbackListRo;
+import com.yottastudios.ns.collabspace.feedback.ro.FeedbackSubmitRo;
+import com.yottastudios.ns.collabspace.feedback.ro.FeedbackUpdateStatusRo;
+import com.yottastudios.ns.collabspace.feedback.ro.MmFeedbackWebhookRo;
+import com.yottastudios.ns.collabspace.feedback.service.IFeedbackService;
+import com.yottastudios.ns.collabspace.feedback.vo.FeedbackVo;
+import com.yottastudios.ns.collabspace.shared.config.properties.ConstProperties;
+import com.yottastudios.ns.collabspace.shared.config.properties.MattermostProperties;
+import com.yottastudios.ns.collabspace.shared.context.SessionContext;
+import com.yottastudios.ns.collabspace.starter.oss.core.OssClientTemplate;
+import com.yottastudios.ns.collabspace.third.feign.MattermostMessageFeign;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Slf4j
+@Service
+public class FeedbackServiceImpl extends ServiceImpl<FeedbackMapper, FeedbackEntity> implements IFeedbackService {
+
+    @Resource
+    private FeedbackMapper feedbackMapper;
+
+    @Resource
+    private OssClientTemplate ossTemplate;
+
+    @Resource
+    private ConstProperties constProperties;
+
+    @Resource
+    private MattermostMessageFeign mattermostMessageFeign;
+
+    @Resource
+    private MattermostProperties mattermostProperties;
+
+    @Override
+    public void submitFeedback(FeedbackSubmitRo ro, List<MultipartFile> files) {
+        Long userId = SessionContext.getUserId();
+        log.info("[2087-Feedback] submitFeedback userId={} feedbackType={}", userId, ro.getFeedbackType());
+
+        // 上传附件到MinIO
+        List<String> attachmentUrls = uploadFilesToMinio(files);
+
+        FeedbackEntity entity = FeedbackEntity.builder()
+                .userId(String.valueOf(userId))
+                .feedbackTime(LocalDateTime.now())
+                .docType(ro.getDocType())
+                .feedbackType(ro.getFeedbackType())
+                .relatedLink(ro.getRelatedLink())
+                .content(ro.getContent())
+                .attachments(attachmentUrls.isEmpty() ? null : JSONUtil.toJsonStr(attachmentUrls))
+                .source(FeedbackSource.SENTRY.getCode())
+                .status(FeedbackStatus.UNPROCESSED.getCode())
+                .build();
+
+        feedbackMapper.insert(entity);
+        log.info("[2087-Feedback] submitFeedback SUCCESS id={} userId={}", entity.getId(), userId);
+    }
+
+    @Override
+    public void mmWebhookFeedback(MmFeedbackWebhookRo ro) {
+        log.info("[2087-Feedback] mmWebhookFeedback userName={} fileIds={}", ro.getUserName(),
+                ro.getFileIds() != null ? ro.getFileIds().size() : 0);
+
+        // 下载MM附件并上传到MinIO
+        List<String> attachmentUrls = downloadMmFilesAndUpload(ro.getFileIds());
+
+        FeedbackEntity entity = FeedbackEntity.builder()
+                .userId(ro.getUserName())
+                .userName(ro.getUserName())
+                .feedbackTime(LocalDateTime.now())
+                .content(ro.getContent())
+                .attachments(attachmentUrls.isEmpty() ? null : JSONUtil.toJsonStr(attachmentUrls))
+                .source(FeedbackSource.MM.getCode())
+                .status(FeedbackStatus.UNPROCESSED.getCode())
+                .build();
+
+        feedbackMapper.insert(entity);
+        log.info("[2087-Feedback] mmWebhookFeedback SUCCESS id={} userName={}", entity.getId(), ro.getUserName());
+    }
+
+    @Override
+    public IPage<FeedbackVo> listFeedback(FeedbackListRo ro) {
+        int pageNum = ro.getPageNum() != null ? ro.getPageNum() : 1;
+        int pageSize = ro.getPageSize() != null ? ro.getPageSize() : 20;
+
+        LambdaQueryWrapper<FeedbackEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FeedbackEntity::getIsDeleted, 0);
+
+        if (ro.getStatus() != null) {
+            wrapper.eq(FeedbackEntity::getStatus, ro.getStatus());
+        }
+        if (StrUtil.isNotBlank(ro.getDocType())) {
+            wrapper.eq(FeedbackEntity::getDocType, ro.getDocType());
+        }
+        if (StrUtil.isNotBlank(ro.getFeedbackType())) {
+            wrapper.eq(FeedbackEntity::getFeedbackType, ro.getFeedbackType());
+        }
+        if (StrUtil.isNotBlank(ro.getStartDate())) {
+            LocalDate startDate = LocalDate.parse(ro.getStartDate(), DateTimeFormatter.ISO_LOCAL_DATE);
+            wrapper.ge(FeedbackEntity::getFeedbackTime, startDate.atStartOfDay());
+        }
+        if (StrUtil.isNotBlank(ro.getEndDate())) {
+            LocalDate endDate = LocalDate.parse(ro.getEndDate(), DateTimeFormatter.ISO_LOCAL_DATE);
+            wrapper.le(FeedbackEntity::getFeedbackTime, endDate.plusDays(1).atStartOfDay());
+        }
+        if (StrUtil.isNotBlank(ro.getKeyword())) {
+            wrapper.like(FeedbackEntity::getContent, ro.getKeyword());
+        }
+
+        wrapper.orderByDesc(FeedbackEntity::getFeedbackTime);
+
+        IPage<FeedbackEntity> page = feedbackMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+
+        return page.convert(this::toVo);
+    }
+
+    @Override
+    public void updateFeedbackStatus(FeedbackUpdateStatusRo ro) {
+        log.info("[2087-Feedback] updateFeedbackStatus id={} status={}", ro.getFeedbackId(), ro.getStatus());
+        FeedbackEntity entity = feedbackMapper.selectById(ro.getFeedbackId());
+        if (entity == null) {
+            throw new RuntimeException("反馈记录不存在");
+        }
+        entity.setStatus(ro.getStatus());
+        feedbackMapper.updateById(entity);
+        log.info("[2087-Feedback] updateFeedbackStatus SUCCESS id={}", ro.getFeedbackId());
+    }
+
+    /**
+     * 上传前端附件到MinIO
+     */
+    private List<String> uploadFilesToMinio(List<MultipartFile> files) {
+        List<String> urls = new ArrayList<>();
+        if (files == null || files.isEmpty()) {
+            return urls;
+        }
+        String bucketName = constProperties.getOssBucketByAsset().getBucketName();
+        for (MultipartFile file : files) {
+            try {
+                String keyPath = "feedback/" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+                        + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+                ossTemplate.upload(bucketName, file.getInputStream(), keyPath);
+                String url = constProperties.getOssBucketByAsset().getResourceUrl() + "/" + keyPath;
+                urls.add(url);
+            } catch (IOException e) {
+                log.error("[2087-Feedback] uploadFilesToMinio FAIL fileName={} error={}", file.getOriginalFilename(), e.getMessage(), e);
+            }
+        }
+        return urls;
+    }
+
+    /**
+     * 从MM下载附件并上传到MinIO
+     */
+    private List<String> downloadMmFilesAndUpload(List<String> fileIds) {
+        List<String> urls = new ArrayList<>();
+        if (fileIds == null || fileIds.isEmpty()) {
+            return urls;
+        }
+        String bucketName = constProperties.getOssBucketByAsset().getBucketName();
+        String authToken = "Bearer " + mattermostProperties.getXcollabspaceBotToken();
+
+        for (String fileId : fileIds) {
+            try {
+                byte[] fileData = mattermostMessageFeign.downloadFile(authToken, fileId);
+                String keyPath = "feedback/mm/" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+                        + "/" + UUID.randomUUID() + "_" + fileId;
+                ossTemplate.upload(bucketName, new ByteArrayInputStream(fileData), keyPath);
+                String url = constProperties.getOssBucketByAsset().getResourceUrl() + "/" + keyPath;
+                urls.add(url);
+                log.info("[2087-Feedback] downloadMmFile SUCCESS fileId={}", fileId);
+            } catch (Exception e) {
+                log.error("[2087-Feedback] downloadMmFile FAIL fileId={} error={}", fileId, e.getMessage(), e);
+            }
+        }
+        return urls;
+    }
+
+    private FeedbackVo toVo(FeedbackEntity entity) {
+        FeedbackVo vo = new FeedbackVo();
+        vo.setId(entity.getId());
+        vo.setUserId(entity.getUserId());
+        vo.setUserName(entity.getUserName());
+        vo.setFeedbackTime(entity.getFeedbackTime());
+        vo.setDocType(entity.getDocType());
+        vo.setFeedbackType(entity.getFeedbackType());
+        vo.setRelatedLink(entity.getRelatedLink());
+        vo.setContent(entity.getContent());
+        vo.setAttachments(StrUtil.isNotBlank(entity.getAttachments())
+                ? JSONUtil.toList(entity.getAttachments(), String.class)
+                : List.of());
+        vo.setExtraInfo(entity.getExtraInfo());
+        vo.setSource(entity.getSource());
+        vo.setStatus(entity.getStatus());
+        return vo;
+    }
+}

@@ -1,0 +1,52 @@
+package com.exam.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.exam.enums.RecordStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * 考试记录
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName("exam_exam_record")
+public class ExamRecord {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    @TableField("exam_id")
+    private Long examId;
+
+    @TableField("user_id")
+    private Long userId;
+
+    @TableField("score")
+    private BigDecimal score;
+
+    @TableField("start_time")
+    private LocalDateTime startTime;
+
+    @TableField("end_time")
+    private LocalDateTime endTime;
+
+    @TableField("status")
+    private RecordStatus status;
+
+    @TableField("attempt_no")
+    private Integer attemptNo;
+
+    @TableField("created_at")
+    private LocalDateTime createdAt;
+}

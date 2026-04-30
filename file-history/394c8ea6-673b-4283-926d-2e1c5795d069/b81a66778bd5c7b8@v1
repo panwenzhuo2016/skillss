@@ -1,0 +1,56 @@
+package com.exam.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+/**
+ * 题库
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName("question_bank")
+public class QuestionBank {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    @TableField("exam_id")
+    private Long examId;
+
+    @TableField("content")
+    private String content;
+
+    @TableField("option_a")
+    private String optionA;
+
+    @TableField("option_b")
+    private String optionB;
+
+    @TableField("option_c")
+    private String optionC;
+
+    @TableField("option_d")
+    private String optionD;
+
+    @TableField("correct_answer")
+    private String correctAnswer;
+
+    @TableField("analysis")
+    private String analysis;
+
+    @TableField("sort_order")
+    private Integer sortOrder;
+
+    @TableField("created_at")
+    private LocalDateTime createdAt;
+}

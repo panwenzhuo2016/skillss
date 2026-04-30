@@ -1,0 +1,982 @@
+<?php
+
+namespace App\Oc;
+
+use App\Exceptions\ExceptionCode;
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\Oa\ApprovalManagementController;
+use App\Jobs\UpdateCommonRequestNextReplaceCache;
+use App\Jobs\UpdateStampRequestCache;
+use App\Oc\Builders\ActionerQueryBuilder;
+use App\Oc\Builders\StakeholderQueryBuilder;
+use App\Oc\Builders\StampStakeholderQueryBuilder;
+use App\Oc\Common\Action;
+use App\Oc\Common\CommonConst;
+use App\Oc\Common\Helper;
+use App\Oc\Common\Registry;
+use App\Oc\Common\SpecialAction;
+use App\Oc\Common\Stakeholder;
+use App\Oc\Common\StampConst;
+use App\Oc\Common\State;
+use App\Oc\Exceptions\WorkflowException;
+use App\Oc\Models\CommonFileStorePath;
+use App\Oc\Models\CommonRequest;
+use App\Oc\Models\CommonRequestAction;
+use App\Oc\Models\CommonRequestLockDetail;
+use App\Oc\Models\CommonRequestStakeholder;
+use App\Oc\Models\CommonSpecialStakeholder;
+use App\Oc\Models\StampDetail;
+use App\Oc\Models\StampFileDownloadRecord;
+use App\Oc\Models\StampPostAddress;
+use App\Oc\Models\StampUser;
+use App\Oc\Models\StampUserData;
+use App\Oc\Utils\StampUserList;
+use App\Service\NotifyNumberService;
+use App\Service\OcMailService;
+use App\Workflows\Common\Stakeholder as WorkflowStakeholder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+
+class StampApprovalManagementController extends Controller
+{
+    /**
+     * 检查用户花名是否在本地区.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function userExists(Request $request): JsonResponse
+    {
+        $input = $request->only(['sfuser_info', 'nickname_hash_filter']);
+
+        $exists = StampUser::whereIn('nickname_hash', $input['nickname_hash_filter'])->active()->exists();
+
+        return $this->responseJsonSuccess(['exists' => $exists]);
+    }
+
+    /**
+     * 代办事项.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function todoList(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $disableCache = $request->input('disable_cache', false);
+
+        $issuedButNotCompleted = 0; // 我发起的（待审批）的数目
+        $toBeApprovedByMe = 0; // 待我审批数目
+        $cc2Me = 0; // 抄送我的并且未读的数目
+
+        if ($disableCache) {
+            $issuedButNotCompleted = (new StakeholderQueryBuilder('stamp'))->filterByRequesterIds($sfuserId)->approving()->asRequester()->unlocked()->count();
+            $issuedButRejected = (new StakeholderQueryBuilder('stamp'))->filterByRequesterIds($sfuserId)->stateIn(State::REJECTED)->asRequester()->unlocked()->count();
+            $toBeApprovedByMe = (new ActionerQueryBuilder('stamp'))->filterByUserId($sfuserId)->toBeApprovedByMe()->unlocked()->count();
+            $cc2Me = (new StakeholderQueryBuilder('stamp'))->filterByUserId($sfuserId)->asCCer()->unread()->count();
+        } else {
+            $data = NotifyNumberService::app()->getIndividual($sfuserId);
+            $issuedButNotCompleted = $data['stamp_issued'] ?? 0;
+            $issuedButRejected = $data['stamp_issued_rejected'] ?? 0;
+            $toBeApprovedByMe = $data['stamp_to_be_approved'] ?? 0;
+            $cc2Me = $data['stamp_cc'] ?? 0;
+        }
+
+        // 查询个人数据
+        $userData = StampUserData::firstOrCreate(['sfuser_id' => $sfuserId], [
+            'sfuser_id' => $sfuserId, 'to_be_approved_by_me' => 0, 'cc_to_me' => 0,
+        ]);
+
+        // 更新个人数据
+        $update = [];
+        if (!$userData->to_be_approved_by_me && $toBeApprovedByMe) {
+            $update['to_be_approved_by_me'] = 1;
+        }
+        if (!$userData->cc_to_me && $cc2Me) {
+            $update['cc_to_me'] = 1;
+        }
+        if (!empty($update)) {
+            $userData->update($update);
+        }
+
+        // 如果从来没有过就不返回
+        $ret = [
+            'countingIssuedButNotCompleted' => $issuedButNotCompleted,
+            'countingIssuedButRejected' => $issuedButRejected,
+        ];
+        if ($userData->to_be_approved_by_me) {
+            $ret['countingToBeApprovedByMe'] = $toBeApprovedByMe;
+        }
+        if ($userData->cc_to_me) {
+            $ret['countingCc2Me'] = $cc2Me;
+        }
+        $ret = ApprovalManagementController::dealLessThan0($ret);
+        return $this->responseJsonSuccess($ret);
+    }
+
+    /**
+     * 加密文件名.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function echoFileName(Request $request): JsonResponse
+    {
+        $fileNames = $request->input('file_names', []);
+
+        return $this->responseJsonSuccess([
+            'file_names' => $fileNames,
+        ]);
+    }
+
+    /**
+     * 开启一个审批流程。
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function startProcess(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'process_key',  'st_request_id', 'start', 'context', 'files',
+            'cc_nickname_hash_filter', 'info',
+        ]);
+
+        if (Arr::has($input, 'cc_nickname_hash_filter')) {
+            $input['cc_ids'] = StampUser::whereIn('nickname_hash', $input['cc_nickname_hash_filter'])->active()->pluck('sfuser_id')->toArray();
+        }
+
+        // 人事部/行政部发起时，自动将艾莎加入抄送列表
+        $this->appendAishaCcIfNeeded($input);
+
+        $wr = RequestService::make(
+            'stamp',
+            $input['process_key'],
+            $input['sfuser_info']['id'],
+            $input['st_request_id'],
+            (bool)$input['start'] ?? false,
+            $input['cc_ids'] ?? [],
+            $input['context'] ?? [],
+            $input['files'] ?? [],
+            $input['info'] ?? [],
+        );
+        $msg = implode('', $wr->messageBag);
+
+        UpdateCommonRequestNextReplaceCache::dispatch('stamp', CommonRequest::STRATEGY_REPLACE);
+        UpdateStampRequestCache::dispatchSync(CommonRequest::STRATEGY_REPLACE);
+
+        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'request_id' => $wr->getRequest()->id, 'msg' => $msg]);
+    }
+
+    /**
+     * 对一个审批授权.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function authorizeRequestToken(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $requestId = $request->input('st_request_id');
+        $token = $request->input('authorized_token');
+
+        // 提醒审批人审批
+        $sendEmail = function ($wr) {
+            $requestAction = (new CommonRequestAction())->setConnection('stamp')
+                ->where(['request_id' => $wr->id, 'state_id' => $wr->current_state_id, 'is_active' => 1])
+                ->where('side', CommonRequestAction::EMPLOYEE_SIDE)->where('operator_type', '<>', 'requester')
+                ->first();
+            if ($requestAction != null) {
+                // 审批人花名
+                $operatorNickname = '';
+                foreach ($wr->info['initNodes'] as $one) {
+                    if ($one['operator_type'] == $requestAction->operator_type) {
+                        $operatorNickname = Arr::get($one['operator'], 0, '');
+                        break;
+                    }
+                }
+                OcMailService::app()->sendOcOperatorEmail('stamp', $wr->process_key, $requestAction->operator_id, $operatorNickname, $wr);
+            }
+        };
+
+        $succ = false;
+        $wr = (new CommonRequest())->setConnection('stamp')->where([
+            'id' => $requestId, 'user_id' => $sfuserId,
+        ])->first();
+
+        if ($wr != null) {
+            // 如果 token 为空则需要发送邮件通知审批人
+            if ($wr->token == '') {
+                $succ = $wr->update(['token' => $token]);
+                register_shutdown_function($sendEmail, $wr);
+            } else {
+                $succ = $wr->update(['token' => $token]);
+            }
+        }
+
+        return $this->responseJsonSuccess(['success' => $succ]);
+    }
+
+    /**
+     * 对一个流程进行预检，对参数进行必要的检查，生成流程图 nodes.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function preflightProcess(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'process_key', 'context', 'version',
+        ]);
+
+        $sfuserId = $input['sfuser_info']['id'];
+
+        $data = RequestService::preflightProcess('stamp', $input['process_key'], $sfuserId, $input['context'], $input['version'] ?? 0);
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 获取审批元数据.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function metaData(Request $request): JsonResponse
+    {
+        $data = Helper::metaData() + [
+            'processes' => Registry::STAMP_PROCESSES,
+            'pay_department_list' => CommonConst::PAY_STAMP_DEPARTMENT_LIST,
+            'pay_company_list' => StampConst::getAllPayCompanyList(),
+            'stamp_type_list' => StampConst::STAMP_TYPE_LIST,
+            'stamp_file_list' => StampConst::STAMP_FILE_LIST,
+        ];
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 每个站点特殊的数据.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function siteSpecificData(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+
+        if (!StampUserList::userExists($sfuserId)) {
+            return $this->responseJsonSuccess(['department' => [], 'pay_company' => []]);
+        }
+
+        $data = [
+            'department' => CommonConst::PAY_STAMP_DEPARTMENT_LIST,
+            'pay_company' => StampConst::getPayCompanyList(),
+        ];
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 获取邮寄信息.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getPostAddress(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $data = StampPostAddress::where('sfuser_id', $sfuserId)->get()->toArray();
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 添加邮寄信息.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function addPostAddress(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $input = $request->only(['address', 'contact_name', 'contact_number']);
+
+        $postAddress = StampPostAddress::create($input + ['sfuser_id' => $sfuserId]);
+        return $this->responseJsonSuccess($postAddress);
+    }
+
+    /**
+     * 编辑邮寄信息.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function editPostAddress(Request $request): JsonResponse
+    {
+        $id = $request->input('id');
+        $sfuserId = $request->input('sfuser_info.id');
+        $input = $request->only(['address', 'contact_name', 'contact_number']);
+
+        $num = StampPostAddress::where('id', $id)->where('sfuser_id', $sfuserId)->update($input);
+        return $this->responseJsonSuccess(['success' => (bool)$num]);
+    }
+
+    /**
+     * 删除邮寄信息.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function removePostAddress(Request $request): JsonResponse
+    {
+        $ids = $request->input('ids');
+        $sfuserId = $request->input('sfuser_info.id');
+
+        $num = StampPostAddress::whereIn('id', $ids)->where('sfuser_id', $sfuserId)->delete();
+        return $this->responseJsonSuccess(['deleted_num' => $num]);
+    }
+
+    public function deleteRequests(Request $request)
+    {
+        // 1
+        $input = Arr::only($request->all(), [
+            'stamp_request_id',
+        ]);
+        $request = (new CommonRequest())->setConnection('stamp')->where(['id' => $input['stamp_request_id']])->first();
+        if (!$request) {
+            return $this->responseJsonFail('审批不存在');
+        }
+        if ($request->is_locked) {
+            return $this->responseJsonFail('审批已锁定，无法删除');
+        }
+        if ($request->current_state_id != State::START && $request->current_state_id != State::CANCELLED) {
+            return $this->responseJsonFail('审批状态非草稿或已撤销，无法删除');
+        }
+        info('delete stamp request'.my_json_encode($request));
+        $request->delete();
+        return $this->responseJsonSuccess('success');
+    }
+
+    /**
+     * 获取请求列表.
+     *
+     * @param string $connection
+     * @param string $type
+     * @param array $input
+     * @return JsonResponse
+     */
+    public function getRequests(string $connection, string $type, array $input): JsonResponse
+    {
+        $input = Arr::only($input, [
+            'sfuser_info', 'per_page', 'no', 'approval_statuses', 'lack_supplements', 'nickname_hash_filter', 'lock_status', 'stamp_info_name_replace_filter',
+            'department', 'pay_company', 'stamp_type', 'priority', 'complete_date_start', 'complete_date_end', 'submitted_before', 'submitted_after',
+            'current_approver_nickname', 'next_replace_filter',
+        ]) + ['per_page' => 50];
+
+        $sfuserId = $input['sfuser_info']['id'];
+
+        $sq = new StampStakeholderQueryBuilder($connection);
+        $aq = new ActionerQueryBuilder($connection);
+
+        switch ($type) {
+            case 'issued':
+                $sq->asRequester()->notCCer()->filterByUserId($sfuserId);
+                break;
+            case 'approving':
+                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+                $aq->toBeApprovedByMe()->filterByUserId($sfuserId);
+                break;
+            case 'resolved':
+                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+                $aq->resolved()->filterByUserId($sfuserId);
+                break;
+            case 'cc':
+                $sq->asCCer()->filterByUserId($sfuserId);
+                break;
+            case 'approvingOrResolved':
+                $sq->filterByUserId($sfuserId)->notCCer()->notRequester();
+                break;
+            default:
+                throw new WorkflowException('Invalid type given');
+        }
+
+        $queryBuilder = $sq->orderBy('requests.created_at', 'desc');
+
+        // 按申请人进行过滤
+        if (Arr::has($input, 'nickname_hash_filter')) {
+            $userIds = StampUser::whereIn('nickname_hash', $input['nickname_hash_filter'])->pluck('sfuser_id')->toArray();
+            $queryBuilder->filterByRequesterIds($userIds);
+        }
+
+        // 按编号筛选
+        if ($no = Arr::get($input, 'no')) {
+            $queryBuilder->filterByNo($no);
+        }
+
+        // 按关键字搜索筛选
+        if (($nextReplaceFilterIds = Arr::get($input, 'next_replace_filter')) !== null) {
+            $queryBuilder->filterByRequestIds($nextReplaceFilterIds);
+        }
+
+        // 按审批状态筛选
+        $approvalStatuses = Arr::wrap(Arr::get($input, 'approval_statuses', []));
+        if ($approvalStatuses) {
+            $queryBuilder->stateIn($approvalStatuses);
+        }
+
+        // 按当前审批人花名筛选
+        if ($currentApprover = Arr::get($input, 'current_approver_nickname')) {
+            if ($currentApproverId = Arr::get(Stakeholder::getApproverNickname2Id('stamp'), $currentApprover, -1)) {
+                $queryBuilder->filterByCurrentApproverId($currentApproverId);
+            }
+        }
+
+        $lackSupplements = Arr::get($input, 'lack_supplements', -1);
+        if ($lackSupplements != -1) {
+            /** lack_supplements: 1 缺少材料，2 材料齐全 */
+            $lack = $lackSupplements == 1; // 不搜时，不传该参数，因此不用判断是否为 2 了
+            $queryBuilder->filterByLackSupplements($lack);
+        }
+
+        $processKey = Arr::wrap(Arr::get($input, 'process_key', []));
+        if ($processKey) {
+            $queryBuilder->filterByProcessKey($processKey);
+        }
+
+        // 按最新发起申请的时间搜索
+        $queryBuilder->submittedBefore(Arr::get($input, 'submitted_before', ''))->submittedAfter(Arr::get($input, 'submitted_after', ''));
+
+        $lockStatus = Arr::get($input, 'lock_status', -1);
+        if ($lockStatus == 0) {
+            $queryBuilder->unlocked();
+        } elseif ($lockStatus == 1) {
+            $queryBuilder->locked();
+        }
+
+        // 按照盖章资料名称搜索
+        if (array_key_exists('stamp_info_name_replace_filter', $input)) {
+            $queryBuilder->filterByRequestIds($input['stamp_info_name_replace_filter'] ?? []);
+        }
+
+        // 按照部门查找
+        if ($department = Arr::get($input, 'department')) {
+            $queryBuilder->filterByDepartment($department);
+        }
+
+        // 按照盖章公司查询
+        if ($payCompany = Arr::get($input, 'pay_company')) {
+            $queryBuilder->filterByPayCompany($payCompany);
+        }
+
+        // 按照盖章类型查询
+        if ($stampType = Arr::get($input, 'stamp_type')) {
+            $queryBuilder->filterByStampType($stampType);
+        }
+
+        // 按照优先级查询
+        $priority = Arr::get($input, 'priority');
+        if ($priority != null) {
+            $queryBuilder->filterByPriority($priority);
+        }
+
+        // 按照盖章完成日期搜索
+        $queryBuilder->completeDateAfter(Arr::get($input, 'complete_date_start', ''))
+            ->completeDateBefore(Arr::get($input, 'complete_date_end', ''));
+
+        $requests = [];
+        $columns = '`requests`.`user_id`, `requests`.`id`, `requests`.`is_locked`, `requests`.`version`, GROUP_CONCAT(`request_stakeholders`.`type` SEPARATOR ",") as type,
+                    `is_read`, `requests`.`submitted_at`, `requests`.`created_at`, `process_key`, `no`, `current_state_id`, `need_supplements`, `has_supplements`, `info`, `token`,
+                    `department`, `pay_company`, `stamp_type`, `stamp_file`, `priority`, `plan_stamp_date`, `approval_date`, `complete_date`,
+                    `requests`.`data`->"$.stamp_info_name" as stamp_info_name';
+        switch ($type) {
+            case 'issued':
+            case 'cc':
+                /** @phpstan-ignore-next-line */
+                $requests = $queryBuilder->queryBuilder()->selectRaw(
+                    '`requests`.`id`, `requests`.`user_id`, `is_locked`, `version`, `request_stakeholders`.`type`, `is_read`, `requests`.`submitted_at`, `requests`.`created_at`,
+                    `process_key`, `no`, `current_state_id`, `need_supplements`, `has_supplements`, `info`, `token`, `requests`.`data`->"$.stamp_info_name" as stamp_info_name,
+                    `department`, `pay_company`, `stamp_type`, `stamp_file`, `priority`, `plan_stamp_date`, `approval_date`, `complete_date`'
+                )->paginate($input['per_page'])->toArray();
+                break;
+            case 'approving':
+            case 'resolved':
+                $idsQuery = $aq->queryBuilder()->groupBy('requests.id')->select('requests.id');
+                $requests = $queryBuilder->queryBuilder()->whereIn('requests.id', $idsQuery)->selectRaw($columns)
+                    ->groupBy('requests.id') // 保证申请记录唯一
+                    ->paginate($input['per_page'])->toArray();
+                break;
+            case 'approvingOrResolved':
+                $resolved = (clone $queryBuilder->queryBuilder())->whereIn(
+                    'requests.id',
+                    (new ActionerQueryBuilder($connection))->resolved()->filterByUserId($sfuserId)->queryBuilder()->select('requests.id')
+                )
+                    ->selectRaw($columns.', 2 as status')->groupBy('requests.id');
+                $requests = $queryBuilder->queryBuilder()->whereIn(
+                    'requests.id',
+                    (new ActionerQueryBuilder($connection))->toBeApprovedByMe()->filterByUserId($sfuserId)->queryBuilder()->select('requests.id')
+                )
+                    ->selectRaw($columns.', 1 as status')->groupBy('requests.id')
+                    ->union($resolved)->orderBy('status')->orderBy('created_at', 'desc')
+                    ->paginate($input['per_page'])->toArray();
+                break;
+        }
+
+        $items = $requests['data'];
+
+        // 因为 QueryBuilder 走的是 DB 而不是 Model，因此需要手动 cast
+        foreach ($items as &$item) {
+            $item = CommonRequest::normalizeWorkflowRequest($item);
+        }
+        unset($item);
+
+        $itemIds = Arr::pluck($items, 'id');
+        $actions = Action::validActions($connection, $sfuserId, $itemIds);
+        $operatorTypes = Action::currentToBeApprovedOperatorTypes($connection, $itemIds);
+
+        foreach ($items as &$item) {
+            $types = explode(',', $item['type']);
+            $item['type'] = array_pop($types);
+            // 不返回 data 和 files
+            $item['actions'] = ($item['is_locked']) ? [] : Arr::get($actions, $item['id'], []);
+            // 只有审批中的才有审批人
+            $item['curr_operator_type'] = in_array($item['current_state_id'], State::COMMON_TYPES) ? 0 : Arr::get($operatorTypes, $item['id'], []);
+        }
+        unset($item);
+
+        $tokens = [];
+        foreach ($items as &$item) {
+            $item['info'] = is_string($item['info']) ? my_json_decode($item['info']) : $item['info'];
+            if (!empty($item['token'])) {
+                $tokens[] = $item['token'];
+            }
+            unset($item['token']);
+
+            $processKey = $item['process_key'];
+            $stateClassName = Registry::PROCESS_MAPS[$processKey]['class'];
+            /** @phpstan-ignore-next-line */
+            $stateClass = new $stateClassName($item['version']);
+            $specialActions = Arr::get($stateClass->specialActions, $item['current_state_id'].'.'.$item['type'], []);
+            // 添加修改盖章存档附件的特殊动作
+            if ($type == 'issued' && $item['current_state_id'] == State::COMPLETED) {
+                $specialActions[] = SpecialAction::EDIT_STAMP_ARCHIVE_ATTACHMENT;
+            }
+            if ($item['is_locked']) {
+                $specialActions = array_diff($specialActions, SpecialAction::BANNED_WHEN_LOCKED_TYPE);
+            }
+
+            $item['special_actions'] = $specialActions;
+        }
+        unset($item);
+
+        $res = [
+            'current_page' => $requests['current_page'],
+            'per_page' => $requests['per_page'],
+            'total' => $requests['total'],
+            'requests' => $items,
+        ];
+
+        if ($type != 'issued' && count($tokens)) { // 不是我发起的，并且存在 token，则通过 Token 解密。
+            $res['decrypt_config'] = [
+                'tokens' => $tokens,
+            ];
+        }
+
+        return $this->responseJsonSuccess($res);
+    }
+
+    /**
+     * 我发起的.
+     */
+    public function issuedRequests(Request $request)
+    {
+        return $this->getRequests('stamp', 'issued', $request->all());
+    }
+
+    /**
+     * 待我审批.
+     */
+    public function approvingRequests(Request $request)
+    {
+        return $this->getRequests('stamp', 'approving', $request->all());
+    }
+
+    /**
+     * 我已审批.
+     */
+    public function resolvedRequests(Request $request)
+    {
+        return $this->getRequests('stamp', 'resolved', $request->all());
+    }
+
+    /**
+     * 我的审批.
+     */
+    public function myRequests(Request $request)
+    {
+        return $this->getRequests('stamp', 'approvingOrResolved', $request->all());
+    }
+
+    /**
+     * 抄送我的.
+     */
+    public function ccRequests(Request $request)
+    {
+        return $this->getRequests('stamp', 'cc', $request->all());
+    }
+
+    /**
+     * 一键已读.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function readAllCCRequests(Request $request)
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'per_page', 'no', 'approval_statuses', 'lack_supplements', 'nickname_hash_filter',
+            'department', 'pay_company', 'stamp_type', 'priority', 'complete_date_start', 'complete_date_end',
+            'next_replace_filter',
+        ]);
+
+        $sfuserId = $input['sfuser_info']['id'];
+
+        $queryBuilder = (new StampStakeholderQueryBuilder('stamp'))->asCCer()->filterByUserId($sfuserId);
+
+        // 按申请人进行过滤
+        if (Arr::has($input, 'nickname_hash_filter')) {
+            $userIds = StampUser::whereIn('nickname_hash', $input['nickname_hash_filter'])->pluck('sfuser_id')->toArray();
+            $queryBuilder->filterByRequesterIds($userIds);
+        }
+
+        // 按编号筛选
+        if ($no = Arr::get($input, 'no')) {
+            $queryBuilder->filterByNo($no);
+        }
+
+        // 按关键字搜索筛选
+        if (($nextReplaceFilterIds = Arr::get($input, 'next_replace_filter')) !== null) {
+            $queryBuilder->filterByRequestIds($nextReplaceFilterIds);
+        }
+
+        // 按审批状态筛选
+        $approvalStatuses = Arr::wrap(Arr::get($input, 'approval_statuses', []));
+        if ($approvalStatuses) {
+            $queryBuilder->stateIn($approvalStatuses);
+        }
+
+        $lackSupplements = Arr::get($input, 'lack_supplements', -1);
+        if ($lackSupplements != -1) {
+            /** lack_supplements: 1 缺少材料，2 材料齐全 */
+            $lack = $lackSupplements == 1; // 不搜时，不传该参数，因此不用判断是否为 2 了
+            $queryBuilder->filterByLackSupplements($lack);
+        }
+
+        $processKey = Arr::get($input, 'process_key', []);
+        if ($processKey) {
+            $queryBuilder->filterByProcessKey($processKey);
+        }
+
+        // 按照部门查找
+        if ($department = Arr::get($input, 'department')) {
+            $queryBuilder->filterByDepartment($department);
+        }
+
+        // 按照盖章公司查询
+        if ($payCompany = Arr::get($input, 'pay_company')) {
+            $queryBuilder->filterByPayCompany($payCompany);
+        }
+
+        // 按照盖章类型查询
+        if ($stampType = Arr::get($input, 'stamp_type')) {
+            $queryBuilder->filterByStampType($stampType);
+        }
+
+        // 按照优先级查询
+        $priority = Arr::get($input, 'priority');
+        if ($priority != null) {
+            $queryBuilder->filterByPriority($priority);
+        }
+
+        // 按照盖章完成日期搜索
+        $queryBuilder->completeDateAfter(Arr::get($input, 'complete_date_start', ''))
+            ->completeDateBefore(Arr::get($input, 'complete_date_end', ''));
+
+        $cnt = $queryBuilder->queryBuilder()->update(['is_read' => 1]);
+
+        // 更新盖章抄送未读
+        NotifyNumberService::app()->modifyIndividual($sfuserId, 'stamp_cc', -1 * $cnt);
+
+        return $this->responseJsonSuccess(['count' => $cnt]);
+    }
+
+    /**
+     * 获取审批详情.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function request(Request $request)
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $requestId = $request->input('st_request_id');
+
+        // 在 OA 端，只有可见，才能查看详情
+        $wrs = (new CommonRequestStakeholder())->setConnection('stamp')
+            ->where('request_id', $requestId)->where('user_id', $sfuserId)
+            ->first();
+        if (!$wrs) {
+            throw new WorkflowException(__('my_api.workflow_request_not_found'), ExceptionCode::ERR_RESOURCE_MISSING);
+        }
+
+        $wr = new RequestService('stamp', $requestId, $sfuserId);
+
+        $detail = $wr->detail(true);
+
+        if (Arr::has($detail, 'basic') && $detail['basic']['process_key'] == Registry::STAMP) {
+            $requestId = $detail['basic']['id'];
+            $stampDetail = StampDetail::where('request_id', $requestId)->first();
+
+            // 审批通过时间
+            $detail['basic']['approval_date'] = $stampDetail->approval_date ?? '';
+            // 审批完成时间
+            $detail['basic']['complete_date'] = $stampDetail->complete_date ?? '';
+
+            // 作为申请人
+            if ($sfuserId == $wr->getRequest()->user_id) {
+                // 已执行附件
+                $detail['basic']['execute_file'] = $stampDetail->execute_file ?? [];
+                // 添加修改盖章存档附件的特殊动作
+                if ($wr->getRequest()->current_state_id == State::COMPLETED) {
+                    $detail['special_actions'][] = SpecialAction::EDIT_STAMP_ARCHIVE_ATTACHMENT;
+                }
+            }
+
+            // 作为审批人
+            $approvers = $wr->getApproverIds();
+            $legalId = Arr::get($approvers, CommonSpecialStakeholder::LEGAL_TYPE);
+            $legalNotApprover = ($sfuserId === $legalId) && (array_count_values($approvers)[$sfuserId] <= 1); // 是法务且非审批人
+
+            // 附件
+            $paths = array_column($detail['basic']['files'], 'value');
+
+            // 存档附件，仅法务不可见
+            if (!$legalNotApprover) {
+                $detail['basic']['archive_attachment'] = $stampDetail->archive_attachment ?? [];
+                $paths = array_merge($paths, array_column($detail['basic']['archive_attachment'], 'value'));
+            }
+
+            // 盖章相关字段对法务隐藏，增加仅法务可见字段
+            if ($detail['basic']['data']['is_contract'] && $sfuserId != $wr->getRequest()->user_id) {
+                if ($sfuserId === $legalId) {
+                    if ($legalNotApprover) {
+                        $paths = array_diff($paths, array_column($detail['basic']['data']['contract'] ?? [], 'value'));
+                        Arr::forget($detail['basic']['data'], ['contract', 'reason']);
+                    }
+                } else {
+                    $paths = array_diff($paths, array_column($detail['basic']['data']['legal_contract'] ?? [], 'value'));
+                    Arr::forget($detail['basic']['data'], ['legal_contract', 'remark_to_legal']);
+                }
+            }
+
+            // 附件下载记录
+            if (in_array($sfuserId, $approvers)) {
+                $filePaths = (new CommonFileStorePath())->setConnection('stamp')->whereIn('file_store_path', $paths)->pluck('file_store_path', 'id')->toArray();
+                $detail['download_record'] = StampFileDownloadRecord::whereIn('file_path_id', array_keys($filePaths))
+                    ->orderBy('created_at', 'DESC')->select('*')->get()->toArray();
+                foreach ($detail['download_record'] as &$one) {
+                    $pathId = $one['file_path_id'];
+                    $one['value'] = $filePaths[$pathId] ?? '';
+                }
+                unset($one);
+            }
+
+            // 作废详情
+            if ($detail['basic']['is_locked']) {
+                $lockDetail = (new CommonRequestLockDetail())->setConnection('stamp')->where('request_id', $requestId)->first();
+                $detail['basic']['lock_detail'] = ($lockDetail == null) ? [] : $lockDetail->toArray();
+            }
+
+            // 管理端审批人花名
+            $types = [CommonSpecialStakeholder::STAMP_HANDEL_TYPE, CommonSpecialStakeholder::STAMP_EXECUTE_TYPE];
+            $stateClass = $wr->getStateClass();
+            foreach ($types as $operatorType) {
+                $specialSfusers = $stateClass->fetchSpecialSfuser('stamp', $operatorType, $detail['basic']['data']);
+                $detail['special_nicknames'][] = [
+                    'operator_type' => $operatorType,
+                    'nicknames' => $specialSfusers['nicknames'],
+                ];
+            }
+        }
+
+        $res = ['detail' => $detail];
+
+        // 有 Token，并且不是本人的话，不需要通过 Token 解密
+        if ($wr->getRequest()->token && $sfuserId != $wr->getRequest()->user_id) {
+            $res['decrypt_config'] = [
+                'tokens' => Arr::wrap($wr->getRequest()->token),
+            ];
+        }
+
+        return $this->responseJsonSuccess($res);
+    }
+
+    /**
+     * 执行动作.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function performAction(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['sfuser_info', 'st_request_id', 'action_id', 'remark']);
+        $sfuserId = $input['sfuser_info']['id'];
+
+        if ($input['action_id'] == Action::DELETE) {
+            return $this->responseJsonFail(__('my_api.invalid_action_given'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        $request = new RequestService('stamp', $input['st_request_id'], $sfuserId);
+        $msg = $request->performActionWithMsg($input['action_id'], $input['remark'] ?? '');
+
+        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'msg' => $msg]);
+    }
+
+    /**
+     * 执行特殊动作.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function performSpecialAction(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'st_request_id', 'special_action_id', 'contract', 'files', 'archive_attachment',
+        ]);
+
+        $sfuserId = Arr::get($input, 'sfuser_info.id');
+
+        $errMsg = __('my_api.lack_permission');
+        $lackParam = false;
+        $success = true;
+
+        switch ($input['special_action_id']) {
+            case SpecialAction::EDIT_STAMP_SUPPLEMENT:
+                if (!Arr::has($input, ['contract', 'files'])) {
+                    $lackParam = true;
+                    break;
+                }
+                $success = SpecialAction::editStampSupplement($sfuserId, $input['st_request_id'], $input['contract'], $input['files']);
+                break;
+            case SpecialAction::EDIT_STAMP_ARCHIVE_ATTACHMENT:
+                if (!Arr::has($input, ['archive_attachment'])) {
+                    $lackParam = true;
+                    break;
+                }
+                $success = SpecialAction::editStampArchiveAttachment($sfuserId, $input['st_request_id'], $input['archive_attachment']);
+                break;
+            default:
+                return $this->responseJsonFail(__('my_api.invalid_action_given'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        if ($lackParam) {
+            return $this->responseJsonFail(__('my_api.lack_required_param'), ExceptionCode::ERR_COMMON_MISSING_PARAMETERS);
+        }
+        if (!$success) {
+            return $this->responseJsonFail($errMsg, ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+
+    /**
+     * 重新编辑.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function reEdit(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'st_request_id', 'process_key', 'start', 'context', 'files', 'cc_nickname_hash_filter', 'authorized_token', 'info',
+        ]);
+
+        $sfuserId = $input['sfuser_info']['id'];
+
+        // 抄送人
+        if (Arr::has($input, 'cc_nickname_hash_filter')) {
+            $input['cc_ids'] = StampUser::whereIn('nickname_hash', $input['cc_nickname_hash_filter'])->active()->pluck('sfuser_id')->toArray();
+        }
+
+        // 人事部/行政部发起时，自动将艾莎加入抄送列表
+        $this->appendAishaCcIfNeeded($input);
+
+        $updateColumns = Arr::only($input, ['files', 'cc_ids', 'info']);
+        if (array_key_exists('authorized_token', $input)) {
+            $updateColumns['token'] = $input['authorized_token'];
+        }
+
+        $wr = new RequestService('stamp', $input['st_request_id'], $sfuserId);
+
+        // 流程不能改变
+        if ($input['process_key'] != $wr->getRequest()->process_key) {
+            throw new WorkflowException('process_key cannot be changed');
+        }
+
+        if (array_key_exists('context', $input)) {
+            RequestService::checkInput($input['process_key'], $sfuserId, $input['context'], $wr->getRequest()->version);
+
+            // 重新编辑不可更改的字段
+            $persistColumns = ['nickname', 'department', 'pay_company', 'stamp_type'];
+            foreach ($persistColumns as $column) {
+                if (Arr::get($wr->getRequest()->data, $column) != $input['context'][$column]) {
+                    throw new WorkflowException(sprintf('[%s] cannot be changed', $column));
+                }
+            }
+            $updateColumns['data'] = $input['context'];
+        }
+
+        // 检查 files 格式
+        [$errNo, $needSupplementFiles, $hasSupplementFiles] = RequestService::checkFiles($updateColumns['files'] ?? []);
+        if ($errNo != 0) {
+            throw new WorkflowException(__('my_api.check_files_failed', ['err' => $errNo]));
+        }
+        if (array_key_exists('files', $updateColumns)) {
+            $updateColumns += ['need_supplements' => $needSupplementFiles, 'has_supplements' => $hasSupplementFiles];
+        }
+
+        $wr->getRequest()->update($updateColumns);
+        $wr->performAction(Action::REEDIT);
+        $wr->requestCreated();
+
+        UpdateCommonRequestNextReplaceCache::dispatch('stamp', CommonRequest::STRATEGY_REPLACE);
+        UpdateStampRequestCache::dispatchSync(CommonRequest::STRATEGY_REPLACE);
+
+        $msg = '';
+        if (Arr::get($input, 'start', false)) {
+            $msg = $wr->performActionWithMsg(Action::APPROVE);
+        }
+
+        return $this->responseJsonSuccess(['success' => (bool)empty($msg), 'msg' => $msg]);
+    }
+
+    /**
+     * 人事部/行政部发起时，自动将艾莎加入抄送列表（艾莎自己发起时不抄送自己）.
+     */
+    private function appendAishaCcIfNeeded(array &$input): void
+    {
+        $sfuserId = $input['sfuser_info']['id'];
+        $aishaId = WorkflowStakeholder::AISHA_SFUSER_ID;
+        if ($sfuserId === $aishaId) {
+            return;
+        }
+        if (!WorkflowStakeholder::isHrOrAdminDepartment($sfuserId)) {
+            return;
+        }
+        $ccIds = $input['cc_ids'] ?? [];
+        if (!in_array($aishaId, $ccIds)) {
+            $ccIds[] = $aishaId;
+        }
+        $input['cc_ids'] = $ccIds;
+    }
+}

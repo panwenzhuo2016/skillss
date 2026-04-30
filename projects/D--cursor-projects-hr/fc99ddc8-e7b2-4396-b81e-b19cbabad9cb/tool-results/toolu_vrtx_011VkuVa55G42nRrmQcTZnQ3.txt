@@ -1,0 +1,2021 @@
+     1→<?php
+     2→
+     3→namespace App\Http\Controllers;
+     4→
+     5→use App\Cache\InterviewerNotificationCache;
+     6→use App\Exceptions\ExceptionCode;
+     7→use App\Exceptions\InternalException;
+     8→use App\Exceptions\UserException;
+     9→use App\Jobs\CacheInterviewRecords;
+    10→use App\Jobs\GetNowCoderExamResultJob;
+    11→use App\Jobs\GetShowMeBugExamResultJob;
+    12→use App\Jobs\Notification\SendInterviewBecomingNotification;
+    13→use App\Lib\Facade\OfficialApiLib;
+    14→use App\Models\AuthorityTokenMd;
+    15→use App\Models\InterviewRecordsMd;
+    16→use App\Models\JobsMd;
+    17→use App\Models\LabelsMd;
+    18→use App\Models\OfferApprovalMd;
+    19→use App\Models\OfferMailApprovalMd;
+    20→use App\Models\OnboardingReviewMd;
+    21→use App\Models\RecruitmentNeedsResumeTokenMd;
+    22→use App\Models\RecruitmentProcessionMd;
+    23→use App\Models\ResumeFilterMd;
+    24→use App\Models\ResumeLabelsMd;
+    25→use App\Models\ResumeMd;
+    26→use App\Models\ResumeOperationMd;
+    27→use App\Models\ResumeRecruitmentCacheMd;
+    28→use App\Models\UserKnockApp;
+    29→use App\Models\WaitingEntryMd;
+    30→use App\Models\WrittenExamMd;
+    31→use App\Service\BackgroundCheckReminderService;
+    32→use App\Service\ConfigService;
+    33→use App\Service\EncryptService;
+    34→use App\Service\IntroduceManagementService;
+    35→use App\Service\IntroducerScoreAddService;
+    36→use App\Service\KnockService;
+    37→use App\Service\nowcoder\NowCoderService;
+    38→use App\Service\RecruitmentProcessService;
+    39→use App\Service\ResumeMailService;
+    40→use App\Service\ShowMeBug\ShowMeBugService;
+    41→use App\Service\SiteService;
+    42→use App\Support\Common\AuthRecord;
+    43→use Exception;
+    44→use Illuminate\Http\JsonResponse;
+    45→use Illuminate\Http\Request;
+    46→use Illuminate\Support\Arr;
+    47→use Illuminate\Support\Carbon;
+    48→use Illuminate\Support\Facades\Log;
+    49→
+    50→class RecruitmentProcessionController extends Controller
+    51→{
+    52→    private const SECOND_TO_MILLISECOND = 1000;
+    53→
+    54→    private const ONE_HOUR_TO_MILLISECOND = 60 * 60 * self::SECOND_TO_MILLISECOND;
+    55→    /** @var RecruitmentProcessService */
+    56→    private $service;
+    57→
+    58→    /** @var ResumeMailService */
+    59→    private $mail_service;
+    60→
+    61→    /** @var IntroducerScoreAddService */
+    62→    private $introducer_service;
+    63→
+    64→    public function __construct()
+    65→    {
+    66→        $this->service = app(RecruitmentProcessService::class);
+    67→        $this->mail_service = app(ResumeMailService::class);
+    68→        $this->introducer_service = app(IntroducerScoreAddService::class);
+    69→    }
+    70→
+    71→    public function briefWrittenExamRecords(Request $request): JsonResponse
+    72→    {
+    73→        $recProcIds = Arr::wrap($request->input('rec_pro_ids', []));
+    74→        $items = WrittenExamMd::whereIn('rec_pro_id', $recProcIds)->where('is_closed', 0)->selectRaw('id, evaluation, status, rec_pro_id, if(exam_content != \'\',1,0) as exam_content,exam_type,exam_status,smb_score')->get()->groupBy('rec_pro_id')->toArray();
+    75→        $ret = [];
+    76→        foreach ($items as $recProcId => $examEvaluations) {
+    77→            $ret[$recProcId] = [
+    78→                'rec_pro_id' => $recProcId,
+    79→                'exam_evaluations' => $examEvaluations,
+    80→            ];
+    81→        }
+    82→
+    83→        // 前端需要保证传入的 rec_pro_id 仍然存在，即使找不到笔试测评记录
+    84→        $list = [];
+    85→        foreach ($recProcIds as $recProcId) {
+    86→            $list[$recProcId] = Arr::get($ret, $recProcId, [
+    87→                'rec_pro_id' => $recProcId,
+    88→                'exam_evaluations' => [],
+    89→            ]);
+    90→        }
+    91→
+    92→        return $this->responseJsonSuccess(['written_exam_records' => $list]);
+    93→    }
+    94→
+    95→    // -----------------------------------------候选人数量----------------------------------------------//
+    96→
+    97→    public function candidateNums(Request $request)
+    98→    {
+    99→        $input = Arr::only($request->all(), [ // 读取查询数据
+   100→            'channel_ids', 'rec_job_ids', 'gender_hash_filter', 'status', 'rec_ids',
+   101→            'experience', 'username_hash_filter', 'inputer_user_id', 'label_ids',
+   102→            'inputer_user_ids', 'countries', 'regions', 'nickname', 'created_at', 'recent_apply_job_ids', 'graduate_experience', 'graduate_experience_replace_filter', // 后续考虑再添加
+   103→            'nickname_hash_filter', 'mobile_num_hash_filter', 'username_replace_filter', 'email_hash_filter', 'entry_start_date', 'entry_end_date', 'exam_status',
+   104→            'next_replace_filter',
+   105→        ]);
+   106→        return $this->responseJsonSuccess($this->service->candidateNums($input));
+   107→    }
+   108→
+   109→    // ------------------------------------------搜索----------------------------------------------------//
+   110→
+   111→    /**
+   112→     * 搜索.
+   113→     *
+   114→     * @param Request $request
+   115→     * @return JsonResponse
+   116→     */
+   117→    public function search(Request $request)
+   118→    {
+   119→        $input = Arr::only($request->all(), [ // 读取查询数据
+   120→            'channel_ids', 'rec_job_ids', 'gender_hash_filter', 'status', 'rec_ids', 'rec_id', 'resume_id',
+   121→            'experience', 'per_page', 'page', 'username_hash_filter', 'inputer_user_id', 'nickname_hash_filter',
+   122→            'label_ids', 'inputer_user_ids', 'countries', 'regions', 'created_at', 'recent_apply_job_ids', 'graduate_experience', 'graduate_experience_replace_filter', // 后续考虑再添加
+   123→            'mobile_num_hash_filter', 'username_replace_filter', 'email_hash_filter', 'entry_start_date', 'entry_end_date', 'graduate_year_hash_filter', 'exam_status',
+   124→            'enable_search_optimization', // 设置为 true 表示开启搜索优化，采用新的子查询策略
+   125→            'next_replace_filter',
+   126→        ]) + ['per_page' => 200];
+   127→        $searchlist = $this->service->getSearchList($input); // 获取查询结果
+   128→        $searchlist['recruitments'] = $this->service->translateColumn($searchlist['recruitments']);
+   129→        return $this->responseJsonSuccess($searchlist); // 输出
+   130→    }
+   131→
+   132→    // ----------------------------------------------候选人详情页和一些公用方法----------------------------------------------//
+   133→
+   134→    /**
+   135→     * 候选人详情页面.
+   136→     *
+   137→     * @param Request $request
+   138→     * @return JsonResponse
+   139→     */
+   140→    public function candidateDetails(Request $request)
+   141→    {
+   142→        $id = $request->input('id') ?? $request->input('rec_pro_id');
+   143→        return $this->responseJsonSuccess($this->service->candidateDetails($id));
+   144→    }
+   145→
+   146→    public function candidateDetailsIntroducerNickname(Request $request)
+   147→    {
+   148→        return $this->responseJsonSuccess(app(IntroduceManagementService::class)->getIntroducerName($request->resume_id));
+   149→    }
+   150→
+   151→    // 人才库 - 简历详情 - 更新面试结果
+   152→    public function updateInterviewEvaluation(Request $request)
+   153→    {
+   154→        $interviewResult = [];
+   155→        if (isset($request->interview_result)) {
+   156→            $interviewResult = [
+   157→                'interview_result' => $request->interview_result,
+   158→                'interview_result_time' => date('Y-m-d H:i:s'),
+   159→            ];
+   160→        }
+   161→        $res = InterviewRecordsMd::find($request->interview_record_id);
+   162→        $res->update(['interview_evaluation' => $request->interview_evaluation] + $interviewResult);
+   163→        // 内推部分标记为pass时，需要判断是否需要加入业务面奖励
+   164→        $this->introducer_service->introducerInterviewScoreAdd($res->rec_pro_id, $interviewResult + ['round_times' => $res->round_times]);
+   165→        return $this->responseJsonSuccess($res);
+   166→    }
+   167→
+   168→    // 笔试
+   169→    public function addWrittenExamInfo(Request $request)
+   170→    {
+   171→        db()->beginTransaction();
+   172→        $status = $request->status ?? '';
+   173→        $is_archive = $request->is_archive ?? false; // 1表示归档0表示不归档
+   174→        try {
+   175→            if ($status == 'fail' && $is_archive) { // 如果笔试未通过
+   176→                $resumeId = RecruitmentProcessionMd::find($request->rec_pro_id)->resume_id;
+   177→                $resume = ResumeMd::where('id', $resumeId)->first();
+   178→                $this->service->updateProgress(
+   179→                    '笔试未通过',
+   180→                    $resumeId,
+   181→                    $resume->recent_apply_job_id
+   182→                );
+   183→                // 更新简历表
+   184→                $updateResData = $this->service->getResumeUpdateInfo('fail', '', '笔试未通过', $request->remark ?? '', $request->rec_pro_id);
+   185→                $this->service->resumeUpdateUseRecId($updateResData, $request->rec_pro_id);
+   186→                // 更新招聘流程表
+   187→                $this->service->recruitmentUpdate(['status' => RecruitmentProcessionMd::REC_STATUS['归档']], $request->rec_pro_id);
+   188→            }
+   189→            $addFlag = empty($request->id);
+   190→//            $old_status = $addFlag ? null : WrittenExamMd::find($request->id)->status;
+   191→            if (!$addFlag) {
+   192→                $columns = ['evaluation', 'status', 'remark', 'exam_status', 'total_score'];
+   193→                $changeColumns = [];
+   194→                $old = WrittenExamMd::find($request->id);
+   195→                foreach ($columns as $v) {
+   196→                    $new = $request->{$v} ?? '';
+   197→                    if ($new && $new != $old->{$v}) {
+   198→                        $changeColumns[$v] = ['old' => $old->{$v}, 'new' => $new];
+   199→                    }
+   200→                }
+   201→                $subject = $request->subject ?? '';
+   202→                $oldSubject = Arr::get($old->exam_content, 'subject', '');
+   203→                if ($subject && $subject != $oldSubject) {
+   204→                    $changeColumns['subject'] = ['old' => $oldSubject, 'new' => $subject];
+   205→                }
+   206→            }
+   207→            $addArray = ['status' => $status];
+   208→            if (!$addFlag) {
+   209→                $exam_content = WrittenExamMd::find($request->id)->exam_content;
+   210→            }
+   211→            $subject = $request->subject ?? '';
+   212→            if ($subject) {
+   213→                $exam_content['subject'] = $request->subject;
+   214→                $addArray['exam_content'] = $exam_content;
+   215→            }
+   216→            $this->createOrUpdateWrittenExam($request->all() + $addArray);
+   217→            $rec = RecruitmentProcessionMd::find($request->rec_pro_id);
+   218→            if (!$addFlag && !empty($changeColumns)) {
+   219→                ResumeOperationMd::create(
+   220→                    [
+   221→                        'resume_id' => $rec->resume_id ?? 0,
+   222→                        'cur_status' => $rec->status,
+   223→                        'type' => 'written_exam_changed',
+   224→                        'extra_info' => ['rec_pro_id' => $rec->id, 'change_data' => $changeColumns, 'is_smb' => 0],
+   225→                        'reason' => '笔试修改',
+   226→                        'job_id' => $rec->job_id,
+   227→                        'operator_id' => AuthRecord::user()->user_id,
+   228→                        'specific_reason' => $request->remark ?? $request->evaluation ?? '',
+   229→                    ]
+   230→                );
+   231→            }
+   232→            if ($addFlag) {
+   233→                ResumeOperationMd::create(
+   234→                    [
+   235→                        'resume_id' => $rec->resume_id ?? 0,
+   236→                        'cur_status' => $rec->status,
+   237→                        'type' => 'add_written_exam_result',
+   238→                        'extra_info' => ['rec_pro_id' => $rec->id, 'is_smb' => 0],
+   239→                        'reason' => '添加笔试结果',
+   240→                        'job_id' => $rec->job_id,
+   241→                        'operator_id' => AuthRecord::user()->user_id,
+   242→                        'specific_reason' => $request->remark ?? $request->evaluation ?? '',
+   243→                    ]
+   244→                );
+   245→            }
+   246→            // 记录归档操作
+   247→            if ($is_archive) {
+   248→                ResumeOperationMd::create(
+   249→                    [
+   250→                        'resume_id' => $rec->resume_id ?? 0,
+   251→                        'cur_status' => $rec->status,
+   252→                        'type' => 'archive',
+   253→                        'extra_info' => ['rec_pro_id' => $rec->id, 'is_smb' => 0],
+   254→                        'reason' => '添加笔试结果并归档',
+   255→                        'job_id' => $rec->job_id,
+   256→                        'operator_id' => AuthRecord::user()->user_id,
+   257→                        'specific_reason' => $request->remark ?? $request->evaluation ?? '',
+   258→                    ]
+   259→                );
+   260→            }
+   261→
+   262→            if ($status == 'fail' && $is_archive) { // 如果笔试未通过
+   263→                // 网申自动判断再次转入初筛
+   264→                $this->service->ifOnlineAutoNextJob([$request->rec_pro_id]);
+   265→            }
+   266→
+   267→            db()->commit();
+   268→        } catch (\Exception $e) {
+   269→            db()->rollBack();
+   270→            return $this->responseJsonFail(__('my_api.update_written_exam_info_fail').$e->getMessage(), 424);
+   271→        }
+   272→
+   273→        return $this->responseJsonSuccess([]);
+   274→    }
+   275→
+   276→    public function deleteWrittenExamInfo(Request $request)
+   277→    {
+   278→        $exam = WrittenExamMd::find($request->written_exam_id);
+   279→        if (empty($exam)) {
+   280→            return $this->responseJsonFail(__('my_api.written_exam_info_not_exist'), UserException::ERR_USER_OPERATE_LIMIT);
+   281→        }
+   282→        if ($exam->is_closed) {
+   283→            return $this->responseJsonFail(__('my_api.attempt_to_delete_deleted_record'), UserException::ERR_USER_OPERATE_LIMIT);
+   284→        }
+   285→//        $status = RecruitmentProcessionMd::find($exam->rec_pro_id)->status;
+   286→//        if (!in_array($status, ['ini_scr', 're_scr', 'written_exam'])) {
+   287→//            return $this->responseJsonFail(__('my_api.can_not_delete_recruitment_process'), UserException::ERR_USER_OPERATE_LIMIT);
+   288→//        }
+   289→        $exam->update(['is_closed' => 1]);
+   290→        $rec = RecruitmentProcessionMd::find($exam->rec_pro_id);
+   291→        $subject = Arr::get($exam->exam_content, 'subject', '');
+   292→        // 增加删除笔试记录
+   293→        if ($exam->exam_type == 1) {
+   294→            ResumeOperationMd::create(
+   295→                [
+   296→                    'resume_id' => $rec->resume_id ?? 0,
+   297→                    'cur_status' => $rec->status,
+   298→                    'type' => 'delete_written_exam',
+   299→                    'extra_info' => ['rec_pro_id' => $rec->id, 'is_smb' => 0, 'subject' => $subject, 'exam_id' => $exam->id],
+   300→                    'reason' => '删除笔试',
+   301→                    'job_id' => $rec->job_id,
+   302→                    'operator_id' => AuthRecord::user()->user_id,
+   303→                    'specific_reason' => $request->remark ?? $request->evaluation ?? '',
+   304→                ]
+   305→            );
+   306→        }
+   307→
+   308→        // 查看是不是showmebug系统笔试, 是的话去删除那边的信息
+   309→        if ($exam->exam_type == 2 && $exam->smb_exam_uid) {
+   310→            app(ShowMeBugService::class)->deleteSmbExam($exam->smb_exam_uid);
+   311→            ResumeOperationMd::create(
+   312→                [
+   313→                    'resume_id' => $rec->resume_id ?? 0,
+   314→                    'cur_status' => $rec->status,
+   315→                    'type' => 'delete_written_exam',
+   316→                    'extra_info' => ['rec_pro_id' => $rec->id, 'is_smb' => 1, 'subject' => $subject, 'exam_id' => $exam->id],
+   317→                    'reason' => '删除笔试',
+   318→                    'job_id' => $rec->job_id,
+   319→                    'operator_id' => AuthRecord::user()->user_id,
+   320→                    'specific_reason' => $request->remark ?? $request->evaluation ?? '',
+   321→                ]
+   322→            );
+   323→        }
+   324→        if ($exam->exam_type == 3 && $exam->smb_exam_uid) {
+   325→            app(NowCoderService::class)->deleteNowCoderExam($exam->smb_exam_uid);
+   326→            ResumeOperationMd::create(
+   327→                [
+   328→                    'resume_id' => $rec->resume_id ?? 0,
+   329→                    'cur_status' => $rec->status,
+   330→                    'type' => 'delete_written_exam',
+   331→                    'extra_info' => ['rec_pro_id' => $rec->id, 'is_now_coder' => 1, 'subject' => $subject, 'exam_id' => $exam->id],
+   332→                    'reason' => '删除笔试',
+   333→                    'job_id' => $rec->job_id,
+   334→                    'operator_id' => AuthRecord::user()->user_id,
+   335→                    'specific_reason' => $request->remark ?? $request->evaluation ?? '',
+   336→                ]
+   337→            );
+   338→        }
+   339→        return $this->responseJsonSuccess([]);
+   340→    }
+   341→
+   342→    // ------------------------------------------转复筛----------------------------------------------------//
+   343→
+   344→    /**
+   345→     * 转入复筛并发送邮件给复筛人.
+   346→     *
+   347→     * @param Request $request
+   348→     * @return JsonResponse
+   349→     */
+   350→    public function toRescreening(Request $request)
+   351→    {
+   352→        $input = $request->all();
+   353→        $this->validateRescreening($request->all());
+   354→        $resumeIds = array_column($input['recruitments'], 'resume_id');
+   355→        $recruitmentIds = array_column($input['recruitments'], 'rec_pro_id');
+   356→        $specificReason = array_column($input['recruitments'], 'specific_reason');
+   357→
+   358→        db()->beginTransaction();
+   359→        try {
+   360→            $msg = '';
+   361→            if ($input['result'] != 'pass') {
+   362→                $resume_id = $resumeIds[0];
+   363→                $resume = ResumeMd::where('id', $resume_id)->first();
+   364→                $msg = $resume->status == RecruitmentProcessionMd::REC_STATUS['初筛'] ? '初筛未通过' : '笔试未通过';
+   365→            }
+   366→
+   367→            foreach ($input['recruitments'] as $rec) {
+   368→                $this->service->singleToScreening(array_merge($rec, Arr::only($input, ['result', 'screener_id'])));
+   369→            }
+   370→
+   371→            if ($input['result'] == 'pass') { // 发送复筛邮件
+   372→                setAuthorityToken($input['authorized_token'], $resumeIds, $input['screener_id'], 1728000);
+   373→                $this->mail_service->sendResumeFilterEmail($recruitmentIds, userInfo()[$input['screener_id']]['nickname'], $specificReason[0] ?? '', $input['authorized_token']);
+   374→            } else {
+   375→                $this->service->ifOnlineAutoNextJob($recruitmentIds, $msg);
+   376→            }
+   377→            db()->commit();
+   378→        } catch (\Exception $e) {
+   379→            db()->rollBack();
+   380→            return $this->responseJsonFail(__('my_api.to_rescreen_fail').$e->getMessage(), 423);
+   381→        }
+   382→        if ($input['result'] != 'pass' && $input['is_send_rejection_letter'] == true) {
+   383→            // 初筛没有通过，发送拒信邮件
+   384→            foreach ($recruitmentIds as $id) {
+   385→                $this->mail_service->sendRefuseEmail($id, $input['authorized_token']);
+   386→            }
+   387→        }
+   388→        return $this->responseJsonSuccess([]);
+   389→    }
+   390→
+   391→    /**
+   392→     * 在复筛中页面，重新发送复筛邮件，需要判断候选人状态
+   393→     *
+   394→     * @param Request $request
+   395→     * @return JsonResponse
+   396→     */
+   397→    public function resendResumeFilterEmail(Request $request)
+   398→    {
+   399→        $screenerId = $request->screener_id;
+   400→        $recProIds = $request->rec_pro_ids;
+   401→        $legalId = RecruitmentProcessionMd::whereIn('id', $recProIds)->where('status', '=', RecruitmentProcessionMd::REC_STATUS['复筛'])->pluck('resume_id', 'id')->toArray();
+   402→        $resumeId = array_values($legalId);
+   403→        $legalId = array_keys($legalId);
+   404→        ResumeFilterMd::whereIn('rec_pro_id', $legalId)->where('round_times', 2)->update(['updated_at' => date('Y-m-d H:i:s')]);
+   405→        $illegalId = array_diff($recProIds, $legalId);
+   406→        if (!empty($illegalId)) {
+   407→            return $this->responseJsonFail(__('my_api.resend_resume_filter_mail_fail', ['illegalId' => implode(',', $illegalId), 'recProIds' => implode(',', $recProIds)]), UserException::ERR_USER_OPERATE_LIMIT);
+   408→        }
+   409→        setAuthorityToken($request->authorized_token, $resumeId, $screenerId, 1728000);
+   410→        $this->mail_service->sendResumeFilterEmail($recProIds, userInfo()[$screenerId]['nickname'], '', $request->authorized_token);
+   411→        return $this->responseJsonSuccess([]);
+   412→    }
+   413→
+   414→    /**
+   415→     * 初筛直转面试.
+   416→     *
+   417→     * @param Request $request
+   418→     * @return JsonResponse
+   419→     */
+   420→    public function iniScrToInterview(Request $request)
+   421→    {
+   422→        $rec_pro_id = $request->input('id'); // 获取招聘流程id
+   423→        $input = Arr::only($request->all(), [
+   424→            'id', 'specific_reason',
+   425→        ]) + ['round_times' => 1, 'is_send_rejection_letter' => false, 'archive_reason' => '初筛直转面试', 'result' => 'pass', 'specific_reason' => ''];
+   426→        $input['rec_pro_id'] = $rec_pro_id;
+   427→
+   428→        if (!$this->service->judgeChangeLogic($rec_pro_id, RecruitmentProcessionMd::REC_STATUS['初筛'])) {
+   429→            return $this->responseJsonFail(__('my_api.recruitment_process_not_in_screen'), 801);
+   430→        }
+   431→
+   432→        $this->service->toInterview($input, 'ini_scr');
+   433→
+   434→        return $this->responseJsonSuccess([]);
+   435→    }
+   436→
+   437→    // 笔试转面试
+   438→    public function examToInterview(Request $request)
+   439→    {
+   440→        $rec_pro_id = $request->input('id'); // 获取招聘流程id
+   441→        $input = Arr::only($request->all(), [
+   442→            'id', 'specific_reason',
+   443→        ]) + ['round_times' => 1, 'is_send_rejection_letter' => false, 'archive_reason' => '笔试转面试', 'result' => 'pass', 'specific_reason' => ''];
+   444→        $input['rec_pro_id'] = $rec_pro_id;
+   445→
+   446→        if (!$this->service->judgeChangeLogic($rec_pro_id, RecruitmentProcessionMd::REC_STATUS['笔试'])) {
+   447→            return $this->responseJsonFail(__('my_api.recruitment_process_not_in_screen'), 801);
+   448→        }
+   449→        $this->service->toInterview($input, 'written_exam');
+   450→
+   451→        return $this->responseJsonSuccess([]);
+   452→    }
+   453→
+   454→    // ------------------------------------------面试中----------------------------------------------------//
+   455→
+   456→    /**
+   457→     * 安排面试.
+   458→     *
+   459→     * @param Request $request
+   460→     * @return JsonResponse
+   461→     */
+   462→    public function arrangeInterview(Request $request)
+   463→    {
+   464→        $result = RecruitmentProcessionMd::with('InterviewRecords')->find($request->input('id'))->toArray();
+   465→        $result['filled_reason'] = $this->service->splitFilledReason($result['filled_reason']);
+   466→        if ($result['status'] != RecruitmentProcessionMd::REC_STATUS['面试']) { // 未在面试状态
+   467→            return $this->responseJsonFail(__('my_api.not_in_interview_status'), 801);
+   468→        }
+   469→        return $this->responseJsonSuccess($result);
+   470→    }
+   471→
+   472→    /**
+   473→     * 判断约面数量.
+   474→     *
+   475→     * @param Request $request
+   476→     * @return JsonResponse
+   477→     */
+   478→    public function interviewerNumberJudge(Request $request)
+   479→    {
+   480→        $time = date('Y-m-d H', strtotime($request->input('interview_time')));
+   481→        $start_time = $time.':00:00';
+   482→        $end_time = $time.':59:59';
+   483→        $position = $request->input('interview_position');
+   484→        $result = $this->service->judgeInterviewer([$start_time, $end_time], $position);
+   485→        return $this->responseJsonSuccess($result);
+   486→    }
+   487→
+   488→    /**
+   489→     * 安排面试流程.
+   490→     * knock日程通知：创建时可选是否同步，修改时不可选，延续创建时的选择.
+   491→     * 写的真是一坨 shit....
+   492→     *
+   493→     * @param Request $request
+   494→     * @return JsonResponse
+   495→     */
+   496→    public function arrangeInterviewProcession(Request $request)
+   497→    {
+   498→        $input = Arr::only($request->all(), [
+   499→            'rec_pro_id', 'interview', 'candidate_content', 'candidate_subject', 'interviewer_content', 'interviewer_subject', 'resume_id', 'sync_knock', 'authorized_token',
+   500→        ]);
+   501→
+   502→        $record = InterviewRecordsMd::where([
+   503→            ['rec_pro_id', '=', $input['rec_pro_id']],
+   504→            ['round_times', '=', $input['interview']['round_times']],
+   505→        ])->first();
+   506→        $oldInterviewerID = 0;
+   507→        if ($record) {  // 是更新操作
+   508→            $input['sync_knock'] = $record->event_id != -1 ? 1 : 0; // 再判断是否同步
+   509→            $oldInterviewerID = $record->interviewer_id;
+   510→        }
+   511→        $hrId = ResumeMd::whereId($input['resume_id'])->first()->inputer_user_id;
+   512→        $interviewerId = Arr::get($input, 'interview.interviewer_id');
+   513→        $users = userInfo();
+   514→        $hrKnockId = Arr::get($users, "{$hrId}.knock_id", '');
+   515→        $interviewerKnockId = Arr::get($users, "{$interviewerId}.knock_id", '');
+   516→        $failedNicknames = [];
+   517→        // 中国站点，任意一人无knock id，不可发起面试； 海外站点至少面试可发起
+   518→        if ($input['sync_knock'] && (empty($hrKnockId) || empty($interviewerKnockId)) && SiteService::app()->is(SiteService::CHN)) {
+   519→            if (empty($hrKnockId)) {
+   520→                $failedNicknames[] = Arr::get($users, "{$hrId}.nickname", '');
+   521→            }
+   522→            if (empty($interviewerKnockId) && $interviewerId != $hrId) {
+   523→                $failedNicknames[] = Arr::get($users, "{$interviewerId}.nickname", '');
+   524→            }
+   525→            $failedNicknames = implode(',', $failedNicknames);
+   526→            return $this->responseJsonFail("面试安排失败，{$failedNicknames} knock未绑定，请至个人中心完成knock id绑定");
+   527→        }
+   528→
+   529→        db()->beginTransaction();
+   530→        $ir = null;
+   531→        $originalTime = false;
+   532→        try {
+   533→            $ir = $this->service->createOrUpdateInterview($input); // 创建或者更新面试表
+   534→            $rp = $this->service->recruitmentUpdate(['filled_reason' => $request->input('remark', '')], $request->input('rec_pro_id')); // 补充备注
+   535→            $now = now();
+   536→            // 优先使用 rp 的 resume id，然后退而求其次取前端传递的 resume id
+   537→            $resumeId = $rp->resume_id ?? $input['resume_id'];
+   538→            if (empty($resumeId)) {
+   539→                throw new UserException(__('my_api.failed_to_arrange_interview'), UserException::ERR_USER_INVALID_INPUT);
+   540→            }
+   541→
+   542→            $resume = ResumeMd::where('id', $resumeId)->first();
+   543→            $interviewTime = $ir->interview_time;
+   544→            $eventSponsorId = $ir->event_sponsor_id;
+   545→            $updatedAt = $ir->updated_at->toDateTimeString();
+   546→            $originalTime = InterviewerNotificationCache::make()->get($ir->id);
+   547→            // TODO: 如果没做修改，interview_records不更新updated_at，二者相等，不应该再发起Job
+   548→            $addNum = InterviewerNotificationCache::make()->set($ir->id, $updatedAt);
+   549→            if (!$originalTime || $originalTime != $updatedAt) {
+   550→                if ($now->lte(Carbon::parse($interviewTime)->subMinutes(5))) {
+   551→                    SendInterviewBecomingNotification::dispatch($interviewerId, $hrId, $updatedAt, $ir->id, '5')
+   552→                        ->delay(Carbon::createFromTimestamp(strtotime($interviewTime))->subMinutes(5));
+   553→                } // 假如之前已经安排了位于这五分钟之内的面试，那么我们继续通知吧，暂时不调度
+   554→                if ($now->lt(Carbon::parse($interviewTime)->subMinutes(15))) {
+   555→                    SendInterviewBecomingNotification::dispatch($interviewerId, $hrId, $updatedAt, $ir->id, '15')
+   556→                        ->delay(Carbon::createFromTimestamp(strtotime($interviewTime))->subMinutes(15));
+   557→                }
+   558→            }
+   559→            // 本地跳过
+   560→            // if (!app()->environment(['local', 'unit_test'])) {
+   561→            // 给面试官发送面试邮件
+   562→            $mail = app(\App\Service\ResumeMailService::class);
+   563→            if (isset($input['interviewer_content'], $input['interviewer_subject'])) {
+   564→                setAuthorityToken($request->authorized_token, RecruitmentProcessionMd::find($input['rec_pro_id'])->resume_id, $input['interview']['interviewer_id'], 7776000);
+   565→                $mail->sendInterviewerInterviewEmail($input['interviewer_content'], $input['interviewer_subject'], $request->authorized_token);
+   566→            }
+   567→
+   568→            // 给候选人发送面试邀请邮件
+   569→            if ($request->is_send_mail && isset($input['candidate_content'], $input['candidate_subject'])) {
+   570→                $mail->sendApplicantInterviewEmail($input['candidate_content'], $input['candidate_subject'], $request->authorized_token);
+   571→            }
+   572→            // }
+   573→            db()->commit();
+   574→            // 更新面试缓存
+   575→            if (!app()->environment(['local', 'unit_test'])) {
+   576→                dispatch(new CacheInterviewRecords());
+   577→            }
+   578→            $this->service->updateProgress(
+   579→                '面试中',
+   580→                $resumeId,
+   581→                $resume->recent_apply_job_id
+   582→            );
+   583→        } catch (\Exception $e) {
+   584→            Log::info('failed to arrange interview');
+   585→            db()->rollBack();
+   586→            if ($e instanceof UserException) {
+   587→                return $this->responseJsonFail($e->getMessage() ?? __('my_api.arrange_interview_fail'), $e->getCode() ?? 809);
+   588→            }
+   589→            // 如果发生异常，得把 redis 回滚掉 --- 基本不会发生这种情况，为了保守起见，还原一下吧
+   590→            if ($ir && $originalTime) {
+   591→                InterviewerNotificationCache::make()->set($ir->id, $originalTime);
+   592→            }
+   593→            return $this->responseJsonFail(__('my_api.arrange_interview_fail'), 809);
+   594→        }
+   595→
+   596→        // knock 日程相关
+   597→        // 若同步knock， 先判断knock_id是否绑定了
+   598→
+   599→        if ($input['sync_knock'] && SiteService::app()->isNot(SiteService::CHN)) {
+   600→            if (empty($hrKnockId)) {
+   601→                $failedNicknames[] = Arr::get($users, "{$hrId}.nickname", '');
+   602→            }
+   603→            if (empty($interviewerKnockId) && $interviewerId != $hrId) {
+   604→                $failedNicknames[] = Arr::get($users, "{$interviewerId}.nickname", '');
+   605→            }
+   606→            if ($failedNicknames) {
+   607→                $failedNicknames = implode(',', $failedNicknames);
+   608→                if (empty($hrKnockId)) {
+   609→                    return $this->responseJsonFail("面试安排成功，{$failedNicknames} knock未绑定，日程未同步");
+   610→                }
+   611→            }
+   612→        }
+   613→
+   614→        // 开始安排日程
+   615→        $startMillisecondTimestamp = strtotime($ir->interview_time) * self::SECOND_TO_MILLISECOND;
+   616→        $endMillisecondTimestamp = $startMillisecondTimestamp + self::ONE_HOUR_TO_MILLISECOND;
+   617→        // title: 【面试安排】岗位-姓名
+   618→        $jobId = $rp->job_id ?? 0;
+   619→        $jobName = JobsMd::whereJobId($jobId)->first()->job_name ?? '';
+   620→        $userName = EncryptService::app()->markEncrString($resume->username ?? '');
+   621→        $title = "【面试安排】{$jobName}-{$userName}";
+   622→        // remind_time: 日程开始前10min
+   623→        $remindTime = [KnockService::REMIND_MINUS_10];
+   624→        // content: 电话面试|视频面试(链接)|(现场地点全称)
+   625→        $interviewPosition = $ir->interview_position ?? '';
+   626→        if ($interviewPosition == '视频面试') {
+   627→            $videoLink = EncryptService::app()->markEncrString($ir->video_interview_link);
+   628→            $interviewPosition .= "( {$videoLink} )";
+   629→        } elseif ($interviewPosition == '电话面试') {
+   630→        } else {
+   631→            $interviewPosition = '现场面试('.$interviewPosition.')';
+   632→        }
+   633→
+   634→        if ($input['sync_knock'] ?? 0) { // 选择同步
+   635→            // 先确定面试官和 HR 是否为同一个主体，如果不是同一个主体，则需要分别创建日程
+   636→            // 注意，为了兼容之前的逻辑，因此即使安排多个日程，也要把其中 events 中的日志 id/operator_id 同步到旧版的字段中
+   637→            $interviewRecord = InterviewRecordsMd::find($ir->id);
+   638→            $eventId = $interviewRecord->event_id;
+   639→            $events = $interviewRecord->events;
+   640→            /** @var null|UserKnockApp $hrKnockApp */
+   641→            $hrKnockApp = UserKnockApp::where('user_id', $hrId)->first();
+   642→            /** @var null|UserKnockApp $interviewerKnockApp */
+   643→            $interviewerKnockApp = UserKnockApp::where('user_id', $interviewerId)->first();
+   644→            $hrKnockAppKey = empty($hrKnockApp) ? KnockService::DEFAULT_KNOCK_APP : $hrKnockApp->knock_app;
+   645→            $interviewerKnockAppKey = empty($interviewerKnockApp) ? KnockService::DEFAULT_KNOCK_APP : $interviewerKnockApp->knock_app;
+   646→            if ($eventId == -1) {
+   647→                // 两个人不在同一个主体下，需要建立两个日程
+   648→                if ($hrKnockAppKey != $interviewerKnockAppKey) {
+   649→                    // 先创建Knock日程给hr
+   650→                    $res = KnockService::app()->createEvent(
+   651→                        $startMillisecondTimestamp,
+   652→                        $endMillisecondTimestamp,
+   653→                        $hrId,
+   654→                        [$hrId],
+   655→                        $remindTime,        // 提醒时间
+   656→                        $title,             // 日程主题
+   657→                        $interviewPosition, // 日程描述
+   658→                        '',                 // 日程地点
+   659→                        $input['authorized_token'],    // 授权token
+   660→                        knockApp: $hrKnockAppKey
+   661→                    );
+   662→                    $eventId = Arr::get($res, 'data.response.event_id', Arr::get($res, 'response.event_id', -1));
+   663→                    $ir->update(['event_id' => $eventId, 'event_sponsor_id' => $hrId]);
+   664→
+   665→                    // 只有 HR 创建日程成功，我们才继续创建面试官的日程
+   666→                    if ($eventId != -1) {
+   667→                        $events = [
+   668→                            [
+   669→                                'event_id' => $eventId,
+   670→                                'operator_id' => $hrId,
+   671→                                'knock_app' => $hrKnockAppKey,
+   672→                            ],
+   673→                        ];
+   674→
+   675→                        // 创建Knock日程给面试官
+   676→                        $res = KnockService::app()->createEvent(
+   677→                            $startMillisecondTimestamp,
+   678→                            $endMillisecondTimestamp,
+   679→                            $interviewerId,
+   680→                            [$interviewerId],
+   681→                            $remindTime,        // 提醒时间
+   682→                            $title,             // 日程主题
+   683→                            $interviewPosition, // 日程描述
+   684→                            '',                 // 日程地点
+   685→                            $input['authorized_token'],    // 授权token
+   686→                            knockApp: $interviewerKnockAppKey
+   687→                        );
+   688→                        $eventId = Arr::get($res, 'data.response.event_id', Arr::get($res, 'response.event_id', -1));
+   689→                        $events[] = [
+   690→                            'event_id' => $eventId,
+   691→                            'operator_id' => $interviewerId,
+   692→                            'knock_app' => $interviewerKnockAppKey,
+   693→                        ];
+   694→                        $ir->update(['events' => $events]);
+   695→                    }
+   696→                } else {
+   697→                    // 两个人在同一个主体下，只需要建立一个日程
+   698→                    // 创建Knock日程给面试官和hr
+   699→                    $res = KnockService::app()->createEvent(
+   700→                        $startMillisecondTimestamp,
+   701→                        $endMillisecondTimestamp,
+   702→                        $hrId,
+   703→                        [$interviewerId, $hrId],
+   704→                        $remindTime,        // 提醒时间
+   705→                        $title,             // 日程主题
+   706→                        $interviewPosition, // 日程描述
+   707→                        '',                 // 日程地点
+   708→                        $input['authorized_token'],    // 授权token
+   709→                        knockApp: $hrKnockAppKey
+   710→                    );
+   711→                    $eventId = Arr::get($res, 'data.response.event_id', Arr::get($res, 'response.event_id', -1));
+   712→                    $ir->update(['event_id' => $eventId, 'event_sponsor_id' => $hrId]);
+   713→                }
+   714→            } else {
+   715→                // 更新Knock日程
+   716→                if ($eventSponsorId != $hrId || $oldInterviewerID != $interviewerId) {
+   717→                    // 先删除再创建
+   718→                    if (empty($events)) { // 旧版单个日程同步
+   719→                        KnockService::app()->removeEvent(
+   720→                            $eventId,
+   721→                            $eventSponsorId,
+   722→                        );
+   723→                        $res = KnockService::app()->createEvent(
+   724→                            $startMillisecondTimestamp,
+   725→                            $endMillisecondTimestamp,
+   726→                            $hrId,
+   727→                            [$interviewerId, $hrId],
+   728→                            $remindTime,        // 提醒时间
+   729→                            $title,             // 日程主题
+   730→                            $interviewPosition, // 日程描述
+   731→                            '',                 // 日程地点
+   732→                            $input['authorized_token'],    // 授权token
+   733→                            knockApp: $hrKnockAppKey
+   734→                        );
+   735→                        $eventId = Arr::get($res, 'data.response.event_id', Arr::get($res, 'response.event_id', -1));
+   736→                        $ir->update(['event_id' => $eventId, 'event_sponsor_id' => $hrId]);
+   737→                    } else {
+   738→                        // 针对每个日程，先删除
+   739→                        foreach ($events as $event) {
+   740→                            KnockService::app()->removeEvent(
+   741→                                $event['event_id'],
+   742→                                $event['operator_id'],
+   743→                                knockApp: $event['knock_app'],
+   744→                            );
+   745→                        }
+   746→                        // 创建日程的时候需要再次判断是否为同一主体
+   747→                        /** @var null|UserKnockApp $hrKnockApp */
+   748→                        $hrKnockApp = UserKnockApp::where('user_id', $hrId)->first();
+   749→                        /** @var null|UserKnockApp $interviewerKnockApp */
+   750→                        $interviewerKnockApp = UserKnockApp::where('user_id', $interviewerId)->first();
+   751→                        $hrKnockAppKey = empty($hrKnockApp) ? KnockService::DEFAULT_KNOCK_APP : $hrKnockApp->knock_app;
+   752→                        $interviewerKnockAppKey = empty($interviewerKnockApp) ? KnockService::DEFAULT_KNOCK_APP : $interviewerKnockApp->knock_app;
+   753→
+   754→                        // 两个人不在同一个主体下，需要建立两个日程
+   755→                        if ($hrKnockAppKey != $interviewerKnockAppKey) {
+   756→                            // 先创建Knock日程给hr
+   757→                            $res = KnockService::app()->createEvent(
+   758→                                $startMillisecondTimestamp,
+   759→                                $endMillisecondTimestamp,
+   760→                                $hrId,
+   761→                                [$hrId],
+   762→                                $remindTime,        // 提醒时间
+   763→                                $title,             // 日程主题
+   764→                                $interviewPosition, // 日程描述
+   765→                                '',                 // 日程地点
+   766→                                $input['authorized_token'],    // 授权token
+   767→                                knockApp: $hrKnockAppKey
+   768→                            );
+   769→                            $eventId = Arr::get($res, 'data.response.event_id', Arr::get($res, 'response.event_id', -1));
+   770→                            $ir->update(['event_id' => $eventId, 'event_sponsor_id' => $hrId]);
+   771→
+   772→                            // 只有 HR 创建日程成功，我们才继续创建面试官的日程
+   773→                            if ($eventId != -1) {
+   774→                                $events = [
+   775→                                    [
+   776→                                        'event_id' => $eventId,
+   777→                                        'operator_id' => $hrId,
+   778→                                        'knock_app' => $hrKnockAppKey,
+   779→                                    ],
+   780→                                ];
+   781→
+   782→                                // 创建Knock日程给面试官
+   783→                                $res = KnockService::app()->createEvent(
+   784→                                    $startMillisecondTimestamp,
+   785→                                    $endMillisecondTimestamp,
+   786→                                    $interviewerId,
+   787→                                    [$interviewerId],
+   788→                                    $remindTime,        // 提醒时间
+   789→                                    $title,             // 日程主题
+   790→                                    $interviewPosition, // 日程描述
+   791→                                    '',                 // 日程地点
+   792→                                    $input['authorized_token'],    // 授权token
+   793→                                    knockApp: $interviewerKnockAppKey
+   794→                                );
+   795→                                $eventId = Arr::get($res, 'data.response.event_id', Arr::get($res, 'response.event_id', -1));
+   796→                                $events[] = [
+   797→                                    'event_id' => $eventId,
+   798→                                    'operator_id' => $interviewerId,
+   799→                                    'knock_app' => $interviewerKnockAppKey,
+   800→                                ];
+   801→                                $ir->update(['events' => $events]);
+   802→                            }
+   803→                        } else {
+   804→                            // 两个人在同一个主体下，只需要建立一个日程
+   805→                            // 创建Knock日程给面试官和hr
+   806→                            $res = KnockService::app()->createEvent(
+   807→                                $startMillisecondTimestamp,
+   808→                                $endMillisecondTimestamp,
+   809→                                $hrId,
+   810→                                [$interviewerId, $hrId],
+   811→                                $remindTime,        // 提醒时间
+   812→                                $title,             // 日程主题
+   813→                                $interviewPosition, // 日程描述
+   814→                                '',                 // 日程地点
+   815→                                $input['authorized_token'],    // 授权token
+   816→                                knockApp: $hrKnockAppKey
+   817→                            );
+   818→                            $eventId = Arr::get($res, 'data.response.event_id', Arr::get($res, 'response.event_id', -1));
+   819→                            $ir->update(['event_id' => $eventId, 'event_sponsor_id' => $hrId]);
+   820→                        }
+   821→                    }
+   822→                } else {
+   823→                    $events = $interviewRecord->events;
+   824→                    if (!empty($events)) {
+   825→                        foreach ($events as $event) {
+   826→                            KnockService::app()->updateEvent(
+   827→                                $event['event_id'],
+   828→                                $event['operator_id'],
+   829→                                ['TITLE', 'CONTENT', 'TIME', 'REMIND', 'PARTICIPANTS'],
+   830→                                $interviewPosition, // 日程描述
+   831→                                $startMillisecondTimestamp,
+   832→                                $endMillisecondTimestamp,
+   833→                                [$event['operator_id']],
+   834→                                $remindTime,        // 提醒时间
+   835→                                $title,             // 日程主题
+   836→                                '',                 // 日程地点
+   837→                                $input['authorized_token'],    // 授权token
+   838→                                knockApp: $event['knock_app'],
+   839→                            );
+   840→                        }
+   841→                    } else {
+   842→                        // 更新日程
+   843→                        $res = KnockService::app()->updateEvent(
+   844→                            $eventId,
+   845→                            $hrId,
+   846→                            ['TITLE', 'CONTENT', 'TIME', 'REMIND', 'PARTICIPANTS'],
+   847→                            $interviewPosition, // 日程描述
+   848→                            $startMillisecondTimestamp,
+   849→                            $endMillisecondTimestamp,
+   850→                            [$interviewerId, $hrId],
+   851→                            $remindTime,        // 提醒时间
+   852→                            $title,             // 日程主题
+   853→                            '',                 // 日程地点
+   854→                            $input['authorized_token'],    // 授权token
+   855→                        );
+   856→                    }
+   857→                }
+   858→            }
+   859→        }
+   860→
+   861→        if ($failedNicknames) {
+   862→            return $this->responseJsonFail("面试安排成功，{$failedNicknames} knock未绑定，日程未同步");
+   863→        }
+   864→        return $this->responseJsonSuccess([]);
+   865→    }
+   866→
+   867→    /**
+   868→     * 面试历程.
+   869→     *
+   870→     * @param Request $request
+   871→     * @return JsonResponse
+   872→     */
+   873→    public function interviewCourse(Request $request)
+   874→    {
+   875→        $recProId = $request->input('rec_pro_id');
+   876→        if (!$this->service->judgeChangeLogic($recProId, RecruitmentProcessionMd::REC_STATUS['面试'])) {
+   877→            return $this->responseJsonFail(__('my_api.not_in_interview_status'), 801);
+   878→        }
+   879→        $interviewUpdateData = Arr::only($request->all(), [
+   880→            'rec_pro_id', 'interview',
+   881→        ]);
+   882→        $finalResult = $request->input('final_result', '');
+   883→        // 判断当前流程的最后一次面试结果是不是通过/待定
+   884→        if ($finalResult == 'pass' && empty($interviewUpdateData['interview'])) {
+   885→            $interview = InterviewRecordsMd::where('rec_pro_id', $recProId)->orderBy('round_times', 'desc')->first();
+   886→            if ($interview == null || $interview->interview_result == '' || $interview->interview_result == 'fail') {
+   887→                return $this->responseJsonFail(__('my_api.not_in_interview_result'), 802);
+   888→            }
+   889→        }
+   890→        if (!empty($interviewUpdateData['interview'])) {
+   891→            $interviewResult = $interviewUpdateData['interview']['interview_result'] ?? '';
+   892→            if ($finalResult == 'pass' && ($interviewResult == '' || $interviewResult == 'fail')) {
+   893→                return $this->responseJsonFail(__('my_api.not_in_interview_result'), 802);
+   894→            }
+   895→        }
+   896→        db()->beginTransaction();
+   897→        try {
+   898→            if (!empty($request->input('interview', []))) {
+   899→                $this->service->createOrUpdateInterview($interviewUpdateData); // 更新面试表
+   900→                // 记录当前流程是否首次通过业务面（应该一份简历只能通过一次业务面， 统计时应该注意）
+   901→                $interview = $interviewUpdateData['interview'];
+   902→                if ($interview['round_times'] == 1 && $interview['interview_result'] == 'pass') {
+   903→                    $rec = RecruitmentProcessionMd::find($recProId);
+   904→                    if ($rec != null) {
+   905→                        $reCache = ResumeRecruitmentCacheMd::where('resume_id', $rec->resume_id)->where('rec_pro_id', $recProId)
+   906→                            ->where('type', 'first_interview_pass')->first();
+   907→                        if ($reCache == null) {
+   908→                            ResumeRecruitmentCacheMd::create(
+   909→                                [
+   910→                                    'resume_id' => $rec->resume_id,
+   911→                                    'rec_pro_id' => $recProId,
+   912→                                    'status' => $rec->status,
+   913→                                    'type' => 'first_interview_pass',
+   914→                                    'reason' => '通过业务面',
+   915→                                    'job_id' => $rec->job_id,
+   916→                                    'date' => date('Y-m-d'),
+   917→                                ]
+   918→                            );
+   919→                        }
+   920→                    }
+   921→                }
+   922→            }
+   923→            if ($finalResult == '') { // 说明面试流程未结束
+   924→                db()->commit();
+   925→                return $this->responseJsonSuccess([]);
+   926→            }
+   927→            $recUpdateData = $finalResult == 'pass' ? ['status' => RecruitmentProcessionMd::REC_STATUS['offer流程']] : ['status' => RecruitmentProcessionMd::REC_STATUS['归档']];
+   928→            $updateResData = $this->service->getResumeUpdateInfo($finalResult, RecruitmentProcessionMd::REC_STATUS['offer流程'], $request->archive_reason ?? '面试淘汰', $request->specific_reason ?? '', $recProId);
+   929→            $this->service->recruitmentUpdate($recUpdateData, $recProId); // 更新招聘流程
+   930→
+   931→            // 记录这一操作
+   932→            $service = app(\App\Service\ResumeOperationService::class);
+   933→            $service->recordByType(
+   934→                $recProId,
+   935→                'recruitment_procession',
+   936→                $service->getType($recUpdateData['status']),
+   937→                RecruitmentProcessionMd::REC_STATUS['面试'],
+   938→                $request->archive_reason ?? '面试通过',
+   939→                $request->specific_reason ?? '',
+   940→                ['rec_pro_id' => $recProId]
+   941→            );
+   942→
+   943→            $this->service->resumeUpdateUseRecId($updateResData, $recProId);
+   944→            // 内推offer沟通发奖时间改为offer审批通过时间 @see https://jira.xinyoudi.com/browse/XINXI-3523
+   945→            // $this->introducer_service->IntroducerOfferProScoreAdd($recProId, $finalResult);
+   946→
+   947→            db()->commit();
+   948→        } catch (\Exception $e) {
+   949→            db()->rollBack();
+   950→            return $this->responseJsonFail(__('my_api.update_interview_course_fail').$e->getMessage(), 825);
+   951→        }
+   952→        if ($finalResult != 'pass') { // 不通过 网申自动判断再次转入初筛
+   953→            $this->service->ifOnlineAutoNextJob([$recProId], '面试未通过');
+   954→            // 最新面试轮次记录删除
+   955→            $this->service->deleteLatestInterviewRecord($recProId);
+   956→        }
+   957→        if ($finalResult != 'pass' && $request['is_send_rejection_letter'] == true) {
+   958→            // 面试没有通过，发送拒信
+   959→            $this->mail_service->sendRefuseEmail($recProId, $request->input('authorized_token'));
+   960→        }
+   961→        // 若该流程已创建过 OFFER（offer_approval 存在记录），则面试官兼任审批人时避免收到重复通知：
+   962→        // 统一由 OFFER 审批&部门OFFER状态更新通知覆盖
+   963→        $hasOffer = OfferApprovalMd::where('rec_pro_id', $recProId)->exists();
+   964→        if (!$hasOffer) {
+   965→            OfferMailApprovalController::sendHistoryKnock($recProId, '面试通过/面试未通过', null, $finalResult ?? '');
+   966→        }
+   967→        return $this->responseJsonSuccess([]);
+   968→    }
+   969→
+   970→    public function getInterviewerArrangement(Request $request)
+   971→    {
+   972→        $input = Arr::only($request->all(), [ // 读取查询数据
+   973→            'interviewer_id', 'interview_start_time', 'interview_end_time',
+   974→        ]) + ['rec_status' => ['interview']];
+   975→
+   976→        // 从缓存中获取三个地区的数据, 面试数据量不多, 全量拉
+   977→        $res = [];
+   978→        $allSites = SiteService::app()->getAllSites();
+   979→        foreach ($allSites as $site) {
+   980→            $redisKey = InterviewRecordsMd::INTERVIEW_RECORDS_CACHE_KEY.$site;
+   981→            if (isset($input['interviewer_id']) && !empty($input['interviewer_id'])) {
+   982→                $tmp = redis('shared')->hGet($redisKey, $input['interviewer_id']);
+   983→                !empty($tmp) && $tmp = json_decode($tmp, true);
+   984→            } else {
+   985→                $tmp = [];
+   986→                $tmp1 = redis('shared')->hGetAll($redisKey);
+   987→                if (!empty($tmp1)) {
+   988→                    foreach ($tmp1 as $tv) {
+   989→                        $tmp[] = json_decode($tv, true);
+   990→                    }
+   991→                }
+   992→            }
+   993→            $res[$site] = empty($tmp) ? [] : $tmp;
+   994→        }
+   995→
+   996→        $startTimeFlag = false;
+   997→        $endTimeFlag = false;
+   998→        if (isset($input['interview_start_time']) && !empty($input['interview_start_time'])) {
+   999→            $startTimeFlag = true;
+  1000→        }
+  1001→        if (isset($input['interview_end_time']) && !empty($input['interview_end_time'])) {
+  1002→            $endTimeFlag = true;
+  1003→        }
+  1004→        if (!$startTimeFlag && !$endTimeFlag) {
+  1005→            return $this->responseJsonSuccess(['interviews' => $res]);
+  1006→        }
+  1007→        $data = [];
+  1008→        foreach ($res as $rk => $rv) {
+  1009→            $data[$rk] = [];
+  1010→            foreach ($rv as $v) {
+  1011→                if ($startTimeFlag && ($v['interview_time'] < $input['interview_start_time'])) {
+  1012→                    continue;
+  1013→                }
+  1014→                if ($endTimeFlag && ($v['interview_time'] > $input['interview_end_time'])) {
+  1015→                    continue;
+  1016→                }
+  1017→                $data[$rk][] = $v;
+  1018→            }
+  1019→        }
+  1020→        return $this->responseJsonSuccess(['interviews' => $data]);
+  1021→    }
+  1022→
+  1023→    // ------------------------------------------offer流程----------------------------------------------------//
+  1024→
+  1025→    /**
+  1026→     * 背调材料缺失提醒：发 offer / 加入已入职 前检查.
+  1027→     */
+  1028→    public function backgroundCheckReminderCheck(Request $request)
+  1029→    {
+  1030→        $recProId = (int)$request->input('rec_pro_id');
+  1031→        $scene = $request->input('scene', 'create_offer');
+  1032→        $service = app(BackgroundCheckReminderService::class);
+  1033→        $result = $service->checkReminder($recProId, $scene);
+  1034→        return $this->responseJsonSuccess($result ?? ['need_reminder' => false]);
+  1035→    }
+  1036→
+  1037→    /**
+  1038→     * 背调材料缺失提醒：记录用户选择的跳过原因.
+  1039→     */
+  1040→    public function backgroundCheckRecordSkip(Request $request)
+  1041→    {
+  1042→        $recProId = (int)$request->input('rec_pro_id');
+  1043→        $workExperienceIndex = (int)$request->input('work_experience_index');
+  1044→        $skipReason = $request->input('skip_reason');
+  1045→        $skipSpecificReason = $request->input('skip_specific_reason');
+  1046→        $service = app(BackgroundCheckReminderService::class);
+  1047→        $service->recordSkipReason($recProId, $workExperienceIndex, $skipReason, $skipSpecificReason);
+  1048→        return $this->responseJsonSuccess([]);
+  1049→    }
+  1050→
+  1051→    /**
+  1052→     * 创建offer审批流程.
+  1053→     *
+  1054→     * @param Request $request
+  1055→     * @return JsonResponse
+  1056→     */
+  1057→    public function createOffer(Request $request)
+  1058→    {
+  1059→        $input = Arr::only($request->all(), [
+  1060→            'rec_pro_id', 'salary', 'probation_salary', 'intern_salary', 'remark', 'approver_id', 'job_id',
+  1061→        ]) + ['approval_status' => 'waiting', 'operator_id' => AuthRecord::user()->user_id];
+  1062→        $input2 = Arr::only($request->all(), ['resume_id']);
+  1063→        if (!$this->service->judgeChangeLogic($input['rec_pro_id'], RecruitmentProcessionMd::REC_STATUS['offer流程'])) {
+  1064→            return $this->responseJsonFail(__('my_api.not_in_offer_status'), 801);
+  1065→        }
+  1066→        // 背调材料缺失提醒：社招需背调未完成时限制发 offer（用户选择「暂未离职」时传入 background_check_deferred 跳过）
+  1067→        if (!$request->boolean('background_check_deferred')) {
+  1068→            $reminderService = app(BackgroundCheckReminderService::class);
+  1069→            $reminderResult = $reminderService->checkReminder($input['rec_pro_id'], BackgroundCheckReminderService::SCENE_CREATE_OFFER);
+  1070→            if ($reminderResult) {
+  1071→                return $this->responseJsonFail(__('my_api.need_background_check_reminder'), 422, [
+  1072→                    'need_background_check_reminder' => true,
+  1073→                    'segments' => $reminderResult['segments'],
+  1074→                    'rec_pro_id' => $reminderResult['rec_pro_id'],
+  1075→                ], 422);
+  1076→            }
+  1077→        }
+  1078→
+  1079→        if (empty($input['job_id']) || empty($input2['resume_id'])) { // 当前端没传job_id时，使用招聘流程的job_id
+  1080→            $rec = RecruitmentProcessionMd::find($input['rec_pro_id']);
+  1081→            empty($input['job_id']) && $input['job_id'] = $rec->job_id;
+  1082→            empty($input2['resume_id']) && $input2['resume_id'] = $rec->resume_id;
+  1083→        }
+  1084→        // 新建offer流程表
+  1085→        db()->beginTransaction();
+  1086→        try {
+  1087→            // 该招聘流程其他所有offer_approval状态为waiting的，置为canceled
+  1088→            OfferApprovalMd::where('rec_pro_id', $input['rec_pro_id'])->whereIn('approval_status', ['waiting', ''])->update(['approval_status' => 'canceled']);
+  1089→            // 所有的未审批的offer邮件审批置为取消
+  1090→            OfferMailApprovalMd::alias('oma')->join('offer_approval as oa', 'oa.id', '=', 'oma.offer_id')
+  1091→                ->where('oa.rec_pro_id', $input['rec_pro_id'])
+  1092→                ->whereIn('oma.approval_status', ['created'])
+  1093→                ->update(['oma.approval_status' => 'canceled']);
+  1094→            // 简历关联需求删除,
+  1095→            RecruitmentNeedsResumeTokenMd::where('resume_id', $input2['resume_id'])->delete();
+  1096→            ResumeMd::where('id', $input2['resume_id'])->update(['recruitment_needs_id' => 0]);
+  1097→            // 创建新offer审批
+  1098→            $offer_approval = OfferApprovalMd::create($input);
+  1099→
+  1100→            setAuthorityToken($request->authorized_token, RecruitmentProcessionMd::find($input['rec_pro_id'])->resume_id, $input['approver_id'], 31536000);
+  1101→
+  1102→            // 2023.08每次都要记录新的 @see https://jira.xinyoudi.com/browse/XINXI-4324
+  1103→            empty($rec) && $rec = RecruitmentProcessionMd::find($input['rec_pro_id']);
+  1104→            ResumeRecruitmentCacheMd::create(
+  1105→                [
+  1106→                    'resume_id' => $input2['resume_id'],
+  1107→                    'rec_pro_id' => $input['rec_pro_id'],
+  1108→                    'status' => $rec->status,
+  1109→                    'type' => 'create_offer',
+  1110→                    'reason' => '创建offer',
+  1111→                    'job_id' => $input['job_id'],
+  1112→                    'date' => date('Y-m-d'),
+  1113→                ]
+  1114→            );
+  1115→            db()->commit();
+  1116→        } catch (\Exception $e) {
+  1117→            db()->rollBack();
+  1118→            return $this->responseJsonFail(__('my_api.create_offer_or_send_mail_fail').$e->getMessage(), 423);
+  1119→        }
+  1120→        // 统一在sendHistoryKnock中处理offer创建的通知（邮件+knock）
+  1121→        OfferMailApprovalController::sendHistoryKnock(
+  1122→            $input['rec_pro_id'],
+  1123→            'offer创建',
+  1124→            $request->approver_name,
+  1125→            $input['remark'] ?? '',
+  1126→            $request->authorized_token
+  1127→        );
+  1128→        return $this->responseJsonSuccess(['offer_approval_id' => $offer_approval->id]);
+  1129→    }
+  1130→
+  1131→    public function recruitmentOfferToken(Request $request): JsonResponse
+  1132→    {
+  1133→        $input = Arr::only($request->all(), ['charge_user_ids', 'resume_id', 'authorized_token', 'offer_approval_id']);
+  1134→        $input['charge_user_ids'] = array_unique($input['charge_user_ids']);
+  1135→        setAuthorityToken($request->authorized_token, $input['resume_id'], $input['charge_user_ids'], 6048000);
+  1136→        $offer_approval = OfferApprovalMd::find($input['offer_approval_id']);
+  1137→        foreach ($input['charge_user_ids'] as $chargeUser) {
+  1138→            RecruitmentNeedsResumeTokenMd::create([
+  1139→                'user_id' => $chargeUser,
+  1140→                'resume_id' => $input['resume_id'],
+  1141→                'offer_approval_id' => $input['offer_approval_id'],
+  1142→                'job_id' => $offer_approval->job_id,
+  1143→                'offer_create_time' => $offer_approval->created_at,
+  1144→            ]);
+  1145→        }
+  1146→        return $this->responseJsonSuccess([]);
+  1147→    }
+  1148→
+  1149→    /**
+  1150→     * 过期 offer 使用前一次审批的数据发起一个新的直接到管理员审批.
+  1151→     *
+  1152→     * @param Request $request
+  1153→     * @return JsonResponse
+  1154→     */
+  1155→    public function recreateExpiredOffer(Request $request)
+  1156→    {
+  1157→        $input = $request->only(['rec_pro_id', 'offer_remark', 'id_sign']);
+  1158→
+  1159→        // 判断是否在offer流程
+  1160→        if (!$this->service->judgeChangeLogic($input['rec_pro_id'], RecruitmentProcessionMd::REC_STATUS['offer流程'])) {
+  1161→            return $this->responseJsonFail(__('my_api.not_in_offer_status'), ExceptionCode::USER_OPERATE_LIMIT);
+  1162→        }
+  1163→
+  1164→        $repository = app(\App\Contracts\Lock\Repository::class);
+  1165→        $repository->timeout(5); // 重试 5s
+  1166→        $lockKey = 'RECREATE_EXPIRED_OFFER:'.$input['rec_pro_id'];
+  1167→        if (!$repository->create($lockKey, 60)) {
+  1168→            return $this->responseJsonFail('Failed to acquire lock', ExceptionCode::INTERNAL_WAITING_FOR_LOCK_TIMEOUT);
+  1169→        }
+  1170→
+  1171→        $offerApproval = OfferApprovalMd::where('id', function ($query) use ($input) {
+  1172→            $query->from('offer_approval')->where('rec_pro_id', $input['rec_pro_id'])->selectRaw('MAX(id)');
+  1173→        })->first();
+  1174→
+  1175→        // 上一个offer流程的状态必须是expire_offer
+  1176→        if ($offerApproval == null || $offerApproval->approval_status != 'expire_offer') {
+  1177→            $repository->forget($lockKey);
+  1178→            return $this->responseJsonFail(__('my_api.recreate_expired_offer_fail'), ExceptionCode::USER_OPERATE_LIMIT);
+  1179→        }
+  1180→        $offerMailApproval = OfferMailApprovalMd::where('offer_id', $offerApproval->id)->orderBy('id', 'desc')->first();
+  1181→
+  1182→        // 新建offer流程表
+  1183→        db()->beginTransaction();
+  1184→        try {
+  1185→            // 该招聘流程其他所有offer_approval状态为waiting的，置为canceled
+  1186→            OfferApprovalMd::where('rec_pro_id', $input['rec_pro_id'])
+  1187→                ->whereIn('approval_status', ['waiting', ''])
+  1188→                ->update(['approval_status' => 'canceled']);
+  1189→
+  1190→            // 所有的未审批的offer邮件审批置为取消
+  1191→            OfferMailApprovalMd::alias('oma')->join('offer_approval as oa', 'oa.id', '=', 'oma.offer_id')
+  1192→                ->where('oa.rec_pro_id', $input['rec_pro_id'])
+  1193→                ->whereIn('oma.approval_status', ['created'])
+  1194→                ->update(['oma.approval_status' => 'canceled']);
+  1195→
+  1196→            // 创建新offer审批
+  1197→            $newOfferApproval = OfferApprovalMd::create([
+  1198→                'rec_pro_id' => $offerApproval->rec_pro_id,
+  1199→                'approval_status' => 'waiting_mail_approval',
+  1200→                'probation_time' => $offerApproval->probation_time,
+  1201→                'salary' => $offerApproval->salary,
+  1202→                'probation_salary' => $offerApproval->probation_salary,
+  1203→                'intern_salary' => $offerApproval->intern_salary,
+  1204→                'offer_pdf' => $offerApproval->offer_pdf,
+  1205→                'remark' => $offerApproval->remark,
+  1206→                'offer_remark' => $input['offer_remark'] ?? '',
+  1207→                'approver_id' => 0,
+  1208→                'operator_id' => AuthRecord::user()->user_id,
+  1209→                'job_id' => $offerApproval->job_id,
+  1210→            ]);
+  1211→
+  1212→            // 创建待审核的offer邮件审批
+  1213→            $newOfferMailApproval = OfferMailApprovalMd::create([
+  1214→                'offer_id' => $newOfferApproval->id,
+  1215→                'approval_status' => 'created',
+  1216→                'id_sign' => $input['id_sign'],
+  1217→                'mail_config' => $offerMailApproval->mail_config,
+  1218→                'creator_id' => AuthRecord::user()->user_id,
+  1219→            ]);
+  1220→
+  1221→            db()->commit();
+  1222→        } catch (\Exception $e) {
+  1223→            db()->rollBack();
+  1224→            return $this->responseJsonFail(__('my_api.recreate_expired_offer_fail').$e->getMessage());
+  1225→        } finally {
+  1226→            $repository->forget($lockKey);
+  1227→        }
+  1228→
+  1229→        return $this->responseJsonSuccess($newOfferMailApproval);
+  1230→    }
+  1231→
+  1232→    public function updateOfferApproval(Request $request)
+  1233→    {
+  1234→        $column = ['offer_pdf', 'approval_status', 'offer_send_record'];
+  1235→        $res = OfferApprovalMd::find($request->id)->update(Arr::only($request->all(), $column));
+  1236→        return $this->responseJsonSuccess();
+  1237→    }
+  1238→
+  1239→    public function createOfferMailApproval(Request $request)
+  1240→    {
+  1241→        $input = Arr::only($request->all(), ['offer_id', 'mail_config', 'offer_remark']);
+  1242→        $input2 = Arr::only($request->all(), ['resume_id']);
+  1243→        if (OfferMailApprovalMd::where('offer_id', $input['offer_id'])->where('approval_status', 'created')->first() !== null) {
+  1244→            throw new InternalException('');
+  1245→        }
+  1246→        // 查看是否有招聘需求绑定
+  1247→        $resumeId = $input2['resume_id'] ?? 0;
+  1248→        if (empty($resumeId)) {
+  1249→            $recProId = OfferApprovalMd::where('id', $input['offer_id'])->first()?->rec_pro_id ?? 0;
+  1250→            if ($recProId) {
+  1251→                $resumeId = RecruitmentProcessionMd::where('id', $recProId)->first()?->resume_id ?? 0;
+  1252→            }
+  1253→        }
+  1254→        if ($resumeId) {
+  1255→            $recruitmentNeedsId = ResumeMd::where('id', $resumeId)->first()?->recruitment_needs_id ?? 0;
+  1256→            if ($recruitmentNeedsId == 0) {
+  1257→                $this->responseJsonFail(__('my_api.resume_not_link_recruitment_needs'), UserException::ERR_USER_OPERATE_LIMIT);
+  1258→            }
+  1259→        }
+  1260→
+  1261→        $res = synchronize('CREATE_OFFER_MAIL_APPROVAL:'.$input['offer_id'], 1, function () use ($input) {
+  1262→            $res = OfferMailApprovalMd::where('offer_id', $input['offer_id'])->where('approval_status', 'created')->first();
+  1263→            if ($res !== null) {
+  1264→                return $res;
+  1265→            }
+  1266→            db()->beginTransaction();
+  1267→            try {
+  1268→                // 创建待审核的offer邮件审批
+  1269→                $idSign = $input['mail_config']['id_sign'];
+  1270→                unset($input['mail_config']['id_sign']);
+  1271→                $remark = $input['offer_remark'] ?? '';
+  1272→                unset($input['offer_remark']);
+  1273→                $res = OfferMailApprovalMd::create($input + ['id_sign' => $idSign, 'creator_id' => AuthRecord::user()->user_id, 'approval_status' => 'created']);
+  1274→                // 将offer记录更新为审核中
+  1275→                OfferApprovalMd::find($input['offer_id'])->update(['approval_status' => 'waiting_mail_approval', 'offer_remark' => $remark]);
+  1276→                db()->commit();
+  1277→            } catch (\Exception $e) {
+  1278→                db()->rollBack();
+  1279→                return $this->responseJsonFail(__('my_api.create_offer_check_mail_fail').$e->getMessage(), 423);
+  1280→            }
+  1281→            return $res;
+  1282→        });
+  1283→
+  1284→        if ($res === false) {
+  1285→            return $this->responseJsonFail(__('my_api.other_create_offer_check'), UserException::ERR_USER_OPERATE_LIMIT);
+  1286→        }
+  1287→
+  1288→        return $this->responseJsonSuccess($res);
+  1289→    }
+  1290→
+  1291→    public function offerArchive(Request $request)
+  1292→    {
+  1293→        $errorRecProIds = [];
+  1294→        foreach ($request->response as $rec) {
+  1295→            $recPro = RecruitmentProcessionMd::find($rec['rec_pro_id']);
+  1296→            if (empty($recPro) || $recPro->status !== 'offer_pro') {
+  1297→                $errorRecProIds[] = $rec['rec_pro_id'];
+  1298→                continue;
+  1299→            }
+  1300→            db()->beginTransaction();
+  1301→            try {
+  1302→                // 该招聘流程其他所有offer_approval状态为waiting的，置为canceled
+  1303→                OfferApprovalMd::where('rec_pro_id', $rec['rec_pro_id'])->whereIn('approval_status', ['waiting', ''])->update(['approval_status' => 'canceled']);
+  1304→                // 所有的未审批的offer邮件审批置为取消
+  1305→                OfferMailApprovalMd::alias('oma')->join('offer_approval as oa', 'oa.id', '=', 'oma.offer_id')
+  1306→                    ->where('oa.rec_pro_id', $rec['rec_pro_id'])
+  1307→                    ->whereIn('oma.approval_status', ['created'])
+  1308→                    ->update(['oma.approval_status' => 'canceled']);
+  1309→
+  1310→                $updateResData = $this->service->getResumeUpdateInfo('fail', RecruitmentProcessionMd::REC_STATUS['待入职'], $rec['archive_reason'] ?? '', $rec['specific_reason'] ?? '', $rec['rec_pro_id']);
+  1311→                $this->service->recruitmentUpdate(['status' => 'archive'], $rec['rec_pro_id']); // 更新招聘流程
+  1312→                $this->service->resumeUpdateUseRecId($updateResData, $rec['rec_pro_id']);
+  1313→
+  1314→                // 网申简历自动转初筛
+  1315→                $this->service->ifOnlineAutoNextJob([$rec['rec_pro_id']]);
+  1316→
+  1317→                // 记录归档操作
+  1318→                $service = app(\App\Service\ResumeOperationService::class);
+  1319→                $service->recordByType(
+  1320→                    $rec['rec_pro_id'],
+  1321→                    'recruitment_procession',
+  1322→                    'archive',
+  1323→                    RecruitmentProcessionMd::REC_STATUS['offer流程'],
+  1324→                    $rec['archive_reason'] ?? '',
+  1325→                    $rec['specific_reason'] ?? '',
+  1326→                    ['rec_pro_id' => $rec['rec_pro_id']]
+  1327→                );
+  1328→
+  1329→                db()->commit();
+  1330→            } catch (\Exception $e) {
+  1331→                db()->rollBack();
+  1332→                $errorRecProIds[] = $rec['rec_pro_id'];
+  1333→            }
+  1334→        }
+  1335→        return $this->responseJsonSuccess(['error_rec_pro_ids' => $errorRecProIds]);
+  1336→    }
+  1337→
+  1338→    public function commonArchive(Request $request)
+  1339→    {
+  1340→        $errorRecProIds = [];
+  1341→        foreach ($request->recruitments as $rec) {
+  1342→            $recPro = RecruitmentProcessionMd::find($rec['rec_pro_id']);
+  1343→            if (empty($recPro) || !in_array($recPro->status, RecruitmentProcessionMd::REC_STATUS)) {
+  1344→                $errorRecProIds[] = $rec['rec_pro_id'];
+  1345→                continue;
+  1346→            }
+  1347→            db()->beginTransaction();
+  1348→            try {
+  1349→                switch ($recPro->status) {
+  1350→                    case 'ini_scr':
+  1351→                    case 're_scr':
+  1352→                    case 'written_exam':
+  1353→                        ResumeFilterMd::where(['rec_pro_id' => $rec['rec_pro_id'], 'filter_result' => ''])->update(['remark' => $rec['specific_reason'] ?? '', 'filter_result' => 'fail']);
+  1354→                        break;
+  1355→                    case 'interview':
+  1356→                        InterviewRecordsMd::where(['rec_pro_id' => $rec['rec_pro_id'], 'interview_result' => ''])->update(['interview_result' => 'fail']);
+  1357→                        break;
+  1358→                    case 'offer_pro':
+  1359→                        // 该招聘流程其他所有offer_approval状态为waiting的，置为canceled
+  1360→                        OfferApprovalMd::where('rec_pro_id', $rec['rec_pro_id'])->whereIn('approval_status', ['waiting', ''])->update(['approval_status' => 'canceled']);
+  1361→                        // 所有的未审批的offer邮件审批置为取消
+  1362→                        OfferMailApprovalMd::alias('oma')->join('offer_approval as oa', 'oa.id', '=', 'oma.offer_id')
+  1363→                            ->where('oa.rec_pro_id', $rec['rec_pro_id'])
+  1364→                            ->whereIn('oma.approval_status', ['created'])
+  1365→                            ->update(['oma.approval_status' => 'canceled']);
+  1366→                    // no break
+  1367→                    case 'wait_entry':
+  1368→                    case 'al_entry':
+  1369→                        break;
+  1370→                    case 'archive':
+  1371→                        continue 2;
+  1372→                    default:
+  1373→                        $errorRecProIds[] = $rec['rec_pro_id'];
+  1374→                        continue 2;
+  1375→                }
+  1376→                $updateResData = $this->service->getResumeUpdateInfo('fail', RecruitmentProcessionMd::REC_STATUS['待入职'], $rec['archive_reason'] ?? '', $rec['specific_reason'] ?? '', $rec['rec_pro_id']);
+  1377→                $this->service->recruitmentUpdate(['status' => 'archive', 'filled_reason' => $rec['archive_reason'] ?? ''], $rec['rec_pro_id']); // 更新招聘流程
+  1378→                $this->service->resumeUpdateUseRecId($updateResData, $rec['rec_pro_id']);
+  1379→                // 记录归档操作
+  1380→                $service = app(\App\Service\ResumeOperationService::class);
+  1381→                $service->recordByType(
+  1382→                    $rec['rec_pro_id'],
+  1383→                    'recruitment_procession',
+  1384→                    'archive',
+  1385→                    $recPro->status,
+  1386→                    $rec['archive_reason'] ?? '',
+  1387→                    $rec['specific_reason'] ?? '',
+  1388→                    ['rec_pro_id' => $rec['rec_pro_id']],
+  1389→                    null,
+  1390→                    $rec['archive_purpose'] ?? ''
+  1391→                );
+  1392→                OfferMailApprovalController::sendHistoryKnock($rec['rec_pro_id'], '取消offer/拒offer', null, $rec['archive_reason'] ?? '');
+  1393→                // 网申简历自动转初筛
+  1394→                $rec['is_auto_next_job'] = $rec['is_auto_next_job'] ?? true;
+  1395→                if ($rec['is_auto_next_job']) {
+  1396→                    $this->service->ifOnlineAutoNextJob([$rec['rec_pro_id']]);
+  1397→                }
+  1398→                db()->commit();
+  1399→            } catch (\Exception $e) {
+  1400→                db()->rollBack();
+  1401→                $errorRecProIds[] = $rec['rec_pro_id'];
+  1402→            }
+  1403→        }
+  1404→        return $this->responseJsonSuccess(['error_rec_pro_ids' => $errorRecProIds]);
+  1405→    }
+  1406→
+  1407→    /**
+  1408→     * offer回应.
+  1409→     *
+  1410→     * @param Request $request
+  1411→     * @return JsonResponse
+  1412→     */
+  1413→    public function offerResponse(Request $request)
+  1414→    {
+  1415→        $offer = OfferApprovalMd::find($request->offer_id);
+  1416→        $recProId = $offer->rec_pro_id;
+  1417→        if (!$this->service->judgeChangeLogic($recProId, RecruitmentProcessionMd::REC_STATUS['offer流程'])) {
+  1418→            return $this->responseJsonFail(__('my_api.not_in_offer_status'), 801);
+  1419→        }
+  1420→        if (!in_array($offer->approval_status, ['pass', 'send_offer', 'accept_offer', 'reject_offer', 'expire_offer'])) {
+  1421→            return $this->responseJsonFail(__('my_api.offer_procession_status_err', ['offerId' => $request->offer_id]));
+  1422→        }
+  1423→
+  1424→        db()->beginTransaction();
+  1425→        try {
+  1426→            $approvalStatus = 'accept_offer';
+  1427→            $rec_status = RecruitmentProcessionMd::REC_STATUS['待入职'];
+  1428→            $positiveDate = '';
+  1429→            if (!empty($request->entry_time && !empty($request->probation_time))) {
+  1430→                $positiveDate = date('Y-m-d', strtotime($request->entry_time.' '.'+'.'  '.$request->probation_time.' '.' months'));
+  1431→            }
+  1432→            // 入职跟进人默认为建立负责人
+  1433→            $resumeId = RecruitmentProcessionMd::find($recProId)->resume_id;
+  1434→            $followHrId = ResumeMd::find($resumeId)?->inputer_user_id ?? 0;
+  1435→            // 新建待入职信息
+  1436→            WaitingEntryMd::create([
+  1437→                'rec_pro_id' => $recProId,
+  1438→                'entry_time' => $request->entry_time ?? '',
+  1439→                'job_id' => $offer->job_id,
+  1440→                'creator_id' => AuthRecord::user()->user_id,
+  1441→                'supervisor_id' => $request->supervisor_id ?? 0,
+  1442→                'positive_date' => $positiveDate,
+  1443→                'follow_up_hr_id' => $followHrId,
+  1444→            ]);
+  1445→
+  1446→            $offer->update(['approval_status' => $approvalStatus, 'probation_time' => $request->probation_time]);
+  1447→
+  1448→            $updateResData = $this->service->getResumeUpdateInfo('pass', RecruitmentProcessionMd::REC_STATUS['待入职'], 'HR手动操作接受offer', '', $recProId);
+  1449→            $this->service->recruitmentUpdate(['status' => $rec_status], $recProId); // 更新招聘流程
+  1450→            // 记录这一操作
+  1451→            $service = app(\App\Service\ResumeOperationService::class);
+  1452→            $service->recordByType(
+  1453→                $recProId,
+  1454→                'recruitment_procession',
+  1455→                $service->getType($rec_status),
+  1456→                RecruitmentProcessionMd::REC_STATUS['offer流程'],
+  1457→                'HR手动操作接受offer',
+  1458→                '',
+  1459→                ['rec_pro_id' => $recProId]
+  1460→            );
+  1461→
+  1462→            $this->service->resumeUpdateUseRecId($updateResData, $recProId);
+  1463→            OfferMailApprovalController::sendHistoryKnock($recProId, '待入职');
+  1464→            db()->commit();
+  1465→        } catch (\Exception $e) {
+  1466→            db()->rollBack();
+  1467→            return $this->responseJsonFail(__('my_api.offer_response_fail').$e->getMessage(), 423);
+  1468→        }
+  1469→        return $this->responseJsonSuccess([]);
+  1470→    }
+  1471→
+  1472→    /**
+  1473→     * 发送录用审核邮件.
+  1474→     *
+  1475→     * @param Request $request
+  1476→     * @return JsonResponse
+  1477→     */
+  1478→    public function onboardingReview(Request $request)
+  1479→    {
+  1480→        $input = Arr::only($request->all(), ['id_sign', 'password', 'resume_id', 'content', 'authorized_token']);
+  1481→        db()->beginTransaction();
+  1482→        try {
+  1483→            $review = OnboardingReviewMd::where(Arr::only($input, ['id_sign', 'password', 'resume_id']))->first();
+  1484→            // 发起录用材料审核
+  1485→            if ($review === null) {
+  1486→                OnboardingReviewMd::create(['creator_id' => AuthRecord::user()->user_id, 'review_status' => 'initiated', 'id_sign' => $input['id_sign'], 'password' => $input['password'], 'resume_id' => $input['resume_id']]);
+  1487→            }
+  1488→
+  1489→            // 重新发起录用材料审核,将官网和后端的status更新状态，不删除文件
+  1490→            if (!empty($review) && ($review->review_status == 'review_fail' || $review->review_status == 'approval_fail')) {
+  1491→                OnboardingReviewMd::where('resume_id', $input['resume_id'])->update(['review_status' => 'feedback', 'creator_id' => AuthRecord::user()->user_id]);
+  1492→                OfficialApiLib::sendRequest('official-api/common/update-id-sign', ['id_sign' => [$input['id_sign']], 'type' => 'onboarding_review', 'status' => 'written']);
+  1493→            }
+  1494→
+  1495→            app(\App\Service\ResumeOperationService::class)->recordByType( // 记录发起入职审核
+  1496→                $input['resume_id'],
+  1497→                'onboarding_review',
+  1498→                'onboarding_review',
+  1499→                RecruitmentProcessionMd::REC_STATUS['offer流程'],
+  1500→                '发起入职审核',
+  1501→                '',
+  1502→                $input
+  1503→            );
+  1504→            $this->mail_service->sendReviewMail($input['content'], $input['authorized_token']);
+  1505→            db()->commit();
+  1506→        } catch (\Exception $e) {
+  1507→            db()->rollBack();
+  1508→            return $this->responseJsonFail(__('my_api.send_onboarding_review_mail_fail').$e->getMessage(), 423);
+  1509→        }
+  1510→        return $this->responseJsonSuccess([]);
+  1511→    }
+  1512→
+  1513→    /**
+  1514→     * HR手动表示已回复.
+  1515→     *
+  1516→     * @param Request $request
+  1517→     * @return JsonResponse
+  1518→     */
+  1519→    public function reviewTurnFeedback(Request $request)
+  1520→    {
+  1521→        $onboardingReviewId = $request->input('onboarding_review_id');
+  1522→        $or = OnboardingReviewMd::find($onboardingReviewId);
+  1523→        if (empty($or)) {
+  1524→            return $this->responseJsonFail(__('my_api.onboard_review_procession_not_exist'), 445);
+  1525→        }
+  1526→        if ($or->review_status != 'initiated') {
+  1527→            return $this->responseJsonFail(__('my_api.onboard_review_procession_not_exist', ['status' => $or->review_status]), 445);
+  1528→        }
+  1529→        $or->update(['review_status' => 'feedback']);
+  1530→        return $this->responseJsonSuccess([]);
+  1531→    }
+  1532→
+  1533→    public function onboardingReviewApproval(Request $request)
+  1534→    {
+  1535→        $input = Arr::only($request->all(), ['id', 'result', 'authorized_token', 'rec_pro_id']);
+  1536→        $recProId = $input['rec_pro_id'] ?? 0;
+  1537→        if ($input['result'] == 'pass') {
+  1538→            OnboardingReviewMd::where('id', $input['id'])->where('review_status', 'feedback')->update(['review_status' => 'review_pass']);
+  1539→        } else {
+  1540→            db()->beginTransaction();
+  1541→            try {
+  1542→                // 当前发起录用材料审核的简历有招聘流程
+  1543→                if (!empty($input['rec_pro_id'])) {
+  1544→                    // 无需验证是否合法，因为如果审核不通过的话，那一定是需要被归档的
+  1545→                    $updateResData = $this->service->getResumeUpdateInfo($input['result'], '', $request->archive_reason ?? '入职审核未通过', $request->specific_reason ?? '', $recProId);
+  1546→                    $this->service->recruitmentUpdate(['status' => 'archive'], $recProId); // 更新招聘流程
+  1547→                    $service = app(\App\Service\ResumeOperationService::class);
+  1548→                    // 记录这一操作
+  1549→                    $service->recordByType(
+  1550→                        $recProId,
+  1551→                        'recruitment_procession',
+  1552→                        $service->getType('archive'),
+  1553→                        'onboarding_review',
+  1554→                        $request->archive_reason ?? '入职审核未通过',
+  1555→                        $request->specific_reason ?? '',
+  1556→                        ['rec_pro_id' => $recProId],
+  1557→                        '',
+  1558→                        'cancel_offer' // 归类到取消offer统计中
+  1559→                    );
+  1560→                    $this->service->resumeUpdateUseRecId($updateResData, $recProId);
+  1561→                }
+  1562→                OnboardingReviewMd::where('id', $input['id'])->update(['review_status' => 'review_fail']);
+  1563→                db()->commit();
+  1564→            } catch (\Exception $e) {
+  1565→                db()->rollBack();
+  1566→                return $this->responseJsonFail(__('my_api.onboard_review_check_fail').$e->getMessage(), 448);
+  1567→            }
+  1568→
+  1569→            // 网申简历自动转初筛
+  1570→            $this->service->ifOnlineAutoNextJob([$recProId]);
+  1571→
+  1572→            $idSign = OnboardingReviewMd::where('id', $input['id'])->pluck('id_sign')->toArray();
+  1573→            OfficialApiLib::sendRequest('official-api/common/update-id-sign', ['id_sign' => $idSign, 'type' => 'onboarding_review', 'status' => 'reject']);
+  1574→
+  1575→            // 发送定时拒信
+  1576→            if ($request->input('is_send_refuse_mail', false)) {
+  1577→                $this->mail_service->sendReviewRefuseMail([$recProId], $input['authorized_token']);
+  1578→            }
+  1579→        }
+  1580→        return $this->responseJsonSuccess([]);
+  1581→    }
+  1582→
+  1583→    // ------------------------------------------入职流程----------------------------------------------------//
+  1584→
+  1585→    public function updateWaitingEntryInfo(Request $request)
+  1586→    {
+  1587→        $resumeInfo = Arr::only($request->all(), ['nickname', 'nickname_hash']);
+  1588→        $waitingEntryInfo = Arr::only($request->all(), WaitingEntryMd::COLUMN);
+  1589→
+  1590→        $waitingEntry = WaitingEntryMd::find($request->id);
+  1591→
+  1592→        $resumeId = RecruitmentProcessionMd::find($waitingEntry->rec_pro_id)->resume_id;
+  1593→        db()->beginTransaction();
+  1594→        try {
+  1595→            if (!empty($resumeInfo)) {
+  1596→                $this->service->resumeUpdateUseRecId($resumeInfo, $waitingEntry->rec_pro_id);
+  1597→            }
+  1598→            if (!empty($request->input('authorized_token'))) {
+  1599→                setAuthorityToken($request->authorized_token, $resumeId, $request->supervisor_id, 365 * 86400);
+  1600→            }
+  1601→            // (如果已经入职)修改简历招聘缓存表的入职时间
+  1602→            if (isset($waitingEntryInfo['entry_time']) && $waitingEntry->entry_time != $waitingEntryInfo['entry_time']) {
+  1603→                $r = ResumeRecruitmentCacheMd::where('rec_pro_id', $waitingEntry->rec_pro_id)->where('type', 'turn_al_entry')->orderBy('id', 'desc')->first();
+  1604→                $r?->update(['created_at' => date('Y-m-d H:i:s', strtotime($waitingEntryInfo['entry_time'])), 'date' => date('Y-m-d', strtotime($waitingEntryInfo['entry_time']))]);
+  1605→            }
+  1606→            $waitingEntry->update($waitingEntryInfo);
+  1607→            db()->commit();
+  1608→        } catch (\Exception $e) {
+  1609→            db()->rollBack();
+  1610→            return $this->responseJsonFail(__('my_api.update_waiting_entry_info_fail').$e->getMessage(), 423);
+  1611→        }
+  1612→        return $this->responseJsonSuccess();
+  1613→    }
+  1614→
+  1615→    /**
+  1616→     * 入职流程.
+  1617→     *
+  1618→     * @param Request $request
+  1619→     * @return JsonResponse
+  1620→     */
+  1621→    public function employeeApplicant(Request $request)
+  1622→    {
+  1623→        $recProId = $request->input('id');
+  1624→        $applicantResult = $request->input('applicant_result');
+  1625→
+  1626→        if (!$this->service->judgeChangeLogic($recProId, RecruitmentProcessionMd::REC_STATUS['待入职'])) {
+  1627→            return $this->responseJsonFail(__('my_api.not_in_waiting_entry_status'), 801);
+  1628→        }
+  1629→
+  1630→        db()->beginTransaction();
+  1631→        try {
+  1632→            if ($applicantResult == 'fail') {
+  1633→                $updateResData = $this->service->getResumeUpdateInfo($applicantResult, RecruitmentProcessionMd::REC_STATUS['已入职'], $request->archive_reason ?? '放弃入职', $request->specific_reason ?? '', $recProId);
+  1634→                $this->service->recruitmentUpdate(['status' => RecruitmentProcessionMd::REC_STATUS['归档']], $recProId); // 更新招聘流程
+  1635→                // 记录这一操作
+  1636→                $service = app(\App\Service\ResumeOperationService::class);
+  1637→                $service->recordByType(
+  1638→                    $recProId,
+  1639→                    'recruitment_procession',
+  1640→                    $service->getType(RecruitmentProcessionMd::REC_STATUS['归档']),
+  1641→                    RecruitmentProcessionMd::REC_STATUS['待入职'],
+  1642→                    $request->archive_reason ?? '放弃入职',
+  1643→                    $request->specific_reason ?? '',
+  1644→                    ['rec_pro_id' => $recProId]
+  1645→                );
+  1646→                $this->service->resumeUpdateUseRecId($updateResData, $recProId);
+  1647→            }
+  1648→            db()->commit();
+  1649→        } catch (\Exception $e) {
+  1650→            db()->rollBack();
+  1651→            return $this->responseJsonFail(__('my_api.entry_fail').$e->getMessage(), 424);
+  1652→        }
+  1653→        OfferMailApprovalController::sendHistoryKnock($recProId, '拒入职', null, $applicantResult);
+  1654→        return $this->responseJsonSuccess([]);
+  1655→    }
+  1656→
+  1657→    public function sendEntryNoticeMail(Request $request)
+  1658→    {
+  1659→        $input = Arr::only($request->all(), ['content', 'rec_pro_id', 'authorized_token']);
+  1660→        $rp = RecruitmentProcessionMd::find($input['rec_pro_id']);
+  1661→        if (empty($rp)) {
+  1662→            return $this->responseJsonFail(__('my_api.recruitment_procession_not_exist'), 802);
+  1663→        }
+  1664→        if (!in_array($rp->status, ['wait_entry', 'al_entry'])) {
+  1665→            return $this->responseJsonFail(__('my_api.recruitment_procession_status_not_entry_waiting_entry'), 802);
+  1666→        }
+  1667→        $this->mail_service->sendEntryNoticeMail($input['rec_pro_id'], $input['content'], $input['authorized_token']);
+  1668→        $we = WaitingEntryMd::where('rec_pro_id', $input['rec_pro_id'])->orderBy('id', 'desc')->first();
+  1669→        WaitingEntryMd::find($we->id)->update(['is_send_entry_notice_mail' => 1]);
+  1670→        return $this->responseJsonSuccess([]);
+  1671→    }
+  1672→
+  1673→    public function forceTransformStatus(Request $request)
+  1674→    {
+  1675→        $input = $request->all();
+  1676→        db()->beginTransaction();
+  1677→        try {
+  1678→            $rec_pro = RecruitmentProcessionMd::find($input['rec_pro_id']);
+  1679→            $this->service->recruitmentUpdate(Arr::only($input, ['status', 'filled_reason']), $rec_pro->id); // 更新招聘流程
+  1680→            // 记录操作
+  1681→            $service = app(\App\Service\ResumeOperationService::class);
+  1682→            $service->recordByType(
+  1683→                $rec_pro->id,
+  1684→                'recruitment_procession',
+  1685→                $service->getType($input['status']),
+  1686→                $rec_pro->status,
+  1687→                $request->filled_reason ?? '',
+  1688→                $request->specific_reason ?? '',
+  1689→                ['rec_pro_id' => $rec_pro->id]
+  1690→            );
+  1691→            $this->service->resumeUpdateUseRecId(['status' => $input['status']], $rec_pro->id); // 更新简历
+  1692→            db()->commit();
+  1693→        } catch (\Exception $e) {
+  1694→            db()->rollBack();
+  1695→            return $this->responseJsonFail(__('my_api.force_update_status_fail').$e->getMessage(), 424);
+  1696→        }
+  1697→        return $this->responseJsonSuccess([]);
+  1698→    }
+  1699→
+  1700→    // -----------------------------------------------------------下方为外部email的处理请求------------------------------------------------------------//
+  1701→
+  1702→    /**
+  1703→     * 读取链接数据.
+  1704→     *
+  1705→     * @param Request $request
+  1706→     * @return JsonResponse
+  1707→     */
+  1708→    public function emailLink(Request $request, ConfigService $service)
+  1709→    {
+  1710→        $time = now()->format('Y-m-d H:i:s');
+  1711→        $authority = AuthorityTokenMd::where('token', $request->token)->where('authorized_person', my_json_encode(['anonymous']))->whereRaw("expire_time >= TIMESTAMPDIFF(SECOND,created_at,'{$time}')")->orderBy('id', 'desc');
+  1712→        $authority = $authority->first();
+  1713→        if (!isset($authority)) {
+  1714→            return $this->responseJsonFail(__('token_expired_or_not_exist', ['token' => $request->token]));
+  1715→        }
+  1716→        $data = $this->service->candidateDetails($authority->item[0], 'resumes', true); // 需要发送给前端的数据
+  1717→        $inputer_user_id = $data['resume']['inputer_user_id'];
+  1718→        $inputer_user_nickname = isset((userInfo())[$inputer_user_id]) ? (userInfo())[$inputer_user_id]['nickname'] : 'Not Found';
+  1719→        $data['resume']['inputer_user_nickname'] = $inputer_user_nickname;
+  1720→
+  1721→        return $this->responseJsonSuccess([
+  1722→            'data' => $data,
+  1723→        ] + $service->getConfigs(['edu_name', 'reasons', 'interviewers', 'jobs', 'accurate_jobs', 'channels']));
+  1724→    }
+  1725→
+  1726→    // HR对候选人发起笔试测评  非技术笔试
+  1727→    public function initiateWrittenExam(Request $request)
+  1728→    {
+  1729→        $resume_id = Arr::get($request->all(), 'resume_id', 0);
+  1730→        $input = Arr::only($request->all(), ['rec_pro_id', 'attach_files', 'exam_end_time']);
+  1731→        $input['id_sign_sign'] = $request->id_sign.'-'.$request->input('time_sign');
+  1732→        // extra_info里面存储的信息是同样文件在官网存储的文件信息
+  1733→        $res = [];
+  1734→        foreach ($request->attach_files as $one) {
+  1735→            $res[] = $one['extra_info'];
+  1736→        }
+  1737→        // 判断是否能发起笔试
+  1738→        $recStatus = RecruitmentProcessionMd::find($input['rec_pro_id'])->status;
+  1739→        if (!in_array($recStatus, ['written_exam', 'interview', 're_scr'])) {
+  1740→            return $this->responseJsonFail(__('my_api.not_allow_to_start_written_exam'));
+  1741→        }
+  1742→        $recProIds = RecruitmentProcessionMd::where('resume_id', $resume_id)->pluck('id')->toArray();
+  1743→        $examId = 0;
+  1744→        db()->beginTransaction();
+  1745→        try {
+  1746→            if ($recProIds) {
+  1747→                WrittenExamMd::whereIn('rec_pro_id', $recProIds)->update(['is_current' => 0]);
+  1748→            }
+  1749→            $exam = WrittenExamMd::create($input + ['exam_status' => 'unsub', 'operator_id' => AuthRecord::user()->user_id, 'exam_content' => ['content' => $request->input('content'), 'exam_content' => $request->exam_content, 'subject' => $request->subject],
+  1750→                'is_current' => 1, 'total_score' => $request->total_score ?? '', ]);
+  1751→            OfficialApiLib::sendRequest(
+  1752→                'official-api/common/record-id-sign',
+  1753→                [
+  1754→                    'id_sign' => $input['id_sign_sign'],
+  1755→                    'type' => 'written_test',
+  1756→                    'info' => $request->data_info ?? '',
+  1757→                ]
+  1758→            );
+  1759→            $examId = $exam->id;
+  1760→            // add 测试中 label
+  1761→            $label = LabelsMd::where('name', __('my_api.in_test'))->where('is_on', 1)->first();
+  1762→            if (empty($label)) {
+  1763→                $label = LabelsMd::create(['type' => 'normal', 'name' => __('my_api.in_test'), 'color' => '#ff7e00', 'creator_id' => -1, 'is_on' => 1]);
+  1764→            }
+  1765→            if ($resume_id) {
+  1766→                $reLabel = ResumeLabelsMd::where('resume_id', $resume_id)->where('label_id', $label->id)->first();
+  1767→                if (empty($reLabel)) {
+  1768→                    ResumeLabelsMd::create(['resume_id' => $resume_id, 'label_id' => $label->id, 'creator_id' => -1]);
+  1769→                }
+  1770→            }
+  1771→            // 新增操作记录
+  1772→            $service = app(\App\Service\ResumeOperationService::class);
+  1773→            $service->recordByType(
+  1774→                $input['rec_pro_id'],
+  1775→                'recruitment_procession',
+  1776→                'create_written_exam',
+  1777→                RecruitmentProcessionMd::find($input['rec_pro_id'])->status,
+  1778→                '发起笔试',
+  1779→                $request->remark ?? $request->evaluation ?? '',
+  1780→                ['rec_pro_id' => $request->rec_pro_id, 'subject' => $request->subject ?? '', 'is_smb' => 0]
+  1781→            );
+  1782→            $resumeId = RecruitmentProcessionMd::find($input['rec_pro_id'])->resume_id;
+  1783→            $resume = ResumeMd::where('id', $resumeId)->first();
+  1784→            $this->service->updateProgress('笔试中', $resumeId, $resume->recent_apply_job_id);
+  1785→            db()->commit();
+  1786→        } catch (Exception $e) {
+  1787→            db()->rollBack();
+  1788→            return $this->responseJsonFail(__('my_api.written_exam_process_start_fail').$e->getFile().' '.$e->getLine().' '.$e->getMessage(), $e->getCode());
+  1789→        }
+  1790→        return $this->responseJsonSuccess(['exam_id' => $examId]);
+  1791→    }
+  1792→
+  1793→    public function initiateSmbExam(Request $request): JsonResponse
+  1794→    {
+  1795→        return $this->initiateExam($request, WrittenExamMd::EXAM_TYPE_SMB);
+  1796→    }
+  1797→
+  1798→    public function initiateNowCoderExam(Request $request): JsonResponse
+  1799→    {
+  1800→        return $this->initiateExam($request, WrittenExamMd::EXAM_TYPE_NOW_CODER);
+  1801→    }
+  1802→
+  1803→    // 设为当前笔试
+  1804→    public function setCurrentExam(Request $request): JsonResponse
+  1805→    {
+  1806→        $type = $request->input('type') ?? 0;
+  1807→        if (!in_array($type, [1, 2, 3])) {
+  1808→            return $this->responseJsonFail(__('my_api.set_exam_current_fail'));
+  1809→        }
+  1810→        db()->beginTransaction();
+  1811→        try {
+  1812→            foreach ($request->input('exams') as $v) {
+  1813→                if ($type == 1) {
+  1814→                    WrittenExamMd::where('id', $v['id'])->update(['is_current' => $v['is_current']]);
+  1815→                }
+  1816→                if ($type == 2 || $type == 3) {
+  1817→                    $recProIds = RecruitmentProcessionMd::where('resume_id', $v['id'])->pluck('id')->toArray();
+  1818→                    if ($recProIds) {
+  1819→                        WrittenExamMd::whereIn('rec_pro_id', $recProIds)
+  1820→                            ->where('exam_type', $type)->update(['is_current' => $v['is_current']]);
+  1821→                    }
+  1822→                }
+  1823→            }
+  1824→            db()->commit();
+  1825→        } catch (Exception $e) {
+  1826→            db()->rollBack();
+  1827→            return $this->responseJsonFail(__('my_api.set_exam_current_fail').$e->getFile().' '.$e->getLine().' '.$e->getMessage(), $e->getCode());
+  1828→        }
+  1829→        return $this->responseJsonSuccess();
+  1830→    }
+  1831→
+  1832→    // ------------------------------------------转笔试----------------------------------------------------//
+  1833→
+  1834→    /**
+  1835→     * 初筛转入笔试环节
+  1836→     *
+  1837→     * @param Request $request
+  1838→     * @return JsonResponse
+  1839→     */
+  1840→    public function toWrittenExam(Request $request)
+  1841→    {
+  1842→        $input = $request->all();
+  1843→        $this->validateWrittenExam($request->all());
+  1844→        db()->beginTransaction();
+  1845→        try {
+  1846→            foreach ($input['recruitments'] as $rec) {
+  1847→                $this->service->singleToWrittenExam(array_merge($rec, Arr::only($input, ['result'])));
+  1848→            }
+  1849→            db()->commit();
+  1850→        } catch (\Exception $e) {
+  1851→            db()->rollBack();
+  1852→            return $this->responseJsonFail(__('my_api.to_written_exam_fail').$e->getMessage(), 423);
+  1853→        }
+  1854→        return $this->responseJsonSuccess([]);
+  1855→    }
+  1856→
+  1857→    // 手动获取showmebug的笔试结果
+  1858→    public function getSmbExamResult(Request $request)
+  1859→    {
+  1860→        $examId = $request->input('exam_id');
+  1861→        $exam = WrittenExamMd::find($examId);
+  1862→        if ($exam->exam_type != WrittenExamMd::EXAM_TYPE_SMB || !in_array($exam->exam_status, ['unsub', 'submitted']) || $exam->is_closed != 0) {
+  1863→            return $this->responseJsonFail(__('my_api.not_allow_to_get_result'), 423);
+  1864→        }
+  1865→        dispatch(new GetShowMeBugExamResultJob($exam));
+  1866→        return $this->responseJsonSuccess();
+  1867→    }
+  1868→    public function getNowCoderExamResult(Request $request)
+  1869→    {
+  1870→        $examId = $request->input('exam_id');
+  1871→        $exam = WrittenExamMd::find($examId);
+  1872→        if ($exam->exam_type != WrittenExamMd::EXAM_TYPE_NOW_CODER || !in_array($exam->exam_status, ['unsub', 'submitted']) || $exam->is_closed != 0) {
+  1873→            return $this->responseJsonFail(__('my_api.not_allow_to_get_result'), 423);
+  1874→        }
+  1875→        dispatch(new GetNowCoderExamResultJob($exam));
+  1876→        return $this->responseJsonSuccess(true);
+  1877→    }
+  1878→
+  1879→    /**
+  1880→     *  安排 技术笔试，现为两种 ，是指调用第三方创建完笔试后，再落我们的库。
+  1881→     * @param mixed $type
+  1882→     */
+  1883→    public function initiateExam(Request $request, $type): JsonResponse
+  1884→    {
+  1885→        $resume_id = Arr::get($request->all(), 'resume_id', 0);
+  1886→        $input = Arr::only($request->all(), ['rec_pro_id', 'attach_files', 'exam_end_time']);
+  1887→        $input2 = Arr::only($request->all(), ['exam_uid', 'exam_started_at']);
+  1888→        // 判断是否能发起笔试
+  1889→        $recStatus = RecruitmentProcessionMd::find($input['rec_pro_id'])->status;
+  1890→        if (!in_array($recStatus, ['written_exam', 'interview', 're_scr'])) {
+  1891→            return $this->responseJsonFail(__('my_api.not_allow_to_start_written_exam'));
+  1892→        }
+  1893→        // 获取该简历所有的rec_pro_id, 将这个简历所有流程的所有笔试is_current都置为0
+  1894→        $recProIds = RecruitmentProcessionMd::where('resume_id', $resume_id)->pluck('id')->toArray();
+  1895→        $examId = 0;
+  1896→        db()->beginTransaction();
+  1897→        try {
+  1898→            if ($recProIds) {
+  1899→                WrittenExamMd::whereIn('rec_pro_id', $recProIds)->update(['is_current' => 0]);
+  1900→            }
+  1901→            $exam = WrittenExamMd::create($input + ['exam_status' => 'unsub', 'operator_id' => AuthRecord::user()->user_id, 'exam_content' => ['content' => $request->input('content'), 'exam_content' => $request->exam_content ?? '', 'subject' => $request->subject],
+  1902→                'is_current' => 1, 'exam_type' => $type, 'smb_exam_uid' => $input2['exam_uid'], 'smb_exam_start' => $input2['exam_started_at'] ?? '', 'total_score' => $request->total_score ?? '', ]);
+  1903→            $examId = $exam->id;
+  1904→            // add 测试中 label
+  1905→            $label = LabelsMd::where('name', __('my_api.in_test'))->where('is_on', 1)->first();
+  1906→            if (empty($label)) {
+  1907→                $label = LabelsMd::create(['type' => 'normal', 'name' => __('my_api.in_test'), 'color' => '#ff7e00', 'creator_id' => -1, 'is_on' => 1]);
+  1908→            }
+  1909→            if ($resume_id) {
+  1910→                $reLabel = ResumeLabelsMd::where('resume_id', $resume_id)->where('label_id', $label->id)->first();
+  1911→                if (empty($reLabel)) {
+  1912→                    ResumeLabelsMd::create(['resume_id' => $resume_id, 'label_id' => $label->id, 'creator_id' => -1]);
+  1913→                }
+  1914→            }
+  1915→            // 新增操作记录
+  1916→            $service = app(\App\Service\ResumeOperationService::class);
+  1917→            // 公共部分
+  1918→            $status = RecruitmentProcessionMd::find($input['rec_pro_id'])->status;
+  1919→            $remark_or_evaluation = $request->remark ?? $request->evaluation ?? '';
+  1920→            $params = [
+  1921→                'rec_pro_id' => $request->rec_pro_id,
+  1922→                'subject' => $request->subject ?? '',
+  1923→            ];
+  1924→
+  1925→            // 根据 $type 调整参数
+  1926→            if ($type == 2) {
+  1927→                $params['is_smb'] = 1;
+  1928→            } elseif ($type == 3) {
+  1929→                $params['is_now_coder'] = 1;
+  1930→            }
+  1931→
+  1932→            // 调用方法
+  1933→            $service->recordByType(
+  1934→                $input['rec_pro_id'],
+  1935→                'recruitment_procession',
+  1936→                'create_written_exam',
+  1937→                $status,
+  1938→                '发起笔试',
+  1939→                $remark_or_evaluation,
+  1940→                $params
+  1941→            );
+  1942→            $resumeId = RecruitmentProcessionMd::find($input['rec_pro_id'])->resume_id;
+  1943→            $resume = ResumeMd::where('id', $resumeId)->first();
+  1944→            $this->service->updateProgress('笔试中', $resumeId, $resume->recent_apply_job_id);
+  1945→            db()->commit();
+  1946→        } catch (Exception $e) {
+  1947→            db()->rollBack();
+  1948→            return $this->responseJsonFail(__('my_api.written_exam_process_start_fail').$e->getFile().' '.$e->getLine().' '.$e->getMessage(), $e->getCode());
+  1949→        }
+  1950→        return $this->responseJsonSuccess(['exam_id' => $examId]);
+  1951→    }
+  1952→
+  1953→    protected function createOrUpdateWrittenExam(array $input)
+  1954→    {
+  1955→        $data = Arr::only($input, ['rec_pro_id', 'evaluation', 'status', 'remark', 'exam_status', 'total_score', 'exam_content']);
+  1956→        if (isset($input['id'])) { // 有ID是修改
+  1957→            $exam = WrittenExamMd::find($input['id']);
+  1958→            if (empty($exam)) {
+  1959→                throw new InternalException('id error');
+  1960→            }
+  1961→//            if (in_array($exam->status, ['start', 'unsub_pass', 'unsub_fail'])) {
+  1962→//                ($input['status'] == 'fail') && $data['status'] = 'unsub_fail';
+  1963→//                ($input['status'] == 'pass') && $data['status'] = 'unsub_pass';
+  1964→//            }
+  1965→
+  1966→            $exam->update($data);
+  1967→        } else {
+  1968→            $add = WrittenExamMd::create($data + ['operator_id' => AuthRecord::user()->user_id]);
+  1969→            $input['id'] = $add->id;
+  1970→        }
+  1971→
+  1972→        if (!empty($input['file_store_path_info'])) {
+  1973→            app(\App\Service\FileStorePathService::class)->record($input['file_store_path_info'], 'written_exam', $input['id']);
+  1974→        }
+  1975→    }
+  1976→
+  1977→    // 判断转复筛的操作是否合法
+  1978→    protected function validateRescreening(array $input)
+  1979→    {
+  1980→        if ($input['result'] == 'pass' && empty($input['screener_id'])) { // 如果进入了下一轮，但是没有下一轮的筛选人，就报错
+  1981→            throw new InternalException(__('my_api.no_reviewer'), 801);
+  1982→        }
+  1983→        // 验证是否有非法数据
+  1984→        $isFromWritten = $input['from_written'] ?? 0;
+  1985→        if ($isFromWritten) {
+  1986→            $cur = ResumeFilterMd::whereIn('rec_pro_id', array_column($input['recruitments'], 'rec_pro_id'))->where('round_times', 1)->where('filter_result', '=', 'pass')->pluck('rec_pro_id')->toArray();
+  1987→            if (empty($cur)) {
+  1988→                throw new InternalException(__('my_api.force_update_status_fail.resume_has_check_result').implode(',', $cur), 801);
+  1989→            }
+  1990→        } else {
+  1991→            $cur = ResumeFilterMd::whereIn('rec_pro_id', array_column($input['recruitments'], 'rec_pro_id'))->where('round_times', 1)->where('filter_result', '!=', '')->pluck('rec_pro_id')->toArray();
+  1992→            if (!empty($cur)) {
+  1993→                throw new InternalException(__('my_api.force_update_status_fail.resume_has_check_result').implode(',', $cur), 801);
+  1994→            }
+  1995→        }
+  1996→
+  1997→        $judge_status = RecruitmentProcessionMd::whereIn('id', array_column($input['recruitments'], 'id'))->whereNotIn('status', [RecruitmentProcessionMd::REC_STATUS['初筛'], RecruitmentProcessionMd::REC_STATUS['笔试']])->pluck('id')->toArray();
+  1998→        if (!empty($judge_status)) {
+  1999→            throw new InternalException(__('my_api.invalid_recruitment_procession_id').implode(',', $judge_status), 801);
+  2000→        }
+  2001→    }
+  2002→
+  2003→    // 判断转笔试的操作是否合法
+  2004→    protected function validateWrittenExam(array $input)
+  2005→    {
+  2006→        // 验证是否有非法数据
+  2007→        $cur = ResumeFilterMd::whereIn('rec_pro_id', array_column($input['recruitments'], 'rec_pro_id'))->where('round_times', 1)->where('filter_result', '!=', '')->pluck('rec_pro_id')->toArray();
+  2008→        if (!empty($cur)) {
+  2009→            throw new InternalException(__('my_api.force_update_status_fail.resume_has_check_result').implode(',', $cur), 801);
+  2010→        }
+  2011→        $judge_status = RecruitmentProcessionMd::whereIn('id', array_column($input['recruitments'], 'id'))->where('status', '<>', RecruitmentProcessionMd::REC_STATUS['初筛'])->pluck('id')->toArray();
+  2012→        if (!empty($judge_status)) {
+  2013→            throw new InternalException(__('my_api.invalid_recruitment_procession_id').implode(',', $judge_status), 801);
+  2014→        }
+  2015→    }
+  2016→}
+  2017→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

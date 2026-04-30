@@ -1,0 +1,319 @@
+/**
+ * 批量造测试数据：用现有用户模拟 60 天日报
+ *
+ * 用法: node seed-test-data.js
+ *   1. 通过 web-api/staff 获取所有用户的 nickname + email
+ *   2. 匹配 ../11 中的 ID 列表
+ *   3. 尝试密码 qwe123/111111/123456 登录
+ *   4. 登录成功则模拟 60 天日报
+ */
+const http = require('http')
+const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+
+// ============ 配置 ============
+const BASE_CORE = 'http://oa-core.info-staging.xinyoudi.com/'
+const WEB_API = BASE_CORE + 'web-api/'
+const USER_API = BASE_CORE + 'sfuser-api/'
+const PASSWORDS = ['qwe123', '111111', '123456']
+const REPORT_DAYS = 60
+const CONCURRENCY = 5
+
+const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv/KTcKXpYeV6og0QzBGo
+HMywyqqwwUnAd7tTn5+d4rw6x7uIYsL2iE27Ym4yIeU1d14rONIWAQUckzBe3FsZ
+lnMbYJuwlL7GE/EJjl48JzhbZoQKS6IfmOdQ/Ze2GsQsw0TUkxmMKLoYGg91dXww
+QUy+o2XP5sKP8pjh4uErQ8CvFjxtClSdPyyAL2z5yAAIu9wJVlqipB1Cqexqm/VF
+riH7G3/kCDcsfn4jnDq/lOF0WCcx0Jy8GcpvzAdTSfNjyQIM/T6ppGvB7kp5ERZt
+NEYMZB4t5gDBINZv/WK/TW9eR75ouuuFbrE0G5H6l4ykqiaSwo5UgKR8hhkFNkLv
+sQIDAQAB
+-----END PUBLIC KEY-----`
+
+// ============ 日报内容模板 ============
+const REPORT_TEMPLATES = [
+    '今日工作：\n1. 完成用户模块接口联调，修复了3个前端样式问题\n2. 参加需求评审会议，讨论 v2.5 版本功能\n3. Code Review 了同事的 PR，提了2个修改建议\n\n明日计划：\n1. 继续完善用户模块的单元测试\n2. 开始消息通知功能的开发',
+    '今日工作：\n1. 优化了首页加载速度，从 3.2s 降到 1.8s\n2. 排查并修复了生产环境偶发的 502 问题，原因是连接池配置不当\n3. 更新了部署文档\n\n明日计划：\n1. 继续优化其他页面性能\n2. 处理遗留的 bug 列表',
+    '今日工作：\n1. 数据库迁移脚本编写完成，已在测试环境验证\n2. 完成报表导出功能的后端逻辑\n3. 和产品讨论了导出格式的细节\n\n问题/风险：\n- 大数据量导出可能超时，需要改为异步方式\n\n明日计划：\n1. 实现异步导出 + 下载通知',
+    '今日工作：\n1. 重构了权限管理模块，把角色和权限拆分为独立服务\n2. 编写了 20 个单元测试用例，覆盖率提升到 85%\n3. 修复了表单验证的边界条件 bug\n\n明日计划：\n1. 完成权限缓存机制\n2. 对接前端权限组件',
+    '今日工作：\n1. 完成了移动端适配，主要页面已支持响应式\n2. 集成了第三方支付 SDK，沙箱环境调通\n3. 写了支付回调的处理逻辑\n\n明日计划：\n1. 支付功能联调\n2. 处理异常订单的补偿逻辑',
+    '今日工作：\n1. 完成了活动页的视觉设计稿，已发到群里收集意见\n2. 修改了上周 banner 的配色方案（第3版）\n3. 整理了组件库中按钮和输入框的规范\n\n明日计划：\n1. 根据反馈修改活动页设计\n2. 开始新功能的交互原型',
+    '今日工作：\n1. 产品原型评审，提出了 3 处交互改进建议\n2. 切图并标注，输出给前端同事\n3. 研究了竞品的新版设计趋势\n\n明日计划：\n1. 完善设计规范文档\n2. 新模块的信息架构梳理',
+    '今日工作：\n1. 编写了用户注册模块的测试用例（共 45 条）\n2. 执行回归测试，发现 2 个 P2 bug 已提单\n3. 验证了上个版本遗留的 5 个 bug，4 个已修复，1 个待确认\n\n明日计划：\n1. 继续执行 v2.5 的测试\n2. 性能测试环境搭建',
+    '今日工作：\n1. 自动化测试脚本维护，修复了 3 个不稳定用例\n2. 接口测试覆盖了新增的 8 个 API\n3. 整理了本周测试报告\n\n问题：\n- 测试环境不稳定，影响效率\n\n明日计划：\n1. 和运维沟通环境问题\n2. 继续接口自动化补充',
+    '今日工作：\n1. 完成了 v2.6 版本的需求文档初稿\n2. 和客户沟通了3个定制化需求，做了可行性评估\n3. 分析了上周的用户行为数据，DAU 环比增长 5%\n\n明日计划：\n1. 需求文档评审\n2. 竞品分析报告',
+    '今日工作：\n1. 完成了 K8s 集群的版本升级（1.28 → 1.29）\n2. 配置了新的监控告警规则\n3. 处理了凌晨的一次磁盘告警，扩容了 200G\n\n明日计划：\n1. 优化 CI/CD 流水线\n2. 梳理服务器资源使用情况',
+    '今日工作：\n1. 日常需求开发\n2. bug 修复\n3. 文档整理\n\n明日计划：\n1. 继续开发',
+    '今日工作：\n1. 继续昨天的开发任务\n2. 参加了周会\n3. 协助同事排查问题\n\n明日计划：\n1. 完成当前迭代的开发任务',
+    '今日工作：\n1. 需求开发中，进度约 60%\n2. 处理了2个线上反馈\n\n明日计划：\n1. 继续推进开发，目标完成到 80%',
+    '今日工作：\n1. 组织了项目周会，同步了各模块进度\n2. 更新了项目计划表，识别了 2 个风险点\n3. 协调资源解决了前端人力不足的问题\n\n明日计划：\n1. 跟进风险项的处理进展\n2. 准备下周的迭代评审材料',
+]
+
+// ============ 工具函数 ============
+function rsaEncrypt(text) {
+    return crypto.publicEncrypt(
+        { key: PUBLIC_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
+        Buffer.from(text, 'utf8')
+    ).toString('base64')
+}
+
+function post(url, data, cookies = '') {
+    return new Promise((resolve, reject) => {
+        const parsed = new URL(url)
+        const body = JSON.stringify(data)
+        const options = {
+            hostname: parsed.hostname,
+            port: parsed.port || 80,
+            path: parsed.pathname,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body),
+                ...(cookies ? { Cookie: cookies } : {}),
+            },
+        }
+        const req = http.request(options, res => {
+            let raw = ''
+            res.on('data', chunk => (raw += chunk))
+            res.on('end', () => {
+                const setCookies = res.headers['set-cookie'] || []
+                try {
+                    resolve({ body: JSON.parse(raw), setCookies, status: res.statusCode })
+                } catch {
+                    resolve({ body: { raw }, setCookies, status: res.statusCode })
+                }
+            })
+        })
+        req.on('error', reject)
+        req.write(body)
+        req.end()
+    })
+}
+
+// 尝试多个密码登录
+async function tryLogin(email, passwords) {
+    for (const pwd of passwords) {
+        try {
+            const encryptedPwd = rsaEncrypt(JSON.stringify({ password: pwd, time: Math.floor(Date.now() / 1000) }))
+            const res = await post(USER_API + 'sfhome/login', { email, password: encryptedPwd, sys_lang: 'zh_CN' })
+            if (String(res.body.error_code) === '0') {
+                return {
+                    cookies: res.setCookies.map(c => c.split(';')[0]).join('; '),
+                    nickname: res.body.data?.sfuser_info?.nickname || '',
+                }
+            }
+        } catch {
+            // 继续下一个密码
+        }
+    }
+    return null
+}
+
+// 并发控制
+async function parallelLimit(tasks, limit) {
+    const results = []
+    let idx = 0
+    const workers = Array(Math.min(limit, tasks.length)).fill(null).map(async () => {
+        while (idx < tasks.length) {
+            const i = idx++
+            results[i] = await tasks[i]()
+        }
+    })
+    await Promise.all(workers)
+    return results
+}
+
+// 生成工作日列表（最近 N 天，跳过周末）
+function getWorkDays(days) {
+    const dates = []
+    const now = new Date()
+    let d = new Date(now)
+    while (dates.length < days) {
+        d.setDate(d.getDate() - 1)
+        const dow = d.getDay()
+        if (dow !== 0 && dow !== 6) {
+            dates.push(d.toISOString().slice(0, 10))
+        }
+    }
+    return dates
+}
+
+// 为一个用户生成日报内容
+function generateReportsForUser(userIdx, dates) {
+    const reports = []
+    const templateOffset = userIdx % REPORT_TEMPLATES.length
+    const favoriteTemplates = [
+        REPORT_TEMPLATES[templateOffset],
+        REPORT_TEMPLATES[(templateOffset + 1) % REPORT_TEMPLATES.length],
+        REPORT_TEMPLATES[(templateOffset + 2) % REPORT_TEMPLATES.length],
+    ]
+    let lastContent = ''
+    let repeatCount = 0
+
+    for (const date of dates) {
+        if (Math.random() < 0.1) continue // 10% 缺交
+        if (lastContent && Math.random() < 0.3 && repeatCount < 3) {
+            reports.push({ date, content: lastContent }) // 30% 复制粘贴
+            repeatCount++
+            continue
+        }
+        const tpl = favoriteTemplates[Math.floor(Math.random() * favoriteTemplates.length)]
+        const content = tpl.replace('今日工作', `【${date}】工作内容`)
+        lastContent = content
+        repeatCount = 0
+        reports.push({ date, content })
+    }
+    return reports
+}
+
+// ============ 主流程 ============
+async function main() {
+    // 1. 读取目标用户 ID 列表
+    const idFile = path.join(__dirname, '..', '11')
+    const targetIds = new Set(
+        fs.readFileSync(idFile, 'utf8').trim().split('\n')
+            .map(line => parseInt(line.trim()))
+            .filter(id => !isNaN(id))
+    )
+    console.log(`目标用户: ${targetIds.size} 个`)
+
+    // 2. 用阳明登录
+    console.log('\n>>> 阳明登录...')
+    const pwd = rsaEncrypt(JSON.stringify({ password: 'qwe123', time: Math.floor(Date.now() / 1000) }))
+    const loginRes = await post(USER_API + 'sfhome/login', { email: 'ceshi_yangming@yottastudios.com', password: pwd, sys_lang: 'zh_CN' })
+    if (String(loginRes.body.error_code) !== '0') {
+        console.error('阳明登录失败:', loginRes.body)
+        return
+    }
+    const adminCookies = loginRes.setCookies.map(c => c.split(';')[0]).join('; ')
+    console.log('阳明登录成功')
+
+    // 3. 通过 web-api/staff 分页获取所有用户的 nickname + email
+    console.log('\n>>> 获取员工列表...')
+    const allUsers = [] // { id, nickname, email }
+    let page = 1
+    const perPage = 100
+    while (true) {
+        const res = await post(WEB_API + 'staff', {
+            intact_columns: ['department_ids', 'statuses', 'nicknames', 'emails'],
+            decrypt_config: {
+                obj: 'sfusers.*',
+                decrypt_columns: ['nickname', 'email'],
+            },
+            page,
+            per_page: perPage,
+            sys_lang: 'zh_CN',
+            sys_site: 'CHN',
+        }, adminCookies)
+
+        const sfusers = res.body.data?.sfusers || []
+        if (sfusers.length === 0) break
+
+        for (const u of sfusers) {
+            if (targetIds.has(u.id) && u.email) {
+                allUsers.push({ id: u.id, nickname: u.nickname, email: u.email })
+            }
+        }
+        const total = res.body.data?.total || 0
+        console.log(`  第 ${page} 页, 本页 ${sfusers.length} 人, 已匹配 ${allUsers.length}/${targetIds.size}`)
+
+        if (page * perPage >= total) break
+        page++
+    }
+    console.log(`匹配到 ${allUsers.length} 个目标用户`)
+
+    // 保存匹配结果
+    fs.writeFileSync(__dirname + '/matched-users.json', JSON.stringify(allUsers, null, 2))
+
+    // 4. 逐用户登录 + 生成日报
+    const workDays = getWorkDays(REPORT_DAYS)
+    console.log(`\n>>> 开始生成日报...`)
+    console.log(`工作日范围: ${workDays[workDays.length - 1]} ~ ${workDays[0]}（共 ${workDays.length} 天）`)
+
+    let loginSuccess = 0
+    let loginFailed = 0
+    let totalReports = 0
+    let totalFailed = 0
+    const loggedInUsers = []
+
+    const userTasks = allUsers.map((user, userIdx) => async () => {
+        const loginResult = await tryLogin(user.email, PASSWORDS)
+        if (!loginResult) {
+            loginFailed++
+            if (loginFailed <= 10) {
+                console.log(`  [${user.nickname}] (${user.email}) 登录失败，跳过`)
+            }
+            return
+        }
+        loginSuccess++
+        loggedInUsers.push({ id: user.id, nickname: user.nickname, email: user.email })
+
+        // 生成并提交日报
+        const reports = generateReportsForUser(userIdx, workDays)
+        let userCreated = 0
+        for (const report of reports) {
+            try {
+                const res = await post(USER_API + 'daily-report/new-daily-report', {
+                    sfuser_id: user.id,
+                    content: report.content,
+                    cc_user: ['阳明'],
+                    report_date: report.date,
+                    is_late: 1,
+                    status: 1,
+                    hash_filter: { obj: '$this', columns: ['cc_user'] },
+                    data: { nickname: user.nickname, cc: ['阳明'], superior: [] },
+                    encrypt_config: {
+                        res_type: 'sfuser',
+                        obj: '$this',
+                        non_encrypt_columns: ['cc_user', 'files', 'report_date', 'is_late', 'status', 'sys_lang', 'version_info'],
+                    },
+                    authorize_config: {
+                        res_type: 'sfuser',
+                        sfusers: ['阳明'],
+                        users: [],
+                        emails: [],
+                        items: [user.id],
+                        operations: ['response', 'send_email'],
+                        expire_time: 3600 * 24 * 62,
+                    },
+                    sys_lang: 'zh_CN',
+                    sys_site: 'CHN',
+                    intact_columns: ['sfuser_id', 'content', 'cc_user', 'report_date', 'is_late', 'status',
+                        'hash_filter', 'data', 'encrypt_config', 'authorize_config'],
+                }, loginResult.cookies)
+
+                if (String(res.body.error_code) === '0') {
+                    totalReports++
+                    userCreated++
+                } else {
+                    totalFailed++
+                    if (totalFailed <= 5) {
+                        console.log(`  [${user.nickname}] 日报创建失败: ${res.body.error_msg}`)
+                    }
+                }
+            } catch {
+                totalFailed++
+            }
+        }
+
+        if (loginSuccess % 10 === 0) {
+            console.log(`  进度: 登录成功 ${loginSuccess}, 失败 ${loginFailed}, 已创建 ${totalReports} 条日报`)
+        }
+    })
+
+    await parallelLimit(userTasks, CONCURRENCY)
+
+    // 保存结果
+    fs.writeFileSync(__dirname + '/test-users.json', JSON.stringify(loggedInUsers, null, 2))
+
+    console.log('\n========== 完成 ==========')
+    console.log(`匹配用户: ${allUsers.length}`)
+    console.log(`登录成功: ${loginSuccess}, 登录失败: ${loginFailed}`)
+    console.log(`日报创建: ${totalReports} 条, 失败: ${totalFailed} 条`)
+    console.log(`成功用户列表已保存到 test-users.json`)
+}
+
+main().catch(e => {
+    console.error('执行失败:', e)
+    process.exit(1)
+})

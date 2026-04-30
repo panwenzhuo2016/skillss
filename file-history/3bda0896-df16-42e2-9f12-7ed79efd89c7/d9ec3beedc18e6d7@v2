@@ -1,0 +1,39 @@
+package com.yottastudios.ns.collabspace.feedback.ro;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Schema(name = "FeedbackListRo", description = "反馈列表查询请求")
+public class FeedbackListRo {
+
+    @Schema(description = "反馈状态（0-未处理 1-已处理）")
+    private Integer status;
+
+    @Schema(description = "文档类型")
+    private String docType;
+
+    @Schema(description = "反馈类型（lag/bug/feat/other）")
+    private String feedbackType;
+
+    @Schema(description = "开始日期，格式yyyy-MM-dd")
+    private String startDate;
+
+    @Schema(description = "结束日期，格式yyyy-MM-dd")
+    private String endDate;
+
+    @Schema(description = "内容搜索关键字")
+    private String keyword;
+
+    @Schema(description = "页码，默认1")
+    private Integer pageNum;
+
+    @Schema(description = "每页条数，默认20")
+    private Integer pageSize;
+}

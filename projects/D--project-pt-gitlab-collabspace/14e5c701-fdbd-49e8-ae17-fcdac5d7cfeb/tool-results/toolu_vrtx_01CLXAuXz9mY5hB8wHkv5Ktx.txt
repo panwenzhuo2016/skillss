@@ -1,0 +1,1417 @@
+     1→/**
+     2→ * 文档设置权限功能优化 - 接口测试脚本
+     3→ *
+     4→ * 用法: node test-api.js
+     5→ * 要求: Node.js 18+（原生 fetch）
+     6→ * 自动登录测试环境，无需手动填 Cookie
+     7→ */
+     8→
+     9→// ========== 配置 ==========
+    10→const CONFIG = {
+    11→  host: 'http://xcollabspace-test.xtool-staging.yottastudios.com',
+    12→  loginEmail: 'test@yottastudios.com',
+    13→  spaceId: 'spcrGFWok5gx2',
+    14→  spaceNodeId: '1980884945824628737',
+    15→};
+    16→
+    17→// ========== 测试框架 ==========
+    18→let passed = 0;
+    19→let failed = 0;
+    20→let cookie = '';
+    21→let xsrfToken = '';
+    22→
+    23→function assert(name, condition, detail) {
+    24→  if (condition) {
+    25→    console.log(`  ✅ ${name}`);
+    26→    passed++;
+    27→  } else {
+    28→    console.log(`  ❌ ${name}`);
+    29→    if (detail !== undefined) console.log(`     实际值:`, typeof detail === 'object' ? JSON.stringify(detail).slice(0, 200) : detail);
+    30→    failed++;
+    31→  }
+    32→}
+    33→
+    34→// ========== HTTP 工具 ==========
+    35→
+    36→/** 从 set-cookie 头中提取 cookie 值 */
+    37→function parseCookies(res) {
+    38→  const cookies = {};
+    39→  const setCookieHeaders = res.headers.getSetCookie?.() || [];
+    40→  for (const header of setCookieHeaders) {
+    41→    const [kv] = header.split(';');
+    42→    const [k, v] = kv.split('=');
+    43→    cookies[k.trim()] = v.trim();
+    44→  }
+    45→  return cookies;
+    46→}
+    47→
+    48→async function rawFetch(method, url, body) {
+    49→  const headers = {
+    50→    'x-space-id': CONFIG.spaceId,
+    51→    'content-type': 'application/json',
+    52→  };
+    53→  if (cookie) headers['cookie'] = cookie;
+    54→  if (xsrfToken) headers['x-xsrf-token'] = xsrfToken;
+    55→
+    56→  const opts = { method, headers, redirect: 'manual' };
+    57→  if (body) opts.body = JSON.stringify(body);
+    58→  return fetch(url, opts);
+    59→}
+    60→
+    61→async function GET(path) {
+    62→  const res = await rawFetch('GET', `${CONFIG.host}/api/v1/node/role${path}`);
+    63→  return res.json();
+    64→}
+    65→
+    66→async function POST(path, body) {
+    67→  const res = await rawFetch('POST', `${CONFIG.host}/api/v1/node/role${path}`, body);
+    68→  return res.json();
+    69→}
+    70→
+    71→// ========== 登录 ==========
+    72→async function login() {
+    73→  console.log(`🔑 登录 ${CONFIG.loginEmail} ...`);
+    74→  const res = await fetch(`${CONFIG.host}/api/v1/testLogin/${CONFIG.loginEmail}`, { redirect: 'manual' });
+    75→  const cookies = parseCookies(res);
+    76→
+    77→  if (!cookies.SESSION) {
+    78→    console.log('❌ 登录失败：未获取到 SESSION cookie');
+    79→    console.log('   响应头:', Object.fromEntries(res.headers.entries()));
+    80→    process.exit(1);
+    81→  }
+    82→  xsrfToken = cookies['XSRF-TOKEN'] || '';
+    83→  cookie = `SESSION=${cookies.SESSION}; XSRF-TOKEN=${xsrfToken}`;
+    84→  console.log(`   ✅ 登录成功\n`);
+    85→}
+    86→
+    87→// ========== 测试用例 ==========
+    88→
+    89→async function testListTeamRoles() {
+    90→  console.log('📋 1. listTeamRoles - 小组权限列表');
+    91→
+    92→  const res = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+    93→  assert('接口返回 success', res.success === true, res);
+    94→  assert('data 不为 null', res.data != null, res.data);
+    95→  assert('包含 total', typeof res.data?.total === 'number', res.data?.total);
+    96→  assert('包含 records 数组', Array.isArray(res.data?.records), res.data?.records);
+    97→
+    98→  if (res.data?.records?.length > 0) {
+    99→    const first = res.data.records[0];
+   100→    assert('记录含 teamId', first.teamId != null, first.teamId);
+   101→    assert('记录含 teamName (string)', typeof first.teamName === 'string', first.teamName);
+   102→    assert('记录含 parentId', first.parentId != null, first.parentId);
+   103→    assert('记录含 memberCount (number)', typeof first.memberCount === 'number', first.memberCount);
+   104→    assert('role 为 string 或 null', first.role === null || typeof first.role === 'string', first.role);
+   105→    assert('children 为数组', Array.isArray(first.children), first.children);
+   106→  } else {
+   107→    console.log('  ⚠️  无数据，跳过字段校验');
+   108→  }
+   109→}
+   110→
+   111→async function testListTeamRolesSearch() {
+   112→  console.log('\n🔍 2. listTeamRoles - 搜索');
+   113→
+   114→  // 先拿一个真实的 teamName 来搜
+   115→  const all = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+   116→  if (all.data?.records?.length > 0) {
+   117→    const realName = all.data.records[0].teamName;
+   118→    const res = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(realName)}&pageNo=1&pageSize=20`);
+   119→    assert(`搜索 "${realName}" 有结果`, res.success && res.data?.records?.length > 0, res.data?.total);
+   120→    // 验证搜索结果的 teamName 都包含关键词
+   121→    const allMatch = res.data.records.every(r => r.teamName.toLowerCase().includes(realName.toLowerCase()));
+   122→    assert('搜索结果 teamName 都包含关键词', allMatch, res.data.records.map(r => r.teamName));
+   123→  } else {
+   124→    console.log('  ⚠️  无小组数据，跳过搜索测试');
+   125→  }
+   126→
+   127→  const empty = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent('不存在的xxx')}&pageNo=1&pageSize=20`);
+   128→  assert('搜索不存在关键词返回空', empty.success && empty.data?.records?.length === 0, empty.data?.total);
+   129→}
+   130→
+   131→async function testListTeamRolesPagination() {
+   132→  console.log('\n📄 3. listTeamRoles - 分页');
+   133→
+   134→  const page1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=2`);
+   135→  assert('pageSize=2 返回最多2条', page1.success && page1.data?.records?.length <= 2, page1.data?.records?.length);
+   136→
+   137→  if (page1.data?.total > 2) {
+   138→    const page2 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=2&pageSize=2`);
+   139→    assert('第2页有数据', page2.success && page2.data?.records?.length > 0, page2.data?.records?.length);
+   140→    // 第1页和第2页数据不重复
+   141→    const ids1 = new Set(page1.data.records.map(r => r.teamId));
+   142→    const overlap = page2.data.records.some(r => ids1.has(r.teamId));
+   143→    assert('第1页和第2页数据不重复', !overlap, { page1: [...ids1], page2: page2.data.records.map(r => r.teamId) });
+   144→  }
+   145→
+   146→  const bigPage = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=9999&pageSize=20`);
+   147→  assert('超大页码返回空列表', bigPage.success && bigPage.data?.records?.length === 0, bigPage.data?.total);
+   148→}
+   149→
+   150→async function testListMemberRoles() {
+   151→  console.log('\n👤 4. listMemberRoles - 成员权限列表');
+   152→
+   153→  const res = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   154→  assert('接口返回 success', res.success === true, res);
+   155→  assert('包含 total', typeof res.data?.total === 'number', res.data?.total);
+   156→  assert('包含 records 数组', Array.isArray(res.data?.records), res.data?.records);
+   157→
+   158→  if (res.data?.records?.length > 0) {
+   159→    const first = res.data.records[0];
+   160→    assert('记录含 unitId', first.unitId != null, first.unitId);
+   161→    assert('记录含 unitName (string)', typeof first.unitName === 'string', first.unitName);
+   162→    assert('unitType 固定为 3', first.unitType === 3, first.unitType);
+   163→    assert('所有记录 unitType 都为 3', res.data.records.every(r => r.unitType === 3), res.data.records.map(r => r.unitType));
+   164→    // superadmin 是历史遗留角色值，接口未校验枚举，视为已知数据
+   165→    assert('role 值为 string', typeof first.role === 'string', first.role);
+   166→    assert('记录含 avatar', 'avatar' in first, first.avatar);
+   167→    assert('记录含 teams', 'teams' in first, first.teams);
+   168→    assert('记录含 nickName', 'nickName' in first, first.nickName);
+   169→
+   170→    // 搜索真实成员名
+   171→    const realName = first.unitName;
+   172→    const searchRes = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=${encodeURIComponent(realName)}&pageNo=1&pageSize=20`);
+   173→    assert(`搜索 "${realName}" 有结果`, searchRes.success && searchRes.data?.records?.length > 0, searchRes.data?.total);
+   174→  } else {
+   175→    console.log('  ⚠️  该节点无手动设置的成员权限，跳过字段校验');
+   176→  }
+   177→
+   178→  const empty = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=${encodeURIComponent('不存在的xxx')}&pageNo=1&pageSize=20`);
+   179→  assert('搜索不存在关键词返回空', empty.success && empty.data?.records?.length === 0, empty.data?.total);
+   180→}
+   181→
+   182→async function testPermissionLogs() {
+   183→  console.log('\n📜 5. permissionLogs - 权限变更历史');
+   184→
+   185→  const res = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+   186→  assert('接口返回 success', res.success === true, res);
+   187→  assert('包含 total', typeof res.data?.total === 'number', res.data?.total);
+   188→  assert('包含 records 数组', Array.isArray(res.data?.records), res.data?.records);
+   189→
+   190→  if (res.data?.records?.length > 0) {
+   191→    const first = res.data.records[0];
+   192→    assert('记录含 operatorName (string)', typeof first.operatorName === 'string', first.operatorName);
+   193→    assert('记录含 createdAt (string)', typeof first.createdAt === 'string', first.createdAt);
+   194→    assert('createdAt 格式 yyyy-MM-dd HH:mm:ss', /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(first.createdAt), first.createdAt);
+   195→    assert('记录含 targetName (string)', typeof first.targetName === 'string', first.targetName);
+   196→    assert('记录含 description (string)', typeof first.description === 'string', first.description);
+   197→    assert('记录含 newRoleDisplay (string)', typeof first.newRoleDisplay === 'string', first.newRoleDisplay);
+   198→    assert('newRoleDisplay 值合法', ['可管理', '可编辑', '可阅读', '移除所有权限', '未知权限'].includes(first.newRoleDisplay), first.newRoleDisplay);
+   199→
+   200→    // 验证按时间倒序
+   201→    if (res.data.records.length >= 2) {
+   202→      const t1 = new Date(first.createdAt).getTime();
+   203→      const t2 = new Date(res.data.records[1].createdAt).getTime();
+   204→      assert('按时间倒序排列', t1 >= t2, { first: first.createdAt, second: res.data.records[1].createdAt });
+   205→    }
+   206→  } else {
+   207→    console.log('  ⚠️  暂无变更日志（editRole 测试后会有）');
+   208→  }
+   209→}
+   210→
+   211→async function testEditRoleAndLog() {
+   212→  console.log('\n⚡ 6. editRole - 冲突校验 + 日志记录');
+   213→
+   214→  // 先查当前成员列表，找一个可用的成员 unitId
+   215→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   216→  if (!members.data?.records?.length) {
+   217→    console.log('  ⚠️  该节点无成员权限数据，跳过 editRole 测试');
+   218→    return;
+   219→  }
+   220→
+   221→  const member = members.data.records[0];
+   222→  const unitId = member.unitId;
+   223→  const originalRole = member.role;
+   224→  const newRole = originalRole === 'reader' ? 'editor' : 'reader';
+   225→  console.log(`  ℹ️  测试对象: ${member.unitName} (${unitId}), ${originalRole} -> ${newRole}`);
+   226→
+   227→  // 记录变更前日志数量
+   228→  const logsBefore = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+   229→  const totalBefore = logsBefore.data?.total || 0;
+   230→
+   231→  // 执行 editRole
+   232→  const editRes = await POST('/editRole', {
+   233→    spaceNodeId: CONFIG.spaceNodeId,
+   234→    unitId,
+   235→    role: newRole,
+   236→  });
+   237→  assert('editRole 返回 success', editRes.success === true, editRes);
+   238→  assert('包含 hasConflict (boolean)', typeof editRes.data?.hasConflict === 'boolean', editRes.data?.hasConflict);
+   239→
+   240→  if (editRes.data?.hasConflict) {
+   241→    assert('冲突时含 conflictMessage', typeof editRes.data.conflictMessage === 'string', editRes.data.conflictMessage);
+   242→    assert('冲突时含 conflictTeamName', typeof editRes.data.conflictTeamName === 'string', editRes.data.conflictTeamName);
+   243→    assert('冲突时含 conflictTeamRole', typeof editRes.data.conflictTeamRole === 'string', editRes.data.conflictTeamRole);
+   244→    console.log(`  ℹ️  冲突: ${editRes.data.conflictMessage}`);
+   245→  }
+   246→
+   247→  // 验证权限已变更
+   248→  const membersAfter = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   249→  const updated = membersAfter.data?.records?.find(r => r.unitId === unitId);
+   250→  assert('权限已变更', updated?.role === newRole, { expected: newRole, actual: updated?.role });
+   251→
+   252→  // 验证日志写入
+   253→  const logsAfter = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+   254→  assert('日志数量增加', (logsAfter.data?.total || 0) > totalBefore, { before: totalBefore, after: logsAfter.data?.total });
+   255→
+   256→  if (logsAfter.data?.records?.length > 0) {
+   257→    const latest = logsAfter.data.records[0];
+   258→    assert('最新日志 targetName 匹配', latest.targetName === member.unitName, latest.targetName);
+   259→    console.log(`  ℹ️  日志: ${latest.description}`);
+   260→  }
+   261→
+   262→  // 改回原角色
+   263→  const restoreRes = await POST('/editRole', {
+   264→    spaceNodeId: CONFIG.spaceNodeId,
+   265→    unitId,
+   266→    role: originalRole,
+   267→  });
+   268→  assert('还原权限成功', restoreRes.success === true, restoreRes);
+   269→  console.log(`  ℹ️  已还原 ${member.unitName} 为 ${originalRole}`);
+   270→}
+   271→
+   272→async function testPermissionLogSearch() {
+   273→  console.log('\n🔍 7. permissionLogs - 搜索');
+   274→
+   275→  const all = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+   276→  if (!all.data?.records?.length) {
+   277→    console.log('  ⚠️  无日志数据，跳过搜索测试');
+   278→    return;
+   279→  }
+   280→
+   281→  // 按操作人名称搜索
+   282→  const operatorName = all.data.records[0].operatorName;
+   283→  const res1 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent(operatorName)}&pageNo=1&pageSize=20`);
+   284→  assert(`搜索操作人 "${operatorName}" 有结果`, res1.success && res1.data?.records?.length > 0, res1.data?.total);
+   285→
+   286→  // 按对象名称搜索
+   287→  const targetName = all.data.records[0].targetName;
+   288→  const res2 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent(targetName)}&pageNo=1&pageSize=20`);
+   289→  assert(`搜索对象 "${targetName}" 有结果`, res2.success && res2.data?.records?.length > 0, res2.data?.total);
+   290→
+   291→  // 搜索不存在
+   292→  const res3 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent('不存在zzz')}&pageNo=1&pageSize=20`);
+   293→  assert('搜索不存在关键词返回空', res3.success && res3.data?.records?.length === 0, res3.data?.total);
+   294→}
+   295→
+   296→async function testParamValidation() {
+   297→  console.log('\n🔒 8. 参数校验');
+   298→
+   299→  const res1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=0&pageSize=20`);
+   300→  assert('pageNo=0 应返回错误', res1.success === false, res1);
+   301→
+   302→  const res2 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=101`);
+   303→  assert('pageSize=101 应返回错误', res2.success === false, res2);
+   304→
+   305→  const res3 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=-1&pageSize=20`);
+   306→  assert('pageNo=-1 应返回错误', res3.success === false, res3);
+   307→}
+   308→
+   309→async function testNoPermissionNode() {
+   310→  console.log('\n🚫 9. 无权限数据的节点');
+   311→
+   312→  // 用一个不存在但合法的 Long 值节点ID（不超过 Long.MAX_VALUE）
+   313→  const fakeNodeId = '1';
+   314→  const res1 = await GET(`/${fakeNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+   315→  assert('不存在节点 listTeamRoles 正常返回', res1.success === true, res1);
+   316→
+   317→  const res2 = await GET(`/${fakeNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   318→  assert('不存在节点 listMemberRoles 正常返回', res2.success === true, res2);
+   319→
+   320→  const res3 = await GET(`/${fakeNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+   321→  assert('不存在节点 permissionLogs 返回空', res3.success && res3.data?.records?.length === 0, res3.data?.total);
+   322→}
+   323→
+   324→// ========== 边界场景测试 ==========
+   325→
+   326→async function testPaginationBoundary() {
+   327→  console.log('\n📐 10. 分页边界值');
+   328→
+   329→  // pageSize=1 最小合法值
+   330→  const res1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=1`);
+   331→  assert('pageSize=1 返回成功', res1.success === true, res1);
+   332→  assert('pageSize=1 最多返回1条', res1.data?.records?.length <= 1, res1.data?.records?.length);
+   333→
+   334→  // pageSize=100 最大合法值
+   335→  const res2 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+   336→  assert('pageSize=100 返回成功', res2.success === true, res2);
+   337→
+   338→  // pageSize=100 listMemberRoles
+   339→  const res3 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+   340→  assert('listMemberRoles pageSize=100 返回成功', res3.success === true, res3);
+   341→
+   342→  // pageSize=100 permissionLogs
+   343→  const res4 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=100`);
+   344→  assert('permissionLogs pageSize=100 返回成功', res4.success === true, res4);
+   345→
+   346→  // total 与实际记录数一致性：取全部数据验证
+   347→  const all = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+   348→  if (all.data?.total <= 100) {
+   349→    assert('total <= 100 时 records.length === total', all.data.records.length === all.data.total,
+   350→      { total: all.data.total, length: all.data.records.length });
+   351→  }
+   352→
+   353→  // pageNo 大于实际页数时 records 应为空但 total 不变
+   354→  if (all.data?.total > 0) {
+   355→    const lastPageNo = Math.ceil(all.data.total / 1) + 1; // 超出最后一页
+   356→    const overPage = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=${lastPageNo}&pageSize=1`);
+   357→    assert('超出最后一页返回空列表', overPage.success && overPage.data?.records?.length === 0, overPage.data?.records?.length);
+   358→    assert('超出最后一页 total 不变', overPage.data?.total === all.data.total,
+   359→      { expected: all.data.total, actual: overPage.data?.total });
+   360→  }
+   361→}
+   362→
+   363→async function testParamValidationExtended() {
+   364→  console.log('\n🔒 11. 参数校验 - 扩展');
+   365→
+   366→  // pageSize=0 应返回错误
+   367→  const res1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=0`);
+   368→  assert('pageSize=0 应返回错误', res1.success === false, res1);
+   369→
+   370→  // pageSize=-1 应返回错误
+   371→  const res2 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=-1`);
+   372→  assert('pageSize=-1 应返回错误', res2.success === false, res2);
+   373→
+   374→  // pageNo=0 on permissionLogs
+   375→  const res3 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=0&pageSize=20`);
+   376→  assert('permissionLogs pageNo=0 应返回错误', res3.success === false, res3);
+   377→
+   378→  // pageSize=101 on permissionLogs
+   379→  const res4 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=101`);
+   380→  assert('permissionLogs pageSize=101 应返回错误', res4.success === false, res4);
+   381→
+   382→  // 缺省分页参数：不传 pageNo 和 pageSize，应使用默认值
+   383→  const res5 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles`);
+   384→  assert('不传分页参数使用默认值', res5.success === true, res5);
+   385→  assert('默认 records 不超过 20', res5.data?.records?.length <= 20, res5.data?.records?.length);
+   386→
+   387→  // 不传分页参数 - listMemberRoles
+   388→  const res6 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles`);
+   389→  assert('listMemberRoles 不传分页参数使用默认值', res6.success === true, res6);
+   390→
+   391→  // 不传分页参数 - permissionLogs
+   392→  const res7 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs`);
+   393→  assert('permissionLogs 不传分页参数使用默认值', res7.success === true, res7);
+   394→}
+   395→
+   396→async function testSearchEdgeCases() {
+   397→  console.log('\n🔎 12. 搜索边界');
+   398→
+   399→  // 空字符串 keyword 等同于不搜索
+   400→  const noKeyword = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+   401→  const emptyKeyword = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=&pageNo=1&pageSize=20`);
+   402→  assert('空 keyword 等同不传', emptyKeyword.success && emptyKeyword.data?.total === noKeyword.data?.total,
+   403→    { withoutKeyword: noKeyword.data?.total, emptyKeyword: emptyKeyword.data?.total });
+   404→
+   405→  // 纯空格 keyword
+   406→  const spaceKeyword = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent('   ')}&pageNo=1&pageSize=20`);
+   407→  assert('纯空格 keyword 不报错', spaceKeyword.success === true, spaceKeyword);
+   408→
+   409→  // 特殊字符搜索
+   410→  const specialChars = ['%', '_', '\'', '"', '\\', '<script>', '&&', '||'];
+   411→  for (const ch of specialChars) {
+   412→    const res = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(ch)}&pageNo=1&pageSize=20`);
+   413→    assert(`特殊字符 "${ch}" 不报错`, res.success === true, res);
+   414→  }
+   415→
+   416→  // 超长 keyword（200字符）
+   417→  const longKeyword = 'a'.repeat(200);
+   418→  const longRes = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(longKeyword)}&pageNo=1&pageSize=20`);
+   419→  assert('超长 keyword 不报错', longRes.success === true, longRes);
+   420→
+   421→  // 单个字符搜索
+   422→  const singleChar = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=a&pageNo=1&pageSize=20`);
+   423→  assert('单字符搜索不报错', singleChar.success === true, singleChar);
+   424→}
+   425→
+   426→async function testPermissionLogSearchChinese() {
+   427→  console.log('\n🀄 13. permissionLogs - 中文角色搜索');
+   428→
+   429→  // 搜索中文角色名
+   430→  const roleKeywords = ['可编辑', '可阅读', '可管理'];
+   431→  for (const kw of roleKeywords) {
+   432→    const res = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent(kw)}&pageNo=1&pageSize=20`);
+   433→    assert(`搜索"${kw}"不报错`, res.success === true, res);
+   434→    if (res.data?.records?.length > 0) {
+   435→      // 结果的 newRoleDisplay 应该包含该角色
+   436→      const hasMatch = res.data.records.some(r =>
+   437→        r.newRoleDisplay === kw || r.description?.includes(kw)
+   438→      );
+   439→      assert(`搜索"${kw}"结果相关`, hasMatch, res.data.records.map(r => r.newRoleDisplay));
+   440→    }
+   441→  }
+   442→
+   443→  // 搜索 "移除"
+   444→  const removeRes = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent('移除')}&pageNo=1&pageSize=20`);
+   445→  assert('搜索"移除"不报错', removeRes.success === true, removeRes);
+   446→
+   447→  // 搜索 description 中的内容（description 不参与搜索，应返回空或不影响其他结果）
+   448→  const descRes = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent('权限改为')}&pageNo=1&pageSize=20`);
+   449→  assert('搜索"权限改为"不报错', descRes.success === true, descRes);
+   450→}
+   451→
+   452→async function testPermissionLogsPagination() {
+   453→  console.log('\n📑 14. permissionLogs - 分页边界');
+   454→
+   455→  const page1 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+   456→  assert('permissionLogs pageSize=1 返回成功', page1.success === true, page1);
+   457→  assert('permissionLogs pageSize=1 最多1条', page1.data?.records?.length <= 1, page1.data?.records?.length);
+   458→
+   459→  if (page1.data?.total > 1) {
+   460→    const page2 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=2&pageSize=1`);
+   461→    assert('permissionLogs 第2页有数据', page2.success && page2.data?.records?.length > 0, page2.data?.records?.length);
+   462→
+   463→    // 第2页正常返回即可（日志内容可能相似，但分页偏移不同即为不重复）
+   464→    assert('permissionLogs 第2页 total 与第1页一致', page2.data?.total === page1.data?.total,
+   465→      { page1Total: page1.data?.total, page2Total: page2.data?.total });
+   466→
+   467→    // 最后一页
+   468→    const lastPageNo = Math.ceil(page1.data.total / 5);
+   469→    const lastPage = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=${lastPageNo}&pageSize=5`);
+   470→    assert('permissionLogs 最后一页有数据', lastPage.success && lastPage.data?.records?.length > 0, lastPage.data?.records?.length);
+   471→
+   472→    // 全部日志按时间倒序
+   473→    const allLogs = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=100`);
+   474→    if (allLogs.data?.records?.length >= 2) {
+   475→      let sorted = true;
+   476→      for (let i = 0; i < allLogs.data.records.length - 1; i++) {
+   477→        const t1 = new Date(allLogs.data.records[i].createdAt).getTime();
+   478→        const t2 = new Date(allLogs.data.records[i + 1].createdAt).getTime();
+   479→        if (t1 < t2) { sorted = false; break; }
+   480→      }
+   481→      assert('所有日志都按时间倒序', sorted, allLogs.data.records.map(r => r.createdAt));
+   482→    }
+   483→  }
+   484→}
+   485→
+   486→async function testEditRoleBoundary() {
+   487→  console.log('\n⚡ 15. editRole - 边界场景');
+   488→
+   489→  // 不存在的 unitId
+   490→  const fakeUnitRes = await POST('/editRole', {
+   491→    spaceNodeId: CONFIG.spaceNodeId,
+   492→    unitId: '1',
+   493→    role: 'reader',
+   494→  });
+   495→  assert('不存在 unitId 返回错误', fakeUnitRes.success === false, fakeUnitRes);
+   496→
+   497→  // 无效的 role 值
+   498→  const invalidRoleRes = await POST('/editRole', {
+   499→    spaceNodeId: CONFIG.spaceNodeId,
+   500→    unitId: '1',
+   501→    role: 'superadmin',
+   502→  });
+   503→  assert('无效 role 值不报错', invalidRoleRes.success !== undefined, invalidRoleRes);
+   504→
+   505→  // 缺少必填字段 spaceNodeId
+   506→  const noNodeIdRes = await POST('/editRole', {
+   507→    unitId: '1',
+   508→    role: 'reader',
+   509→  });
+   510→  assert('缺少 spaceNodeId 返回错误', noNodeIdRes.success === false, noNodeIdRes);
+   511→
+   512→  // 缺少必填字段 unitId
+   513→  const noUnitIdRes = await POST('/editRole', {
+   514→    spaceNodeId: CONFIG.spaceNodeId,
+   515→    role: 'reader',
+   516→  });
+   517→  assert('缺少 unitId 返回错误', noUnitIdRes.success === false, noUnitIdRes);
+   518→
+   519→  // 缺少必填字段 role
+   520→  const noRoleRes = await POST('/editRole', {
+   521→    spaceNodeId: CONFIG.spaceNodeId,
+   522→    unitId: '1',
+   523→  });
+   524→  assert('缺少 role 返回错误', noRoleRes.success === false, noRoleRes);
+   525→
+   526→  // 设置为相同角色（幂等性）
+   527→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=1`);
+   528→  if (members.data?.records?.length > 0) {
+   529→    const m = members.data.records[0];
+   530→    const sameRoleRes = await POST('/editRole', {
+   531→      spaceNodeId: CONFIG.spaceNodeId,
+   532→      unitId: m.unitId,
+   533→      role: m.role,
+   534→    });
+   535→    assert('设置相同角色不报错', sameRoleRes.success === true, sameRoleRes);
+   536→    // 验证角色没变
+   537→    const after = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=1`);
+   538→    const found = after.data?.records?.find(r => r.unitId === m.unitId);
+   539→    assert('设置相同角色后值不变', found?.role === m.role, { expected: m.role, actual: found?.role });
+   540→  }
+   541→}
+   542→
+   543→async function testMemberRolesPagination() {
+   544→  console.log('\n👥 16. listMemberRoles - 分页边界');
+   545→
+   546→  const all = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+   547→  if (all.data?.total > 0) {
+   548→    // pageSize=1 分页
+   549→    const p1 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=1`);
+   550→    assert('listMemberRoles pageSize=1 最多1条', p1.data?.records?.length <= 1, p1.data?.records?.length);
+   551→
+   552→    if (all.data.total > 1) {
+   553→      const p2 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=2&pageSize=1`);
+   554→      assert('listMemberRoles 第2页有数据', p2.success && p2.data?.records?.length > 0, p2.data?.records?.length);
+   555→      // 不重复
+   556→      if (p1.data?.records?.length > 0 && p2.data?.records?.length > 0) {
+   557→        assert('listMemberRoles 两页 unitId 不重复',
+   558→          p1.data.records[0].unitId !== p2.data.records[0].unitId,
+   559→          { p1: p1.data.records[0].unitId, p2: p2.data.records[0].unitId });
+   560→      }
+   561→    }
+   562→
+   563→    // total 一致性
+   564→    if (all.data.total <= 100) {
+   565→      assert('listMemberRoles total 与 records.length 一致',
+   566→        all.data.records.length === all.data.total,
+   567→        { total: all.data.total, length: all.data.records.length });
+   568→    }
+   569→  } else {
+   570→    console.log('  ⚠️  无成员数据，跳过分页测试');
+   571→  }
+   572→}
+   573→
+   574→async function testMemberSearchEdgeCases() {
+   575→  console.log('\n🔎 17. listMemberRoles - 搜索边界');
+   576→
+   577→  const all = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+   578→  if (!all.data?.records?.length) {
+   579→    console.log('  ⚠️  无成员数据，跳过搜索测试');
+   580→    return;
+   581→  }
+   582→
+   583→  // 用 nickName 搜索（如果有）
+   584→  const withNickName = all.data.records.find(r => r.nickName);
+   585→  if (withNickName) {
+   586→    const res = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=${encodeURIComponent(withNickName.nickName)}&pageNo=1&pageSize=20`);
+   587→    assert(`搜索 nickName "${withNickName.nickName}" 有结果`, res.success && res.data?.records?.length > 0, res.data?.total);
+   588→  }
+   589→
+   590→  // 部分匹配：取名字的第一个字搜索
+   591→  const firstName = all.data.records[0].unitName;
+   592→  if (firstName && firstName.length > 1) {
+   593→    const partialName = firstName.substring(0, 1);
+   594→    const partialRes = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=${encodeURIComponent(partialName)}&pageNo=1&pageSize=20`);
+   595→    assert(`部分匹配"${partialName}"有结果`, partialRes.success && partialRes.data?.records?.length > 0, partialRes.data?.total);
+   596→    // 所有结果 unitName 或 nickName 包含关键词
+   597→    const allContain = partialRes.data.records.every(r =>
+   598→      (r.unitName && r.unitName.includes(partialName)) ||
+   599→      (r.nickName && r.nickName.includes(partialName))
+   600→    );
+   601→    assert('部分匹配结果都包含关键词', allContain, partialRes.data.records.map(r => r.unitName));
+   602→  }
+   603→
+   604→  // 搜索 + 分页联合
+   605→  if (all.data.total > 1) {
+   606→    const searchAll = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=&pageNo=1&pageSize=1`);
+   607→    assert('搜索+分页 pageSize=1 最多返回1条', searchAll.data?.records?.length <= 1, searchAll.data?.records?.length);
+   608→  }
+   609→}
+   610→
+   611→async function testTeamSearchEdgeCases() {
+   612→  console.log('\n🔎 18. listTeamRoles - 搜索边界');
+   613→
+   614→  const all = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+   615→  if (!all.data?.records?.length) {
+   616→    console.log('  ⚠️  无小组数据，跳过搜索测试');
+   617→    return;
+   618→  }
+   619→
+   620→  // 大小写不敏感搜索
+   621→  const teamName = all.data.records[0].teamName;
+   622→  if (teamName && /[a-zA-Z]/.test(teamName)) {
+   623→    const upper = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(teamName.toUpperCase())}&pageNo=1&pageSize=20`);
+   624→    const lower = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(teamName.toLowerCase())}&pageNo=1&pageSize=20`);
+   625→    assert('搜索大小写不敏感', upper.data?.total === lower.data?.total,
+   626→      { upper: upper.data?.total, lower: lower.data?.total });
+   627→  }
+   628→
+   629→  // 部分匹配
+   630→  if (teamName && teamName.length > 2) {
+   631→    const partial = teamName.substring(0, 2);
+   632→    const partialRes = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(partial)}&pageNo=1&pageSize=100`);
+   633→    assert(`小组部分匹配"${partial}"有结果`, partialRes.success && partialRes.data?.records?.length > 0, partialRes.data?.total);
+   634→  }
+   635→
+   636→  // 搜索 + 分页：总数应一致
+   637→  if (all.data.records.length > 0) {
+   638→    const kw = all.data.records[0].teamName;
+   639→    const s1 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(kw)}&pageNo=1&pageSize=1`);
+   640→    const s2 = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(kw)}&pageNo=1&pageSize=100`);
+   641→    assert('搜索不同 pageSize 下 total 一致', s1.data?.total === s2.data?.total,
+   642→      { size1: s1.data?.total, size100: s2.data?.total });
+   643→  }
+   644→}
+   645→
+   646→async function testResponseStructureConsistency() {
+   647→  console.log('\n📦 19. 响应结构一致性');
+   648→
+   649→  // 所有三个列表接口都应返回 pageNum/pageSize/total/records
+   650→  const endpoints = [
+   651→    { name: 'listTeamRoles', path: `/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=5` },
+   652→    { name: 'listMemberRoles', path: `/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=5` },
+   653→    { name: 'permissionLogs', path: `/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=5` },
+   654→  ];
+   655→
+   656→  for (const ep of endpoints) {
+   657→    const res = await GET(ep.path);
+   658→    assert(`${ep.name} 含 pageNum`, typeof res.data?.pageNum === 'number', res.data?.pageNum);
+   659→    assert(`${ep.name} 含 pageSize`, typeof res.data?.pageSize === 'number', res.data?.pageSize);
+   660→    assert(`${ep.name} pageSize 与请求一致`, res.data?.pageSize === 5, res.data?.pageSize);
+   661→    assert(`${ep.name} 含 total (number)`, typeof res.data?.total === 'number', res.data?.total);
+   662→    assert(`${ep.name} 含 records (array)`, Array.isArray(res.data?.records), res.data?.records);
+   663→    assert(`${ep.name} records.length <= pageSize`, res.data?.records?.length <= 5, res.data?.records?.length);
+   664→  }
+   665→}
+   666→
+   667→async function testConcurrentRequests() {
+   668→  console.log('\n🔀 20. 并发请求');
+   669→
+   670→  // 同时发 5 个请求，确保都能正常返回
+   671→  const promises = [
+   672→    GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=5`),
+   673→    GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=5`),
+   674→    GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=5`),
+   675→    GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=test&pageNo=1&pageSize=5`),
+   676→    GET(`/${CONFIG.spaceNodeId}/listMemberRoles?keyword=test&pageNo=1&pageSize=5`),
+   677→  ];
+   678→
+   679→  const results = await Promise.all(promises);
+   680→  let allSuccess = true;
+   681→  for (let i = 0; i < results.length; i++) {
+   682→    if (results[i].success !== true) {
+   683→      allSuccess = false;
+   684→      break;
+   685→    }
+   686→  }
+   687→  assert('5个并发请求都返回成功', allSuccess, results.map(r => r.success));
+   688→}
+   689→
+   690→async function testSqlInjection() {
+   691→  console.log('\n🛡️ 21. SQL 注入防护');
+   692→
+   693→  const injections = [
+   694→    "' OR 1=1 --",
+   695→    "1; DROP TABLE collabspace_node_permission_log;",
+   696→    "' UNION SELECT * FROM collabspace_node_permission_log --",
+   697→    "1' AND '1'='1",
+   698→    "admin'/*",
+   699→  ];
+   700→
+   701→  for (const payload of injections) {
+   702→    const res = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?keyword=${encodeURIComponent(payload)}&pageNo=1&pageSize=20`);
+   703→    assert(`注入 "${payload.slice(0, 20)}..." 不报错`, res.success === true, res);
+   704→  }
+   705→
+   706→  // permissionLogs 也测
+   707→  for (const payload of injections) {
+   708→    const res = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?keyword=${encodeURIComponent(payload)}&pageNo=1&pageSize=20`);
+   709→    assert(`日志注入 "${payload.slice(0, 20)}..." 不报错`, res.success === true, res);
+   710→  }
+   711→}
+   712→
+   713→async function testEditRoleAllRoleValues() {
+   714→  console.log('\n🔄 22. editRole - 三种角色切换');
+   715→
+   716→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=1`);
+   717→  if (!members.data?.records?.length) {
+   718→    console.log('  ⚠️  无成员数据，跳过角色切换测试');
+   719→    return;
+   720→  }
+   721→
+   722→  const m = members.data.records[0];
+   723→  const originalRole = m.role;
+   724→  const roles = ['reader', 'editor', 'manager'];
+   725→  const otherRoles = roles.filter(r => r !== originalRole);
+   726→
+   727→  // 依次切换到其他两种角色，再切回来
+   728→  for (const targetRole of otherRoles) {
+   729→    const res = await POST('/editRole', {
+   730→      spaceNodeId: CONFIG.spaceNodeId,
+   731→      unitId: m.unitId,
+   732→      role: targetRole,
+   733→    });
+   734→    assert(`切换到 ${targetRole} 成功`, res.success === true, res);
+   735→
+   736→    // 验证生效
+   737→    const check = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   738→    const updated = check.data?.records?.find(r => r.unitId === m.unitId);
+   739→    assert(`验证角色变为 ${targetRole}`, updated?.role === targetRole, updated?.role);
+   740→  }
+   741→
+   742→  // 还原
+   743→  const restoreRes = await POST('/editRole', {
+   744→    spaceNodeId: CONFIG.spaceNodeId,
+   745→    unitId: m.unitId,
+   746→    role: originalRole,
+   747→  });
+   748→  assert(`还原为 ${originalRole}`, restoreRes.success === true, restoreRes);
+   749→}
+   750→
+   751→// ========== 多账号测试 ==========
+   752→
+   753→/** 保存/恢复登录态 */
+   754→let savedSessions = {};
+   755→
+   756→function saveSession(name) {
+   757→  savedSessions[name] = { cookie, xsrfToken };
+   758→}
+   759→
+   760→function restoreSession(name) {
+   761→  const s = savedSessions[name];
+   762→  cookie = s.cookie;
+   763→  xsrfToken = s.xsrfToken;
+   764→}
+   765→
+   766→async function loginAs(email) {
+   767→  const res = await fetch(`${CONFIG.host}/api/v1/testLogin/${email}`, { redirect: 'manual' });
+   768→  const cookies = parseCookies(res);
+   769→  if (!cookies.SESSION) {
+   770→    console.log(`  ⚠️  登录 ${email} 失败，跳过`);
+   771→    return false;
+   772→  }
+   773→  xsrfToken = cookies['XSRF-TOKEN'] || '';
+   774→  cookie = `SESSION=${cookies.SESSION}; XSRF-TOKEN=${xsrfToken}`;
+   775→  return true;
+   776→}
+   777→
+   778→async function testMultiAccountReadPermission() {
+   779→  console.log('\n👤👤 23. 多账号 - 非管理员可读权限');
+   780→
+   781→  // 保存管理员 session
+   782→  saveSession('admin');
+   783→
+   784→  // 登录普通用户 ttt2
+   785→  const ok = await loginAs('ttt2@yottastudios.com');
+   786→  if (!ok) return;
+   787→  console.log('  ℹ️  已切换到 ttt2@yottastudios.com');
+   788→
+   789→  // 非管理员应该能读取列表
+   790→  const teams = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+   791→  assert('非管理员可读 listTeamRoles', teams.success === true, teams);
+   792→
+   793→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   794→  assert('非管理员可读 listMemberRoles', members.success === true, members);
+   795→
+   796→  const logs = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+   797→  assert('非管理员可读 permissionLogs', logs.success === true, logs);
+   798→
+   799→  // 恢复管理员 session
+   800→  restoreSession('admin');
+   801→}
+   802→
+   803→async function testMultiAccountWritePermission() {
+   804→  console.log('\n🚫👤 24. 多账号 - 非管理员不可编辑权限');
+   805→
+   806→  saveSession('admin');
+   807→
+   808→  const ok = await loginAs('ttt2@yottastudios.com');
+   809→  if (!ok) return;
+   810→  console.log('  ℹ️  已切换到 ttt2@yottastudios.com');
+   811→
+   812→  // 先查一个成员的 unitId
+   813→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=1`);
+   814→  if (members.data?.records?.length > 0) {
+   815→    const unitId = members.data.records[0].unitId;
+   816→
+   817→    // 非管理员尝试 editRole 应被拒绝
+   818→    const editRes = await POST('/editRole', {
+   819→      spaceNodeId: CONFIG.spaceNodeId,
+   820→      unitId,
+   821→      role: 'reader',
+   822→    });
+   823→    assert('非管理员 editRole 被拒绝', editRes.success === false, editRes);
+   824→  } else {
+   825→    console.log('  ⚠️  无成员数据，跳过 editRole 权限测试');
+   826→  }
+   827→
+   828→  // 恢复管理员 session
+   829→  restoreSession('admin');
+   830→}
+   831→
+   832→async function testMultiAccountDataConsistency() {
+   833→  console.log('\n🔄👤 25. 多账号 - 数据一致性');
+   834→
+   835→  saveSession('admin');
+   836→
+   837→  // 管理员看到的数据
+   838→  const adminTeams = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+   839→  const adminMembers = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+   840→  const adminLogs = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=100`);
+   841→
+   842→  // 切换到另一个有管理权限的用户 翁斯坦
+   843→  const ok = await loginAs('wengsitan@yottastudios.com');
+   844→  if (!ok) {
+   845→    restoreSession('admin');
+   846→    return;
+   847→  }
+   848→  console.log('  ℹ️  已切换到 wengsitan@yottastudios.com');
+   849→
+   850→  // 另一个管理员看到的数据
+   851→  const otherTeams = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+   852→  const otherMembers = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+   853→  const otherLogs = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=100`);
+   854→
+   855→  // 验证两个用户看到的列表总数一致
+   856→  assert('两用户 listTeamRoles total 一致',
+   857→    adminTeams.data?.total === otherTeams.data?.total,
+   858→    { admin: adminTeams.data?.total, other: otherTeams.data?.total });
+   859→  assert('两用户 listMemberRoles total 一致',
+   860→    adminMembers.data?.total === otherMembers.data?.total,
+   861→    { admin: adminMembers.data?.total, other: otherMembers.data?.total });
+   862→  assert('两用户 permissionLogs total 一致',
+   863→    adminLogs.data?.total === otherLogs.data?.total,
+   864→    { admin: adminLogs.data?.total, other: otherLogs.data?.total });
+   865→
+   866→  // 恢复管理员 session
+   867→  restoreSession('admin');
+   868→}
+   869→
+   870→async function testMultiAccountOperatorLog() {
+   871→  console.log('\n📝👤 26. 多账号 - 操作人日志验证');
+   872→
+   873→  saveSession('admin');
+   874→
+   875→  // ttt2 的 unitId（通过 listRole self 获取）
+   876→  const ttt2UnitId = '2008117047041433601';
+   877→
+   878→  // 1. 管理员先确保翁斯坦是 manager（这样翁斯坦才能 editRole）
+   879→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   880→  const wst = members.data?.records?.find(r => r.unitName === '翁斯坦');
+   881→  const wstOriginalRole = wst?.role;
+   882→  if (wst && wst.role !== 'manager') {
+   883→    await POST('/editRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: wst.unitId, role: 'manager' });
+   884→    console.log(`  ℹ️  已将翁斯坦从 ${wst.role} 提升为 manager`);
+   885→  }
+   886→
+   887→  // 2. 管理员 addRole 给 ttt2 添加 reader 权限（作为操作目标）
+   888→  const addRes = await POST('/addRole', {
+   889→    spaceNodeId: CONFIG.spaceNodeId,
+   890→    unitIds: [ttt2UnitId],
+   891→    role: 'reader',
+   892→  });
+   893→  console.log(`  ℹ️  addRole ttt2: success=${addRes.success}`);
+   894→
+   895→  // 3. 管理员（靖禾）editRole 把 ttt2 改为 editor
+   896→  const edit1 = await POST('/editRole', {
+   897→    spaceNodeId: CONFIG.spaceNodeId,
+   898→    unitId: ttt2UnitId,
+   899→    role: 'editor',
+   900→  });
+   901→  assert('管理员 editRole ttt2 成功', edit1.success === true, edit1);
+   902→
+   903→  const logs1 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+   904→  if (logs1.data?.records?.length > 0) {
+   905→    assert('管理员操作日志 operatorName 为"靖禾"',
+   906→      logs1.data.records[0].operatorName === '靖禾',
+   907→      logs1.data.records[0].operatorName);
+   908→  }
+   909→
+   910→  // 4. 切换翁斯坦（节点 manager），editRole 把 ttt2 改回 reader
+   911→  const ok = await loginAs('wengsitan@yottastudios.com');
+   912→  if (ok) {
+   913→    console.log('  ℹ️  已切换到 wengsitan@yottastudios.com（节点 manager）');
+   914→
+   915→    const edit2 = await POST('/editRole', {
+   916→      spaceNodeId: CONFIG.spaceNodeId,
+   917→      unitId: ttt2UnitId,
+   918→      role: 'reader',
+   919→    });
+   920→    assert('翁斯坦 editRole ttt2 成功', edit2.success === true, edit2);
+   921→
+   922→    if (edit2.success) {
+   923→      const logs2 = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+   924→      if (logs2.data?.records?.length > 0) {
+   925→        assert('翁斯坦操作日志 operatorName 为"翁斯坦"',
+   926→          logs2.data.records[0].operatorName === '翁斯坦',
+   927→          logs2.data.records[0].operatorName);
+   928→      }
+   929→    }
+   930→  }
+   931→
+   932→  // 5. 清理：管理员恢复 session，删除 ttt2 的权限，还原翁斯坦角色
+   933→  restoreSession('admin');
+   934→
+   935→  await POST('/deleteRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: ttt2UnitId });
+   936→  console.log('  ℹ️  已删除 ttt2 权限');
+   937→
+   938→  if (wst && wstOriginalRole && wstOriginalRole !== 'manager') {
+   939→    await POST('/editRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: wst.unitId, role: wstOriginalRole });
+   940→    console.log(`  ℹ️  已还原翁斯坦为 ${wstOriginalRole}`);
+   941→  }
+   942→}
+   943→
+   944→async function testExternalMemberAccess() {
+   945→  console.log('\n🌐👤 28. 外部成员账号测试');
+   946→
+   947→  saveSession('admin');
+   948→
+   949→  // 外派成员 waipaichengyuantianjia@waipai.com
+   950→  const ok = await loginAs('waipaichengyuantianjia@waipai.com');
+   951→  if (!ok) {
+   952→    console.log('  ⚠️  外部成员登录失败，跳过');
+   953→    restoreSession('admin');
+   954→    return;
+   955→  }
+   956→  console.log('  ℹ️  已切换到 waipaichengyuantianjia@waipai.com');
+   957→
+   958→  // 外部成员读取权限列表
+   959→  const teams = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+   960→  assert('外部成员可读 listTeamRoles', teams.success === true, teams);
+   961→
+   962→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+   963→  assert('外部成员可读 listMemberRoles', members.success === true, members);
+   964→
+   965→  const logs = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+   966→  assert('外部成员可读 permissionLogs', logs.success === true, logs);
+   967→
+   968→  // 外部成员不可编辑权限
+   969→  if (members.data?.records?.length > 0) {
+   970→    const editRes = await POST('/editRole', {
+   971→      spaceNodeId: CONFIG.spaceNodeId,
+   972→      unitId: members.data.records[0].unitId,
+   973→      role: 'reader',
+   974→    });
+   975→    assert('外部成员 editRole 被拒绝', editRes.success === false, editRes);
+   976→  }
+   977→
+   978→  restoreSession('admin');
+   979→}
+   980→
+   981→async function testSystemAccountAccess() {
+   982→  console.log('\n🤖👤 29. 系统账号测试');
+   983→
+   984→  saveSession('admin');
+   985→
+   986→  // 系统账号 synctask@default.com
+   987→  const ok = await loginAs('synctask@default.com');
+   988→  if (!ok) {
+   989→    console.log('  ⚠️  系统账号登录失败，跳过');
+   990→    restoreSession('admin');
+   991→    return;
+   992→  }
+   993→  console.log('  ℹ️  已切换到 synctask@default.com');
+   994→
+   995→  // 系统账号访问
+   996→  const teams = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+   997→  assert('系统账号 listTeamRoles 不报错', teams.success !== undefined, teams);
+   998→
+   999→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  1000→  assert('系统账号 listMemberRoles 不报错', members.success !== undefined, members);
+  1001→
+  1002→  const logs = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+  1003→  assert('系统账号 permissionLogs 不报错', logs.success !== undefined, logs);
+  1004→
+  1005→  // 系统账号不应能编辑权限
+  1006→  const editRes = await POST('/editRole', {
+  1007→    spaceNodeId: CONFIG.spaceNodeId,
+  1008→    unitId: '1',
+  1009→    role: 'reader',
+  1010→  });
+  1011→  assert('系统账号 editRole 被拒绝', editRes.success === false || editRes.code !== 200, editRes);
+  1012→
+  1013→  restoreSession('admin');
+  1014→}
+  1015→
+  1016→async function testUnloggedAccess() {
+  1017→  console.log('\n🔒👤 27. 未登录访问');
+  1018→
+  1019→  saveSession('admin');
+  1020→
+  1021→  // 清除登录态
+  1022→  cookie = '';
+  1023→  xsrfToken = '';
+  1024→
+  1025→  // GET 接口 @GetResource 没有 externalOnly=true，HTTP 层不拦截，但业务层可能报错
+  1026→  const res1 = await rawFetch('GET', `${CONFIG.host}/api/v1/node/role/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=20`);
+  1027→  assert('未登录 listTeamRoles HTTP不报500', res1.status !== 500, res1.status);
+  1028→
+  1029→  const res2 = await rawFetch('GET', `${CONFIG.host}/api/v1/node/role/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  1030→  assert('未登录 listMemberRoles HTTP不报500', res2.status !== 500, res2.status);
+  1031→
+  1032→  const res3 = await rawFetch('GET', `${CONFIG.host}/api/v1/node/role/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=20`);
+  1033→  assert('未登录 permissionLogs HTTP不报500', res3.status !== 500, res3.status);
+  1034→
+  1035→  // POST 写操作必须登录
+  1036→  const res4 = await rawFetch('POST', `${CONFIG.host}/api/v1/node/role/editRole`,
+  1037→    { spaceNodeId: CONFIG.spaceNodeId, unitId: '1', role: 'reader' });
+  1038→  assert('未登录 editRole 返回非200', res4.status !== 200, res4.status);
+  1039→
+  1040→  // 恢复管理员 session
+  1041→  restoreSession('admin');
+  1042→}
+  1043→
+  1044→// ========== 新增：找 bug 用例 ==========
+  1045→
+  1046→async function testAddRoleFull() {
+  1047→  console.log('\n➕ 30. addRole - 完整流程');
+  1048→
+  1049→  // 找一个目前没有权限的成员来测试 addRole
+  1050→  // 用 ttt2 的 unitId
+  1051→  const ttt2UnitId = '2008117047041433601';
+  1052→
+  1053→  // 先确保 ttt2 没有权限（deleteRole 清理）
+  1054→  await POST('/deleteRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: ttt2UnitId });
+  1055→
+  1056→  // 验证 ttt2 不在成员权限列表中
+  1057→  const before = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1058→  const beforeHasTtt2 = before.data?.records?.some(r => r.unitId?.toString() === ttt2UnitId);
+  1059→  // ttt2 可能不在列表中（已被 delete），这是正常的
+  1060→  console.log(`  ℹ️  addRole 前 ttt2 在列表中: ${beforeHasTtt2}`);
+  1061→
+  1062→  // addRole 给 ttt2 添加 reader 权限
+  1063→  const addRes = await POST('/addRole', {
+  1064→    spaceNodeId: CONFIG.spaceNodeId,
+  1065→    unitIds: [ttt2UnitId],
+  1066→    role: 'reader',
+  1067→  });
+  1068→  assert('addRole 返回 success', addRes.success === true, addRes);
+  1069→
+  1070→  // 验证 ttt2 出现在成员权限列表中
+  1071→  const after = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1072→  const ttt2After = after.data?.records?.find(r => r.unitId?.toString() === ttt2UnitId);
+  1073→  assert('addRole 后 ttt2 在列表中', ttt2After != null, after.data?.records?.map(r => r.unitId));
+  1074→  if (ttt2After) {
+  1075→    assert('addRole 后 ttt2 角色为 reader', ttt2After.role === 'reader', ttt2After.role);
+  1076→  }
+  1077→
+  1078→  // 验证日志
+  1079→  const logs = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+  1080→  assert('addRole 产生了日志', logs.data?.records?.length > 0, logs.data?.total);
+  1081→
+  1082→  // 清理：删除 ttt2 权限
+  1083→  await POST('/deleteRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: ttt2UnitId });
+  1084→  console.log('  ℹ️  已清理 ttt2 权限');
+  1085→}
+  1086→
+  1087→async function testDeleteRoleFull() {
+  1088→  console.log('\n🗑️ 31. deleteRole - 完整流程');
+  1089→
+  1090→  const ttt2UnitId = '2008117047041433601';
+  1091→
+  1092→  // 先 addRole
+  1093→  await POST('/addRole', {
+  1094→    spaceNodeId: CONFIG.spaceNodeId,
+  1095→    unitIds: [ttt2UnitId],
+  1096→    role: 'editor',
+  1097→  });
+  1098→
+  1099→  // 记录日志数量
+  1100→  const logsBefore = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+  1101→  const totalBefore = logsBefore.data?.total || 0;
+  1102→
+  1103→  // deleteRole
+  1104→  const delRes = await POST('/deleteRole', {
+  1105→    spaceNodeId: CONFIG.spaceNodeId,
+  1106→    unitId: ttt2UnitId,
+  1107→  });
+  1108→  assert('deleteRole 返回 success', delRes.success === true, delRes);
+  1109→
+  1110→  // 验证 ttt2 已不在列表中
+  1111→  const after = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1112→  const ttt2After = after.data?.records?.find(r => r.unitId?.toString() === ttt2UnitId);
+  1113→  assert('deleteRole 后 ttt2 不在列表中', ttt2After == null, ttt2After);
+  1114→
+  1115→  // 验证日志产生
+  1116→  const logsAfter = await GET(`/${CONFIG.spaceNodeId}/permissionLogs?pageNo=1&pageSize=1`);
+  1117→  assert('deleteRole 产生了日志', (logsAfter.data?.total || 0) > totalBefore, logsAfter.data?.total);
+  1118→
+  1119→  // 验证日志内容含"移除"
+  1120→  if (logsAfter.data?.records?.length > 0) {
+  1121→    const latest = logsAfter.data.records[0];
+  1122→    assert('deleteRole 日志 newRoleDisplay 为"移除所有权限"',
+  1123→      latest.newRoleDisplay === '移除所有权限', latest.newRoleDisplay);
+  1124→  }
+  1125→}
+  1126→
+  1127→async function testBatchEditRole() {
+  1128→  console.log('\n📦 32. batchEditRole - 批量编辑');
+  1129→
+  1130→  const ttt2UnitId = '2008117047041433601';
+  1131→  const wstUnitId = '2008109689078784002';
+  1132→
+  1133→  // 先 addRole 确保两个用户都有权限
+  1134→  await POST('/addRole', {
+  1135→    spaceNodeId: CONFIG.spaceNodeId,
+  1136→    unitIds: [ttt2UnitId],
+  1137→    role: 'reader',
+  1138→  });
+  1139→
+  1140→  // 确保翁斯坦也有权限
+  1141→  const members = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1142→  const wst = members.data?.records?.find(r => r.unitId?.toString() === wstUnitId);
+  1143→  if (!wst) {
+  1144→    await POST('/addRole', {
+  1145→      spaceNodeId: CONFIG.spaceNodeId,
+  1146→      unitIds: [wstUnitId],
+  1147→      role: 'reader',
+  1148→    });
+  1149→  }
+  1150→  const wstOriginalRole = wst?.role || 'reader';
+  1151→
+  1152→  // batchEditRole：同时把两个用户改为 editor
+  1153→  const batchRes = await POST('/batchEditRole', {
+  1154→    spaceNodeId: CONFIG.spaceNodeId,
+  1155→    unitIds: [ttt2UnitId, wstUnitId],
+  1156→    role: 'editor',
+  1157→  });
+  1158→  assert('batchEditRole 返回 success', batchRes.success === true, batchRes);
+  1159→  assert('batchEditRole 含 hasConflict', typeof batchRes.data?.hasConflict === 'boolean', batchRes.data);
+  1160→
+  1161→  // 验证两个用户都变成了 editor
+  1162→  const afterMembers = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1163→  const ttt2After = afterMembers.data?.records?.find(r => r.unitId?.toString() === ttt2UnitId);
+  1164→  const wstAfter = afterMembers.data?.records?.find(r => r.unitId?.toString() === wstUnitId);
+  1165→  assert('batchEditRole 后 ttt2 为 editor', ttt2After?.role === 'editor', ttt2After?.role);
+  1166→  assert('batchEditRole 后 翁斯坦 为 editor', wstAfter?.role === 'editor', wstAfter?.role);
+  1167→
+  1168→  // 还原
+  1169→  await POST('/deleteRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: ttt2UnitId });
+  1170→  await POST('/editRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: wstUnitId, role: wstOriginalRole });
+  1171→  console.log('  ℹ️  已还原');
+  1172→}
+  1173→
+  1174→async function testBatchDeleteRole() {
+  1175→  console.log('\n🗑️📦 33. batchDeleteRole - 批量删除');
+  1176→
+  1177→  const ttt2UnitId = '2008117047041433601';
+  1178→
+  1179→  // 先 addRole
+  1180→  await POST('/addRole', {
+  1181→    spaceNodeId: CONFIG.spaceNodeId,
+  1182→    unitIds: [ttt2UnitId],
+  1183→    role: 'reader',
+  1184→  });
+  1185→
+  1186→  // 确认 ttt2 在列表中
+  1187→  const before = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1188→  const ttt2Before = before.data?.records?.find(r => r.unitId?.toString() === ttt2UnitId);
+  1189→  assert('batchDeleteRole 前 ttt2 在列表中', ttt2Before != null, ttt2Before);
+  1190→
+  1191→  // batchDeleteRole
+  1192→  const batchDelRes = await POST('/batchDeleteRole', {
+  1193→    spaceNodeId: CONFIG.spaceNodeId,
+  1194→    unitIds: [ttt2UnitId],
+  1195→  });
+  1196→  assert('batchDeleteRole 返回 success', batchDelRes.success === true, batchDelRes);
+  1197→
+  1198→  // 验证 ttt2 已移除
+  1199→  const after = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1200→  const ttt2After = after.data?.records?.find(r => r.unitId?.toString() === ttt2UnitId);
+  1201→  assert('batchDeleteRole 后 ttt2 不在列表中', ttt2After == null, ttt2After);
+  1202→}
+  1203→
+  1204→async function testDuplicateControlRoleBug() {
+  1205→  console.log('\n🐛 34. 【BUG验证】addRole 重复调用是否产生重复记录');
+  1206→
+  1207→  const ttt2UnitId = '2008117047041433601';
+  1208→
+  1209→  // 先清理
+  1210→  await POST('/deleteRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: ttt2UnitId });
+  1211→
+  1212→  // 第一次 addRole
+  1213→  await POST('/addRole', {
+  1214→    spaceNodeId: CONFIG.spaceNodeId,
+  1215→    unitIds: [ttt2UnitId],
+  1216→    role: 'reader',
+  1217→  });
+  1218→
+  1219→  // 查 listMemberRoles 确认 ttt2 只出现一次
+  1220→  const after1 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1221→  const ttt2Count1 = after1.data?.records?.filter(r => r.unitId?.toString() === ttt2UnitId).length;
+  1222→  assert('第1次 addRole 后 ttt2 只出现1次', ttt2Count1 === 1, ttt2Count1);
+  1223→
+  1224→  // 第二次 addRole（重复添加同一个 unitId）
+  1225→  await POST('/addRole', {
+  1226→    spaceNodeId: CONFIG.spaceNodeId,
+  1227→    unitIds: [ttt2UnitId],
+  1228→    role: 'editor',
+  1229→  });
+  1230→
+  1231→  // 查 listMemberRoles 确认 ttt2 仍然只出现一次
+  1232→  const after2 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1233→  const ttt2Count2 = after2.data?.records?.filter(r => r.unitId?.toString() === ttt2UnitId).length;
+  1234→  assert('【重复 addRole】ttt2 仍只出现1次（不应有重复记录）', ttt2Count2 === 1, ttt2Count2);
+  1235→
+  1236→  // 验证角色是否正确更新为 editor（而不是还是 reader）
+  1237→  const ttt2AfterDup = after2.data?.records?.find(r => r.unitId?.toString() === ttt2UnitId);
+  1238→  assert('重复 addRole 后角色更新为 editor', ttt2AfterDup?.role === 'editor', ttt2AfterDup?.role);
+  1239→
+  1240→  // 第三次 editRole 再改一次
+  1241→  await POST('/editRole', {
+  1242→    spaceNodeId: CONFIG.spaceNodeId,
+  1243→    unitId: ttt2UnitId,
+  1244→    role: 'manager',
+  1245→  });
+  1246→
+  1247→  const after3 = await GET(`/${CONFIG.spaceNodeId}/listMemberRoles?pageNo=1&pageSize=100`);
+  1248→  const ttt2Count3 = after3.data?.records?.filter(r => r.unitId?.toString() === ttt2UnitId).length;
+  1249→  assert('editRole 后 ttt2 仍只出现1次', ttt2Count3 === 1, ttt2Count3);
+  1250→
+  1251→  // 清理
+  1252→  await POST('/deleteRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: ttt2UnitId });
+  1253→  console.log('  ℹ️  已清理');
+  1254→}
+  1255→
+  1256→async function testEditRoleOnTeamUnit() {
+  1257→  console.log('\n🏢 35. editRole 对小组 unitId（冲突检测应不触发）');
+  1258→
+  1259→  // 获取小组列表，找一个有 unitId 的小组
+  1260→  const teams = await GET(`/${CONFIG.spaceNodeId}/listTeamRoles?pageNo=1&pageSize=100`);
+  1261→  const teamWithUnit = teams.data?.records?.find(r => r.unitId != null);
+  1262→
+  1263→  if (!teamWithUnit) {
+  1264→    console.log('  ⚠️  无小组有 unitId，跳过');
+  1265→    return;
+  1266→  }
+  1267→
+  1268→  console.log(`  ℹ️  测试小组: ${teamWithUnit.teamName} (unitId: ${teamWithUnit.unitId})`);
+  1269→  const originalRole = teamWithUnit.role;
+  1270→
+  1271→  // editRole 对小组
+  1272→  const newRole = originalRole === 'editor' ? 'reader' : 'editor';
+  1273→  const editRes = await POST('/editRole', {
+  1274→    spaceNodeId: CONFIG.spaceNodeId,
+  1275→    unitId: teamWithUnit.unitId.toString(),
+  1276→    role: newRole,
+  1277→  });
+  1278→  assert('editRole 小组返回 success', editRes.success === true, editRes);
+  1279→  assert('editRole 小组 hasConflict 应为 false', editRes.data?.hasConflict === false, editRes.data);
+  1280→
+  1281→  // 还原
+  1282→  if (originalRole) {
+  1283→    await POST('/editRole', {
+  1284→      spaceNodeId: CONFIG.spaceNodeId,
+  1285→      unitId: teamWithUnit.unitId.toString(),
+  1286→      role: originalRole,
+  1287→    });
+  1288→  } else {
+  1289→    await POST('/deleteRole', {
+  1290→      spaceNodeId: CONFIG.spaceNodeId,
+  1291→      unitId: teamWithUnit.unitId.toString(),
+  1292→    });
+  1293→  }
+  1294→  console.log(`  ℹ️  已还原小组 ${teamWithUnit.teamName}`);
+  1295→}
+  1296→
+  1297→async function testListMemberRolesNoInheritance() {
+  1298→  console.log('\n🔗 36. listMemberRoles 不包含继承权限验证');
+  1299→
+  1300→  // listTeamRoles 考虑继承，listMemberRoles 只查本节点
+  1301→  // 如果节点没有自己的 control，listMemberRoles 应返回空
+  1302→  // 用一个不存在但合法的节点 ID
+  1303→  const fakeNodeId = '1';
+  1304→  const res = await GET(`/${fakeNodeId}/listMemberRoles?pageNo=1&pageSize=20`);
+  1305→  assert('不存在节点 listMemberRoles 返回 success', res.success === true, res);
+  1306→  assert('不存在节点 listMemberRoles records 为空', res.data?.records?.length === 0, res.data?.records?.length);
+  1307→  assert('不存在节点 listMemberRoles total 为 0', res.data?.total === 0, res.data?.total);
+  1308→}
+  1309→
+  1310→async function testAddRoleWithInvalidRole() {
+  1311→  console.log('\n❌ 37. addRole/deleteRole 参数校验');
+  1312→
+  1313→  const ttt2UnitId = '2008117047041433601';
+  1314→
+  1315→  // addRole 无效 role
+  1316→  const r1 = await POST('/addRole', {
+  1317→    spaceNodeId: CONFIG.spaceNodeId,
+  1318→    unitIds: [ttt2UnitId],
+  1319→    role: 'superadmin',
+  1320→  });
+  1321→  assert('addRole 无效 role 不报错', r1.success !== undefined, r1);
+  1322→  // 清理：删除 superadmin 角色的脏数据（无论 addRole 是否成功都尝试清理）
+  1323→  await POST('/deleteRole', { spaceNodeId: CONFIG.spaceNodeId, unitId: ttt2UnitId });
+  1324→
+  1325→  // addRole 空 unitIds
+  1326→  const r2 = await POST('/addRole', {
+  1327→    spaceNodeId: CONFIG.spaceNodeId,
+  1328→    unitIds: [],
+  1329→    role: 'reader',
+  1330→  });
+  1331→  assert('addRole 空 unitIds 应返回错误', r2.success === false, r2);
+  1332→
+  1333→  // addRole 缺少 spaceNodeId
+  1334→  const r3 = await POST('/addRole', {
+  1335→    unitIds: [ttt2UnitId],
+  1336→    role: 'reader',
+  1337→  });
+  1338→  assert('addRole 缺少 spaceNodeId 返回错误', r3.success === false, r3);
+  1339→
+  1340→  // deleteRole 不存在的 unitId
+  1341→  const r4 = await POST('/deleteRole', {
+  1342→    spaceNodeId: CONFIG.spaceNodeId,
+  1343→    unitId: '1',
+  1344→  });
+  1345→  assert('deleteRole 不存在 unitId 返回错误', r4.success === false, r4);
+  1346→
+  1347→  // batchDeleteRole 空列表
+  1348→  const r5 = await POST('/batchDeleteRole', {
+  1349→    spaceNodeId: CONFIG.spaceNodeId,
+  1350→    unitIds: [],
+  1351→  });
+  1352→  assert('batchDeleteRole 空 unitIds 应返回错误', r5.success === false, r5);
+  1353→}
+  1354→
+  1355→// ========== 执行 ==========
+  1356→async function main() {
+  1357→  console.log('🚀 文档设置权限功能优化 - 接口测试');
+  1358→  console.log(`   环境: ${CONFIG.host}`);
+  1359→  console.log(`   空间: ${CONFIG.spaceId}`);
+  1360→  console.log(`   节点: ${CONFIG.spaceNodeId}\n`);
+  1361→
+  1362→  try {
+  1363→    await login();
+  1364→    await testListTeamRoles();
+  1365→    await testListTeamRolesSearch();
+  1366→    await testListTeamRolesPagination();
+  1367→    await testListMemberRoles();
+  1368→    await testPermissionLogs();
+  1369→    await testEditRoleAndLog();
+  1370→    await testPermissionLogSearch();
+  1371→    await testParamValidation();
+  1372→    await testNoPermissionNode();
+  1373→    await testPaginationBoundary();
+  1374→    await testParamValidationExtended();
+  1375→    await testSearchEdgeCases();
+  1376→    await testPermissionLogSearchChinese();
+  1377→    await testPermissionLogsPagination();
+  1378→    await testEditRoleBoundary();
+  1379→    await testMemberRolesPagination();
+  1380→    await testMemberSearchEdgeCases();
+  1381→    await testTeamSearchEdgeCases();
+  1382→    await testResponseStructureConsistency();
+  1383→    await testConcurrentRequests();
+  1384→    await testSqlInjection();
+  1385→    await testEditRoleAllRoleValues();
+  1386→    await testMultiAccountReadPermission();
+  1387→    await testMultiAccountWritePermission();
+  1388→    await testMultiAccountDataConsistency();
+  1389→    await testMultiAccountOperatorLog();
+  1390→    await testUnloggedAccess();
+  1391→    await testExternalMemberAccess();
+  1392→    await testSystemAccountAccess();
+  1393→    await testAddRoleFull();
+  1394→    await testDeleteRoleFull();
+  1395→    await testBatchEditRole();
+  1396→    await testBatchDeleteRole();
+  1397→    await testDuplicateControlRoleBug();
+  1398→    await testEditRoleOnTeamUnit();
+  1399→    await testListMemberRolesNoInheritance();
+  1400→    await testAddRoleWithInvalidRole();
+  1401→  } catch (e) {
+  1402→    if (e.cause?.code === 'ECONNREFUSED') {
+  1403→      console.log('\n❌ 无法连接测试环境，请检查网络');
+  1404→    } else {
+  1405→      console.log(`\n❌ 异常: ${e.stack || e.message}`);
+  1406→    }
+  1407→    process.exit(1);
+  1408→  }
+  1409→
+  1410→  console.log(`\n=============================`);
+  1411→  console.log(`✅ 通过: ${passed}  ❌ 失败: ${failed}  📊 总计: ${passed + failed}`);
+  1412→  console.log(`=============================`);
+  1413→  process.exit(failed > 0 ? 1 : 0);
+  1414→}
+  1415→
+  1416→main();
+  1417→

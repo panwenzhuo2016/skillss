@@ -1,0 +1,398 @@
+/**
+ * 批量造测试数据：用现有用户模拟 60 天日报
+ *
+ * 用法: node seed-test-data.js
+ */
+const http = require('http')
+const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+
+// ============ 配置 ============
+const BASE_CORE = 'http://oa-core.info-staging.xinyoudi.com/'
+const WEB_API = BASE_CORE + 'web-api/'
+const USER_API = BASE_CORE + 'sfuser-api/'
+const PASSWORDS = ['qwe123', '111111', '123456']
+const YANGMING_NICKNAME = '阳明'
+const YANGMING_ID = 232753
+const REPORT_DAYS = 60
+const CONCURRENCY = 5
+
+const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv/KTcKXpYeV6og0QzBGo
+HMywyqqwwUnAd7tTn5+d4rw6x7uIYsL2iE27Ym4yIeU1d14rONIWAQUckzBe3FsZ
+lnMbYJuwlL7GE/EJjl48JzhbZoQKS6IfmOdQ/Ze2GsQsw0TUkxmMKLoYGg91dXww
+QUy+o2XP5sKP8pjh4uErQ8CvFjxtClSdPyyAL2z5yAAIu9wJVlqipB1Cqexqm/VF
+riH7G3/kCDcsfn4jnDq/lOF0WCcx0Jy8GcpvzAdTSfNjyQIM/T6ppGvB7kp5ERZt
+NEYMZB4t5gDBINZv/WK/TW9eR75ouuuFbrE0G5H6l4ykqiaSwo5UgKR8hhkFNkLv
+sQIDAQAB
+-----END PUBLIC KEY-----`
+
+// ============ 日报内容模板（三栏：今日/明日/近期） ============
+const TODAY_TEMPLATES = [
+    '1. 完成用户模块接口联调，修复了3个前端样式问题，包括表格列宽自适应、弹窗关闭后表单未重置、下拉框选项溢出\n2. 参加需求评审会议，讨论 v2.5 版本功能，会上对接了运营侧的3个数据看板需求，预计下周出方案\n3. Code Review 了同事的 PR，提了2个修改建议，主要涉及异常处理和接口参数校验\n4. 排查了测试环境登录偶发失败的问题，定位到是 Redis session 过期时间配置不一致\n5. 更新了用户模块的接口文档，补充了新增的4个字段说明',
+    '1. 优化了首页加载速度，从 3.2s 降到 1.8s，主要手段是图片懒加载、接口合并和组件按需加载\n2. 排查并修复了生产环境偶发的 502 问题，原因是连接池配置不当，max_connections 从 50 调整到 200\n3. 更新了部署文档，补充了新增环境变量说明和回滚步骤\n4. 接入了 Sentry 错误监控，配置了关键接口的告警规则，超过 5 次/分钟自动发送钉钉通知\n5. 和运维一起梳理了 CDN 缓存策略，静态资源命中率从 78% 提升到 95%',
+    '1. 数据库迁移脚本编写完成，已在测试环境验证，涉及3张表结构变更和历史数据回填\n2. 完成报表导出功能的后端逻辑，支持 Excel 和 PDF 两种格式，大数据量走异步队列\n3. 和产品讨论了导出格式的细节，确认了表头、排序规则和数据脱敏策略\n4. 优化了报表查询 SQL，给 report_date 和 department_id 加了联合索引，查询时间从 3.5s 降到 0.2s\n5. 编写了数据迁移的回滚脚本，确保出问题时能快速恢复到迁移前状态',
+    '1. 重构了权限管理模块，把角色和权限拆分为独立服务，定义了清晰的接口契约\n2. 编写了 20 个单元测试用例，覆盖率提升到 85%，主要覆盖了角色继承和权限交叉场景\n3. 修复了表单验证的边界条件 bug，包括空字符串、超长输入和特殊字符的处理\n4. 完成了权限缓存方案设计，使用 Redis Hash 存储用户权限树，TTL 设为 30 分钟\n5. 和前端同事对接了权限组件的接口格式，输出了详细的字段映射文档',
+    '1. 完成了移动端适配，主要页面已支持响应式，覆盖了首页、列表页、详情页和个人中心\n2. 集成了第三方支付 SDK，沙箱环境调通，支持微信支付和支付宝两种渠道\n3. 写了支付回调的处理逻辑，包括签名验证、订单状态更新和重复回调幂等处理\n4. 处理了移动端键盘弹出时页面布局错乱的问题，通过监听 resize 事件动态调整\n5. 编写了支付流程的集成测试，模拟了正常支付、超时、退款等 8 种场景',
+    '1. 完成了活动页的视觉设计稿，已发到群里收集意见，共 12 个页面状态\n2. 修改了上周 banner 的配色方案（第3版），调整了主色调饱和度和按钮对比度\n3. 整理了组件库中按钮和输入框的规范，统一了 4 种尺寸和 6 种状态的样式定义\n4. 设计了空状态和异常状态的插画，包括无数据、网络错误、权限不足等 5 种场景\n5. 和前端确认了动效方案，列表进入用 fade-in，弹窗用 scale，过渡时长统一 300ms',
+    '1. 产品原型评审，提出了 3 处交互改进建议，主要是表单校验时机和错误提示展示方式\n2. 切图并标注，输出给前端同事，共 28 个切图资源，标注了间距、字号和颜色值\n3. 研究了竞品的新版设计趋势，整理了 5 个竞品的功能对比表和 UI 风格分析报告\n4. 完成了新功能的信息架构图，梳理了 3 层导航结构和页面跳转关系\n5. 更新了设计系统的色彩规范，新增了深色模式的配色方案',
+    '1. 编写了用户注册模块的测试用例（共 45 条），覆盖了邮箱注册、手机号注册、第三方登录 3 种方式\n2. 执行回归测试，发现 2 个 P2 bug 已提单，分别是验证码过期后仍可提交和密码强度校验绕过\n3. 验证了上个版本遗留的 5 个 bug，4 个已修复，1 个待确认（涉及特定机型的兼容性问题）\n4. 补充了边界条件测试用例，包括并发注册同一邮箱、SQL 注入尝试、XSS 攻击向量等 12 条安全测试\n5. 整理了本轮测试的缺陷分布报告，按模块和严重程度分类汇总',
+    '1. 自动化测试脚本维护，修复了 3 个不稳定用例，主要原因是异步操作等待时间不够和元素定位不准确\n2. 接口测试覆盖了新增的 8 个 API，编写了正向和异向共 32 条测试用例\n3. 整理了本周测试报告，测试通过率 96.5%，剩余 3 个失败用例已定位原因并提交 bug\n4. 搭建了性能测试环境，用 JMeter 对核心接口做了基准压测，记录了 QPS 和 P99 延迟数据\n5. 优化了 CI 流水线中的测试阶段，通过并行执行将测试耗时从 12 分钟缩短到 5 分钟',
+    '1. 完成了 v2.6 版本的需求文档初稿，包含 8 个功能点和 3 个技术优化项\n2. 和客户沟通了3个定制化需求，做了可行性评估，1个可直接配置实现，2个需要开发\n3. 分析了上周的用户行为数据，DAU 环比增长 5%，新用户注册转化率提升 2.3%\n4. 完成了竞品功能对比分析，输出了差异化功能清单和优先级建议\n5. 组织了产品需求评审会，邀请了研发和设计同事参与，会后整理了 15 条会议纪要',
+    '1. 完成了 K8s 集群的版本升级（1.28 → 1.29），灰度升级了 3 个节点确认无异常后全量推进\n2. 配置了新的监控告警规则，包括 Pod 重启次数、内存使用率和接口错误率 3 类告警\n3. 处理了凌晨的一次磁盘告警，扩容了 200G，同时清理了过期的日志文件释放了 50G 空间\n4. 优化了 Nginx Ingress 配置，调整了 worker_connections 和 keepalive_timeout 参数\n5. 编写了集群升级的操作手册和应急回滚方案，存入了运维知识库',
+    '1. 日常需求开发，完成了设置模块中3个配置项的增删改查功能\n2. bug 修复，处理了列表页分页跳转后滚动位置不对的问题\n3. 文档整理，更新了项目 README 和本地开发环境搭建指南\n4. 协助新同事熟悉项目代码结构，讲解了核心模块的业务流程\n5. 参加了技术分享会，学习了团队新引入的状态管理方案',
+    '1. 继续昨天的开发任务，完成了消息列表页的无限滚动加载和已读未读状态切换\n2. 参加了周会，汇报了本周进度和下周计划，同步了 2 个需要跨团队协作的事项\n3. 协助同事排查线上接口超时问题，最终定位到是慢查询导致连接池耗尽\n4. 整理了本周的代码提交记录，合并了 3 个 feature 分支到 develop\n5. 更新了项目依赖，升级了 2 个有安全漏洞的 npm 包',
+    '1. 需求开发中，进度约 60%，已完成数据模型设计和核心接口开发\n2. 处理了2个线上反馈，一个是导出文件名乱码，另一个是时区转换错误\n3. 编写了新增接口的单元测试，覆盖了参数校验和权限检查逻辑\n4. 优化了一个慢接口，通过增加数据库索引将响应时间从 2.1s 降到 0.3s',
+    '1. 组织了项目周会，同步了各模块进度，识别了前端联调和第三方接口对接 2 个阻塞项\n2. 更新了项目计划表，识别了 2 个风险点，分别是第三方 API 稳定性和测试环境资源不足\n3. 协调资源解决了前端人力不足的问题，从另一个项目借调了 1 名前端同事支援一周\n4. 跟进了上周遗留的 3 个待办事项，2 个已关闭，1 个延期到下周\n5. 和测试同事确认了本迭代的测试计划和验收标准，输出了测试进入和退出条件',
+]
+
+const TOMORROW_TEMPLATES = [
+    '1. 继续完善用户模块的单元测试，目标覆盖率从 85% 提到 92%\n2. 开始消息通知功能的开发，先完成数据模型和消息队列接入\n3. 整理用户模块遗留的技术债务清单，评估优化优先级',
+    '1. 继续优化其他页面性能，重点处理列表页和详情页的首屏渲染\n2. 处理遗留的 bug 列表，本周目标关闭 8 个 P2 以上的 bug\n3. 调研前端构建工具升级方案，对比 Vite 和 esbuild 的迁移成本',
+    '1. 实现异步导出 + 下载通知，前端增加导出进度条和邮件通知选项\n2. 补充导出功能的边界测试，覆盖空数据、超大数据量和特殊字符场景\n3. 编写异步导出的技术文档，说明队列配置和重试策略',
+    '1. 完成权限缓存机制，实现 Redis 缓存 + 本地二级缓存的双层方案\n2. 对接前端权限组件，完成菜单权限和按钮权限的联调\n3. 编写权限变更时的缓存失效逻辑，确保实时性和一致性',
+    '1. 支付功能联调，和前端一起走通完整的支付流程\n2. 处理异常订单的补偿逻辑，包括超时未支付自动取消和部分退款\n3. 编写支付对账脚本，每日自动核对订单和支付流水',
+    '1. 根据反馈修改活动页设计，重点调整首屏布局和 CTA 按钮位置\n2. 开始新功能的交互原型，预计完成 5 个核心页面的低保真原型\n3. 整理本轮设计评审的反馈意见，分类标注优先级',
+    '1. 完善设计规范文档，补充表格、弹窗和抽屉组件的设计规范\n2. 新模块的信息架构梳理，画出页面层级关系和数据流向图\n3. 准备下周设计评审的演示材料',
+    '1. 继续执行 v2.5 的测试，重点覆盖权限和数据导出模块\n2. 性能测试环境搭建，配置 JMeter 脚本和监控 dashboard\n3. 和开发确认本轮测试发现的 5 个 bug 的修复计划',
+    '1. 和运维沟通环境问题，推动测试环境 DNS 解析异常的修复\n2. 继续接口自动化补充，目标新增 20 条核心接口的自动化用例\n3. 梳理测试数据管理方案，搭建自动化测试的数据初始化脚本',
+    '1. 需求文档评审，邀请研发和测试同事参与，收集技术可行性反馈\n2. 竞品分析报告，重点分析 3 个竞品的最新版本功能更新\n3. 和客户确认 2 个待定需求的优先级和验收标准',
+    '1. 优化 CI/CD 流水线，增加代码质量门禁和自动化测试阶段\n2. 梳理服务器资源使用情况，输出各服务的 CPU/内存/磁盘使用趋势报告\n3. 评估容器化部署方案，对比 Docker Compose 和 K8s 的适用场景',
+    '1. 继续开发当前需求，完成列表页筛选和排序功能\n2. 补充接口参数校验和错误处理逻辑',
+    '1. 完成当前迭代的开发任务，重点是审批流程的多级审批链路\n2. 编写开发完成的功能的自测用例，确保核心路径无阻塞',
+    '1. 继续推进开发，目标完成到 80%，主要剩余联调和边界处理\n2. 整理已完成功能的接口文档，同步给前端和测试同事',
+    '1. 跟进风险项的处理进展，与第三方供应商确认接口上线时间\n2. 准备下周的迭代评审材料，整理 demo 环境和演示数据\n3. 更新项目风险登记表，标注已关闭和新增的风险项',
+]
+
+const UPCOMING_TEMPLATES = [
+    '1. 用户模块上线后的稳定性观察，重点关注登录成功率和接口响应时间\n2. 下个迭代需求梳理，和产品对齐优先级，输出排期计划\n3. 用户反馈系统的技术选型和方案设计',
+    '1. 全站性能优化专项，目标首屏加载时间控制在 1.5s 以内\n2. 监控告警完善，补充业务指标监控和自定义 dashboard\n3. 前端错误日志采集和分析平台搭建',
+    '1. 报表模块二期需求评审，重点是自定义报表和数据可视化功能\n2. 调研 BI 工具集成方案，对比 Metabase 和 Superset 的接入成本\n3. 数据仓库建设规划，梳理 ETL 流程和数据模型',
+    '1. 权限系统灰度发布，先在测试部门试运行一周后全量推开\n2. 文档补全，输出权限系统的架构设计文档和接入指南\n3. 权限审计日志功能开发，记录所有权限变更操作',
+    '1. 支付系统压测，目标 TPS 1000，P99 延迟小于 500ms\n2. 对账功能开发，支持日对账和月对账两种模式\n3. 支付渠道扩展，调研银联和 PayPal 的接入方案',
+    '1. 设计系统 2.0 规划，支持深色模式和响应式布局\n2. 组件库迁移到 Storybook，建立可交互的组件文档\n3. 设计 Token 体系搭建，统一颜色、间距和圆角变量',
+    '1. 下季度产品规划讨论，收集各部门的需求和反馈\n2. 用户调研计划制定，安排 10 个核心用户的深度访谈\n3. 产品数据分析报告，输出本季度核心指标的趋势和洞察',
+    '1. 自动化覆盖率提升到 90%，重点补充回归测试和异常场景用例\n2. 搭建测试数据工厂，实现测试数据的自动生成和清理\n3. 探索 AI 辅助测试用例生成的可行性',
+    '1. 测试流程优化方案，引入测试左移和持续测试理念\n2. 测试环境管理规范制定，解决多团队环境冲突问题\n3. 建立测试度量体系，跟踪缺陷密度和测试效率',
+    '1. v3.0 版本路线图制定，和技术负责人对齐架构升级方向\n2. 微服务拆分评估，识别适合独立部署的业务模块\n3. API 版本管理策略设计，确保向后兼容性',
+    '1. 基础设施升级计划，包括数据库主从架构和缓存集群扩容\n2. 容灾演练方案制定，覆盖数据库故障和服务宕机场景\n3. 成本优化分析，梳理各环境的资源使用率和优化空间',
+    '1. 技术债务清理，重点处理代码重复率高于 20% 的模块\n2. 依赖升级计划，更新有安全漏洞的第三方库\n3. 代码规范统一，推进 ESLint 和 Prettier 的全项目接入',
+    '1. 代码质量改进，引入 SonarQube 静态分析和代码门禁\n2. 单元测试覆盖率目标从 60% 提升到 80%\n3. 核心模块的重构计划，消除循环依赖和过长函数',
+    '1. 持续交付流程优化，实现从代码提交到生产部署的全自动化\n2. 灰度发布能力建设，支持按用户比例和地区维度灰度\n3. 回滚机制完善，确保 5 分钟内完成生产回滚',
+    '1. 团队技术分享准备，主题是微前端架构实践和踩坑经验\n2. 新人培训材料更新，补充最新的技术栈和开发规范\n3. 开源项目贡献计划，选择 2 个和业务相关的社区项目参与',
+]
+
+// 生成 HTML 表格格式的日报内容
+function buildReportHtml(today, tomorrow, upcoming) {
+    return `<table border="0" width="100%" cellpadding="0" cellspacing="0"><tbody><tr><td align="left" style="width: 110px;font-weight:600;text-align:center">今日工作内容</td><td align="left">${today.replace(/\n/g, '<br>')}</td></tr><tr><td align="left" style="width: 110px;font-weight:600;text-align:center">明日工作计划</td><td align="left">${tomorrow.replace(/\n/g, '<br>')}</td></tr><tr><td align="left" style="width: 110px;font-weight:600;text-align:center">近期工作安排</td><td align="left">${upcoming.replace(/\n/g, '<br>')}</td></tr></tbody></table>`
+}
+
+// ============ 工具函数 ============
+function rsaEncrypt(text) {
+    return crypto.publicEncrypt(
+        { key: PUBLIC_KEY, padding: crypto.constants.RSA_PKCS1_PADDING },
+        Buffer.from(text, 'utf8')
+    ).toString('base64')
+}
+
+function post(url, data, cookies = '') {
+    return new Promise((resolve, reject) => {
+        const parsed = new URL(url)
+        const body = JSON.stringify(data)
+        const options = {
+            hostname: parsed.hostname,
+            port: parsed.port || 80,
+            path: parsed.pathname,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body),
+                ...(cookies ? { Cookie: cookies } : {}),
+            },
+        }
+        const req = http.request(options, res => {
+            let raw = ''
+            res.on('data', chunk => (raw += chunk))
+            res.on('end', () => {
+                const setCookies = res.headers['set-cookie'] || []
+                try {
+                    resolve({ body: JSON.parse(raw), setCookies, status: res.statusCode })
+                } catch {
+                    resolve({ body: { raw }, setCookies, status: res.statusCode })
+                }
+            })
+        })
+        req.on('error', reject)
+        req.write(body)
+        req.end()
+    })
+}
+
+async function tryLogin(email, passwords) {
+    for (const pwd of passwords) {
+        try {
+            const encryptedPwd = rsaEncrypt(JSON.stringify({ password: pwd, time: Math.floor(Date.now() / 1000) }))
+            const res = await post(USER_API + 'sfhome/login', { email, password: encryptedPwd, sys_lang: 'zh_CN' })
+            if (String(res.body.error_code) === '0') {
+                return {
+                    cookies: res.setCookies.map(c => c.split(';')[0]).join('; '),
+                    nickname: res.body.data?.sfuser_info?.nickname || '',
+                }
+            }
+        } catch {
+            // 继续下一个密码
+        }
+    }
+    return null
+}
+
+async function parallelLimit(tasks, limit) {
+    const results = []
+    let idx = 0
+    const workers = Array(Math.min(limit, tasks.length)).fill(null).map(async () => {
+        while (idx < tasks.length) {
+            const i = idx++
+            results[i] = await tasks[i]()
+        }
+    })
+    await Promise.all(workers)
+    return results
+}
+
+function getWorkDays(days) {
+    const dates = []
+    const now = new Date()
+    let d = new Date(now)
+    while (dates.length < days) {
+        d.setDate(d.getDate() - 1)
+        const dow = d.getDay()
+        if (dow !== 0 && dow !== 6) {
+            dates.push(d.toISOString().slice(0, 10))
+        }
+    }
+    return dates
+}
+
+// 为一个用户生成日报内容（HTML 表格格式，有重复模拟真实）
+function generateReportsForUser(userIdx, dates) {
+    const reports = []
+    const offset = userIdx % TODAY_TEMPLATES.length
+    const favToday = [TODAY_TEMPLATES[offset], TODAY_TEMPLATES[(offset + 1) % TODAY_TEMPLATES.length], TODAY_TEMPLATES[(offset + 2) % TODAY_TEMPLATES.length]]
+    const favTomorrow = [TOMORROW_TEMPLATES[offset], TOMORROW_TEMPLATES[(offset + 1) % TOMORROW_TEMPLATES.length], TOMORROW_TEMPLATES[(offset + 2) % TOMORROW_TEMPLATES.length]]
+    const favUpcoming = [UPCOMING_TEMPLATES[offset], UPCOMING_TEMPLATES[(offset + 1) % UPCOMING_TEMPLATES.length], UPCOMING_TEMPLATES[(offset + 2) % UPCOMING_TEMPLATES.length]]
+
+    let lastContent = ''
+    let repeatCount = 0
+
+    for (const date of dates) {
+        if (Math.random() < 0.1) continue // 10% 缺交
+        if (lastContent && Math.random() < 0.3 && repeatCount < 3) {
+            reports.push({ date, content: lastContent }) // 30% 复制粘贴
+            repeatCount++
+            continue
+        }
+
+        const t = Math.floor(Math.random() * favToday.length)
+        const content = buildReportHtml(favToday[t], favTomorrow[t], favUpcoming[t])
+        lastContent = content
+        repeatCount = 0
+        reports.push({ date, content })
+    }
+    return reports
+}
+
+// 设置抄送人为阳明
+async function setCCToYangming(userCookies, userId) {
+    const params = {
+        cc_sfuser_id: YANGMING_ID,
+        cc_nickname: YANGMING_NICKNAME,
+        nickname: YANGMING_NICKNAME,
+        sfuser_id: userId,
+        type: 'add',
+        hash_filter: { obj: '$this', columns: ['nickname'] },
+        encrypt_config: {
+            res_type: 'sfuser',
+            obj: '$this',
+            non_encrypt_columns: ['sys_lang', 'version_info', 'cc_sfuser_id', 'nickname', 'sfuser_id', 'type'],
+        },
+        sys_lang: 'zh_CN',
+        sys_site: 'CHN',
+    }
+    // 模拟前端 handlerParams: intact_columns = 所有 key 除 decrypt_config/hash_filter/page/per_page/sys_lang
+    params.intact_columns = Object.keys(params).filter(k =>
+        !['decrypt_config', 'hash_filter', 'page', 'per_page', 'sys_lang'].includes(k)
+    )
+    const res = await post(USER_API + 'daily-report/set-cc-user', params, userCookies)
+    return String(res.body.error_code) === '0'
+}
+
+// 获取用户的汇报人列表
+async function getSuperior(userCookies) {
+    const res = await post(USER_API + 'daily-report/get-to-report-users', {
+        sys_lang: 'zh_CN',
+        sys_site: 'CHN',
+        decrypt_config: {
+            obj: '$this',
+            decrypt_columns: ['report_user', 'cc_user'],
+        },
+        intact_columns: ['decrypt_config'],
+    }, userCookies)
+    if (String(res.body.error_code) === '0') {
+        return {
+            superior: res.body.data?.report_user || [],
+            cc: res.body.data?.cc_user || [],
+        }
+    }
+    return { superior: [], cc: [] }
+}
+
+// ============ 主流程 ============
+async function main() {
+    // 1. 读取目标用户 ID 列表
+    const idFile = path.join(__dirname, '..', '11')
+    const targetIds = new Set(
+        fs.readFileSync(idFile, 'utf8').trim().split('\n')
+            .map(line => parseInt(line.trim()))
+            .filter(id => !isNaN(id))
+    )
+    console.log(`目标用户: ${targetIds.size} 个`)
+
+    // 2. 用阳明登录
+    console.log('\n>>> 阳明登录...')
+    const pwd = rsaEncrypt(JSON.stringify({ password: 'qwe123', time: Math.floor(Date.now() / 1000) }))
+    const loginRes = await post(USER_API + 'sfhome/login', { email: 'ceshi_yangming@yottastudios.com', password: pwd, sys_lang: 'zh_CN' })
+    if (String(loginRes.body.error_code) !== '0') {
+        console.error('阳明登录失败:', loginRes.body)
+        return
+    }
+    const adminCookies = loginRes.setCookies.map(c => c.split(';')[0]).join('; ')
+    console.log('阳明登录成功')
+
+    // 3. 通过 web-api/staff 获取所有用户 email
+    console.log('\n>>> 获取员工列表...')
+    const allUsers = []
+    let page = 1
+    const perPage = 100
+    while (true) {
+        const res = await post(WEB_API + 'staff', {
+            intact_columns: ['department_ids', 'statuses', 'nicknames', 'emails'],
+            decrypt_config: { obj: 'sfusers.*', decrypt_columns: ['nickname', 'email'] },
+            page,
+            per_page: perPage,
+            sys_lang: 'zh_CN',
+            sys_site: 'CHN',
+        }, adminCookies)
+
+        const sfusers = res.body.data?.sfusers || []
+        if (sfusers.length === 0) break
+        for (const u of sfusers) {
+            if (targetIds.has(u.id) && u.email) {
+                allUsers.push({ id: u.id, nickname: u.nickname, email: u.email })
+            }
+        }
+        const total = res.body.data?.total || 0
+        console.log(`  第 ${page} 页, 已匹配 ${allUsers.length}/${targetIds.size}`)
+        if (page * perPage >= total) break
+        page++
+    }
+    console.log(`匹配到 ${allUsers.length} 个目标用户`)
+
+    // 4. 逐用户：登录 → 设置CC → 获取汇报人 → 生成日报
+    const workDays = getWorkDays(REPORT_DAYS)
+    console.log(`\n>>> 开始生成日报...`)
+    console.log(`工作日范围: ${workDays[workDays.length - 1]} ~ ${workDays[0]}（共 ${workDays.length} 天）`)
+
+    let loginSuccess = 0
+    let loginFailed = 0
+    let ccSuccess = 0
+    let totalReports = 0
+    let totalFailed = 0
+    const loggedInUsers = []
+
+    const userTasks = allUsers.map((user, userIdx) => async () => {
+        // 登录
+        const loginResult = await tryLogin(user.email, PASSWORDS)
+        if (!loginResult) {
+            loginFailed++
+            if (loginFailed <= 10) console.log(`  [${user.nickname}] 登录失败，跳过`)
+            return
+        }
+        loginSuccess++
+        loggedInUsers.push({ id: user.id, nickname: user.nickname, email: user.email })
+
+        // 设置抄送人为阳明
+        const ccOk = await setCCToYangming(loginResult.cookies, user.id)
+        if (ccOk) ccSuccess++
+
+        // 获取汇报人列表（包含直接主管等）
+        const { superior, cc } = await getSuperior(loginResult.cookies)
+
+        // 生成并提交日报
+        const reports = generateReportsForUser(userIdx, workDays)
+        for (const report of reports) {
+            try {
+                const res = await post(USER_API + 'daily-report/new-daily-report', {
+                    sfuser_id: user.id,
+                    content: report.content,
+                    cc_user: cc.length ? cc : [YANGMING_NICKNAME],
+                    report_date: report.date,
+                    is_late: 1,
+                    status: 1,
+                    hash_filter: { obj: '$this', columns: ['cc_user'] },
+                    data: {
+                        nickname: user.nickname,
+                        cc: cc.length ? cc : [YANGMING_NICKNAME],
+                        superior: superior,
+                    },
+                    encrypt_config: {
+                        res_type: 'sfuser',
+                        obj: '$this',
+                        non_encrypt_columns: ['cc_user', 'files', 'report_date', 'is_late', 'status', 'sys_lang', 'version_info'],
+                    },
+                    authorize_config: {
+                        res_type: 'sfuser',
+                        sfusers: [...superior, ...(cc.length ? cc : [YANGMING_NICKNAME])],
+                        users: [],
+                        emails: [],
+                        items: [user.id],
+                        operations: ['response', 'send_email'],
+                        expire_time: 3600 * 24 * 62,
+                    },
+                    sys_lang: 'zh_CN',
+                    sys_site: 'CHN',
+                    intact_columns: ['sfuser_id', 'content', 'cc_user', 'report_date', 'is_late', 'status',
+                        'hash_filter', 'data', 'encrypt_config', 'authorize_config'],
+                }, loginResult.cookies)
+
+                if (String(res.body.error_code) === '0') {
+                    totalReports++
+                } else {
+                    totalFailed++
+                    if (totalFailed <= 5) console.log(`  [${user.nickname}] 日报失败: ${res.body.error_msg}`)
+                }
+            } catch {
+                totalFailed++
+            }
+        }
+
+        if (loginSuccess % 10 === 0) {
+            console.log(`  进度: 登录 ${loginSuccess}, CC ${ccSuccess}, 日报 ${totalReports} 条`)
+        }
+    })
+
+    await parallelLimit(userTasks, CONCURRENCY)
+
+    fs.writeFileSync(__dirname + '/test-users.json', JSON.stringify(loggedInUsers, null, 2))
+
+    console.log('\n========== 完成 ==========')
+    console.log(`匹配用户: ${allUsers.length}`)
+    console.log(`登录成功: ${loginSuccess}, 登录失败: ${loginFailed}`)
+    console.log(`CC设置成功: ${ccSuccess}`)
+    console.log(`日报创建: ${totalReports} 条, 失败: ${totalFailed} 条`)
+}
+
+main().catch(e => {
+    console.error('执行失败:', e)
+    process.exit(1)
+})

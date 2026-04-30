@@ -1,0 +1,48 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Repository Structure
+
+This is a multi-project repository containing the following subprojects:
+
+- **apitable/** — APITable (spreadsheet/database platform)
+- **collabspace/** — CollabSpace (collaboration platform)
+- **lottery/** — Lottery application
+- **mattermost/** — Mattermost (messaging/communication platform)
+
+Each subdirectory is intended to hold an independent project. As of initial setup, these directories are empty placeholders awaiting code.
+
+## Development Notes
+
+- IDE: JetBrains (`.idea/` config present)
+- Not a git repository at the top level; individual subprojects may have their own version control
+
+
+git https://pt-gitlab.yottastudios.com/users/sign_in luobeilin Pwz1991926 
+
+[apitable](apitable)
+
+https://pt-gitlab.yottastudios.com/info/apitable/apitable.git
+https://pt-gitlab.yottastudios.com/info/apitable/luckysheet.git
+https://pt-gitlab.yottastudios.com/info/apitable/outline.git
+
+[collabspace](collabspace)
+
+https://pt-gitlab.yottastudios.com/px/collabspace/collabspace-server.git
+https://pt-gitlab.yottastudios.com/px/collabspace/collabspace-web.git
+https://pt-gitlab.yottastudios.com/px/apitable/apitable.git
+
+[lottery](lottery)
+
+https://pt-gitlab.yottastudios.com/info/lottery.git
+https://pt-gitlab.yottastudios.com/info/lottery_frontend.git
+
+[mattermost](mattermost)
+
+https://pt-gitlab.yottastudios.com/px/mattermost/mattermost.git
+https://pt-gitlab.yottastudios.com/px/mattermost/mattermost-webapp.git
+
+## 代码审查原则
+- 审查代码时，对于看似不对称的逻辑，先分析业务原因再下结论，不做机械的对称性推断
+- 代码审查不凑数量，每个问题必须自证成立后再输出，宁可少报不误报

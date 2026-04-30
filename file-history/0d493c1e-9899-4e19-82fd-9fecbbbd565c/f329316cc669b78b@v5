@@ -1,0 +1,1607 @@
+<?php
+
+namespace App\Http\Controllers\Oa;
+
+use App\Exceptions\ExceptionCode;
+use App\Exceptions\InternalException;
+use App\Exceptions\UserException;
+use App\Http\Controllers\Controller;
+use App\Models\AppointmentTip;
+use App\Models\ChildCareLeaveBaby;
+use App\Models\OtherPermissionExecute;
+use App\Models\ReimbursementTripDate;
+use App\Models\Sfuser;
+use App\Models\WorkflowDataExtra;
+use App\Models\WorkflowP4vExtra;
+use App\Models\WorkflowReimbursement;
+use App\Models\WorkflowRequest;
+use App\Models\WorkflowRequestStakeholder;
+use App\Models\WorkflowSpecialStakeholder;
+use App\Oc\Models\OcUser;
+use App\Oc\Models\SupplierInfo;
+use App\Oc\Utils\StampUserList;
+use App\Service\ApprovalManagementService;
+use App\Service\AttendanceService;
+use App\Service\Misc\SiteService;
+use App\Service\NotifyNumberService;
+use App\Workflows\Builders\ActionerQueryBuilder;
+use App\Workflows\Builders\Record;
+use App\Workflows\Builders\StakeholderQueryBuilder;
+use App\Workflows\Common\Action;
+use App\Workflows\Common\Helper;
+use App\Workflows\Common\IndividualData;
+use App\Workflows\Common\Registry;
+use App\Workflows\Common\ReimbursementCabDateState;
+use App\Workflows\Common\SpecialAction;
+use App\Workflows\Common\Stakeholder;
+use App\Workflows\Common\State;
+use App\Workflows\Common\Tag;
+use App\Workflows\Exceptions\WorkflowException;
+use App\Workflows\States\CrossAccess;
+use App\Workflows\States\P4vAccess;
+use App\Workflows\States\ParentalLeave;
+use App\Workflows\States\Reimbursement\Reimbursement;
+use App\Workflows\WorkflowRequestService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Throwable;
+
+class ApprovalManagementController extends Controller
+{
+    //  猿飞审批 的是时候才有这个选项 生产写猿飞的id 49741， 测试写 鬼吞 788594  stag写 鬼吞 105062
+    public const XY_SFUSER_ID = 49741;
+    // D项目的id
+    public const DY_SFUSER_ID = self::XY_SFUSER_ID;
+
+    // 支点的负责人审批 的是时候才有这个选项 生产写支点的负责人的id 744203， 测试写 雪阳 39213  stag写 雪阳 150936
+    public const HY_SFUSER_ID = 744203;
+
+    /** @var ApprovalManagementService */
+    private ApprovalManagementService $service;
+
+    public function __construct()
+    {
+        $this->service = app(ApprovalManagementService::class);
+    }
+
+    /**
+     * @apiName 【审批中心】获取流程列表
+     *
+     * @return JsonResponse
+     */
+    public function getProcesses(): JsonResponse
+    {
+        /** @noinspection all */
+        $processes = Registry::PROCESS_MAPS;
+        $data = [];
+        array_walk($processes, function ($value, $key) use (&$data) {
+            $data[] = [
+                'key' => $key,
+                'name' => $value['context']['name'],
+                'category' => $value['context']['category'],
+                'menu' => $value['context']['menu'],
+            ];
+        });
+        return $this->responseJsonSuccess(['processes' => $data]);
+    }
+
+    /**
+     * 获取花名是否存在(非中国站点给id)。
+     */
+    public function nicknameExists(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $nicknameHash = $request->input('nickname_hash_filter');
+
+        if (empty($sfuserId) || empty($nicknameHash)) {
+            return $this->responseJsonSuccess(['exist' => false, 'sfuser_id' => 0]);
+        }
+
+        /** @var Sfuser $u */
+        $u = Sfuser::whereIn('nickname_hash', $nicknameHash)->where('is_closed', 0)->first();
+        $sfuserId = $u->id ?? 0;
+        if (SiteService::app()->is(SiteService::CHN)) {
+            $sfuserId = 0;
+        }
+
+        return $this->responseJsonSuccess(['exist' => !($u == null), 'sfuser_id' => $sfuserId]);
+    }
+
+    /**
+     * 获取特殊花名组。
+     */
+    public function getSpecialNicknames(Request $request): JsonResponse
+    {
+        $types = $request->get('types', []);
+        $sfuserId = Arr::get($request->all(), 'sfuser_info.id');
+        return $this->responseJsonSuccess(['special_nicknames' => Stakeholder::specialNicknames($types, $sfuserId)]);
+    }
+
+    public function crossAccessFitName(Request $request): JsonResponse
+    {
+        $type = $request->input('type');
+        $name = $request->input('name');
+
+        $data = [];
+        if (!empty($name)) {
+            $projectNames = CrossAccess::SPECIAL_PROJECT_MAPS;
+            if ($type == 'current') {
+                $projectNames = array_merge($projectNames, CrossAccess::LOCAL_PROJECT_MAPS);
+            } elseif ($type == 'target') {
+                $projectNames = array_merge($projectNames, CrossAccess::CROSS_PROJECT_MAPS);
+            }
+            array_walk($projectNames, function ($value, $key) use ($name, &$data) {
+                if (stripos($key, $name) !== false) {
+                    $data[] = ['name' => $key, 'value' => $value];
+                }
+            });
+        }
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    public function todoList(Request $request): JsonResponse
+    {
+        $sfuserId = Arr::get($request->all(), 'sfuser_info.id');
+        $disableCache = $request->input('disable_cache', false);
+
+        $data = IndividualData::getData($sfuserId);
+
+        // 都已经获得了总数，有必要过滤吗
+        $counts = $disableCache ? Record::count($sfuserId) : Record::getFromCache($sfuserId);
+
+        $todoMenus = Arr::get($data, 'todo_menus', []);
+        $currTodoMenus = array_keys(array_filter($counts, function ($value, $key) {
+            if ($key == Record::ISSUED_BUT_NOT_COMPLETED || $key == Record::FILE_SUPPLEMENT_AS_REQUESTER) {
+                return true;
+            }
+            return $value > 0;
+        }, ARRAY_FILTER_USE_BOTH)); // 本次合法的菜单条目
+
+        // 与历史菜单项合并
+        $totalTodoMenus = array_unique(array_merge($currTodoMenus, $todoMenus));
+        if (count($todoMenus) != count($totalTodoMenus)) {
+            // 数目不等，则更新 IndividualData，因为只可能增加，不可能减少
+            $data['todo_menus'] = $totalTodoMenus;
+            IndividualData::setData($sfuserId, $data);
+        }
+
+        $ret = [];
+        foreach ($totalTodoMenus as $key) {
+            $ret[$key] = $counts[$key];
+        }
+
+        // 有没有我的执行
+        $types = WorkflowSpecialStakeholder::alias('wss')
+            ->whereIn('type', WorkflowRequestStakeholder::OTHER_TYPES)
+            ->whereJsonContains('ids', $sfuserId)->pluck('wss.type')->toArray();
+        if (!empty($types)) {
+            $typeToKeyMap = [
+                WorkflowRequestStakeholder::ONLY_OFFICE_EXECUTOR_TYPE => Registry::ONLY_OFFICE,
+                WorkflowRequestStakeholder::JIRA_CONFLUENCE_EXECUTOR_TYPE => Registry::JIRA_CONFLUENCE,
+                WorkflowRequestStakeholder::EB_EXECUTOR_TYPE => Registry::EB,
+                WorkflowRequestStakeholder::YA_EXECUTOR_TYPE => Registry::YA,
+                WorkflowRequestStakeholder::X_JIRA_CONFLUENCE_EXECUTOR_TYPE => Registry::X_JIRA_CONFLUENCE,
+                WorkflowRequestStakeholder::AI_TOOLS_EXECUTOR_TYPE => Registry::AI_TOOLS,
+                WorkflowRequestStakeholder::GCP_EXECUTOR_TYPE => Registry::GCP,
+                WorkflowRequestStakeholder::MATTERMOST_EXECUTOR_TYPE => Registry::MATTERMOST,
+            ];
+
+            $process_keys = array_values(array_intersect_key($typeToKeyMap, array_flip($types)));
+
+            $exists = OtherPermissionExecute::alias('op')
+                ->whereIn('op.process_key', $process_keys)
+                ->exists();
+
+            if ($exists) {
+                $execute_to_me = DB::table('workflow_requests')
+                    ->leftJoin('other_permission_execute', 'other_permission_execute.request_id', '=', 'workflow_requests.id')
+                    ->where('workflow_requests.current_state_id', '=', State::COMPLETED)
+                    ->whereIn('other_permission_execute.process_key', $process_keys)
+                    ->where('other_permission_execute.is_execute', 0)
+                    ->count();
+                $ret['execute_to_me'] = $execute_to_me;
+            }
+        }
+        $ret = ApprovalManagementController::dealLessThan0($ret);
+        return $this->responseJsonSuccess(['todos' => $ret]);
+    }
+
+    public function reimbursementTodo(Request $request): JsonResponse
+    {
+        $sfuserId = Arr::get($request->all(), 'sfuser_info.id');
+        $disableCache = $request->input('disable_cache', false);
+
+        $data = IndividualData::getData($sfuserId);
+
+        // 都已经获得了总数，有必要过滤吗
+        $counts = $disableCache ? Record::count($sfuserId, Record::REIMBURSEMENT_TYPES) : Record::getFromCache($sfuserId, Record::REIMBURSEMENT_TYPES);
+
+        $todoMenus = Arr::get($data, 'reimbursement_todo', []);
+        $currTodoMenus = array_keys(array_filter($counts, function ($value, $key) {
+            return $key == Record::REIMBURSE_ISSUED_BUT_NOT_COMPLETED || $value > 0;
+        }, ARRAY_FILTER_USE_BOTH)); // 本次合法的菜单条目
+
+        // 与历史菜单项合并
+        $totalTodoMenus = array_unique(array_merge($currTodoMenus, $todoMenus));
+        if (count($todoMenus) != count($totalTodoMenus)) {
+            // 数目不等，则更新 IndividualData，因为只可能增加，不可能减少
+            $data['reimbursement_todo'] = $totalTodoMenus;
+            IndividualData::setData($sfuserId, $data);
+        }
+
+        $ret = Arr::only($counts, $totalTodoMenus);
+        $ret = ApprovalManagementController::dealLessThan0($ret);
+        return $this->responseJsonSuccess(['todos' => $ret]);
+    }
+
+    /**
+     * 查询当前剩余育儿假.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getParentalLeaveDays(Request $request): JsonResponse
+    {
+        $sfuserId = $request->sfuser_info['id'];
+
+        $data = $this->service->getParentalLeaveDays($sfuserId);
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 查询个人子女信息.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getFetusInfo(Request $request): JsonResponse
+    {
+        $sfuserId = $request->sfuser_info['id'];
+
+        // 存在尚未过审的子女信息
+        $exists = ChildCareLeaveBaby::where('sfuser_id', $sfuserId)->where('is_pass', ChildCareLeaveBaby::PASS_PENDING)->exists();
+
+        $data = $this->service->getFetusInfo($sfuserId);
+
+        return $this->responseJsonSuccess(['editable' => !$exists, 'list' => $data]);
+    }
+
+    /**
+     * 新增或修改子女信息.
+     * @param Request $request
+     * @throws WorkflowException
+     * @return JsonResponse
+     */
+    public function processFetusInfo(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['sfuser_info', 'fetus_operations']);
+        $sfuserId = $input['sfuser_info']['id'];
+
+        // 存在在审批中的育儿假
+        $exists = ChildCareLeaveBaby::where('sfuser_id', $sfuserId)->where('is_pass', ChildCareLeaveBaby::PASS_PENDING)->exists();
+        if ($exists) {
+            return $this->responseJsonFail(__('my_api.workflow_baby_in_approving'), UserException::ERR_USER_OPERATE_LIMIT);
+        }
+
+        ParentalLeave::processFetusInfo($input['fetus_operations'], $sfuserId);
+
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+
+    /**
+     * 开启一个审批流程。
+     *
+     * @param Request $request
+     * @throws \App\Workflows\Exceptions\WorkflowException
+     * @throws \ReflectionException
+     * @throws Throwable
+     * @return JsonResponse
+     */
+    public function startProcess(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'process_key', 'context', 'files', 'authorized_token', 'info', 'cc_nickname_hash_filter', 'cc_ids', 'member',
+        ]);
+
+        $sfuserId = $input['sfuser_info']['id'];
+        $processKey = $input['process_key'];
+        $startTime = Arr::get($input, 'context.start_datetime', '');
+        $endTime = Arr::get($input, 'context.end_datetime', '');
+
+        $lockKey = "workflow:check:{$sfuserId}:{$processKey}:".md5($startTime.$endTime);
+        $lock = Cache::lock($lockKey, 10); // 默认使用默认缓存驱动，如果是 Redis 即可
+        // 尝试获取锁，最多等待5秒
+        if (!$lock->block(5)) {
+            info("{$lockKey} is locked by other process.");
+            throw new WorkflowException(__('my_api.system_busy_please_retry'));
+        }
+
+        WorkflowRequestService::checkInput($input['process_key'], $sfuserId, $input['context']);
+
+        if ($input['process_key'] == Registry::MATTERMOST) {
+            $input['context']['is_mattermost'] = true;
+            $input['context']['member'] = $input['member'] ?? [];
+        }
+
+        Stakeholder::checkStakeholders($input, $sfuserId);
+
+        // 自定义抄送人
+        $customCcs = Arr::get($input, 'cc_ids', []);
+        if (!empty($input['cc_nickname_hash_filter'])) {
+            $tmpIds = Sfuser::active()->whereIn('nickname_hash', $input['cc_nickname_hash_filter'])->pluck('id')->toArray();
+            $customCcs = array_values(array_unique(array_merge($customCcs, $tmpIds)));
+        }
+
+        // 自动抛出异常，不用 catch，返回给客户端
+        $wr = WorkflowRequestService::make($input['process_key'], $input['sfuser_info']['id'], $input['context'], (array)Arr::get($input, 'files', []), $customCcs);
+
+        // 请求实例生成完后，更新 token
+        $wr->getRequest()->update([
+            'token' => $input['authorized_token'] ?? '',
+            'info' => $input['info'] ?? [],
+        ]);
+        // 无论成功还是失败，都要释放锁
+        optional($lock)->release();
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+
+    /**
+     * 查询关联加班晚到和返回请假总时长.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function leaveProcessPreflight(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $processKey = $request->input('process_key');
+        $startDateTime = $request->input('start_datetime');
+        $endDateTime = $request->input('end_datetime');
+
+        $data = [];
+
+        // 育儿假特殊, 按非自然日处理
+        if ($processKey == Registry::PARENTAL_LEAVE) {
+            $data['total_hours'] = Helper::getCommonLeaveHours($processKey, $startDateTime, $endDateTime, $sfuserId);
+        }
+        // 陪护假特殊, 按非自然日处理（工作日计算）
+        elseif ($processKey == Registry::ELDERLY_CARE_LEAVE) {
+            $data['total_hours'] = Helper::getCommonLeaveHours($processKey, $startDateTime, $endDateTime, $sfuserId);
+        }
+        // 自然日类型
+        elseif (in_array($processKey, Registry::NATURAL_DAY_TYPE)) {
+            $data['total_hours'] = Helper::getCommonLeaveHours($processKey, $startDateTime, $endDateTime);
+        }
+        // 非自然日类型
+        elseif (in_array($processKey, Registry::UNNATURAL_DAY_TYPE)) {
+            $data['total_hours'] = Helper::getCommonLeaveHours($processKey, $startDateTime, $endDateTime, $sfuserId);
+
+            $startDateTime = date('Y-m-d 00:00:00', strtotime($startDateTime));
+            $endDateTime = date('Y-m-d 00:00:00', strtotime($endDateTime));
+            $lateList = WorkflowDataExtra::alias('wde')->leftJoin('workflow_requests', 'workflow_requests.id', '=', 'wde.request_id')
+                ->where('wde.process_key', Registry::LATE_WORK_OVERTIME)
+                ->where('sfuser_id', $sfuserId)
+                ->where('start_time', '>=', $startDateTime)
+                ->where('end_time', '<=', $endDateTime)
+                ->where('workflow_requests.current_state_id', State::COMPLETED)
+                ->selectRaw("request_id, workflow_requests.no, DATE_FORMAT(start_time,'%Y-%m-%d') as late_date")
+                ->get()->toArray();
+            $data['work_late_list'] = $lateList;
+        }
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 对一个流程进行预检，对参数进行必要的检查，生成流程图 nodes, cc_ids.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function preflightProcess(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'process_key', 'context', 'version', 'files',
+        ]);
+
+        $version = $input['version'] ?? 0;
+        WorkflowRequestService::checkInput($input['process_key'], $input['sfuser_info']['id'], $input['context'], $version);
+
+        $data = WorkflowRequestService::preflightProcess($input['process_key'], $input['sfuser_info']['id'], $input['context'], $version);
+
+        // 先把当前人的固定的几个花名取出来
+        /** @var Sfuser $sfuser */
+        $sfuser = Sfuser::where('id', $input['sfuser_info']['id'])->select([
+            'nickname', 'direct_supervisor_nickname', 'supervisor_nickname', 'ssc_nickname', 'department_id',
+        ])->first();
+
+        // 将本次跟踪到的人的花名放在 all_nodes 中返回
+        $data['all_nodes'] = [
+            'profile' => [],
+            'nodes_special_nicknames' => [],
+            'cc_special_nicknames' => [],
+        ];
+
+        // 前端需要将 profile 里面的 key 翻译为对应的 type
+        $profile = $sfuser->toArray();
+
+        // 仅报销类型：人事部/行政部的部门主管花名覆盖为小兰（直接用明文花名，因为 sfusers.nickname 是加密的）
+        if (in_array($input['process_key'], Registry::REIMBURSEMENT_TYPE)
+            && in_array($sfuser->department_id, Stakeholder::HR_ADMIN_DEPARTMENT_IDS)) {
+            $profile['supervisor_nickname'] = Stakeholder::XIAOLAN_NICKNAME;
+            info('[lbl][审批人覆盖][Workflow][OVERRIDE] preflight-报销-人事部/行政部部门主管花名覆盖为小兰, sfuserId='.$input['sfuser_info']['id'].', processKey='.$input['process_key']);
+        }
+
+        $maps = [
+            WorkflowRequestStakeholder::REQUESTER_TYPE => 'nickname',
+            WorkflowRequestStakeholder::DIRECT_SUPERVISOR_TYPE => 'direct_supervisor_nickname',
+            WorkflowRequestStakeholder::SUPERVISOR_TYPE => 'supervisor_nickname',
+            WorkflowRequestStakeholder::SSC_TYPE => 'ssc_nickname',
+        ];
+
+        // 如果该审批中包含申请者、直接主管、部门主管、部门 SSC、直接取出当前人的这些花名
+        // 以确保流程的流转或者花名的显式始终以发起时的为准
+        $allTypes = $data['types'];
+        $data['all_nodes']['nodes_types'] = $data['types'];
+        foreach ($allTypes as $k => $type) {
+            if (in_array($type, WorkflowRequestStakeholder::FIXED_MAPS)) {
+                $data['all_nodes']['profile'][$type] = Arr::get($profile, $maps[$type]);
+                unset($allTypes[$k]);
+            }
+        }
+        $ccTypes = $data['all_cc_types'];
+        foreach ($ccTypes as $k => $ccType) {
+            if (in_array($ccType, WorkflowRequestStakeholder::FIXED_MAPS)) {
+                $data['all_nodes']['profile'][$ccType] = Arr::get($profile, $maps[$ccType]);
+                unset($ccTypes[$k]);
+            }
+        }
+
+        // 剩下的就是特殊花名了
+        $specialNicknames = [];
+        if ($allTypes) {
+            $specialNicknames = Stakeholder::specialNicknames($allTypes, $input['sfuser_info']['id'], $input['context']); // 然后取出当前预检包含的特殊审批的人的花名
+            foreach ($specialNicknames as $type => $specialNickname) {
+                $specialNicknames[$type] = Arr::first($specialNickname); // 操作节点中的人默认只取第一个，取多了也不管用
+            }
+        }
+        $data['all_nodes']['nodes_special_nicknames'] = $specialNicknames;
+
+        // 获取的 cc_types，不用取第一个，直接返回一个数组即可
+        $specialNicknames = [];
+        if ($ccTypes) {
+            $specialNicknames = Stakeholder::specialNicknames($ccTypes, $input['sfuser_info']['id'], $input['context']);
+        }
+        $data['all_nodes']['cc_special_nicknames'] = $specialNicknames;
+
+        $processKeyToExecutorTypeMap = [
+            Registry::P4V_ACCESS => WorkflowRequestStakeholder::P4V_EXECUTER_TYPE,
+            Registry::ONLY_OFFICE => WorkflowRequestStakeholder::ONLY_OFFICE_EXECUTOR_TYPE,
+            Registry::JIRA_CONFLUENCE => WorkflowRequestStakeholder::JIRA_CONFLUENCE_EXECUTOR_TYPE,
+            Registry::EB => WorkflowRequestStakeholder::EB_EXECUTOR_TYPE,
+            Registry::YA => WorkflowRequestStakeholder::YA_EXECUTOR_TYPE,
+            Registry::X_JIRA_CONFLUENCE => WorkflowRequestStakeholder::X_JIRA_CONFLUENCE_EXECUTOR_TYPE,
+            Registry::AI_TOOLS => WorkflowRequestStakeholder::AI_TOOLS_EXECUTOR_TYPE,
+            Registry::GCP => WorkflowRequestStakeholder::GCP_EXECUTOR_TYPE,
+            Registry::MATTERMOST => WorkflowRequestStakeholder::MATTERMOST_EXECUTOR_TYPE,
+        ];
+
+        foreach ($processKeyToExecutorTypeMap as $processKey => $executorType) {
+            if ($input['process_key'] == Registry::JIRA_CONFLUENCE) {
+                $dynamicNicknames1 = Stakeholder::specialNicknames(
+                    [WorkflowRequestStakeholder::JIRA_CONFLUENCE_EXECUTOR_TYPE],
+                    $input['sfuser_info']['id'],
+                    $input['context']
+                );
+                $dynamicNicknames2 = Stakeholder::specialNicknames(
+                    [WorkflowRequestStakeholder::X_JIRA_CONFLUENCE_EXECUTOR_TYPE],
+                    $input['sfuser_info']['id'],
+                    $input['context']
+                );
+                if (!isset($dynamicNicknames1['jira_confluence_executor'])) {
+                    throw new WorkflowException('请联系管理员配置【Jira/Confluence执行人】后再操作');
+                }
+                if (!isset($dynamicNicknames2['jira_confluence_executor'])) {
+                    throw new WorkflowException('请联系管理员配置【X项目Jira/Confluence执行人】后再操作');
+                }
+                $mergedNicknames = array_merge(
+                    $dynamicNicknames1['jira_confluence_executor'],
+                    $dynamicNicknames2['jira_confluence_executor']
+                );
+                $uniqueNicknames = array_unique($mergedNicknames);
+                $data['dynamic_nicknames'] = [
+                    'jira_confluence_executor' => array_values($uniqueNicknames),
+                ];
+                break;
+            }
+            if ($input['process_key'] == $processKey) {
+                $data['dynamic_nicknames'] = Stakeholder::specialNicknames([$executorType], $input['sfuser_info']['id'], $input['context']);
+                break;
+            }
+        }
+
+        Arr::forget($data, 'types');
+        Arr::forget($data, 'all_cc_types');
+
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * @apiName 【审批中心】获取审批元数据
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function metaData(): JsonResponse
+    {
+        $data = Helper::metaData();
+        Arr::forget($data, 'cross_access_projects');
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * @apiName 【审批中心】获取OC系统账号数据
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function ocAccountData(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $ocUser = OcUser::where('sfuser_id', $sfuserId)->active()->first();
+
+        return $this->responseJsonSuccess([
+            'oc' => [
+                'exists' => !($ocUser == null), 'departments' => $ocUser ? $ocUser->departments : [],
+            ],
+            'stamp' => [
+                'exists' => StampUserList::userExists($sfuserId),
+            ],
+        ]);
+    }
+
+    /**
+     * @apiName 【审批中心】获取付款供应商信息
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getSupplierInfo(Request $request): JsonResponse
+    {
+        return $this->responseJsonSuccess([
+            'supplier_list' => SupplierInfo::where('is_closed', 0)->get()->toArray(),
+        ]);
+    }
+
+    // 我发起的
+    public function issuedRequests(Request $request)
+    {
+        return $this->getRequests($request, 'issued');
+    }
+
+    // 待我审批
+    public function approvingRequests(Request $request)
+    {
+        return $this->getRequests($request, 'approving');
+    }
+
+    // 我已审批
+    public function resolvedRequests(Request $request)
+    {
+        return $this->getRequests($request, 'resolved');
+    }
+
+    // 抄送我的
+    public function ccRequests(Request $request)
+    {
+        return $this->getRequests($request, 'cc');
+    }
+
+    public function readAllCCRequests(Request $request)
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'per_page', 'no', 'approval_statuses', 'lack_supplements', 'nickname_hash_filter', 'process_key', 'process_keys', 'status_type',
+        ]);
+        $sfuserId = $input['sfuser_info']['id'];
+        $sfuserIdsForFiltering = [];
+        $nicknameHashFilter = Arr::get($input, 'nickname_hash_filter');
+        if ($nicknameHashFilter) {
+            $sfuserIdsForFiltering = Sfuser::filterIfExists([
+                ['sfusers.nickname_hash', 'IN', 'nickname_hash_filter'],
+            ], $input)
+                ->select('id')
+                ->get()
+                ->toArray();
+        }
+        $queryBuilder = new StakeholderQueryBuilder();
+        $queryBuilder = $queryBuilder->asCCer()->filterByUserId($sfuserId);
+
+        // 按申请人进行过滤
+        if ($sfuserIdsForFiltering) {
+            $queryBuilder->filterByRequesterIds($sfuserIdsForFiltering);
+        }
+
+        // 按编号筛选
+        if ($no = Arr::get($input, 'no')) {
+            $queryBuilder->filterByNo($no);
+        }
+
+        // 按审批状态筛选
+        $approvalStatuses = Arr::wrap(Arr::get($input, 'approval_statuses', []));
+        if ($approvalStatuses) {
+            $queryBuilder->stateIn($approvalStatuses);
+        }
+        $statusType = Arr::get($input, 'status_type', -1);
+        switch ($statusType) {
+            case 1: // 非报销
+                $queryBuilder->excludeProcessKeys(Registry::REIMBURSEMENT_TYPE);
+                break;
+            case 2: // 仅报销
+                $queryBuilder->filterByProcessKeys(Registry::REIMBURSEMENT_TYPE);
+                break;
+            default: break;
+        }
+
+        $lackSupplements = Arr::get($input, 'lack_supplements', -1);
+        if ($lackSupplements != -1) {
+            /** lack_supplements: 1 缺少材料，2 材料齐全 */
+            $lack = $lackSupplements == 1; // 不搜时，不传该参数，因此不用判断是否为 2 了
+            $queryBuilder->filterByLackSupplements($lack);
+        }
+
+        $processKey = Arr::get($input, 'process_key', '');
+        if ($processKey) {
+            $queryBuilder->filterByProcessKey($processKey);
+        }
+
+        $processKeys = Arr::get($input, 'process_keys', []);
+        if ($processKeys) {
+            $queryBuilder->filterByProcessKeys($processKeys);
+        }
+
+        $int = $queryBuilder->queryBuilder()->update(['is_read' => 1]);
+
+        // 更新 OA 抄送未读
+        $ccType = match ($statusType) {
+            1 => 'oa_cc',
+            2 => 'reimburse_cc',
+            default => '',
+        };
+        if ($ccType) {
+            NotifyNumberService::app()->modifyIndividual($sfuserId, $ccType, -1 * $int);
+        } else {
+            NotifyNumberService::app()->setOaCc($sfuserId);
+        }
+
+        return $this->responseJsonSuccess(['count' => $int]);
+    }
+
+    public function request(Request $request)
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'request_id',
+        ]);
+
+        $sfuserId = $input['sfuser_info']['id'];
+        $workflowRequest = new WorkflowRequestService($input['request_id'], $sfuserId);
+
+        // fix: 在 OA 端，只有可见，才能查看详情
+        $wrs = WorkflowRequestStakeholder::where('request_id', $input['request_id'])
+            ->where('user_id', $sfuserId)
+            ->first();
+        $hasExecute = false;
+
+        $basic = $workflowRequest->getRequest()->toArray();
+        $isAuto = !empty($basic['data']['remark']) && $basic['data']['remark'] === WorkflowRequestService::AUTO_REMARK;
+        if (!$wrs && !$isAuto) {
+            // 4种权限执行的人可以看
+            // 有没有我的执行
+            // TODO: 优化一下下面这段代码
+            $types = WorkflowSpecialStakeholder::alias('wss')
+                ->whereIn('type', WorkflowRequestStakeholder::OTHER_TYPES)
+                ->whereJsonContains('ids', $sfuserId)->pluck('wss.type')->toArray();
+            if (!empty($types)) {
+                if (in_array(WorkflowRequestStakeholder::ONLY_OFFICE_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::ONLY_OFFICE;
+                }
+                if (in_array(WorkflowRequestStakeholder::JIRA_CONFLUENCE_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::JIRA_CONFLUENCE || $hasExecute;
+                }
+                if (in_array(WorkflowRequestStakeholder::EB_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::EB || $hasExecute;
+                }
+                if (in_array(WorkflowRequestStakeholder::YA_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::YA || $hasExecute;
+                }
+                if (in_array(WorkflowRequestStakeholder::X_JIRA_CONFLUENCE_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::X_JIRA_CONFLUENCE || $hasExecute;
+                }
+                if (in_array(WorkflowRequestStakeholder::AI_TOOLS_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::AI_TOOLS || $hasExecute;
+                }
+                if (in_array(WorkflowRequestStakeholder::GCP_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::GCP || $hasExecute;
+                }
+                if (in_array(WorkflowRequestStakeholder::MATTERMOST_EXECUTOR_TYPE, $types)) {
+                    $hasExecute = $workflowRequest->getRequest()->process_key == Registry::MATTERMOST || $hasExecute;
+                }
+                if ($hasExecute) {
+                    // 有权限看
+                } else {
+                    return $this->responseJsonFail(__('my_api.workflow_request_not_found'), ExceptionCode::ERR_RESOURCE_MISSING);
+                }
+            } else {
+                return $this->responseJsonFail(__('my_api.workflow_request_not_found'), ExceptionCode::ERR_RESOURCE_MISSING);
+            }
+        }
+
+        $detail = $workflowRequest->detail(true);
+        // 对外展示还是jira_access，
+        $detail['basic']['process_key'] = Registry::toJira($detail['basic']['process_key']);
+
+        if ($hasExecute) {
+            // 有执行人权限的人，查详情解密不用token
+        } else {
+            // 有 Token，并且不是本人的话，不需要通过 Token 解密
+            if ($workflowRequest->getRequest()->token && $sfuserId != $workflowRequest->getRequest()->user_id) {
+                $detail['decrypt_config'] = [
+                    'tokens' => Arr::wrap($workflowRequest->getRequest()->token),
+                ];
+            }
+            $detail['site_key'] = config('my_project.site_key');
+        }
+        $workflowRequest->xp4($detail);
+        return $this->responseJsonSuccess($detail);
+    }
+
+    /**
+     * @apiName 【审批中心】查看审批详情
+     * @apiDescription 从管理端查看审批详情需要以申请者的名义进行查看
+     *
+     * @param \Illuminate\Http\Request $request
+     * @throws \App\Workflows\Exceptions\RequestNotFoundException
+     * @throws \App\Workflows\Exceptions\UserNotFoundException
+     * @throws \App\Workflows\Exceptions\WorkflowException
+     * @throws \ReflectionException
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function requestFromHR(Request $request): JsonResponse // 从 HR 端看到的记录
+    {
+        $input = Arr::only($request->all(), [
+            'request_id',
+        ]);
+        /** @var WorkflowRequest $request */
+        $request = WorkflowRequest::where('id', $input['request_id'])->firstOrFail();
+        $workflowRequest = new WorkflowRequestService($request->id, $request->user_id); // 以发起者身份获取详情
+        $detail = $workflowRequest->detail();
+        // 对外展示还是jira_access，
+        $detail['basic']['process_key'] = Registry::toJira($detail['basic']['process_key']);
+
+        $detail['site_key'] = config('my_project.site_key');
+        $workflowRequest->xp4($detail);
+        return $this->responseJsonSuccess($detail);
+    }
+
+    /**
+     * @apiName 【审批中心】执行动作
+     *
+     * @param \Illuminate\Http\Request $request
+     * @throws \App\Workflows\Exceptions\RequestNotFoundException
+     * @throws \App\Workflows\Exceptions\UserNotFoundException
+     * @throws \App\Workflows\Exceptions\WorkflowException
+     * @throws \ReflectionException
+     * @throws \Throwable
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function performAction(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'request_id', 'action_id', 'remark',
+            'project_id', // 1 x项目 2 通用项目 3 D项目 4 H项目
+        ]);
+
+        $actionId = $request->get('action_id');
+        $context = $request->input('context', []);
+
+        return $this->doPerformAction($actionId, $input, $context);
+    }
+
+    /**
+     * 执行特殊动作。
+     *
+     * @throws Throwable
+     * @see SpecialAction
+     */
+    public function performSpecialAction(Request $request): JsonResponse
+    {
+        // 补交材料可能会涉及到授权操作
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'request_id', 'special_action_id', 'files', 'authorized_token', 'info', 'pay_end_date', 'allowance_end_date',
+        ]);
+        $sfuserId = Arr::get($input, 'sfuser_info.id');
+        $requestId = Arr::get($input, 'request_id');
+        $files = Arr::get($input, 'files', []);
+        $payEndDate = Arr::get($input, 'pay_end_date', '');
+        $allowanceEndDate = Arr::get($input, 'allowance_end_date', date('Y-m-d'));
+        $token = Arr::get($input, 'authorized_token', '');
+        $info = Arr::get($input, 'info', []);
+
+        // 检出 WorkflowRequest 实例
+        /** @var WorkflowRequest $requestModel */
+        $requestModel = WorkflowRequest::findOrFail($requestId);
+
+        $errMsg = __('my_api.lack_permission');
+        $specialActionId = Arr::get($input, 'special_action_id');
+        switch ($specialActionId) {
+            // 补交材料的操作
+            case SpecialAction::APPEND_SUPPLEMENT_FILES:
+                $res = SpecialAction::appendSupplementFiles($errMsg, $sfuserId, $requestModel, $files, $payEndDate, $token, $info);
+                break;
+            case SpecialAction::CONVERT_TO_PERSONAL_LEAVE:
+                $res = SpecialAction::covertToPersonalLeave($sfuserId, $requestModel);
+                break;
+            case SpecialAction::HR_STOP_RENT_ALLOWANCE:
+                $res = SpecialAction::hrStopRentAllowance($errMsg, $sfuserId, $requestModel, $allowanceEndDate);
+                break;
+            default:
+                return $this->responseJsonFail(__('my_api.invalid_action_given'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        if (!$res) {
+            return $this->responseJsonFail($errMsg, ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+
+    /**
+     * 重新编辑.
+     * @param Request $request
+     * @throws \App\Workflows\Exceptions\WorkflowException
+     * @throws \ReflectionException
+     * @throws Throwable
+     * @throws \App\Workflows\Exceptions\RequestNotFoundException
+     * @throws \App\Workflows\Exceptions\UserNotFoundException
+     * @return JsonResponse
+     */
+    public function reEdit(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), [
+            'request_id', 'sfuser_info', 'process_key', 'context', 'files', 'authorized_token', 'info', 'cc_nickname_hash_filter', 'cc_ids', 'member',
+        ]);
+
+        $query = WorkflowRequest::findOrFail($input['request_id']);
+        $version = 0;
+        $oldTotalMoney = 0;
+        if ($query->process_key == $input['process_key']) {
+            $version = $query->version;
+            if (in_array($input['process_key'], Registry::REIMBURSEMENT_TYPE)) {
+                $oldTotalMoney = Arr::get($query->data, 'total_money');
+            }
+        }
+
+        if ($input['process_key'] == Registry::MATTERMOST) {
+            $input['context']['is_mattermost'] = true;
+            $input['context']['member'] = $input['member'] ?? [];
+        }
+        $sfuserId = $input['sfuser_info']['id'];
+        $processKey = $input['process_key'];
+        $startTime = Arr::get($input, 'context.start_datetime', '');
+        $endTime = Arr::get($input, 'context.end_datetime', '');
+
+        $lockKey = "workflow:check:{$sfuserId}:{$processKey}:".md5($startTime.$endTime);
+        $lock = Cache::lock($lockKey, 10); // 默认使用默认缓存驱动，如果是 Redis 即可
+        // 尝试获取锁，最多等待5秒
+        if (!$lock->block(5)) {
+            info("{$lockKey} is locked by other process.");
+            throw new WorkflowException(__('my_api.system_busy_please_retry'));
+        }
+
+        // 重新编辑，不 checkStakeholders 了，反正参与者都已经在发起时保存起来了，就按照旧的流程走
+        WorkflowRequestService::checkInput($input['process_key'], $input['sfuser_info']['id'], $input['context'], $version);
+
+        // 自定义抄送人
+        $customCcs = Arr::get($input, 'cc_ids', []);
+        if (!empty($input['cc_nickname_hash_filter'])) {
+            $tmpIds = Sfuser::active()->whereIn('nickname_hash', $input['cc_nickname_hash_filter'])->pluck('id')->toArray();
+            $customCcs = array_values(array_unique(array_merge($customCcs, $tmpIds)));
+        }
+        if (!empty($customCcs)) {
+            $input['context'][WorkflowRequest::CUSTOM_CC_KEY] = $customCcs;
+        }
+
+        try {
+            $new = $this->service->isChangeProcessKey($input['sfuser_info']['id'], $input['request_id'], $input['process_key'], $input['context'], (array)Arr::get($input, 'files'));
+        } catch (\Exception $e) {
+            return $this->responseJsonFail($e->getMessage(), $e->getCode());
+        }
+        if ($new) {
+            $wr = WorkflowRequestService::make($input['process_key'], $input['sfuser_info']['id'], $input['context'], (array)Arr::get($input, 'files'), $customCcs);
+        } else {
+            $wr = new WorkflowRequestService($input['request_id'], $input['sfuser_info']['id']);
+
+            if (in_array($input['process_key'], Registry::REIMBURSEMENT_TYPE) && abs($input['context']['total_money'] - $oldTotalMoney) < 1e-4) {
+                $wr->reEditAndApprove();
+            } else {
+                $wr->performAction(Action::REEDIT);
+            }
+        }
+        $wr->requestCreated();
+        // 更新 token
+        $wr->getRequest()->update([
+            'token' => $input['authorized_token'] ?? '',
+            'info' => $input['info'] ?? [],
+        ]);
+        optional($lock)->release();
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+
+    /**
+     * 根据日期和uid获取班次
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getUserShiftByDate(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['date']);
+        $input['sfuser_id'] = Arr::get($request->all(), 'sfuser_info.id');
+        $data = $this->service->getShift($input);
+        return $this->responseJsonSuccess($data);
+    }
+
+    public function lackingSupplements(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['sfuser_info']);
+        $sfuserId = $input['sfuser_info']['id'];
+        $queryBuilder = new StakeholderQueryBuilder();
+        // 只有已完成的才需要进行补交材料
+        $queryBuilder->asRequester()->notCCer()->stateIn(State::COMPLETED)->filterByUserId($sfuserId)->filterByLackSupplements(1);
+        $requests = $queryBuilder->queryBuilder()->selectRaw(
+            '`workflow_requests`.`id`, `process_key`, `no`'
+        )->limit(1000)->get()->toArray();
+
+        return $this->responseJsonSuccess(['requests' => $requests]);
+    }
+
+    /**
+     * 获取能申请加班晚到的日期
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getWorkLateDates(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['sfuser_info']);
+        $data = $this->service->getLateApprovalDateList($input);
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 获取考勤晚到类型.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getAttendLateType(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['sfuser_info']);
+        $data = $this->service->getLateTypeList($input);
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 获取能申请加班打车费报销的日期
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getCouldCabDates(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['sfuser_info']);
+        $sfuserId = $input['sfuser_info']['id'];
+
+        $data = ReimbursementCabDateState::getCouldCabDates($sfuserId);
+        return $this->responseJsonSuccess($data);
+    }
+
+    /**
+     * 获取能申请差旅费报销的日期
+     * 出差日期检验筛选.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getCouldTripReimbursementDates(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+
+        $startDate = date('Y-m-d', strtotime('-1 year'));
+        $tripDates = WorkflowDataExtra::where('sfuser_id', $sfuserId)->where('process_key', Registry::BUSINESS_TRIP)
+            ->where('end_time', '>=', $startDate.' 00:00:00')->select('request_id', 'start_time', 'end_time')->get()->toArray();
+
+        $requestIds = array_unique(array_column($tripDates, 'request_id'));
+        $requestIds = WorkflowRequest::whereIn('id', $requestIds)->where('current_state_id', State::COMPLETED)
+            ->pluck('id')->toArray();
+
+        $allDates = [];
+        foreach ($tripDates as $one) {
+            if (!in_array($one['request_id'], $requestIds)) {
+                continue;
+            }
+            $allDates = array_merge($allDates, Helper::getBetweenDates($one['start_time'], $one['end_time'], Registry::BUSINESS_TRIP));
+        }
+        $allDates = array_filter(array_unique($allDates), function ($date) use ($startDate) {
+            return $date >= $startDate && $date <= date('Y-m-d');
+        });
+
+        $appliesDates = ReimbursementTripDate::where('sfuser_id', $sfuserId)->where('use_date', '>=', $startDate)
+            ->pluck('use_date')->toArray();
+        $filteredDates = array_values(array_diff($allDates, $appliesDates));
+
+        return $this->responseJsonSuccess(['dates' => $filteredDates]);
+    }
+
+    /**
+     * @apiName【报销记录】获取流程列表获取报销单需要的额外信息
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function reimbursementFormExtra(Request $request): JsonResponse
+    {
+        $sfuserId = $request->input('sfuser_info.id');
+        $requestId = $request->input('request_id');
+
+        $stakeholders = WorkflowRequestStakeholder::where('request_id', $requestId)->pluck('user_id')->toArray();
+        if (!in_array($sfuserId, $stakeholders)) {
+            return $this->responseJsonFail(__('my_api.sfuser_not_stakeholder_of_request', ['sfuserId' => $sfuserId, 'requestId' => $requestId]), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        $request = WorkflowRequest::findOrFail($requestId);
+        $workflowRequest = new WorkflowRequestService($requestId, $sfuserId);
+        // 合并相同的报销类型
+        $data = collect($request->data['reimbursement_detail'])->groupBy('reimbursement_type')->map(function ($group) {
+            return [
+                'reimbursement_type' => $group->first()['reimbursement_type'],
+                'reimbursement_money' => $group->sum('reimbursement_money'),
+            ];
+        })->toArray();
+
+        $feeTypes = [];
+        $substituteMap = Reimbursement::SUBSTITUTE_TICKET_MAP;
+        // 合并替票
+        foreach ($data as $key => $value) {
+            $mapKey = $key;
+            if (array_key_exists($key, $substituteMap)) {
+                $mapKey = $substituteMap[$key];
+            }
+            if (array_key_exists($mapKey, $feeTypes)) {
+                $feeTypes[$mapKey]['reimbursement_money'] += $value['reimbursement_money'];
+            } else {
+                $feeTypes[$mapKey] = [
+                    'reimbursement_type' => $mapKey,
+                    'reimbursement_money' => $value['reimbursement_money'],
+                ];
+            }
+        }
+
+        $res = [
+            'nickname' => Sfuser::findOrFail($request->user_id)->nickname,
+            'request_id' => $requestId,
+            'no' => $request->no,
+            'process_key' => $request->process_key,
+            'data' => $request->data,
+            'invoice_num' => count(data_get($request->data, 'reimbursement_detail.*.invoice.*')),
+            'total_money' => $request->data['total_money'],
+            'rmb_total_money' => Helper::num2rmb($request->data['total_money']),
+            'fee_types' => array_values($feeTypes),
+            'nodes' => $workflowRequest->nodes(),
+            'info' => $request->info,
+        ];
+
+        // 有 Token，并且不是本人的话，不需要通过 Token 解密
+        if ($request->token && $sfuserId != $request->user_id) {
+            $res['decrypt_config'] = [
+                'tokens' => Arr::wrap($request->token),
+            ];
+        }
+
+        return $this->responseJsonSuccess($res);
+    }
+
+    /**
+     * @apiName 获取房补提示语
+     *
+     * @return JsonResponse
+     */
+    public function getRentAllowanceTips(): JsonResponse
+    {
+        $appointmentTip = AppointmentTip::where('topic', 'rentAllowance')->first();
+        if (empty($appointmentTip)) {
+            return $this->responseJsonSuccess(new \stdClass());
+        }
+        return $this->responseJsonSuccess(Arr::only($appointmentTip->toArray(), ['is_on', 'content']));
+    }
+    /**
+     * @apiName 获取房补提示语
+     *
+     * @return JsonResponse
+     */
+    public function getRentAllowanceTipsOn(): JsonResponse
+    {
+        $appointmentTip = AppointmentTip::where('topic', 'rentAllowance')->where('is_on', 1)->first();
+        if (empty($appointmentTip)) {
+            return $this->responseJsonSuccess(new \stdClass());
+        }
+        return $this->responseJsonSuccess(Arr::only($appointmentTip->toArray(), ['is_on', 'content']));
+    }
+
+    /**
+     * @apiName  创建/更新房补提示语
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateRentAllowanceTips(Request $request): JsonResponse
+    {
+        $input = Arr::only($request->all(), ['is_on', 'content']);
+        $appointmentTips = AppointmentTip::where('topic', 'rentAllowance')->first();
+        if (!empty($appointmentTips)) {
+            $appointmentTips->update($input);
+        } else {
+            $input['topic'] = 'rentAllowance';
+            AppointmentTip::create($input);
+        }
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+
+    public function doPerformAction(int $actionId, array $input, array $context): JsonResponse
+    {
+        if ($actionId == Action::DELETE) {
+            return $this->responseJsonFail(__('my_api.invalid_action_given'), ExceptionCode::ERR_USER_OPERATE_LIMIT);
+        }
+
+        $remark = Arr::get($input, 'remark', '');
+        $sfuserId = $input['sfuser_info']['id'];
+        $workflowRequest = new WorkflowRequestService($input['request_id'], $sfuserId);
+
+        // 特殊逻辑，如果是jira 并且是 x项目，把流程改掉，因为这是流程发起时未知的。此时流程已完结，只是改下process_key，以后面区分执行人用。
+        if ($actionId == Action::APPROVE && $sfuserId == self::XY_SFUSER_ID
+            && $workflowRequest->getRequest()->process_key == Registry::JIRA_CONFLUENCE) {
+            $project_id = Arr::get($input, 'project_id', 2);
+            if ($project_id == 1) {
+                $workflowRequest->getRequest()->update(['process_key' => Registry::X_JIRA_CONFLUENCE]);
+                OtherPermissionExecute::updateOrCreate(
+                    ['request_id' => $workflowRequest->getRequest()->id],
+                    [
+                        'process_key' => Registry::X_JIRA_CONFLUENCE,
+                    ]
+                );
+            }
+        }
+
+        // 特殊逻辑，如果是p4v 并且是 x项目，执行人改成x_p4 流程不变
+        $requestBase = $workflowRequest->getRequest();
+        if ($actionId == Action::APPROVE && $sfuserId == self::XY_SFUSER_ID
+            && $requestBase->process_key == Registry::P4V_ACCESS) {
+            $project_id = Arr::get($input, 'project_id', 2);
+            if ($project_id == 1) {
+                info('p4v申请，变更执行人'.json_encode($requestBase));
+                $workflowRequest->appendData('project_id', $project_id);
+                $workflowRequest->appendData('old_apply_type', $requestBase->data['apply_type']);
+                $workflowRequest->appendData('apply_type', P4vAccess::X_P4);
+                WorkflowP4vExtra::updateOrCreate([
+                    'request_id' => $requestBase->id,
+                ], [
+                    'apply_type' => P4vAccess::X_P4,
+                ]);
+            }
+        }
+        if ($actionId == Action::APPROVE && $sfuserId == self::DY_SFUSER_ID
+            && $requestBase->process_key == Registry::P4V_ACCESS) {
+            $project_id = Arr::get($input, 'project_id', 2);
+            if ($project_id == 3) {
+                info('p4v申请，变更执行人3'.json_encode($requestBase));
+                $workflowRequest->appendData('project_id', $project_id);
+                $workflowRequest->appendData('old_apply_type', $requestBase->data['apply_type']);
+                $workflowRequest->appendData('apply_type', P4vAccess::DN_P4);
+                $workflowRequest->appendData('apply_type_w', P4vAccess::DW_P4);
+                $ww = WorkflowP4vExtra::updateOrCreate([
+                    'request_id' => $requestBase->id,
+                ], [
+                    'apply_type' => P4vAccess::DN_P4,
+                ]);
+                WorkflowP4vExtra::updateOrCreate([
+                    'request_id' => $requestBase->id,
+                    'apply_type' => P4vAccess::DW_P4,
+                ], [
+                    'apply_type' => P4vAccess::DW_P4,
+                    'sfuser_id' => $ww->sfuser_id,
+                    'target_department' => $ww->target_department,
+                ]);
+            }
+        }
+        if ($actionId == Action::APPROVE && $sfuserId == self::HY_SFUSER_ID
+            && $requestBase->process_key == Registry::P4V_ACCESS) {
+            $project_id = Arr::get($input, 'project_id', 2);
+            if ($project_id == 4) {
+                info('p4v申请，变更执行人4'.json_encode($requestBase));
+                $workflowRequest->appendData('project_id', $project_id);
+                $workflowRequest->appendData('old_apply_type', $requestBase->data['apply_type']);
+                $workflowRequest->appendData('apply_type', P4vAccess::H_P4);
+                WorkflowP4vExtra::updateOrCreate([
+                    'request_id' => $requestBase->id,
+                ], [
+                    'apply_type' => P4vAccess::H_P4,
+                ]);
+            }
+        }
+        if ($actionId == Action::APPROVE
+            && $requestBase->process_key == Registry::P4V_ACCESS) {
+            $project_id = Arr::get($input, 'project_id', 2);
+            if ($project_id == 2) {
+                info('p4v申请，变更执行人2'.json_encode($requestBase));
+                $workflowRequest->appendData('project_id', $project_id);
+                $workflowRequest->appendData('old_apply_type', $requestBase->data['apply_type']);
+                $workflowRequest->appendData('apply_type', P4vAccess::N_P4);
+                WorkflowP4vExtra::updateOrCreate([
+                    'request_id' => $requestBase->id,
+                ], [
+                    'apply_type' => P4vAccess::N_P4,
+                ]);
+            }
+        }
+
+        // 增加eb校验
+        if ($actionId == Action::APPROVE && $requestBase->process_key == Registry::EB) {
+            $con = $context;
+            if (!empty($con) && !empty($con['after_applicant_permission'])) {
+                if (empty($con['passed_permission'])) {
+                    throw new WorkflowException('请选择游戏语言:功能角色!');
+                }
+                foreach ($con['passed_permission'] as $v) {
+                    if (empty($v['game_langs'])) {
+                        throw new WorkflowException('请选择游戏语言!');
+                    }
+                    if (empty($v['roles'])) {
+                        throw new WorkflowException('请选择功能角色!');
+                    }
+                }
+            }
+        }
+
+        // 增加ya校验
+        if ($actionId == Action::APPROVE && $requestBase->process_key == Registry::YA) {
+            $con = $context;
+            if (!empty($con) && !empty($con['after_applicant_permission'])) {
+                if (empty($con['passed_permission'])) {
+                    throw new WorkflowException('请选择游戏语言:功能角色!');
+                }
+                foreach ($con['passed_permission'] as $v) {
+                    if (empty($v['game_langs'])) {
+                        throw new WorkflowException('请选择游戏语言!');
+                    }
+                    if (empty($v['roles'])) {
+                        throw new WorkflowException('请选择功能角色!');
+                    }
+                }
+            }
+        }
+
+        $workflowRequest->performAction($input['action_id'], $remark, false, $context, $input);
+
+        return $this->responseJsonSuccess(['success' => true]);
+    }
+    // 1
+    public static function dealLessThan0(array $ret): array
+    {
+        foreach ($ret as $k => $v) {
+            if ($v < 0) {
+                info('小于0了，看下是为什么，todoList: less than 0, set to 0, key: '.$k.', value: '.$v);
+                $ret[$k] = 0;
+            }
+        }
+        return $ret;
+    }
+
+    protected function getRequests(Request $request, string $type)
+    {
+        $input = Arr::only($request->all(), [
+            'sfuser_info', 'per_page', 'no', 'approval_statuses', 'status_type', 'lack_supplements', 'nickname_hash_filter', 'process_key', 'process_keys',
+            'lock_status', 'include_expired', 'submitted_before', 'submitted_after',
+        ]) + ['per_page' => 50];
+        $sfuserId = $input['sfuser_info']['id'];
+
+        $sfuserIdsForFiltering = [];
+        $nicknameHashFilter = Arr::get($input, 'nickname_hash_filter');
+        if ($nicknameHashFilter) {
+            $sfuserIdsForFiltering = Sfuser::filterIfExists([
+                ['sfusers.nickname_hash', 'IN', 'nickname_hash_filter'],
+            ], $input)
+                ->select('id')
+                ->get()
+                ->toArray();
+        }
+
+        // 传递了花名，但是查出来的 ids 为 0，则直接返回空集合
+        if ($nicknameHashFilter && !$sfuserIdsForFiltering) {
+            $res = [
+                'current_page' => 1,
+                'per_page' => $input['per_page'] ?? 50,
+                'total' => 0,
+                'requests' => [],
+            ];
+            return $this->responseJsonSuccess($res);
+        }
+
+        $queryBuilder = new StakeholderQueryBuilder();
+        $qb = new ActionerQueryBuilder();
+
+        switch ($type) {
+            case 'issued':
+                $queryBuilder = $queryBuilder->asRequester()->notCCer()->filterByUserId($sfuserId);
+                break;
+            case 'approving':
+                $queryBuilder = $qb->toBeApprovedByMe()->filterByUserId($sfuserId);
+                break;
+            case 'resolved':
+                $queryBuilder = $qb->resolved()->filterByUserId($sfuserId);
+                break;
+            case 'cc':
+                $queryBuilder = $queryBuilder->asCCer()->filterByUserId($sfuserId);
+                break;
+            default:
+                throw new InternalException('invalid type given');
+        }
+
+        $queryBuilder->orderBy('workflow_requests.created_at', 'desc');
+
+        // 按申请人进行过滤
+        if ($sfuserIdsForFiltering) {
+            $queryBuilder->filterByRequesterIds($sfuserIdsForFiltering);
+        }
+
+        // 按编号筛选
+        if ($no = Arr::get($input, 'no')) {
+            $queryBuilder->filterByNo($no);
+        }
+
+        $excludeExpired = !Arr::get($input, 'include_expired', false);
+        if ($excludeExpired) {
+            $resolveUser = $type == 'resolved' || $type == 'approving';
+            $expiredOperate = false;
+            $startTime = '';
+            $endTime = '';
+            if ($resolveUser) {
+                $service = new AttendanceService();
+                $lock_approval_date = $service->getLockApprovalDate();
+                $expiredOperate = $service->expiredOperate($lock_approval_date);
+                $startTime = date('Y-m-d', strtotime("{$lock_approval_date} first day of last month")).' 00:00:00';
+                $endTime = $lock_approval_date.AttendanceService::$END_TIME;
+            }
+            if ($expiredOperate) {
+                $queryBuilder->excludeExpiredOperate($startTime, $endTime);
+            } else {
+                $queryBuilder->excludeExpired();
+            }
+        }
+
+        // 待我审批列表始终不展示「超过审批期限」的考勤申请：start_datetime < 上月1号（上上个月及更早）
+        // 与前端「该申请已超过审批期限,无法审批」一致。必须单独按 start_datetime 过滤，否则 is_expired=0 的也会出现（如 12 月请假在 2 月仍可见）
+        if ($type == 'approving') {
+            $service = new AttendanceService();
+            $lock_approval_date = $service->getLockApprovalDate();
+            $lastMonthFirstDay = date('Y-m-d', strtotime("{$lock_approval_date} first day of last month")).' 00:00:00';
+            $queryBuilder->excludeAttendanceBeforeLastMonthFirstDay($lastMonthFirstDay);
+        }
+
+        // 按最新发起申请的时间搜索
+        $queryBuilder->submittedBefore(Arr::get($input, 'submitted_before', ''))->submittedAfter(Arr::get($input, 'submitted_after', ''));
+
+        // 按审批状态筛选
+        $approvalStatuses = Arr::wrap(Arr::get($input, 'approval_statuses', []));
+        if ($approvalStatuses) {
+            $queryBuilder->stateIn($approvalStatuses);
+        }
+        $statusType = Arr::get($input, 'status_type', -1);
+        switch ($statusType) {
+            case 1: // 非报销
+                $queryBuilder->excludeProcessKeys(Registry::REIMBURSEMENT_TYPE);
+                break;
+            case 2: // 仅报销
+                $queryBuilder->filterByProcessKeys(Registry::REIMBURSEMENT_TYPE);
+                break;
+            default: break;
+        }
+
+        $lackSupplements = Arr::get($input, 'lack_supplements', -1);
+        if ($lackSupplements != -1) {
+            /** lack_supplements: 1 缺少材料，2 材料齐全 */
+            $lack = $lackSupplements == 1; // 不搜时，不传该参数，因此不用判断是否为 2 了
+            $queryBuilder->filterByLackSupplements($lack);
+        }
+
+        $processKey = Arr::get($input, 'process_key', '');
+        if ($processKey) {
+            $queryBuilder->filterByProcessKey($processKey);
+        }
+
+        $processKeys = Arr::get($input, 'process_keys', []);
+        if ($processKeys) {
+            if (in_array(Registry::JIRA_CONFLUENCE, $processKeys)) {
+                $processKeys[] = Registry::X_JIRA_CONFLUENCE;
+            }
+            $queryBuilder->filterByProcessKeys($processKeys);
+        }
+
+        $lockStatus = Arr::get($input, 'lock_status', -1);
+        if ($lockStatus == 0) {
+            $queryBuilder->unlocked();
+        } elseif ($lockStatus == 1) {
+            $queryBuilder->locked();
+        }
+
+        $requests = [];
+        switch ($type) {
+            case 'issued':
+            case 'cc':
+                /** @phpstan-ignore-next-line */
+                $requests = $queryBuilder->queryBuilder()->selectRaw(
+                    '`workflow_requests`.`user_id`, `workflow_requests`.`id`, `workflow_requests`.`is_locked`, `workflow_request_stakeholders`.`type`, `is_read`, `workflow_requests`.`submitted_at`, `workflow_requests`.`created_at`, `process_key`, `no`, `current_state_id`, `need_supplements`, `has_supplements`, `info`, `token`'
+                )->paginate($input['per_page'])->toArray();
+                break;
+            case 'approving':
+            case 'resolved':
+                // 之前的方式是有问题的，还是走子查询然后 groupBy 比较靠谱
+                $sq = new StakeholderQueryBuilder();
+                $idsQuery = $queryBuilder->orderBy('workflow_requests.created_at', 'desc')
+                    ->queryBuilder()
+                    ->groupBy('request_id')
+                    ->select('request_id');
+                $requests = $sq->filterByUserId($sfuserId)->notCCer()
+                    ->notRequester() // 待我审批和我已审批需要过滤掉申请者
+                    // 在这里还要再排序一次
+                    ->orderBy('workflow_requests.created_at', 'desc')
+                    ->queryBuilder()
+                    ->whereIn('workflow_requests.id', $idsQuery)
+                    ->selectRaw(
+                        '`workflow_requests`.`user_id`, `workflow_requests`.`id`, `workflow_requests`.`is_locked`, GROUP_CONCAT(`workflow_request_stakeholders`.`type` SEPARATOR \',\') as type,
+                        `is_read`, `workflow_requests`.`submitted_at`, `workflow_requests`.`created_at`, `process_key`, `no`, `current_state_id`, `need_supplements`, `has_supplements`, `info`, `token`'
+                    )
+                    ->groupBy('workflow_requests.id') // 保证申请记录唯一
+                    ->paginate($input['per_page'])->toArray();
+        }
+
+        $items = $requests['data'];
+
+        // 因为 QueryBuilder 走的是 DB 而不是 Model，因此需要手动 cast
+        foreach ($items as &$item) {
+            $item = WorkflowRequest::normalizeWorkflowRequest($item);
+        }
+        unset($item);
+
+        $itemIds = Arr::pluck($items, 'id');
+        $actions = Action::validActions($sfuserId, $itemIds);
+        $operatorTypes = Action::currentToBeApprovedOperatorTypes($itemIds);
+
+        // 报销总金额
+        if ($statusType == 2) {
+            $reimbursements = WorkflowReimbursement::whereIn('request_id', $itemIds)->pluck('total_money', 'request_id')->toArray();
+        }
+        $service = new AttendanceService();
+        $lock_approval_date = $service->getLockApprovalDate();
+        $outCalculateDate24 = strcmp(date('Y-m-d H:i:s'), $lock_approval_date.AttendanceService::$END_TIME) > 0;
+        foreach ($items as &$item) {
+            $types = explode(',', $item['type']);
+            $item['type'] = array_pop($types);
+            // 不返回 data 和 files
+            $canOperate = $type == 'approving' && in_array($item['process_key'], Registry::CALCULATE_LOCK_TYPES) && !$outCalculateDate24;
+            $item['actions'] = ($item['is_locked'] && !$canOperate) ? [] : $actions[$item['id']];
+            if (!in_array($item['current_state_id'], State::COMMON_TYPES)) {
+                if (!isset($operatorTypes[$item['id']])) {
+                    throw new WorkflowException('当前审批状态异常，请重新发起申请或联系管理员!');
+                }
+            }
+            // 只有审批中的才有审批人
+            $item['curr_operator_type'] = in_array($item['current_state_id'], State::COMMON_TYPES) ? 0 : $operatorTypes[$item['id']];
+        }
+        unset($item);
+
+        // 取出所有 type 为 ssc/IT 或房补审批人的 request id
+        $needTagRequestIds = collect($items)->filter(function ($item) {
+            $types = [
+                WorkflowRequestStakeholder::SSC_TYPE,
+                WorkflowRequestStakeholder::RENT_ALLOWANCE_DIRECT_SUPERVISOR_TYPE,
+                WorkflowRequestStakeholder::REIMBURSEMENT_CC_TYPE,
+            ];
+            $types = array_merge($types, WorkflowRequestStakeholder::IT_DIRECT_SUPERVISOR_TYPES);
+            $types = array_merge($types, WorkflowRequestStakeholder::REIMBURSEMENT_SUPERVISOR_TYPES);
+            return in_array($item['type'], $types); // 取出当前可见人为 ssc/IT 或房补审批人身份的
+        })->pluck('id')->toArray();
+
+        $needPartialTagRequestIds = collect($items)->filter(function ($item) {
+            return $item['type'] == WorkflowRequestStakeholder::REQUESTER_TYPE; // 取出当前可见人为申请者身份的
+        })->pluck('id')->toArray();
+
+        $tags = Tag::tags($needTagRequestIds); // SSC 针对缺少材料的标签可以执行补交材料和变更事假的两个特殊动作
+        $partialTags = Tag::tags($needPartialTagRequestIds); // 申请者针对缺少材料的标签可以执行补交材料的特殊操作
+
+        $tokens = [];
+        foreach ($items as &$item) {
+            $item['info'] = is_string($item['info']) ? my_json_decode($item['info']) : $item['info'];
+            $item['token'] && $tokens[] = $item['token'];
+            unset($item['token']);
+            $itemTags = [];
+            $specialActions = [];
+            if ($item['type'] == WorkflowRequestStakeholder::SSC_TYPE) {
+                $itemTags = Arr::get($tags, $item['id'], []); // SSC 视角的标签，即使是发起者，也以 SSC 视角去看
+                if (in_array(Tag::LACK_SUPPLEMENT_FILES, $itemTags)) {
+                    // 缺少材料，则直接追加两个特殊动作
+                    if (in_array($item['process_key'], Helper::getProcessesByCategory('请假'))) {
+                        $specialActions = [
+                            SpecialAction::CONVERT_TO_PERSONAL_LEAVE, SpecialAction::APPEND_SUPPLEMENT_FILES,
+                        ];
+                    }
+                }
+            } elseif ($item['type'] == WorkflowRequestStakeholder::RENT_ALLOWANCE_DIRECT_SUPERVISOR_TYPE) {
+                if ($item['process_key'] == Registry::RENT_ALLOWANCE) {
+                    $itemTags = Arr::get($tags, $item['id'], []);
+                    if (in_array(Tag::LACK_SUPPLEMENT_FILES, $itemTags)) {
+                        $specialActions = [
+                            SpecialAction::APPEND_SUPPLEMENT_FILES,
+                        ];
+                    }
+                    $specialActions[] = SpecialAction::HR_STOP_RENT_ALLOWANCE;
+                }
+            } elseif (in_array($item['type'], WorkflowRequestStakeholder::IT_DIRECT_SUPERVISOR_TYPES)) {
+                if (in_array($item['process_key'], Registry::IT_TYPE)) {
+                    $itemTags = Arr::get($tags, $item['id'], []);
+                }
+            } elseif ($item['type'] == WorkflowRequestStakeholder::REIMBURSEMENT_CC_TYPE
+                || in_array($item['type'], WorkflowRequestStakeholder::REIMBURSEMENT_SUPERVISOR_TYPES)
+            ) {
+                if (in_array($item['process_key'], Registry::REIMBURSEMENT_TYPE)) {
+                    $itemTags = Arr::get($tags, $item['id'], []);
+                }
+            } elseif ($item['type'] == WorkflowRequestStakeholder::REQUESTER_TYPE) {
+                // 非 SSC 身份，并且是请求发起者，标记一下身份
+                $itemTags = Arr::get($partialTags, $item['id'], []);
+                // 请求者不应看到除变更材料和缺少材料之外的标签
+                // 请求者能看到的标签
+                $itemTags = array_intersect($itemTags, Tag::AVAILABLE_BY_REQUESTER_TYPE);
+                if (in_array(Tag::LACK_SUPPLEMENT_FILES, $itemTags)) {
+                    $specialActions = [
+                        // 追加补交材料的动作
+                        SpecialAction::APPEND_SUPPLEMENT_FILES,
+                    ];
+                }
+            }
+
+            if ($item['is_locked']) {
+                $specialActions = array_diff($specialActions, SpecialAction::BANNED_WHEN_LOCKED_TYPE);
+            }
+
+            $item['tags'] = array_values($itemTags);
+            $item['un_excuted_reason'] = Tag::get_un_excuted_reasons($item, []);
+            $item['special_actions'] = ($item['current_state_id'] == State::COMPLETED) ? $specialActions : [];
+            if ($item['process_key'] == Registry::RENT_ALLOWANCE) {
+                $item['rent_allowance_status'] = ($item['is_locked']) ? 1 : ($item['current_state_id'] == State::COMPLETED ? 2 : 3);
+            } elseif (in_array($item['process_key'], Registry::REIMBURSEMENT_TYPE) && !empty($reimbursements)) {
+                $item['total_money'] = $reimbursements[$item['id']] ?? null;
+            }
+            // 对外展示还是jira_access，
+            $item['process_key'] = Registry::toJira($item['process_key']);
+        }
+        unset($item);
+
+        $res = [
+            'current_page' => $requests['current_page'],
+            'per_page' => $requests['per_page'],
+            'total' => $requests['total'],
+            'requests' => $items,
+        ];
+
+        if ($type != 'issued' && count($tokens)) { // 不是我发起的，并且存在 token，则通过 Token 解密。
+            $res['decrypt_config'] = [
+                'tokens' => $tokens,
+            ];
+        }
+
+        return $this->responseJsonSuccess($res);
+    }
+}

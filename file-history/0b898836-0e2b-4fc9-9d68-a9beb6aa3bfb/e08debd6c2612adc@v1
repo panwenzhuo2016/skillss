@@ -1,0 +1,101 @@
+package com.yottastudios.ns.collabspace.workspace.service.impl;
+
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yottastudios.ns.collabspace.shared.util.page.PageHelper;
+import com.yottastudios.ns.collabspace.shared.util.page.PageInfo;
+import com.yottastudios.ns.collabspace.workspace.entity.NodePermissionLogEntity;
+import com.yottastudios.ns.collabspace.workspace.mapper.NodePermissionLogMapper;
+import com.yottastudios.ns.collabspace.workspace.service.INodePermissionLogService;
+import com.yottastudios.ns.collabspace.workspace.vo.NodePermissionLogVo;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static com.yottastudios.ns.collabspace.control.infrastructure.role.RoleConstants.ROLE_DISPLAY_MAP;
+
+@Service
+public class NodePermissionLogServiceImpl
+        extends ServiceImpl<NodePermissionLogMapper, NodePermissionLogEntity>
+        implements INodePermissionLogService {
+
+    @Override
+    public PageInfo<NodePermissionLogVo> pageBySpaceNodeId(Long spaceNodeId, String keyword, int pageNo, int pageSize) {
+        LambdaQueryWrapper<NodePermissionLogEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(NodePermissionLogEntity::getSpaceNodeId, spaceNodeId);
+        if (StrUtil.isNotBlank(keyword)) {
+            // 将中文关键词反向映射为角色码，支持用户用中文搜索角色
+            List<String> matchedRoleCodes = new ArrayList<>();
+            for (Map.Entry<String, String> entry : ROLE_DISPLAY_MAP.entrySet()) {
+                if (entry.getValue().contains(keyword)) {
+                    matchedRoleCodes.add(entry.getKey());
+                }
+            }
+            if (keyword.contains("移除") || "移除所有权限".contains(keyword)) {
+                // action=remove 表示移除权限，old_role/new_role 里不会存中文
+                // 通过 action 字段匹配
+                matchedRoleCodes.add("__REMOVE__");
+            }
+
+            wrapper.and(w -> {
+                w.like(NodePermissionLogEntity::getOperatorName, keyword)
+                        .or().like(NodePermissionLogEntity::getTargetName, keyword)
+                        .or().like(NodePermissionLogEntity::getNewRole, keyword)
+                        .or().like(NodePermissionLogEntity::getOldRole, keyword);
+                for (String roleCode : matchedRoleCodes) {
+                    if ("__REMOVE__".equals(roleCode)) {
+                        w.or().eq(NodePermissionLogEntity::getAction, "remove");
+                    } else {
+                        w.or().eq(NodePermissionLogEntity::getNewRole, roleCode)
+                                .or().eq(NodePermissionLogEntity::getOldRole, roleCode);
+                    }
+                }
+            });
+        }
+        wrapper.orderByDesc(NodePermissionLogEntity::getCreatedAt);
+
+        IPage<NodePermissionLogEntity> page = page(new Page<>(pageNo, pageSize), wrapper);
+        IPage<NodePermissionLogVo> voPage = page.convert(this::toVo);
+        return PageHelper.build(voPage);
+    }
+
+    @Override
+    public void log(Long spaceNodeId, String spaceId, Long operatorId, String operatorName,
+                    String targetName, Integer targetType, String action, String oldRole, String newRole) {
+        NodePermissionLogEntity entity = NodePermissionLogEntity.builder()
+                .spaceNodeId(spaceNodeId)
+                .spaceId(spaceId)
+                .operatorId(operatorId)
+                .operatorName(operatorName)
+                .targetName(targetName)
+                .targetType(targetType)
+                .action(action)
+                .oldRole(oldRole)
+                .newRole(newRole)
+                .build();
+        save(entity);
+    }
+
+    private NodePermissionLogVo toVo(NodePermissionLogEntity entity) {
+        NodePermissionLogVo vo = new NodePermissionLogVo();
+        vo.setOperatorName(entity.getOperatorName());
+        vo.setCreatedAt(entity.getCreatedAt());
+        vo.setTargetName(entity.getTargetName());
+
+        String action = entity.getAction();
+        if ("remove".equals(action)) {
+            vo.setDescription("将 " + entity.getTargetName() + " 权限改为 移除所有权限");
+            vo.setNewRoleDisplay("移除所有权限");
+        } else {
+            String roleDisplay = ROLE_DISPLAY_MAP.getOrDefault(entity.getNewRole(), entity.getNewRole());
+            vo.setDescription("将 " + entity.getTargetName() + " 权限改为 " + roleDisplay);
+            vo.setNewRoleDisplay(roleDisplay);
+        }
+        return vo;
+    }
+}

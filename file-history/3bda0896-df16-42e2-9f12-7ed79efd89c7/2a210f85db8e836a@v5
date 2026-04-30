@@ -1,0 +1,51 @@
+package com.yottastudios.ns.collabspace.feedback.vo;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class FeedbackVo {
+
+    private Long id;
+
+    /** 反馈人标识 */
+    private String userId;
+
+    /** 反馈人昵称 */
+    private String userName;
+
+    /** 反馈时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime feedbackTime;
+
+    /** 文档类型 */
+    private String docType;
+
+    /** 反馈类型 */
+    private String feedbackType;
+
+    /** 相关链接 */
+    private String relatedLink;
+
+    /** 反馈内容 */
+    private String content;
+
+    /** 附件URL列表 */
+    private List<String> attachments;
+
+    /** 其他信息 */
+    private String extraInfo;
+
+    /** 来源 */
+    private String source;
+
+    /** 反馈状态 */
+    private Integer status;
+}

@@ -1,0 +1,1303 @@
+     1→package com.yottastudios.ns.collabspace.nextcloud.service;
+     2→
+     3→import com.fasterxml.jackson.core.JsonProcessingException;
+     4→import com.fasterxml.jackson.databind.JsonNode;
+     5→import com.fasterxml.jackson.databind.ObjectMapper;
+     6→import com.yottastudios.ns.collabspace.base.config.NodeKeyType;
+     7→import com.yottastudios.ns.collabspace.base.entity.NodeEntity;
+     8→import com.yottastudios.ns.collabspace.base.service.INodeService;
+     9→import com.yottastudios.ns.collabspace.base.vo.TreeNode;
+    10→import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+    11→import com.yottastudios.ns.collabspace.nextcloud.dto.NextcloudWebhookTaskDto;
+    12→import com.yottastudios.ns.collabspace.nextcloud.enums.NextcloudSyncOperationEnum;
+    13→import com.yottastudios.ns.collabspace.nextcloud.event.NextcloudNodeWrittenEvent;
+    14→import com.yottastudios.ns.collabspace.nextcloud.service.NextcloudCreateTreeBuilder.CreateBucket;
+    15→import com.yottastudios.ns.collabspace.nextcloud.service.NextcloudCreateTreeBuilder.CreateItem;
+    16→import com.yottastudios.ns.collabspace.nextcloud.service.NextcloudWebhookWindowMergeService.MergedBatch;
+    17→import com.yottastudios.ns.collabspace.shared.mq.RagDocNotifyPublisher;
+    18→import com.yottastudios.ns.collabspace.shared.holder.OperationSourceHolder;
+    19→import com.yottastudios.ns.collabspace.shared.holder.UserHolder;
+    20→import com.yottastudios.ns.collabspace.space.entity.SpaceEntity;
+    21→import com.yottastudios.ns.collabspace.space.service.ISpaceService;
+    22→import com.yottastudios.ns.collabspace.third.feign.NextcloudService;
+    23→import com.yottastudios.ns.collabspace.third.resp.NextcloudPropfindMultiStatus;
+    24→import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
+    25→import com.yottastudios.ns.collabspace.workspace.action.PathSyncable;
+    26→import com.yottastudios.ns.collabspace.workspace.action.context.NameSyncContext;
+    27→import com.yottastudios.ns.collabspace.workspace.action.context.pathsync.PathRenamedContext;
+    28→import com.yottastudios.ns.collabspace.workspace.action.factory.AppSpaceNodeActionFactory;
+    29→import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeEntity;
+    30→import com.yottastudios.ns.collabspace.workspace.enums.SpaceNodeTypeEnum;
+    31→import com.yottastudios.ns.collabspace.workspace.manager.update.SpaceNodeUpdateManager;
+    32→import com.yottastudios.ns.collabspace.workspace.ro.SpaceNodeBatchCreateReq;
+    33→import com.yottastudios.ns.collabspace.workspace.ro.MoveSpaceNodeRo;
+    34→import com.yottastudios.ns.collabspace.workspace.ro.SpaceNodeUpdateRo;
+    35→import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeService;
+    36→import com.yottastudios.ns.collabspace.workspace.service.thirdparty.ThirdAppUploadDataServiceFactory;
+    37→import com.yottastudios.ns.collabspace.workspace.vo.SpaceNodeVo;
+    38→import jakarta.annotation.Resource;
+    39→import lombok.extern.slf4j.Slf4j;
+    40→import org.apache.commons.collections4.CollectionUtils;
+    41→import org.apache.commons.lang3.StringUtils;
+    42→import org.springframework.beans.factory.annotation.Autowired;
+    43→import org.springframework.stereotype.Service;
+    44→
+    45→import java.time.Instant;
+    46→import java.time.LocalDateTime;
+    47→import java.time.ZoneId;
+    48→import java.time.format.DateTimeFormatter;
+    49→import java.util.ArrayList;
+    50→import java.util.HashMap;
+    51→import java.util.HashSet;
+    52→import java.util.LinkedHashMap;
+    53→import java.util.LinkedHashSet;
+    54→import java.util.List;
+    55→import java.util.Locale;
+    56→import java.util.Map;
+    57→import java.util.Objects;
+    58→import java.util.Set;
+    59→import java.util.concurrent.CompletableFuture;
+    60→import java.util.concurrent.ConcurrentHashMap;
+    61→import java.util.concurrent.ExecutorService;
+    62→import java.util.concurrent.Executors;
+    63→import java.util.regex.Matcher;
+    64→import java.util.regex.Pattern;
+    65→import java.util.stream.Collectors;
+    66→
+    67→import static com.yottastudios.ns.collabspace.core.support.tree.v2.DefaultTreeBuildFactory.ROOT_PARENT_ID;
+    68→import static com.yottastudios.ns.collabspace.core.support.tree.v2.DefaultTreeBuildFactory.ROOT_PRE_ID;
+    69→
+    70→@Service
+    71→@Slf4j
+    72→public class NextCloudWebhookService {
+    73→
+    74→    private static final String NEXTCLOUD_FILES_MARKER = "files";
+    75→    private static final int MIN_PATH_PARTS = 4;
+    76→    private static final DateTimeFormatter UPDATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    77→    private static final Pattern CONFLICT_SUFFIX_PATTERN = Pattern.compile("^(.*)\\((\\d+)\\)$");
+    78→    private static final Set<String> COMMON_FILE_EXTENSIONS = Set.of(
+    79→            "txt", "md", "markdown", "json", "xml", "yaml", "yml", "csv", "tsv", "log",
+    80→            "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pdf",
+    81→            "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "heic",
+    82→            "mp3", "wav", "ogg", "m4a", "flac", "aac",
+    83→            "mp4", "mov", "avi", "mkv", "webm", "flv", "wmv", "m4v",
+    84→            "zip", "rar", "7z", "tar", "gz", "bz2", "xz",
+    85→            "java", "kt", "kts", "go", "py", "js", "ts", "jsx", "tsx",
+    86→            "html", "htm", "css", "scss", "less", "sql", "sh", "bat",
+    87→            "c", "cc", "cpp", "h", "hpp", "cs", "php", "rb", "rs", "swift"
+    88→    );
+    89→
+    90→    @Resource
+    91→    private SpaceNodeUpdateManager spaceNodeUpdateManager;
+    92→
+    93→    @Resource
+    94→    private ISpaceNodeService spaceNodeService;
+    95→
+    96→    @Resource
+    97→    private ISpaceService spaceService;
+    98→
+    99→    @Resource
+   100→    private INodeService nodeService;
+   101→
+   102→    @Resource
+   103→    private IApitableGrpcClientService apitableGrpcClientService;
+   104→
+   105→    @Resource
+   106→    private NextcloudSyncMarkerService markerService;
+   107→
+   108→    @Resource
+   109→    private NextcloudCreateTreeBuilder nextcloudCreateTreeBuilder;
+   110→
+   111→    @Resource
+   112→    private ObjectMapper objectMapper;
+   113→
+   114→    @Resource
+   115→    private NextcloudService nextcloudService;
+   116→
+   117→    @Resource
+   118→    private ThirdAppUploadDataServiceFactory thirdAppUploadDataServiceFactory;
+   119→
+   120→    @Resource
+   121→    private AppSpaceNodeActionFactory appSpaceNodeActionFactory;
+   122→
+   123→    @Autowired(required = false)
+   124→    private RagDocNotifyPublisher ragDocNotifyPublisher;
+   125→
+   126→    private record NextcloudPathInfo(
+   127→            SpaceEntity spaceEntity,
+   128→            String[] pathParts,
+   129→            int spaceNameIndex,
+   130→            String spaceName,
+   131→            String fileName
+   132→    ) {
+   133→    }
+   134→
+   135→    private record ParsedNextcloudPath(
+   136→            String spaceId,
+   137→            String spaceName,
+   138→            String fileName,
+   139→            List<String> folders
+   140→    ) {
+   141→    }
+   142→
+   143→    private record NameParts(
+   144→            String baseName,
+   145→            String suffix
+   146→    ) {
+   147→    }
+   148→
+   149→    private record ResolvedCreateRoot(
+   150→            SpaceNodeBatchCreateReq root,
+   151→            String requestedName
+   152→    ) {
+   153→    }
+   154→
+   155→    private enum TaskProcessResult {
+   156→        SUCCESS,
+   157→        SKIPPED
+   158→    }
+   159→
+   160→    private static class TaskStats {
+   161→        private int success;
+   162→        private int skipped;
+   163→        private int failed;
+   164→
+   165→        private void markSuccess() {
+   166→            success++;
+   167→        }
+   168→
+   169→        private void markSkipped() {
+   170→            skipped++;
+   171→        }
+   172→
+   173→        private void markFailed() {
+   174→            failed++;
+   175→        }
+   176→    }
+   177→
+   178→    public void handleWebhookMergedBatch(MergedBatch mergedBatch) {
+   179→        if (mergedBatch == null) {
+   180→            log.warn("mergedBatch为空，跳过处理");
+   181→            return;
+   182→        }
+   183→        OperationSourceHolder.set(OperationSourceHolder.NEXTCLOUD_WEBHOOK);
+   184→        try {
+   185→            log.info("开始处理mergedBatch. deletes: {}, renames: {}, creates: {}",
+   186→                    CollectionUtils.size(mergedBatch.deletes()),
+   187→                    CollectionUtils.size(mergedBatch.renames()),
+   188→                    CollectionUtils.size(mergedBatch.creates()));
+   189→            handleDeletedTasks(mergedBatch.deletes());
+   190→            handleRenamedTasks(mergedBatch.renames());
+   191→            handleCreatedTasks(mergedBatch.creates());
+   192→            log.info("mergedBatch处理完成");
+   193→        } finally {
+   194→            OperationSourceHolder.clear();
+   195→        }
+   196→    }
+   197→
+   198→    public void syncNodeWrittenUpdateTime(String webhookPayload) throws JsonProcessingException {
+   199→        NextcloudNodeWrittenEvent nodeWrittenEvent = objectMapper.readValue(webhookPayload, NextcloudNodeWrittenEvent.class);
+   200→        if (nodeWrittenEvent == null || nodeWrittenEvent.getEvent() == null || nodeWrittenEvent.getEvent().getNode() == null) {
+   201→            log.warn("Nextcloud webhook nodeWritten payload invalid");
+   202→            return;
+   203→        }
+   204→        Integer fileId = nodeWrittenEvent.getEvent().getNode().getId();
+   205→        if (fileId == null) {
+   206→            log.warn("Nextcloud webhook nodeWritten missing fileId");
+   207→            return;
+   208→        }
+   209→        Long eventTime = nodeWrittenEvent.getTime();
+   210→        if (eventTime == null || eventTime <= 0) {
+   211→            log.warn("Nextcloud webhook nodeWritten missing or invalid updateTime, fileId={}", fileId);
+   212→            return;
+   213→        }
+   214→        LocalDateTime updateDateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(eventTime), ZoneId.systemDefault());
+   215→        String updateTime = UPDATE_TIME_FORMATTER.format(updateDateTime);
+   216→        String params = objectMapper.writeValueAsString(buildUploadUpdateTimeParamMap(String.valueOf(fileId), updateTime));
+   217→        thirdAppUploadDataServiceFactory.getService(SpaceNodeTypeEnum.NEXTCLOUD.getValue()).uploadUpdateTime(params);
+   218→    }
+   219→
+   220→    private Map<String, String> buildUploadUpdateTimeParamMap(String appId, String updateTime) {
+   221→        Map<String, String> params = new HashMap<>();
+   222→        params.put("appId", appId);
+   223→        params.put("updateTime", updateTime);
+   224→        return params;
+   225→    }
+   226→
+   227→    private void handleDeletedTasks(List<NextcloudWebhookTaskDto> tasks) {
+   228→        if (CollectionUtils.isEmpty(tasks)) {
+   229→            log.info("删除任务为空，跳过处理");
+   230→            return;
+   231→        }
+   232→        log.info("开始处理删除任务. taskCount: {}", tasks.size());
+   233→        TaskStats stats = new TaskStats();
+   234→        Map<String, List<NextcloudWebhookTaskDto>> groupedByUserName = tasks.stream()
+   235→                .filter(Objects::nonNull)
+   236→                .filter(task -> StringUtils.isNotBlank(task.getPath()))
+   237→                .collect(Collectors.groupingBy(task -> StringUtils.defaultString(task.getUserName())));
+   238→        log.info("删除任务分组完成. userGroupCount: {}", groupedByUserName.size());
+   239→        for (Map.Entry<String, List<NextcloudWebhookTaskDto>> entry : groupedByUserName.entrySet()) {
+   240→            String userName = entry.getKey();
+   241→            if (StringUtils.isBlank(userName)) {
+   242→                log.warn("删除任务存在空userName分组，已跳过. groupTaskCount: {}", entry.getValue().size());
+   243→                continue;
+   244→            }
+   245→            Long userId = setUserHolder(userName);
+   246→            if (userId == null) {
+   247→                log.warn("删除任务设置用户上下文失败，已跳过该分组. userName: {}, groupTaskCount: {}", userName, entry.getValue().size());
+   248→                continue;
+   249→            }
+   250→            log.info("开始处理删除任务分组. userName: {}, userId: {}, groupTaskCount: {}", userName, userId, entry.getValue().size());
+   251→            for (NextcloudWebhookTaskDto task : entry.getValue()) {
+   252→                try {
+   253→                    ParsedNextcloudPath parsedPath = parseNextcloudPath(task.getPath());
+   254→                    if (parsedPath == null) {
+   255→                        log.warn("删除任务路径解析失败，已跳过. fileId: {}, path: {}", task.getFileId(), task.getPath());
+   256→                        stats.markSkipped();
+   257→                        continue;
+   258→                    }
+   259→                    SpaceNodeEntity existedSpaceNode = findExistedSpaceNodeByPath(parsedPath.spaceId(), parsedPath.folders(), parsedPath.fileName(), task.getFileId());
+   260→                    if (existedSpaceNode == null) {
+   261→                        log.info("删除任务未找到对应节点，已跳过. fileId: {}, path: {}", task.getFileId(), task.getPath());
+   262→                        stats.markSkipped();
+   263→                        continue;
+   264→                    }
+   265→                    log.info("执行删除任务. userName: {}, spaceNodeId: {}, fileId: {}, path: {}",
+   266→                            userName, existedSpaceNode.getId(), task.getFileId(), task.getPath());
+   267→                    // 通知 rag-doc-server 删除 Ragflow 中对应的文档
+   268→                    if (ragDocNotifyPublisher != null) {
+   269→                        ragDocNotifyPublisher.publishDocDelete(existedSpaceNode);
+   270→                    }
+   271→                    spaceNodeUpdateManager.deleteSpaceNode(existedSpaceNode.getId(), userId);
+   272→                    stats.markSuccess();
+   273→                } catch (Exception e) {
+   274→                    stats.markFailed();
+   275→                    log.error("删除原子任务处理失败，已隔离. userName: {}, fileId: {}, path: {}, error: {}",
+   276→                            userName, task.getFileId(), task.getPath(), e.getMessage(), e);
+   277→                }
+   278→            }
+   279→        }
+   280→        log.info("删除任务处理完成. successCount: {}, skippedCount: {}, failedCount: {}",
+   281→                stats.success, stats.skipped, stats.failed);
+   282→    }
+   283→
+   284→    private void handleRenamedTasks(List<NextcloudWebhookTaskDto> tasks) {
+   285→        if (CollectionUtils.isEmpty(tasks)) {
+   286→            log.info("重命名任务为空，跳过处理");
+   287→            return;
+   288→        }
+   289→        log.info("开始处理重命名任务. taskCount: {}", tasks.size());
+   290→        TaskStats stats = new TaskStats();
+   291→        Map<String, List<NextcloudWebhookTaskDto>> groupedByUserName = tasks.stream()
+   292→                .filter(Objects::nonNull)
+   293→                .collect(Collectors.groupingBy(task -> StringUtils.defaultString(task.getUserName())));
+   294→        log.info("重命名任务分组完成. userGroupCount: {}", groupedByUserName.size());
+   295→        for (Map.Entry<String, List<NextcloudWebhookTaskDto>> entry : groupedByUserName.entrySet()) {
+   296→            String userName = entry.getKey();
+   297→            if (StringUtils.isBlank(userName)) {
+   298→                log.warn("重命名任务存在空userName分组，已跳过. groupTaskCount: {}", entry.getValue().size());
+   299→                continue;
+   300→            }
+   301→            Long userId = setUserHolder(userName);
+   302→            if (userId == null) {
+   303→                log.warn("重命名任务设置用户上下文失败，已跳过该分组. userName: {}, groupTaskCount: {}", userName, entry.getValue().size());
+   304→                continue;
+   305→            }
+   306→            log.info("开始处理重命名任务分组. userName: {}, userId: {}, groupTaskCount: {}", userName, userId, entry.getValue().size());
+   307→            for (NextcloudWebhookTaskDto task : entry.getValue()) {
+   308→                try {
+   309→                    TaskProcessResult result = processRenamedTask(task, userName, userId);
+   310→                    if (result == TaskProcessResult.SUCCESS) {
+   311→                        stats.markSuccess();
+   312→                        continue;
+   313→                    }
+   314→                    stats.markSkipped();
+   315→                } catch (Exception e) {
+   316→                    stats.markFailed();
+   317→                    log.error("重命名原子任务处理失败，已隔离. userName: {}, fileId: {}, sourcePath: {}, targetPath: {}, error: {}",
+   318→                            userName, task.getFileId(), resolveRenameSourcePath(task), task.getPath(), e.getMessage(), e);
+   319→                }
+   320→            }
+   321→        }
+   322→        log.info("重命名任务处理完成. successCount: {}, skippedCount: {}, failedCount: {}",
+   323→                stats.success, stats.skipped, stats.failed);
+   324→    }
+   325→
+   326→    private void handleCreatedTasks(List<NextcloudWebhookTaskDto> tasks) {
+   327→        if (CollectionUtils.isEmpty(tasks)) {
+   328→            log.info("创建任务为空，跳过处理");
+   329→            return;
+   330→        }
+   331→        log.info("开始处理创建任务. taskCount: {}", tasks.size());
+   332→        TaskStats stats = new TaskStats();
+   333→        Map<String, List<NextcloudWebhookTaskDto>> groupedByUserName = tasks.stream()
+   334→                .filter(Objects::nonNull)
+   335→                .filter(task -> StringUtils.isNotBlank(task.getPath()))
+   336→                .collect(Collectors.groupingBy(task -> StringUtils.defaultString(task.getUserName())));
+   337→        log.info("创建任务按用户分组完成. userGroupCount: {}", groupedByUserName.size());
+   338→        for (Map.Entry<String, List<NextcloudWebhookTaskDto>> userEntry : groupedByUserName.entrySet()) {
+   339→            String userName = userEntry.getKey();
+   340→            if (StringUtils.isBlank(userName)) {
+   341→                log.warn("创建任务存在空userName分组，已跳过. groupTaskCount: {}", userEntry.getValue().size());
+   342→                continue;
+   343→            }
+   344→            Long userId = setUserHolder(userName);
+   345→            if (userId == null) {
+   346→                log.warn("创建任务设置用户上下文失败，已跳过该分组. userName: {}, groupTaskCount: {}", userName, userEntry.getValue().size());
+   347→                continue;
+   348→            }
+   349→            log.info("开始处理创建任务用户分组. userName: {}, userId: {}, groupTaskCount: {}", userName, userId, userEntry.getValue().size());
+   350→            Map<String, List<NextcloudWebhookTaskDto>> groupedBySpaceId = userEntry.getValue().stream()
+   351→                    .collect(Collectors.groupingBy(task -> {
+   352→                        ParsedNextcloudPath parsed = parseNextcloudPath(task.getPath());
+   353→                        return parsed == null ? "" : parsed.spaceId();
+   354→                    }));
+   355→            log.info("创建任务按space分组完成. userName: {}, spaceGroupCount: {}", userName, groupedBySpaceId.size());
+   356→            for (Map.Entry<String, List<NextcloudWebhookTaskDto>> spaceEntry : groupedBySpaceId.entrySet()) {
+   357→                String spaceId = spaceEntry.getKey();
+   358→                if (StringUtils.isBlank(spaceId)) {
+   359→                    log.warn("创建任务存在空spaceId分组，已跳过. userName: {}, groupTaskCount: {}", userName, spaceEntry.getValue().size());
+   360→                    continue;
+   361→                }
+   362→                List<NextcloudWebhookTaskDto> spaceTasks = spaceEntry.getValue();
+   363→                log.info("开始处理创建任务分组. userName: {}, spaceId: {}, groupTaskCount: {}", userName, spaceId, spaceTasks.size());
+   364→                Set<String> existingFileIds = loadExistingFileIds(spaceId, spaceTasks);
+   365→                Map<String, Boolean> pathTypeMap = preloadDirectoryTypeMap(spaceTasks);
+   366→                List<CreateItem> createItems = new ArrayList<>();
+   367→                for (NextcloudWebhookTaskDto task : spaceTasks) {
+   368→                    try {
+   369→                        ParsedNextcloudPath parsed = parseNextcloudPath(task.getPath());
+   370→                        if (parsed == null || StringUtils.isBlank(parsed.fileName())) {
+   371→                            log.warn("创建任务路径解析失败或文件名为空，已跳过. userName: {}, fileId: {}, path: {}", userName, task.getFileId(), task.getPath());
+   372→                            stats.markSkipped();
+   373→                            continue;
+   374→                        }
+   375→                        String relativePath = extractRelativePathFromWebhookPath(task.getPath());
+   376→                        if (StringUtils.isBlank(relativePath)) {
+   377→                            relativePath = buildRelativePath(parsed);
+   378→                        }
+   379→                        boolean isFolder = Boolean.TRUE.equals(pathTypeMap.get(relativePath));
+   380→                        Integer nodeType = isFolder ? SpaceNodeTypeEnum.FOLDER.getValue() : SpaceNodeTypeEnum.NEXTCLOUD.getValue();
+   381→                        String detail = isFolder ? buildFolderCreateDetail(relativePath) : buildFileCreateDetail(relativePath);
+   382→
+   383→                        boolean marked = false;
+   384→                        if (StringUtils.isNotBlank(task.getFileId())) {
+   385→                            marked = markerService.isMarkedAndConsume(parsed.spaceId(), task.getFileId(), NextcloudSyncOperationEnum.CREATE, detail);
+   386→                        }
+   387→                        if (!marked) {
+   388→                            marked = markerService.isMarkedAndConsumeByPath(parsed.spaceId(), NextcloudSyncOperationEnum.CREATE, detail);
+   389→                        }
+   390→                        if (marked) {
+   391→                            log.info("创建任务命中自同步标记，跳过. userName: {}, spaceId: {}, fileId: {}, path: {}",
+   392→                                    userName, parsed.spaceId(), task.getFileId(), task.getPath());
+   393→                            stats.markSkipped();
+   394→                            continue;
+   395→                        }
+   396→
+   397→                        if (StringUtils.isNotBlank(task.getFileId()) && existingFileIds.contains(task.getFileId())) {
+   398→                            log.info("创建任务节点已存在，已跳过. userName: {}, fileId: {}, path: {}", userName, task.getFileId(), task.getPath());
+   399→                            stats.markSkipped();
+   400→                            continue;
+   401→                        }
+   402→
+   403→                        if (isFolder) {
+   404→                            SpaceNodeEntity existedFolder = findExistedSpaceNodeByPath(parsed.spaceId(), parsed.folders(), parsed.fileName(), null);
+   405→                            if (existedFolder != null) {
+   406→                                log.info("创建任务文件夹同名已存在，跳过. userName: {}, spaceId: {}, folderName: {}, path: {}",
+   407→                                        userName, parsed.spaceId(), parsed.fileName(), task.getPath());
+   408→                                stats.markSkipped();
+   409→                                continue;
+   410→                            }
+   411→                        }
+   412→
+   413→                        createItems.add(new CreateItem(parsed.folders(), parsed.fileName(), nodeType, task.getFileId()));
+   414→                    } catch (Exception e) {
+   415→                        stats.markFailed();
+   416→                        log.error("创建原子任务预处理失败，已隔离. userName: {}, fileId: {}, path: {}, error: {}",
+   417→                                userName, task.getFileId(), task.getPath(), e.getMessage(), e);
+   418→                    }
+   419→                }
+   420→                List<CreateBucket> buckets = nextcloudCreateTreeBuilder.buildBuckets(createItems);
+   421→                log.info("创建任务构建bucket完成. userName: {}, spaceId: {}, createItemCount: {}, bucketCount: {}",
+   422→                        userName, spaceId, createItems.size(), buckets.size());
+   423→                for (CreateBucket bucket : buckets) {
+   424→                    Long parentNodeId = ensureFoldersExist(spaceId, bucket.parentFolders());
+   425→                    if (parentNodeId == null) {
+   426→                        log.warn("创建任务bucket父目录准备失败，已跳过该bucket. userName: {}, spaceId: {}, parentFolders: {}, rootCount: {}",
+   427→                                userName, spaceId, bucket.parentFolders(), CollectionUtils.size(bucket.roots()));
+   428→                        continue;
+   429→                    }
+   430→                    List<ResolvedCreateRoot> resolvedRoots = resolveBucketRootConflicts(spaceId, parentNodeId, bucket.roots());
+   431→                    for (ResolvedCreateRoot resolvedRoot : resolvedRoots) {
+   432→                        SpaceNodeBatchCreateReq root = resolvedRoot.root();
+   433→                        try {
+   434→                            log.info("执行创建原子任务. userName: {}, spaceId: {}, parentNodeId: {}, rootName: {}, rootType: {}",
+   435→                                    userName, spaceId, parentNodeId, root.getName(), root.getType());
+   436→                            List<TreeNode<SpaceNodeVo>> createdRoots =
+   437→                                    spaceNodeUpdateManager.createSpaceNodesOnlyInAioBatch(spaceId, parentNodeId, List.of(root));
+   438→                            syncResolvedCreateRootNameIfNeeded(createdRoots, resolvedRoot, spaceId, bucket.parentFolders(), userId);
+   439→                            // 通知 RAG 索引新创建的 NEXTCLOUD 文件节点
+   440→                            notifyRagForCreatedNodes(createdRoots, spaceId);
+   441→                            stats.markSuccess();
+   442→                        } catch (Exception e) {
+   443→                            stats.markFailed();
+   444→                            log.error("创建原子任务处理失败，已隔离. userName: {}, spaceId: {}, parentNodeId: {}, rootName: {}, error: {}",
+   445→                                    userName, spaceId, parentNodeId, root.getName(), e.getMessage(), e);
+   446→                        }
+   447→                    }
+   448→                }
+   449→            }
+   450→        }
+   451→        log.info("创建任务处理完成. successCount: {}, skippedCount: {}, failedCount: {}",
+   452→                stats.success, stats.skipped, stats.failed);
+   453→    }
+   454→
+   455→    private void notifyRagForCreatedNodes(List<TreeNode<SpaceNodeVo>> createdRoots, String spaceId) {
+   456→        if (ragDocNotifyPublisher == null || CollectionUtils.isEmpty(createdRoots)) {
+   457→            return;
+   458→        }
+   459→        for (TreeNode<SpaceNodeVo> root : createdRoots) {
+   460→            collectAndNotifyNextcloudNodes(root, spaceId);
+   461→        }
+   462→    }
+   463→
+   464→    private void collectAndNotifyNextcloudNodes(TreeNode<SpaceNodeVo> treeNode, String spaceId) {
+   465→        if (treeNode == null || treeNode.getData() == null) {
+   466→            return;
+   467→        }
+   468→        SpaceNodeVo vo = treeNode.getData();
+   469→        if (SpaceNodeTypeEnum.NEXTCLOUD.getValue().equals(vo.getType())) {
+   470→            SpaceNodeEntity entity = new SpaceNodeEntity();
+   471→            entity.setId(vo.getId());
+   472→            entity.setSpaceId(spaceId);
+   473→            entity.setType(vo.getType());
+   474→            ragDocNotifyPublisher.publishDocChange(entity);
+   475→        }
+   476→        if (CollectionUtils.isNotEmpty(treeNode.getChildren())) {
+   477→            for (TreeNode<SpaceNodeVo> child : treeNode.getChildren()) {
+   478→                collectAndNotifyNextcloudNodes(child, spaceId);
+   479→            }
+   480→        }
+   481→    }
+   482→
+   483→    private List<ResolvedCreateRoot> resolveBucketRootConflicts(String spaceId, Long parentNodeId,
+   484→                                                                List<SpaceNodeBatchCreateReq> roots) {
+   485→        if (StringUtils.isBlank(spaceId) || parentNodeId == null || CollectionUtils.isEmpty(roots)) {
+   486→            return CollectionUtils.isEmpty(roots)
+   487→                    ? List.of()
+   488→                    : roots.stream()
+   489→                    .map(root -> new ResolvedCreateRoot(root, root == null ? null : root.getName()))
+   490→                    .toList();
+   491→        }
+   492→        Set<String> occupiedNames = loadOccupiedNames(spaceId, List.of(parentNodeId), null);
+   493→        List<ResolvedCreateRoot> resolvedRoots = new ArrayList<>(roots.size());
+   494→        for (SpaceNodeBatchCreateReq root : roots) {
+   495→            if (root == null || StringUtils.isBlank(root.getName())) {
+   496→                resolvedRoots.add(new ResolvedCreateRoot(root, root == null ? null : root.getName()));
+   497→                continue;
+   498→            }
+   499→            String requestedName = root.getName();
+   500→            String resolvedName = resolveAvailableNameWithOccupiedNames(occupiedNames, root.getName(), root.getType());
+   501→            if (!Objects.equals(root.getName(), resolvedName)) {
+   502→                log.info("批量创建根节点命中重名冲突，自动改名. spaceId: {}, parentNodeId: {}, requestedName: {}, resolvedName: {}, rootType: {}",
+   503→                        spaceId, parentNodeId, root.getName(), resolvedName, root.getType());
+   504→            }
+   505→            occupiedNames.add(normalizeNameKey(resolvedName));
+   506→            resolvedRoots.add(new ResolvedCreateRoot(copyBatchCreateReqWithName(root, resolvedName), requestedName));
+   507→        }
+   508→        return resolvedRoots;
+   509→    }
+   510→
+   511→    private void syncResolvedCreateRootNameIfNeeded(List<TreeNode<SpaceNodeVo>> createdRoots, ResolvedCreateRoot resolvedRoot,
+   512→                                                    String spaceId, List<String> parentFolders, Long userId) {
+   513→        if (CollectionUtils.isEmpty(createdRoots) || resolvedRoot == null || resolvedRoot.root() == null
+   514→                || StringUtils.isBlank(resolvedRoot.requestedName())
+   515→                || Objects.equals(resolvedRoot.requestedName(), resolvedRoot.root().getName())) {
+   516→            return;
+   517→        }
+   518→        TreeNode<SpaceNodeVo> createdRoot = createdRoots.getFirst();
+   519→        if (createdRoot == null || createdRoot.getData() == null || createdRoot.getData().getId() == null) {
+   520→            return;
+   521→        }
+   522→        SpaceNodeEntity createdSpaceNode = spaceNodeService.getById(createdRoot.getData().getId());
+   523→        if (createdSpaceNode == null) {
+   524→            return;
+   525→        }
+   526→        ParsedNextcloudPath target = new ParsedNextcloudPath(spaceId, null, resolvedRoot.requestedName(),
+   527→                parentFolders == null ? List.of() : parentFolders);
+   528→        syncResolvedConflictName(createdSpaceNode, resolvedRoot.root().getName(), target, userId);
+   529→    }
+   530→
+   531→    private String resolveAvailableNameWithOccupiedNames(Set<String> occupiedNames, String desiredName, Integer nodeType) {
+   532→        if (StringUtils.isBlank(desiredName) || CollectionUtils.isEmpty(occupiedNames)) {
+   533→            return desiredName;
+   534→        }
+   535→        if (!occupiedNames.contains(normalizeNameKey(desiredName))) {
+   536→            return desiredName;
+   537→        }
+   538→        NameParts nameParts = splitName(desiredName, nodeType);
+   539→        int index = 1;
+   540→        String candidate = desiredName;
+   541→        while (occupiedNames.contains(normalizeNameKey(candidate))) {
+   542→            candidate = buildConflictNameCandidate(nameParts, index);
+   543→            index++;
+   544→        }
+   545→        return candidate;
+   546→    }
+   547→
+   548→    private SpaceNodeBatchCreateReq copyBatchCreateReqWithName(SpaceNodeBatchCreateReq root, String resolvedName) {
+   549→        return SpaceNodeBatchCreateReq.builder()
+   550→                .appSpaceNodeId(root.getAppSpaceNodeId())
+   551→                .name(resolvedName)
+   552→                .type(root.getType())
+   553→                .children(root.getChildren())
+   554→                .build();
+   555→    }
+   556→
+   557→    private Map<String, Boolean> preloadDirectoryTypeMap(List<NextcloudWebhookTaskDto> tasks) {
+   558→        if (CollectionUtils.isEmpty(tasks)) {
+   559→            return Map.of();
+   560→        }
+   561→        // relativePath -> task, 保留 task 引用以便 fallback 时使用 fileId/spaceName
+   562→        Map<String, NextcloudWebhookTaskDto> pathToTask = new LinkedHashMap<>();
+   563→        for (NextcloudWebhookTaskDto task : tasks) {
+   564→            if (task == null || StringUtils.isBlank(task.getPath())) {
+   565→                continue;
+   566→            }
+   567→            String relativePath = extractRelativePathFromWebhookPath(task.getPath());
+   568→            if (StringUtils.isBlank(relativePath)) {
+   569→                continue;
+   570→            }
+   571→            pathToTask.putIfAbsent(relativePath, task);
+   572→        }
+   573→        if (pathToTask.isEmpty()) {
+   574→            return Map.of();
+   575→        }
+   576→
+   577→        Set<String> relativePaths = pathToTask.keySet();
+   578→        Map<String, Boolean> pathTypeMap = new ConcurrentHashMap<>(relativePaths.size());
+   579→        Set<String> parentPaths = collectParentPaths(relativePaths);
+   580→        List<String> unresolvedPaths = new ArrayList<>();
+   581→        for (String relativePath : relativePaths) {
+   582→            if (parentPaths.contains(relativePath)) {
+   583→                pathTypeMap.put(relativePath, true);
+   584→                continue;
+   585→            }
+   586→            if (isLikelyFileByExtension(relativePath)) {
+   587→                pathTypeMap.put(relativePath, false);
+   588→                continue;
+   589→            }
+   590→            unresolvedPaths.add(relativePath);
+   591→        }
+   592→        if (unresolvedPaths.isEmpty()) {
+   593→            return pathTypeMap;
+   594→        }
+   595→
+   596→        log.info("创建任务路径类型预判完成. totalPathCount: {}, folderByTreeCount: {}, fileByExtCount: {}, unresolvedCount: {}",
+   597→                relativePaths.size(),
+   598→                parentPaths.stream().filter(relativePaths::contains).count(),
+   599→                pathTypeMap.values().stream().filter(Boolean.FALSE::equals).count(),
+   600→                unresolvedPaths.size());
+   601→
+   602→        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+   603→            List<CompletableFuture<Void>> futures = new ArrayList<>(unresolvedPaths.size());
+   604→            for (String relativePath : unresolvedPaths) {
+   605→                NextcloudWebhookTaskDto task = pathToTask.get(relativePath);
+   606→                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+   607→                    boolean isFolder = isDirectoryInNextcloud(relativePath, task.getFileId(), task.getSpaceName());
+   608→                    pathTypeMap.put(relativePath, isFolder);
+   609→                }, executor).exceptionally(ex -> {
+   610→                    log.warn("预取Nextcloud路径类型失败，默认按文件夹处理. path: {}, error: {}", relativePath, ex.getMessage());
+   611→                    pathTypeMap.put(relativePath, true);
+   612→                    return null;
+   613→                });
+   614→                futures.add(future);
+   615→            }
+   616→            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+   617→        }
+   618→        return pathTypeMap;
+   619→    }
+   620→
+   621→    private Set<String> collectParentPaths(Set<String> relativePaths) {
+   622→        Set<String> parentPaths = new HashSet<>();
+   623→        for (String relativePath : relativePaths) {
+   624→            if (StringUtils.isBlank(relativePath)) {
+   625→                continue;
+   626→            }
+   627→            int index = relativePath.lastIndexOf('/');
+   628→            while (index > 0) {
+   629→                parentPaths.add(relativePath.substring(0, index));
+   630→                index = relativePath.lastIndexOf('/', index - 1);
+   631→            }
+   632→        }
+   633→        return parentPaths;
+   634→    }
+   635→
+   636→    private boolean isLikelyFileByExtension(String relativePath) {
+   637→        if (StringUtils.isBlank(relativePath)) {
+   638→            return false;
+   639→        }
+   640→        int slashIndex = relativePath.lastIndexOf('/');
+   641→        String fileName = slashIndex >= 0 ? relativePath.substring(slashIndex + 1) : relativePath;
+   642→        if (StringUtils.isBlank(fileName)) {
+   643→            return false;
+   644→        }
+   645→        int dotIndex = fileName.lastIndexOf('.');
+   646→        if (dotIndex <= 0 || dotIndex == fileName.length() - 1) {
+   647→            return false;
+   648→        }
+   649→        String extension = fileName.substring(dotIndex + 1).toLowerCase();
+   650→        return COMMON_FILE_EXTENSIONS.contains(extension);
+   651→    }
+   652→
+   653→    private String extractRelativePathFromWebhookPath(String fieldPath) {
+   654→        if (StringUtils.isBlank(fieldPath)) {
+   655→            return null;
+   656→        }
+   657→        String[] pathParts = fieldPath.split("/");
+   658→        if (pathParts.length < MIN_PATH_PARTS) {
+   659→            return null;
+   660→        }
+   661→        int spaceNameIndex = -1;
+   662→        for (int i = 0; i < pathParts.length; i++) {
+   663→            if (NEXTCLOUD_FILES_MARKER.equals(pathParts[i]) && i + 1 < pathParts.length) {
+   664→                spaceNameIndex = i + 1;
+   665→                break;
+   666→            }
+   667→        }
+   668→        if (spaceNameIndex == -1 || spaceNameIndex >= pathParts.length) {
+   669→            return null;
+   670→        }
+   671→        StringBuilder relativePath = new StringBuilder();
+   672→        for (int i = spaceNameIndex; i < pathParts.length; i++) {
+   673→            String part = pathParts[i];
+   674→            if (StringUtils.isBlank(part)) {
+   675→                continue;
+   676→            }
+   677→            if (!relativePath.isEmpty()) {
+   678→                relativePath.append('/');
+   679→            }
+   680→            relativePath.append(part);
+   681→        }
+   682→        if (relativePath.isEmpty()) {
+   683→            return null;
+   684→        }
+   685→        return relativePath.toString();
+   686→    }
+   687→
+   688→    private Set<String> loadExistingFileIds(String spaceId, List<NextcloudWebhookTaskDto> tasks) {
+   689→        if (StringUtils.isBlank(spaceId)) {
+   690→            return Set.of();
+   691→        }
+   692→        List<String> fileIds = tasks.stream()
+   693→                .map(NextcloudWebhookTaskDto::getFileId)
+   694→                .filter(StringUtils::isNotBlank)
+   695→                .distinct()
+   696→                .toList();
+   697→        if (CollectionUtils.isEmpty(fileIds)) {
+   698→            return Set.of();
+   699→        }
+   700→        List<SpaceNodeEntity> existingNodes = spaceNodeService.listBySpaceIdAndAppSpaceNodeIds(spaceId, fileIds);
+   701→        if (CollectionUtils.isEmpty(existingNodes)) {
+   702→            return Set.of();
+   703→        }
+   704→        Set<String> existingIds = new HashSet<>(existingNodes.size());
+   705→        for (SpaceNodeEntity node : existingNodes) {
+   706→            if (StringUtils.isNotBlank(node.getAppSpaceNodeId())) {
+   707→                existingIds.add(node.getAppSpaceNodeId());
+   708→            }
+   709→        }
+   710→        return existingIds;
+   711→    }
+   712→
+   713→    private String extractRenameSourcePath(String rawPayload) {
+   714→        if (StringUtils.isBlank(rawPayload)) {
+   715→            return null;
+   716→        }
+   717→        try {
+   718→            JsonNode root = objectMapper.readTree(rawPayload);
+   719→            JsonNode event = root.get("event");
+   720→            if (event == null) {
+   721→                return null;
+   722→            }
+   723→            JsonNode source = event.get("source");
+   724→            if (source == null || !source.has("path")) {
+   725→                return null;
+   726→            }
+   727→            return source.get("path").asText();
+   728→        } catch (Exception e) {
+   729→            return null;
+   730→        }
+   731→    }
+   732→
+   733→    private String resolveRenameSourcePath(NextcloudWebhookTaskDto task) {
+   734→        if (task == null) {
+   735→            return null;
+   736→        }
+   737→        if (StringUtils.isNotBlank(task.getSourcePath())) {
+   738→            return task.getSourcePath();
+   739→        }
+   740→        return extractRenameSourcePath(task.getRawPayload());
+   741→    }
+   742→
+   743→    private TaskProcessResult processRenamedTask(NextcloudWebhookTaskDto task, String userName, Long userId) {
+   744→        String sourcePath = resolveRenameSourcePath(task);
+   745→        String targetPath = task.getPath();
+   746→        if (StringUtils.isBlank(sourcePath) || StringUtils.isBlank(targetPath)) {
+   747→            log.warn("重命名任务source/target路径缺失，已跳过. fileId: {}, sourcePath: {}, targetPath: {}",
+   748→                    task.getFileId(), sourcePath, targetPath);
+   749→            return TaskProcessResult.SKIPPED;
+   750→        }
+   751→
+   752→        ParsedNextcloudPath source = parseNextcloudPath(sourcePath);
+   753→        ParsedNextcloudPath target = parseNextcloudPath(targetPath);
+   754→        if (source == null || target == null || !Objects.equals(source.spaceId(), target.spaceId())) {
+   755→            log.warn("重命名任务路径解析失败或跨space，已跳过. fileId: {}, sourcePath: {}, targetPath: {}",
+   756→                    task.getFileId(), sourcePath, targetPath);
+   757→            return TaskProcessResult.SKIPPED;
+   758→        }
+   759→
+   760→        String sourceRelativePath = buildRelativePath(source);
+   761→        String targetRelativePath = buildRelativePath(target);
+   762→        String moveDetail = buildFileMoveDetail(sourceRelativePath, targetRelativePath);
+   763→        if (isRenameSyncMarked(target.spaceId(), task.getFileId(), moveDetail)) {
+   764→            log.info("重命名任务命中自同步标记，已跳过. userName: {}, fileId: {}, sourcePath: {}, targetPath: {}",
+   765→                    userName, task.getFileId(), sourcePath, targetPath);
+   766→            return TaskProcessResult.SKIPPED;
+   767→        }
+   768→
+   769→        SpaceNodeEntity existedSpaceNode = findExistedSpaceNodeByPath(source.spaceId(), source.folders(), source.fileName(), task.getFileId());
+   770→        if (existedSpaceNode == null) {
+   771→            log.info("重命名任务未找到源节点，已跳过. fileId: {}, sourcePath: {}", task.getFileId(), sourcePath);
+   772→            return TaskProcessResult.SKIPPED;
+   773→        }
+   774→
+   775→        NodeEntity currentNode = nodeService.getByRelId(existedSpaceNode.getId());
+   776→        if (currentNode == null) {
+   777→            log.warn("重命名任务无法获取当前节点，已跳过. spaceNodeId: {}, fileId: {}",
+   778→                    existedSpaceNode.getId(), task.getFileId());
+   779→            return TaskProcessResult.SKIPPED;
+   780→        }
+   781→
+   782→        boolean sameParent = Objects.equals(source.folders(), target.folders());
+   783→        Long targetParentNodeId = currentNode.getParentId();
+   784→        if (!sameParent) {
+   785→            targetParentNodeId = ensureFoldersExist(target.spaceId(), target.folders());
+   786→            if (targetParentNodeId == null) {
+   787→                log.warn("重命名任务目标父目录准备失败，已跳过. fileId: {}, targetPath: {}", task.getFileId(), targetPath);
+   788→                return TaskProcessResult.SKIPPED;
+   789→            }
+   790→        }
+   791→
+   792→        String resolvedTargetName = resolveAvailableTargetName(target.spaceId(), targetParentNodeId, target.fileName(),
+   793→                existedSpaceNode.getId(), existedSpaceNode.getType());
+   794→        if (StringUtils.isBlank(resolvedTargetName)) {
+   795→            log.warn("重命名任务无法解析最终目标名，已跳过. fileId: {}, targetPath: {}", task.getFileId(), targetPath);
+   796→            return TaskProcessResult.SKIPPED;
+   797→        }
+   798→
+   799→        if (!sameParent) {
+   800→            String temporaryMoveName = resolveTemporaryMoveName(target.spaceId(), currentNode.getParentId(), targetParentNodeId, existedSpaceNode);
+   801→            if (!Objects.equals(temporaryMoveName, existedSpaceNode.getName())) {
+   802→                log.info("执行重命名任务中的临时改名. userName: {}, spaceNodeId: {}, tempName: {}, fileId: {}",
+   803→                        userName, existedSpaceNode.getId(), temporaryMoveName, task.getFileId());
+   804→                handleRenameOnly(existedSpaceNode, temporaryMoveName, userId);
+   805→                existedSpaceNode = refreshSpaceNode(existedSpaceNode.getId());
+   806→            }
+   807→
+   808→            MoveSpaceNodeRo moveRo = new MoveSpaceNodeRo();
+   809→            moveRo.setNodeId(currentNode.getId());
+   810→            moveRo.setNewParentId(targetParentNodeId);
+   811→            moveRo.setNewPreId(ROOT_PRE_ID);
+   812→            log.info("执行重命名任务中的移动. userName: {}, spaceId: {}, nodeId: {}, targetParentNodeId: {}, sourcePath: {}, targetPath: {}",
+   813→                    userName, target.spaceId(), currentNode.getId(), targetParentNodeId, sourcePath, targetPath);
+   814→            spaceNodeUpdateManager.moveSpaceNode(target.spaceId(), moveRo);
+   815→            existedSpaceNode = refreshSpaceNode(existedSpaceNode.getId());
+   816→        }
+   817→
+   818→        if (existedSpaceNode == null) {
+   819→            log.warn("重命名任务移动后节点不存在，已跳过. fileId: {}, targetPath: {}", task.getFileId(), targetPath);
+   820→            return TaskProcessResult.SKIPPED;
+   821→        }
+   822→        boolean needSyncBack = !Objects.equals(resolvedTargetName, target.fileName());
+   823→        if (Objects.equals(existedSpaceNode.getName(), resolvedTargetName)) {
+   824→            log.info("重命名任务无需再次改名. userName: {}, spaceNodeId: {}, resolvedName: {}, fileId: {}",
+   825→                    userName, existedSpaceNode.getId(), resolvedTargetName, task.getFileId());
+   826→            if (needSyncBack) {
+   827→                syncResolvedConflictName(existedSpaceNode, resolvedTargetName, target, userId);
+   828→            }
+   829→            return TaskProcessResult.SUCCESS;
+   830→        }
+   831→        log.info("执行重命名任务中的改名. userName: {}, spaceNodeId: {}, requestedName: {}, resolvedName: {}, fileId: {}, needSyncBack: {}",
+   832→                userName, existedSpaceNode.getId(), target.fileName(), resolvedTargetName, task.getFileId(), needSyncBack);
+   833→        applyResolvedRename(existedSpaceNode, resolvedTargetName, target, userId, needSyncBack);
+   834→        return TaskProcessResult.SUCCESS;
+   835→    }
+   836→
+   837→    private String resolveAvailableTargetName(String spaceId, Long targetParentNodeId, String desiredName,
+   838→                                              Long currentSpaceNodeId, Integer nodeType) {
+   839→        return resolveAvailableName(spaceId, List.of(targetParentNodeId), desiredName, currentSpaceNodeId, nodeType);
+   840→    }
+   841→
+   842→    private String resolveTemporaryMoveName(String spaceId, Long currentParentNodeId, Long targetParentNodeId,
+   843→                                            SpaceNodeEntity existedSpaceNode) {
+   844→        if (existedSpaceNode == null || !hasNameConflict(spaceId, targetParentNodeId, existedSpaceNode.getName(), existedSpaceNode.getId())) {
+   845→            return existedSpaceNode == null ? null : existedSpaceNode.getName();
+   846→        }
+   847→        return resolveAvailableName(spaceId, List.of(currentParentNodeId, targetParentNodeId), existedSpaceNode.getName(),
+   848→                existedSpaceNode.getId(), existedSpaceNode.getType());
+   849→    }
+   850→
+   851→    private String resolveAvailableName(String spaceId, List<Long> parentNodeIds, String desiredName,
+   852→                                        Long excludeSpaceNodeId, Integer nodeType) {
+   853→        if (StringUtils.isBlank(spaceId) || StringUtils.isBlank(desiredName) || CollectionUtils.isEmpty(parentNodeIds)) {
+   854→            return desiredName;
+   855→        }
+   856→
+   857→        Set<String> occupiedNames = loadOccupiedNames(spaceId, parentNodeIds, excludeSpaceNodeId);
+   858→        if (!occupiedNames.contains(normalizeNameKey(desiredName))) {
+   859→            return desiredName;
+   860→        }
+   861→
+   862→        NameParts nameParts = splitName(desiredName, nodeType);
+   863→        int index = 1;
+   864→        String candidate = desiredName;
+   865→        while (occupiedNames.contains(normalizeNameKey(candidate))) {
+   866→            candidate = buildConflictNameCandidate(nameParts, index);
+   867→            index++;
+   868→        }
+   869→        return candidate;
+   870→    }
+   871→
+   872→    private Set<String> loadOccupiedNames(String spaceId, List<Long> parentNodeIds, Long excludeSpaceNodeId) {
+   873→        Set<String> occupiedNames = new HashSet<>();
+   874→        Set<Long> uniqueParentIds = new LinkedHashSet<>(parentNodeIds);
+   875→        for (Long parentNodeId : uniqueParentIds) {
+   876→            if (parentNodeId == null) {
+   877→                continue;
+   878→            }
+   879→            List<NodeEntity> childNodes = nodeService.getByTreeIdAndParentIdAndNodeKey(spaceId, parentNodeId, NodeKeyType.AIO_FILE_TREE.getValue());
+   880→            if (CollectionUtils.isEmpty(childNodes)) {
+   881→                continue;
+   882→            }
+   883→            List<Long> relIds = childNodes.stream()
+   884→                    .map(NodeEntity::getRelId)
+   885→                    .filter(Objects::nonNull)
+   886→                    .filter(relId -> !Objects.equals(relId, excludeSpaceNodeId))
+   887→                    .toList();
+   888→            if (CollectionUtils.isEmpty(relIds)) {
+   889→                continue;
+   890→            }
+   891→            List<SpaceNodeEntity> spaceNodes = spaceNodeService.listByIds(relIds);
+   892→            if (CollectionUtils.isEmpty(spaceNodes)) {
+   893→                continue;
+   894→            }
+   895→            for (SpaceNodeEntity spaceNode : spaceNodes) {
+   896→                if (StringUtils.isBlank(spaceNode.getName())) {
+   897→                    continue;
+   898→                }
+   899→                occupiedNames.add(normalizeNameKey(spaceNode.getName()));
+   900→            }
+   901→        }
+   902→        return occupiedNames;
+   903→    }
+   904→
+   905→    private boolean hasNameConflict(String spaceId, Long parentNodeId, String name, Long excludeSpaceNodeId) {
+   906→        if (StringUtils.isBlank(name)) {
+   907→            return false;
+   908→        }
+   909→        return loadOccupiedNames(spaceId, List.of(parentNodeId), excludeSpaceNodeId).contains(normalizeNameKey(name));
+   910→    }
+   911→
+   912→    private NameParts splitName(String name, Integer nodeType) {
+   913→        if (SpaceNodeTypeEnum.FOLDER.getValue().equals(nodeType) || StringUtils.isBlank(name)) {
+   914→            return splitConflictName(name, "");
+   915→        }
+   916→        int lastDotIndex = name.lastIndexOf('.');
+   917→        if (lastDotIndex <= 0 || lastDotIndex >= name.length() - 1) {
+   918→            return splitConflictName(name, "");
+   919→        }
+   920→        return splitConflictName(name.substring(0, lastDotIndex), name.substring(lastDotIndex));
+   921→    }
+   922→
+   923→    private NameParts splitConflictName(String baseName, String suffix) {
+   924→        if (StringUtils.isBlank(baseName)) {
+   925→            return new NameParts(baseName, suffix);
+   926→        }
+   927→        Matcher matcher = CONFLICT_SUFFIX_PATTERN.matcher(baseName);
+   928→        if (!matcher.matches()) {
+   929→            return new NameParts(baseName, suffix);
+   930→        }
+   931→        String normalizedBaseName = matcher.group(1);
+   932→        if (StringUtils.isBlank(normalizedBaseName)) {
+   933→            return new NameParts(baseName, suffix);
+   934→        }
+   935→        return new NameParts(normalizedBaseName, suffix);
+   936→    }
+   937→
+   938→    private String buildConflictNameCandidate(NameParts nameParts, int index) {
+   939→        return nameParts.baseName() + "(" + index + ")" + nameParts.suffix();
+   940→    }
+   941→
+   942→    private String normalizeNameKey(String name) {
+   943→        return StringUtils.defaultString(name).toLowerCase(Locale.ROOT);
+   944→    }
+   945→
+   946→    private void applyResolvedRename(SpaceNodeEntity existedSpaceNode, String resolvedTargetName,
+   947→                                     ParsedNextcloudPath target, Long userId, boolean needSyncBack) {
+   948→        handleRenameOnly(existedSpaceNode, resolvedTargetName, userId);
+   949→        if (needSyncBack) {
+   950→            syncResolvedConflictName(existedSpaceNode, resolvedTargetName, target, userId);
+   951→        }
+   952→    }
+   953→
+   954→    private void syncResolvedRenameByAction(SpaceNodeEntity existedSpaceNode, String resolvedTargetName,
+   955→                                            Long userId) {
+   956→        if (existedSpaceNode == null || StringUtils.isBlank(resolvedTargetName)) {
+   957→            return;
+   958→        }
+   959→        SpaceNodeTypeEnum nodeType = SpaceNodeTypeEnum.fromValue(existedSpaceNode.getType());
+   960→        if (StringUtils.isBlank(existedSpaceNode.getAppSpaceNodeId())) {
+   961→            return;
+   962→        }
+   963→        log.info("通过既有同步链路回写Nextcloud冲突修正改名. spaceNodeId: {}, resolvedName: {}, fileId: {}",
+   964→                existedSpaceNode.getId(), resolvedTargetName, existedSpaceNode.getAppSpaceNodeId());
+   965→        OperationSourceHolder.runWithoutSource(() -> appSpaceNodeActionFactory.getNameSyncable(nodeType).syncName(
+   966→                NameSyncContext.builder()
+   967→                        .spaceId(existedSpaceNode.getSpaceId())
+   968→                        .userId(userId)
+   969→                        .appSpaceNodeId(existedSpaceNode.getAppSpaceNodeId())
+   970→                        .name(resolvedTargetName)
+   971→                        .eventTriggerSource(OperationSourceHolder.get())
+   972→                        .build()
+   973→        ));
+   974→    }
+   975→
+   976→    private void syncResolvedConflictName(SpaceNodeEntity existedSpaceNode, String resolvedTargetName,
+   977→                                          ParsedNextcloudPath target, Long userId) {
+   978→        if (existedSpaceNode == null || StringUtils.isBlank(resolvedTargetName)) {
+   979→            return;
+   980→        }
+   981→        SpaceNodeTypeEnum nodeType = SpaceNodeTypeEnum.fromValue(existedSpaceNode.getType());
+   982→        if (SpaceNodeTypeEnum.NEXTCLOUD == nodeType) {
+   983→            syncResolvedRenameByAction(existedSpaceNode, resolvedTargetName, userId);
+   984→            return;
+   985→        }
+   986→        syncResolvedPathRename(existedSpaceNode, resolvedTargetName, target, userId);
+   987→    }
+   988→
+   989→    private void syncResolvedPathRename(SpaceNodeEntity existedSpaceNode, String resolvedTargetName,
+   990→                                        ParsedNextcloudPath target, Long userId) {
+   991→        if (existedSpaceNode == null || target == null || StringUtils.isBlank(target.fileName())
+   992→                || StringUtils.isBlank(resolvedTargetName) || Objects.equals(target.fileName(), resolvedTargetName)) {
+   993→            return;
+   994→        }
+   995→        String oldPath = buildNodePath(target.folders(), target.fileName());
+   996→        String newPath = buildNodePath(target.folders(), resolvedTargetName);
+   997→        log.info("通过既有路径同步链路回写冲突修正改名. spaceNodeId: {}, oldPath: {}, newPath: {}",
+   998→                existedSpaceNode.getId(), oldPath, newPath);
+   999→        PathSyncable pathSyncable = appSpaceNodeActionFactory.getPathSyncable(SpaceNodeTypeEnum.NEXTCLOUD);
+  1000→        if (pathSyncable == null) {
+  1001→            return;
+  1002→        }
+  1003→        OperationSourceHolder.runWithoutSource(() -> pathSyncable.syncPathRenamed(
+  1004→                PathRenamedContext.builder()
+  1005→                        .userId(userId)
+  1006→                        .spaceNodeEntity(existedSpaceNode)
+  1007→                        .eventTriggerSource(OperationSourceHolder.get())
+  1008→                        .oldPath(oldPath)
+  1009→                        .newPath(newPath)
+  1010→                        .build()
+  1011→        ));
+  1012→    }
+  1013→
+  1014→
+  1015→    private String buildNodePath(List<String> folders, String name) {
+  1016→        StringBuilder path = new StringBuilder();
+  1017→        if (CollectionUtils.isNotEmpty(folders)) {
+  1018→            path.append(String.join("/", folders));
+  1019→        }
+  1020→        if (StringUtils.isBlank(name)) {
+  1021→            return path.toString();
+  1022→        }
+  1023→        if (!path.isEmpty()) {
+  1024→            path.append('/');
+  1025→        }
+  1026→        path.append(name);
+  1027→        return path.toString();
+  1028→    }
+  1029→
+  1030→    private boolean isRenameSyncMarked(String spaceId, String fileId, String detail) {
+  1031→        boolean marked = false;
+  1032→        if (StringUtils.isNotBlank(fileId)) {
+  1033→            marked = markerService.isMarkedAndConsume(spaceId, fileId, NextcloudSyncOperationEnum.RENAME, detail)
+  1034→                    || markerService.isMarkedAndConsume(spaceId, fileId, NextcloudSyncOperationEnum.MOVE, detail);
+  1035→        }
+  1036→        if (!marked) {
+  1037→            marked = markerService.isMarkedAndConsumeByPath(spaceId, NextcloudSyncOperationEnum.RENAME, detail)
+  1038→                    || markerService.isMarkedAndConsumeByPath(spaceId, NextcloudSyncOperationEnum.MOVE, detail);
+  1039→        }
+  1040→        return marked;
+  1041→    }
+  1042→
+  1043→    private SpaceNodeEntity refreshSpaceNode(Long spaceNodeId) {
+  1044→        if (spaceNodeId == null) {
+  1045→            return null;
+  1046→        }
+  1047→        return spaceNodeService.getById(spaceNodeId);
+  1048→    }
+  1049→
+  1050→    private void handleRenameOnly(SpaceNodeEntity existedSpaceNode, String newName, Long userId) {
+  1051→        if (existedSpaceNode == null || StringUtils.isBlank(newName)) {
+  1052→            return;
+  1053→        }
+  1054→        if (Objects.equals(existedSpaceNode.getName(), newName)) {
+  1055→            return;
+  1056→        }
+  1057→        SpaceNodeUpdateRo updateRo = new SpaceNodeUpdateRo();
+  1058→        updateRo.setId(existedSpaceNode.getId());
+  1059→        updateRo.setName(newName);
+  1060→        updateRo.setDescription(existedSpaceNode.getDescription());
+  1061→        spaceNodeUpdateManager.updateSpaceNode(updateRo, userId);
+  1062→    }
+  1063→
+  1064→    private Long setUserHolder(String userName) {
+  1065→        if (StringUtils.isBlank(userName)) {
+  1066→            log.warn("userName为空");
+  1067→            return null;
+  1068→        }
+  1069→        UserSimpleInfoVo user = apitableGrpcClientService.getUserByName(userName);
+  1070→        if (user == null) {
+  1071→            log.warn("user: {} not found", userName);
+  1072→            return null;
+  1073→        }
+  1074→        UserHolder.set(user.getId());
+  1075→        return user.getId();
+  1076→    }
+  1077→
+  1078→    private NodeEntity findChildNodeByName(String spaceId, Long parentNodeId, String name) {
+  1079→        if (StringUtils.isBlank(spaceId) || parentNodeId == null || StringUtils.isBlank(name)) {
+  1080→            return null;
+  1081→        }
+  1082→
+  1083→        List<NodeEntity> childNodes = nodeService.getByTreeIdAndParentIdAndNodeKey(spaceId, parentNodeId, 1);
+  1084→        if (CollectionUtils.isEmpty(childNodes)) {
+  1085→            return null;
+  1086→        }
+  1087→
+  1088→        Map<Long, NodeEntity> nodeMap = childNodes.stream()
+  1089→                .collect(Collectors.toMap(NodeEntity::getRelId, node -> node));
+  1090→
+  1091→        List<Long> relIds = new ArrayList<>(nodeMap.keySet());
+  1092→        List<SpaceNodeEntity> spaceNodes = spaceNodeService.listByIds(relIds);
+  1093→        if (CollectionUtils.isEmpty(spaceNodes)) {
+  1094→            return null;
+  1095→        }
+  1096→
+  1097→        for (SpaceNodeEntity spaceNode : spaceNodes) {
+  1098→            if (Objects.equals(name, spaceNode.getName())) {
+  1099→                return nodeMap.get(spaceNode.getId());
+  1100→            }
+  1101→        }
+  1102→        return null;
+  1103→    }
+  1104→
+  1105→    private Long getOrCreateFolderNode(String spaceId, Long parentNodeId, String folderName) {
+  1106→        if (StringUtils.isBlank(spaceId) || parentNodeId == null || StringUtils.isBlank(folderName)) {
+  1107→            return null;
+  1108→        }
+  1109→
+  1110→        NodeEntity existed = findChildNodeByName(spaceId, parentNodeId, folderName);
+  1111→        if (existed != null) {
+  1112→            return existed.getId();
+  1113→        }
+  1114→
+  1115→        log.info("路径中的文件夹不存在，自动创建. 文件夹名: {}, parentNodeId: {}", folderName, parentNodeId);
+  1116→        TreeNode<SpaceNodeVo> createdFolder = spaceNodeUpdateManager.createSpaceNodeOnlyInAio(
+  1117→                spaceId,
+  1118→                parentNodeId,
+  1119→                "",
+  1120→                folderName,
+  1121→                SpaceNodeTypeEnum.FOLDER.getValue()
+  1122→        );
+  1123→        if (createdFolder == null) {
+  1124→            log.warn("创建文件夹失败. 文件夹名: {}, spaceId: {}", folderName, spaceId);
+  1125→            return null;
+  1126→        }
+  1127→        return createdFolder.getId();
+  1128→    }
+  1129→
+  1130→    private Long ensureFoldersExist(String spaceId, List<String> folders) {
+  1131→        Long parentNodeId = ROOT_PARENT_ID;
+  1132→        for (String folderName : folders) {
+  1133→            Long nextParentNodeId = getOrCreateFolderNode(spaceId, parentNodeId, folderName);
+  1134→            if (nextParentNodeId == null) {
+  1135→                return null;
+  1136→            }
+  1137→            parentNodeId = nextParentNodeId;
+  1138→        }
+  1139→        return parentNodeId;
+  1140→    }
+  1141→
+  1142→    private ParsedNextcloudPath parseNextcloudPath(String fieldPath) {
+  1143→        NextcloudPathInfo pathInfo = parsePathInfo(fieldPath);
+  1144→        if (pathInfo == null) {
+  1145→            return null;
+  1146→        }
+  1147→
+  1148→        String spaceId = pathInfo.spaceEntity().getSpaceId();
+  1149→        if (StringUtils.isBlank(spaceId)) {
+  1150→            log.warn("spaceId为空");
+  1151→            return null;
+  1152→        }
+  1153→
+  1154→        List<String> folders = extractFolders(pathInfo.pathParts(), pathInfo.spaceNameIndex());
+  1155→        return new ParsedNextcloudPath(spaceId, pathInfo.spaceName(), pathInfo.fileName(), folders);
+  1156→    }
+  1157→
+  1158→    private List<String> extractFolders(String[] pathParts, int spaceNameIndex) {
+  1159→        List<String> folders = new ArrayList<>();
+  1160→        for (int i = spaceNameIndex + 1; i < pathParts.length - 1; i++) {
+  1161→            String folderName = pathParts[i];
+  1162→            if (StringUtils.isNotBlank(folderName)) {
+  1163→                folders.add(folderName);
+  1164→            }
+  1165→        }
+  1166→        return folders;
+  1167→    }
+  1168→
+  1169→    private SpaceNodeEntity findExistedSpaceNodeByPath(String spaceId, List<String> folders, String fileName, String fileId) {
+  1170→        Long parentNodeId = ROOT_PARENT_ID;
+  1171→        for (String folderName : folders) {
+  1172→            NodeEntity childNode = findChildNodeByName(spaceId, parentNodeId, folderName);
+  1173→            if (childNode == null) {
+  1174→                return null;
+  1175→            }
+  1176→            parentNodeId = childNode.getId();
+  1177→        }
+  1178→
+  1179→        List<NodeEntity> childNodes = nodeService.getByTreeIdAndParentIdAndNodeKey(spaceId, parentNodeId, NodeKeyType.AIO_FILE_TREE.getValue());
+  1180→        if (CollectionUtils.isEmpty(childNodes)) {
+  1181→            return null;
+  1182→        }
+  1183→
+  1184→        List<Long> relIds = childNodes.stream().map(NodeEntity::getRelId).toList();
+  1185→        List<SpaceNodeEntity> spaceNodes = spaceNodeService.listByIds(relIds);
+  1186→        if (CollectionUtils.isEmpty(spaceNodes)) {
+  1187→            return null;
+  1188→        }
+  1189→
+  1190→        SpaceNodeEntity matchByName = null;
+  1191→        for (SpaceNodeEntity spaceNode : spaceNodes) {
+  1192→            String spaceNodeName = spaceNode.getName();
+  1193→
+  1194→            if (StringUtils.isNotBlank(fileId) && Objects.equals(fileId, spaceNode.getAppSpaceNodeId())) {
+  1195→                return spaceNode;
+  1196→            }
+  1197→
+  1198→            if (matchByName == null && Objects.equals(fileName, spaceNodeName)) {
+  1199→                matchByName = spaceNode;
+  1200→            }
+  1201→        }
+  1202→
+  1203→        return matchByName;
+  1204→    }
+  1205→
+  1206→    private NextcloudPathInfo parsePathInfo(String fieldPath) {
+  1207→        if (StringUtils.isBlank(fieldPath)) {
+  1208→            log.warn("路径为空，无法查找space");
+  1209→            return null;
+  1210→        }
+  1211→
+  1212→        String[] pathParts = fieldPath.split("/");
+  1213→        if (pathParts.length < MIN_PATH_PARTS) {
+  1214→            log.warn("路径格式不正确，无法解析. path: {}", fieldPath);
+  1215→            return null;
+  1216→        }
+  1217→
+  1218→        int spaceNameIndex = -1;
+  1219→        for (int i = 0; i < pathParts.length; i++) {
+  1220→            if (NEXTCLOUD_FILES_MARKER.equals(pathParts[i]) && i + 1 < pathParts.length) {
+  1221→                spaceNameIndex = i + 1;
+  1222→                break;
+  1223→            }
+  1224→        }
+  1225→
+  1226→        if (spaceNameIndex == -1 || spaceNameIndex >= pathParts.length) {
+  1227→            log.warn("无法从路径中提取spaceName. path: {}", fieldPath);
+  1228→            return null;
+  1229→        }
+  1230→
+  1231→        String spaceName = pathParts[spaceNameIndex];
+  1232→        if (StringUtils.isBlank(spaceName)) {
+  1233→            log.warn("spaceName为空. path: {}", fieldPath);
+  1234→            return null;
+  1235→        }
+  1236→
+  1237→        List<SpaceEntity> spaces = spaceService.matchByName(spaceName);
+  1238→        if (CollectionUtils.isEmpty(spaces)) {
+  1239→            log.warn("未找到对应的space. spaceName: {}", spaceName);
+  1240→            return null;
+  1241→        }
+  1242→
+  1243→        SpaceEntity spaceEntity = spaces.getFirst();
+  1244→        String fileName = pathParts[pathParts.length - 1];
+  1245→
+  1246→        return new NextcloudPathInfo(spaceEntity, pathParts, spaceNameIndex, spaceName, fileName);
+  1247→    }
+  1248→
+  1249→    private String buildRelativePath(ParsedNextcloudPath parsedPath) {
+  1250→        if (parsedPath == null) {
+  1251→            return "";
+  1252→        }
+  1253→        StringBuilder path = new StringBuilder();
+  1254→        path.append(parsedPath.spaceName());
+  1255→        for (String folder : parsedPath.folders()) {
+  1256→            path.append('/');
+  1257→            path.append(folder);
+  1258→        }
+  1259→        path.append('/');
+  1260→        path.append(parsedPath.fileName());
+  1261→        return path.toString();
+  1262→    }
+  1263→
+  1264→    private boolean isDirectoryInNextcloud(String relativePath, String fileId, String spaceName) {
+  1265→        NextcloudPropfindMultiStatus status = nextcloudService.propfind(relativePath, null, 0);
+  1266→        if (status == null || CollectionUtils.isEmpty(status.getResponses())) {
+  1267→            // 路径 propfind 失败（可能已被改名），尝试用 fileId 查当前路径后重试
+  1268→            if (StringUtils.isNotBlank(fileId)) {
+  1269→                String currentPath = nextcloudService.getFilePathByFileId(fileId, spaceName);
+  1270→                if (StringUtils.isNotBlank(currentPath)) {
+  1271→                    log.info("isDirectoryInNextcloud: 路径propfind未命中，通过fileId查到当前路径. fileId={}, originalPath={}, currentPath={}",
+  1272→                            fileId, relativePath, currentPath);
+  1273→                    status = nextcloudService.propfind(currentPath, null, 0);
+  1274→                }
+  1275→            }
+  1276→            if (status == null || CollectionUtils.isEmpty(status.getResponses())) {
+  1277→                log.info("isDirectoryInNextcloud: propfind最终未命中，默认判定为目录. fileId={}, relativePath={}", fileId, relativePath);
+  1278→                return true;
+  1279→            }
+  1280→        }
+  1281→        NextcloudPropfindMultiStatus.ResponseItem responseItem = status.getResponses().getFirst();
+  1282→        if (responseItem == null || responseItem.getProp() == null) {
+  1283→            log.info("isDirectoryInNextcloud: propfind响应缺少prop，默认判定为目录. fileId={}, relativePath={}", fileId, relativePath);
+  1284→            return true;
+  1285→        }
+  1286→        boolean isDirectory = Boolean.TRUE.equals(responseItem.getProp().getDirectory());
+  1287→        log.info("isDirectoryInNextcloud: 判定完成. fileId={}, relativePath={}, isDirectory={}", fileId, relativePath, isDirectory);
+  1288→        return isDirectory;
+  1289→    }
+  1290→
+  1291→    private String buildFileCreateDetail(String relativePath) {
+  1292→        return "FILE|" + relativePath;
+  1293→    }
+  1294→
+  1295→    private String buildFolderCreateDetail(String relativePath) {
+  1296→        return "FOLDER|" + relativePath;
+  1297→    }
+  1298→
+  1299→    private String buildFileMoveDetail(String oldRelativePath, String newRelativePath) {
+  1300→        return "FILE|" + oldRelativePath + "->" + newRelativePath;
+  1301→    }
+  1302→}
+  1303→

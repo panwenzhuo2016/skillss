@@ -1,0 +1,1493 @@
+     1→# 智能日报邮件系统 Implementation Plan
+     2→
+     3→> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+     4→
+     5→**Goal:** 在现有日报系统基础上新增 AI 分析能力：用户自建邮件任务、定时 AI 分析日报并发邮件，同时将现有 AI 日报助手从 Dify 迁移至 Vertex AI，统一 AI 调用到 oa-core。
+     6→
+     7→**Architecture:** oa-core 新增 AiAnalysisService 调用 Vertex AI，在 TransferRequestService::transfer() 和 MailController::sendDecr() 中通过 `ai_analysis_config` 参数触发。oa-server 新增任务 CRUD 和定时 Job，前端在 OthersReports 页面新增配置入口。
+     8→
+     9→**Tech Stack:** PHP 8.1 / Laravel 9 / Vertex AI (Gemini Chat Completions) / Vue 2 + TypeScript + Element UI
+    10→
+    11→---
+    12→
+    13→## File Structure
+    14→
+    15→### oa-core (新增/修改)
+    16→- **Create:** `app/Services/AiAnalysisService.php` — Vertex AI 调用服务（blocking + streaming）
+    17→- **Modify:** `app/Services/TransferRequestService.php:40-127` — 新增 `ai_analysis_config` reserved word 及处理逻辑
+    18→- **Modify:** `app/Http/Controllers/MailController.php:48-83` — sendDecr 中加 AI 分析可选步骤
+    19→- **Modify:** `config/my_master_api.php:15-24` — sendDecr 路由参数加 `ai_analysis_config`
+    20→- **Modify:** `.env.example` — 新增 VERTEX_AI_* 配置项
+    21→
+    22→### oa-server (新增/修改)
+    23→- **Create:** `database/migrations/xxxx_create_daily_report_ai_email_tasks_table.php` — 新表迁移
+    24→- **Create:** `app/Http/Controllers/Oa/DailyReportAiEmailController.php` — 任务 CRUD + 测试 Prompt
+    25→- **Create:** `app/Jobs/Notification/DailyReportAiEmailJob.php` — 定时发送 AI 日报邮件
+    26→- **Create:** `config/sfuser_apis/daily_report_ai_email.php` — 新接口路由配置
+    27→- **Modify:** `app/Console/Kernel.php:56` — 注册新 Job 调度
+    28→- **Modify:** `app/Http/Controllers/Oa/DailyReportAiController.php` — 去掉 Dify，改走 oa-core AI 中转
+    29→
+    30→### oa-frontend (新增/修改)
+    31→- **Create:** `src/app/PC/StaffPage/OaDailyReport/OthersReports/AiEmailTaskConfig.vue` — 任务配置弹窗
+    32→- **Modify:** `src/app/PC/StaffPage/OaDailyReport/OthersReports/OthersReports.vue:44` — 新增入口按钮
+    33→- **Modify:** `src/apis/StaffPage/dailyReportAiApis.ts` — 新增任务 CRUD API
+    34→- **Modify:** `src/i18n/zh.ts` + `src/i18n/en.ts` — 新增文案
+    35→
+    36→---
+    37→
+    38→### Task 1: oa-core — 新增 AiAnalysisService
+    39→
+    40→**Files:**
+    41→- Create: `oa-core/app/Services/AiAnalysisService.php`
+    42→- Modify: `oa-core/.env.example`
+    43→
+    44→- [ ] **Step 1: 在 .env.example 中新增 Vertex AI 配置项**
+    45→
+    46→在 `oa-core/.env.example` 末尾添加：
+    47→
+    48→```env
+    49→# Vertex AI (Gemini)
+    50→VERTEX_AI_ENDPOINT=https://us-central1-aiplatform.googleapis.com/v1beta1/projects/YOUR_PROJECT/locations/us-central1/endpoints/openapi/chat/completions
+    51→VERTEX_AI_API_KEY=
+    52→VERTEX_AI_MODEL=google/gemini-2.0-flash
+    53→```
+    54→
+    55→- [ ] **Step 2: 创建 AiAnalysisService**
+    56→
+    57→创建 `oa-core/app/Services/AiAnalysisService.php`：
+    58→
+    59→```php
+    60→<?php
+    61→
+    62→namespace App\Services;
+    63→
+    64→use Illuminate\Support\Arr;
+    65→use Illuminate\Support\Facades\Log;
+    66→
+    67→class AiAnalysisService
+    68→{
+    69→    use ServiceTrait;
+    70→
+    71→    /**
+    72→     * Blocking 模式：调用 Vertex AI，返回完整分析结果。
+    73→     * 用于邮件发送场景。
+    74→     */
+    75→    public function analyze(string $content, string $systemPrompt): string
+    76→    {
+    77→        $endpoint = env('VERTEX_AI_ENDPOINT');
+    78→        $apiKey = env('VERTEX_AI_API_KEY');
+    79→        $model = env('VERTEX_AI_MODEL', 'google/gemini-2.0-flash');
+    80→
+    81→        $payload = json_encode([
+    82→            'model' => $model,
+    83→            'messages' => [
+    84→                ['role' => 'system', 'content' => $systemPrompt],
+    85→                ['role' => 'user', 'content' => $content],
+    86→            ],
+    87→            'stream' => false,
+    88→        ], JSON_UNESCAPED_UNICODE);
+    89→
+    90→        Log::info('[AiAnalysis] blocking request', [
+    91→            'content_len' => mb_strlen($content),
+    92→            'prompt_len' => mb_strlen($systemPrompt),
+    93→        ]);
+    94→
+    95→        $ch = curl_init($endpoint);
+    96→        curl_setopt_array($ch, [
+    97→            CURLOPT_POST => true,
+    98→            CURLOPT_POSTFIELDS => $payload,
+    99→            CURLOPT_HTTPHEADER => [
+   100→                'Content-Type: application/json',
+   101→                'Authorization: Bearer ' . $apiKey,
+   102→            ],
+   103→            CURLOPT_RETURNTRANSFER => true,
+   104→            CURLOPT_TIMEOUT => 120,
+   105→        ]);
+   106→
+   107→        $response = curl_exec($ch);
+   108→        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+   109→        $curlError = $response === false ? curl_error($ch) : '';
+   110→        curl_close($ch);
+   111→
+   112→        if ($curlError) {
+   113→            Log::error('[AiAnalysis] curl error', ['error' => $curlError]);
+   114→            return '';
+   115→        }
+   116→
+   117→        $result = json_decode($response, true);
+   118→        if (!is_array($result)) {
+   119→            Log::error('[AiAnalysis] invalid response', ['raw' => mb_substr($response, 0, 1000)]);
+   120→            return '';
+   121→        }
+   122→
+   123→        $answer = Arr::get($result, 'choices.0.message.content', '');
+   124→        Log::info('[AiAnalysis] blocking done', ['answer_len' => mb_strlen($answer)]);
+   125→
+   126→        return $answer;
+   127→    }
+   128→
+   129→    /**
+   130→     * Streaming 模式：调用 Vertex AI，通过回调逐 chunk 输出。
+   131→     * 用于测试 Prompt 和前端 SSE 场景。
+   132→     *
+   133→     * @param string $content 日报内容
+   134→     * @param string $systemPrompt AI Prompt
+   135→     * @param callable $onChunk fn(string $chunk): void 每个 chunk 的回调
+   136→     * @param array $history 可选的历史对话消息
+   137→     */
+   138→    public function analyzeStream(string $content, string $systemPrompt, callable $onChunk, array $history = []): string
+   139→    {
+   140→        $endpoint = env('VERTEX_AI_ENDPOINT');
+   141→        $apiKey = env('VERTEX_AI_API_KEY');
+   142→        $model = env('VERTEX_AI_MODEL', 'google/gemini-2.0-flash');
+   143→
+   144→        $messages = [
+   145→            ['role' => 'system', 'content' => $systemPrompt],
+   146→        ];
+   147→        foreach ($history as $msg) {
+   148→            $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+   149→        }
+   150→        if (!empty($content)) {
+   151→            $messages[] = ['role' => 'user', 'content' => $content];
+   152→        }
+   153→
+   154→        $payload = json_encode([
+   155→            'model' => $model,
+   156→            'messages' => $messages,
+   157→            'stream' => true,
+   158→        ], JSON_UNESCAPED_UNICODE);
+   159→
+   160→        Log::info('[AiAnalysis] streaming request', [
+   161→            'content_len' => mb_strlen($content),
+   162→            'prompt_len' => mb_strlen($systemPrompt),
+   163→            'history_count' => count($history),
+   164→        ]);
+   165→
+   166→        $fullReply = '';
+   167→        $buffer = '';
+   168→
+   169→        $ch = curl_init($endpoint);
+   170→        curl_setopt_array($ch, [
+   171→            CURLOPT_POST => true,
+   172→            CURLOPT_POSTFIELDS => $payload,
+   173→            CURLOPT_HTTPHEADER => [
+   174→                'Content-Type: application/json',
+   175→                'Authorization: Bearer ' . $apiKey,
+   176→            ],
+   177→            CURLOPT_RETURNTRANSFER => false,
+   178→            CURLOPT_TIMEOUT => 300,
+   179→            CURLOPT_WRITEFUNCTION => function ($curl, $data) use (&$fullReply, &$buffer, $onChunk) {
+   180→                $buffer .= $data;
+   181→
+   182→                while (($pos = strpos($buffer, "\n")) !== false) {
+   183→                    $line = rtrim(substr($buffer, 0, $pos), "\r");
+   184→                    $buffer = substr($buffer, $pos + 1);
+   185→
+   186→                    if (!str_starts_with($line, 'data: ')) {
+   187→                        continue;
+   188→                    }
+   189→
+   190→                    $jsonStr = substr($line, 6);
+   191→                    if ($jsonStr === '[DONE]') {
+   192→                        continue;
+   193→                    }
+   194→
+   195→                    $decoded = json_decode($jsonStr, true);
+   196→                    if (!is_array($decoded)) {
+   197→                        continue;
+   198→                    }
+   199→
+   200→                    $chunk = Arr::get($decoded, 'choices.0.delta.content', '');
+   201→                    if ($chunk !== '') {
+   202→                        $fullReply .= $chunk;
+   203→                        $onChunk($chunk);
+   204→                    }
+   205→                }
+   206→
+   207→                return strlen($data);
+   208→            },
+   209→        ]);
+   210→
+   211→        curl_exec($ch);
+   212→        $curlError = curl_error($ch);
+   213→        curl_close($ch);
+   214→
+   215→        if ($curlError) {
+   216→            Log::error('[AiAnalysis] streaming curl error', ['error' => $curlError]);
+   217→        }
+   218→
+   219→        Log::info('[AiAnalysis] streaming done', ['reply_len' => mb_strlen($fullReply)]);
+   220→
+   221→        return $fullReply;
+   222→    }
+   223→}
+   224→```
+   225→
+   226→- [ ] **Step 3: Commit**
+   227→
+   228→```bash
+   229→cd oa-core
+   230→git add app/Services/AiAnalysisService.php .env.example
+   231→git commit -m "feat: add AiAnalysisService for Vertex AI integration"
+   232→```
+   233→
+   234→---
+   235→
+   236→### Task 2: oa-core — 改造 MailController::sendDecr
+   237→
+   238→**Files:**
+   239→- Modify: `oa-core/app/Http/Controllers/MailController.php:48-83`
+   240→- Modify: `oa-core/config/my_master_api.php:15-24`
+   241→
+   242→- [ ] **Step 1: 修改 sendDecr 方法，在解密后可选调 AI 分析**
+   243→
+   244→在 `MailController.php` 的 `sendDecr` 方法中，解密完成后、创建 BlankMail 之前，插入 AI 分析逻辑：
+   245→
+   246→```php
+   247→public function sendDecr(Request $request): JsonResponse
+   248→{
+   249→    Headers::$customLineLength = 512;
+   250→    $params = $request->all();
+   251→    $conf = $params['decrypt_config'];
+   252→    unset($params['decrypt_config']);
+   253→
+   254→    // 提取 AI 分析配置（可选）
+   255→    $aiAnalysisConfig = $params['ai_analysis_config'] ?? null;
+   256→    unset($params['ai_analysis_config']);
+   257→
+   258→    // 通过 receivers 参数解析出接收者的邮箱
+   259→    [$rcvEmails, $receivers] = AuthorizeService::app()->retrieveEmailsOfReceivers($params['receivers']);
+   260→    unset($params['receivers']);
+   261→
+   262→    // 解密
+   263→    $conf['receivers'] = $receivers;
+   264→    $params = DecryptService::app()->throwEcp()->decryptData($params, $conf, 'send_email');
+   265→
+   266→    // AI 分析：在解密后、发邮件前，调 Vertex AI 分析日报内容
+   267→    if (!empty($aiAnalysisConfig) && !empty($aiAnalysisConfig['system_prompt'])) {
+   268→        $aiResult = AiAnalysisService::app()->analyze(
+   269→            $params['content'],
+   270→            $aiAnalysisConfig['system_prompt']
+   271→        );
+   272→        if (!empty($aiResult)) {
+   273→            // AI 分析结果放在邮件顶部，原始日报内容放下面
+   274→            $params['content'] = '<div style="background:#f0f7ff;padding:16px;border-radius:8px;margin-bottom:20px;">'
+   275→                . '<h3 style="margin:0 0 12px 0;">📊 AI 分析摘要</h3>'
+   276→                . '<div>' . nl2br(e($aiResult)) . '</div>'
+   277→                . '</div>'
+   278→                . '<hr style="margin:20px 0;">'
+   279→                . $params['content'];
+   280→        }
+   281→    }
+   282→
+   283→    $mail = new BlankMail($params['content']);
+   284→    $mail->subject($params['subject']);
+   285→    $mail->to($rcvEmails);
+   286→
+   287→    // ... 附件逻辑不变 ...
+   288→```
+   289→
+   290→注意：需要在文件顶部加 `use App\Services\AiAnalysisService;`
+   291→
+   292→- [ ] **Step 2: 修改 master-api 路由配置，允许 ai_analysis_config 参数**
+   293→
+   294→在 `config/my_master_api.php` 的 `mail/send-decr` 路由中加入参数：
+   295→
+   296→```php
+   297→'mail/send-decr' => [
+   298→    'params' => [
+   299→        'decrypt_config' => 'required|array',
+   300→        'receivers' => 'required|array',
+   301→        'subject' => 'required|string',
+   302→        'content' => 'required|string',
+   303→        'attachments' => 'filled|array',
+   304→        'ai_analysis_config' => 'nullable|array',          // 新增
+   305→        'ai_analysis_config.system_prompt' => 'filled|string', // 新增
+   306→    ],
+   307→    'route' => [MailController::class, 'sendDecr'],
+   308→],
+   309→```
+   310→
+   311→- [ ] **Step 3: Commit**
+   312→
+   313→```bash
+   314→cd oa-core
+   315→git add app/Http/Controllers/MailController.php config/my_master_api.php
+   316→git commit -m "feat: add optional AI analysis to sendDecr email flow"
+   317→```
+   318→
+   319→---
+   320→
+   321→### Task 3: oa-core — 改造 TransferRequestService::transfer()
+   322→
+   323→**Files:**
+   324→- Modify: `oa-core/app/Services/TransferRequestService.php:40-127`
+   325→
+   326→- [ ] **Step 1: 在 reservedWords 中新增 ai_analysis_config**
+   327→
+   328→在 `TransferRequestService.php` 的 `transfer()` 方法中：
+   329→
+   330→```php
+   331→$reservedWords = [
+   332→    'decrypt_config', 'encrypt_config', 'update_permission', 'next_replace_filter',
+   333→    'hash_filter', 'replace_filter', 'authorize_config', 'intact_columns', 'response_format',
+   334→    'ai_analysis_config',  // 新增
+   335→];
+   336→```
+   337→
+   338→- [ ] **Step 2: 在解密之后插入 AI 分析逻辑**
+   339→
+   340→在 `transfer()` 方法的解密响应代码块之后（约第 124-127 行），添加：
+   341→
+   342→```php
+   343→if (!empty($decrypt_config)) {
+   344→    $respData = DecryptService::app()->decryptData($respData, $decrypt_config, 'response');
+   345→}
+   346→
+   347→// 新增：AI 分析（解密之后执行，仅当 ai_analysis_config 存在时）
+   348→if (!empty($ai_analysis_config) && !empty($ai_analysis_config['system_prompt'])) {
+   349→    $targetField = $ai_analysis_config['target_field'] ?? null;
+   350→    $outputField = $ai_analysis_config['output_field'] ?? 'ai_analysis';
+   351→    $contentForAi = $targetField ? data_get($respData, $targetField, '') : json_encode($respData, JSON_UNESCAPED_UNICODE);
+   352→
+   353→    if (is_array($contentForAi)) {
+   354→        $contentForAi = json_encode($contentForAi, JSON_UNESCAPED_UNICODE);
+   355→    }
+   356→
+   357→    $aiResult = AiAnalysisService::app()->analyze(
+   358→        $contentForAi,
+   359→        $ai_analysis_config['system_prompt']
+   360→    );
+   361→    data_set($respData, $outputField, $aiResult);
+   362→}
+   363→```
+   364→
+   365→注意：需要在文件顶部加 `use App\Services\AiAnalysisService;`
+   366→
+   367→- [ ] **Step 3: 处理 streaming 模式下的 AI 分析**
+   368→
+   369→在 `transfer()` 方法中，现有的 `response_format == 'stream'` 分支（约第 97-113 行）也需要支持 AI 分析。当同时有 `response_format=stream` 和 `ai_analysis_config` 时，不走普通的 stream 透传，而是先拿到完整响应，解密后走 AI streaming：
+   370→
+   371→```php
+   372→if (!empty($response_format) && $response_format == 'stream') {
+   373→    // 如果同时有 ai_analysis_config，需要先拿完整响应再做 AI streaming
+   374→    if (!empty($ai_analysis_config) && !empty($ai_analysis_config['system_prompt'])) {
+   375→        // 同步获取后端完整响应
+   376→        $resp = $this->callBackendApi($action ?: $request->path(), $params);
+   377→        $respData = &$resp['data'];
+   378→
+   379→        // 解密
+   380→        $decrypt_config = empty($respData['decrypt_config']) ? $decrypt_config : array_merge($decrypt_config ?? [], $respData['decrypt_config']);
+   381→        if (isset($respData['decrypt_config'])) {
+   382→            unset($respData['decrypt_config']);
+   383→        }
+   384→        if (!empty($decrypt_config)) {
+   385→            $respData = DecryptService::app()->decryptData($respData, $decrypt_config, 'response');
+   386→        }
+   387→
+   388→        // 提取 AI 输入内容
+   389→        $targetField = $ai_analysis_config['target_field'] ?? null;
+   390→        $contentForAi = $targetField ? data_get($respData, $targetField, '') : json_encode($respData, JSON_UNESCAPED_UNICODE);
+   391→        if (is_array($contentForAi)) {
+   392→            $contentForAi = json_encode($contentForAi, JSON_UNESCAPED_UNICODE);
+   393→        }
+   394→
+   395→        $systemPrompt = $ai_analysis_config['system_prompt'];
+   396→        $history = $ai_analysis_config['history'] ?? [];
+   397→
+   398→        return response()->stream(function () use ($contentForAi, $systemPrompt, $history) {
+   399→            AiAnalysisService::app()->analyzeStream(
+   400→                $contentForAi,
+   401→                $systemPrompt,
+   402→                function (string $chunk) {
+   403→                    echo 'data: ' . json_encode([
+   404→                        'error_code' => 0,
+   405→                        'error_msg' => '',
+   406→                        'data' => ['type' => 'chat', 'is_finished' => false, 'content' => $chunk],
+   407→                    ], JSON_UNESCAPED_UNICODE) . PHP_EOL . PHP_EOL;
+   408→                    ob_flush();
+   409→                    flush();
+   410→                },
+   411→                $history
+   412→            );
+   413→            // 结束帧
+   414→            echo 'data: ' . json_encode([
+   415→                'error_code' => 0,
+   416→                'error_msg' => '',
+   417→                'data' => ['type' => 'chat', 'is_finished' => true, 'content' => ''],
+   418→            ], JSON_UNESCAPED_UNICODE) . PHP_EOL . PHP_EOL;
+   419→            ob_flush();
+   420→            flush();
+   421→        }, 200, [
+   422→            'Content-Type' => 'text/event-stream',
+   423→            'Cache-Control' => 'no-cache',
+   424→            'X-Accel-Buffering' => 'no',
+   425→        ]);
+   426→    }
+   427→
+   428→    // 原有的 stream 透传逻辑不变
+   429→    $resp = $this->callBackendApi($action ?: $request->path(), $params, true);
+   430→    return response()->stream(function () use ($resp) {
+   431→        // ... 现有逻辑 ...
+   432→    }, $resp->status(), array_merge($resp->headers(), ['X-Accel-Buffering' => 'no']));
+   433→}
+   434→```
+   435→
+   436→- [ ] **Step 4: Commit**
+   437→
+   438→```bash
+   439→cd oa-core
+   440→git add app/Services/TransferRequestService.php
+   441→git commit -m "feat: support ai_analysis_config in transfer proxy"
+   442→```
+   443→
+   444→---
+   445→
+   446→### Task 4: oa-server — 新增 daily_report_ai_email_tasks 表
+   447→
+   448→**Files:**
+   449→- Create: `oa-server/database/migrations/2026_04_16_000000_create_daily_report_ai_email_tasks_table.php`
+   450→
+   451→- [ ] **Step 1: 创建迁移文件**
+   452→
+   453→```php
+   454→<?php
+   455→
+   456→use Illuminate\Database\Migrations\Migration;
+   457→use Illuminate\Database\Schema\Blueprint;
+   458→use Illuminate\Support\Facades\Schema;
+   459→
+   460→return new class extends Migration
+   461→{
+   462→    public function up(): void
+   463→    {
+   464→        Schema::create('daily_report_ai_email_tasks', function (Blueprint $table) {
+   465→            $table->id();
+   466→            $table->integer('sfuser_id')->index();
+   467→            $table->string('name', 100);
+   468→            $table->string('dimension', 20)->default('department');
+   469→            $table->string('report_range', 20)->default('today');
+   470→            $table->string('send_cycle', 20)->default('daily');
+   471→            $table->string('send_time', 5)->default('09:00');
+   472→            $table->text('system_prompt');
+   473→            $table->tinyInteger('is_on')->default(1);
+   474→            $table->timestamps();
+   475→            $table->softDeletes();
+   476→        });
+   477→    }
+   478→
+   479→    public function down(): void
+   480→    {
+   481→        Schema::dropIfExists('daily_report_ai_email_tasks');
+   482→    }
+   483→};
+   484→```
+   485→
+   486→- [ ] **Step 2: Commit**
+   487→
+   488→```bash
+   489→cd oa-server
+   490→git add database/migrations/2026_04_16_000000_create_daily_report_ai_email_tasks_table.php
+   491→git commit -m "feat: add daily_report_ai_email_tasks migration"
+   492→```
+   493→
+   494→---
+   495→
+   496→### Task 5: oa-server — 新增 DailyReportAiEmailController
+   497→
+   498→**Files:**
+   499→- Create: `oa-server/app/Http/Controllers/Oa/DailyReportAiEmailController.php`
+   500→- Create: `oa-server/config/sfuser_apis/daily_report_ai_email.php`
+   501→
+   502→- [ ] **Step 1: 创建 Controller**
+   503→
+   504→```php
+   505→<?php
+   506→
+   507→namespace App\Http\Controllers\Oa;
+   508→
+   509→use App\Http\Controllers\Controller;
+   510→use Illuminate\Http\JsonResponse;
+   511→use Illuminate\Http\Request;
+   512→use Illuminate\Support\Arr;
+   513→use Illuminate\Support\Facades\DB;
+   514→
+   515→class DailyReportAiEmailController extends Controller
+   516→{
+   517→    // 白名单用户 ID（硬编码）
+   518→    private const WHITELIST_IDS = [85091, 232753]; // TODO: 替换为实际白名单
+   519→
+   520→    public function __construct()
+   521→    {
+   522→        DB::statement("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
+   523→    }
+   524→
+   525→    private function inWhitelist(int $sfuserId): bool
+   526→    {
+   527→        return in_array($sfuserId, self::WHITELIST_IDS);
+   528→    }
+   529→
+   530→    public function taskList(Request $request): JsonResponse
+   531→    {
+   532→        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+   533→        if (!$this->inWhitelist($sfuserId)) {
+   534→            return $this->responseJsonFail('无权限');
+   535→        }
+   536→
+   537→        $list = DB::table('daily_report_ai_email_tasks')
+   538→            ->where('sfuser_id', $sfuserId)
+   539→            ->whereNull('deleted_at')
+   540→            ->orderByDesc('created_at')
+   541→            ->get(['id', 'name', 'dimension', 'report_range', 'send_cycle', 'send_time', 'system_prompt', 'is_on', 'created_at']);
+   542→
+   543→        return $this->responseJsonSuccess(['list' => $list]);
+   544→    }
+   545→
+   546→    public function taskCreate(Request $request): JsonResponse
+   547→    {
+   548→        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+   549→        if (!$this->inWhitelist($sfuserId)) {
+   550→            return $this->responseJsonFail('无权限');
+   551→        }
+   552→
+   553→        $input = Arr::only($request->all(), ['name', 'dimension', 'report_range', 'send_cycle', 'send_time', 'system_prompt']);
+   554→
+   555→        $id = DB::table('daily_report_ai_email_tasks')->insertGetId([
+   556→            'sfuser_id' => $sfuserId,
+   557→            'name' => $input['name'],
+   558→            'dimension' => $input['dimension'] ?? 'department',
+   559→            'report_range' => $input['report_range'] ?? 'today',
+   560→            'send_cycle' => $input['send_cycle'] ?? 'daily',
+   561→            'send_time' => $input['send_time'] ?? '09:00',
+   562→            'system_prompt' => $input['system_prompt'] ?? '',
+   563→            'is_on' => 1,
+   564→            'created_at' => now(),
+   565→            'updated_at' => now(),
+   566→        ]);
+   567→
+   568→        return $this->responseJsonSuccess(['id' => $id]);
+   569→    }
+   570→
+   571→    public function taskUpdate(Request $request): JsonResponse
+   572→    {
+   573→        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+   574→        if (!$this->inWhitelist($sfuserId)) {
+   575→            return $this->responseJsonFail('无权限');
+   576→        }
+   577→
+   578→        $id = $request->input('id');
+   579→        $input = Arr::only($request->all(), ['name', 'dimension', 'report_range', 'send_cycle', 'send_time', 'system_prompt']);
+   580→
+   581→        $affected = DB::table('daily_report_ai_email_tasks')
+   582→            ->where('id', $id)
+   583→            ->where('sfuser_id', $sfuserId)
+   584→            ->whereNull('deleted_at')
+   585→            ->update(array_merge(
+   586→                array_filter($input, fn ($v) => $v !== null),
+   587→                ['updated_at' => now()]
+   588→            ));
+   589→
+   590→        return $this->responseJsonSuccess(['affected' => $affected]);
+   591→    }
+   592→
+   593→    public function taskDelete(Request $request): JsonResponse
+   594→    {
+   595→        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+   596→        if (!$this->inWhitelist($sfuserId)) {
+   597→            return $this->responseJsonFail('无权限');
+   598→        }
+   599→
+   600→        DB::table('daily_report_ai_email_tasks')
+   601→            ->where('id', $request->input('id'))
+   602→            ->where('sfuser_id', $sfuserId)
+   603→            ->whereNull('deleted_at')
+   604→            ->update(['deleted_at' => now()]);
+   605→
+   606→        return $this->responseJsonSuccess();
+   607→    }
+   608→
+   609→    public function taskToggle(Request $request): JsonResponse
+   610→    {
+   611→        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+   612→        if (!$this->inWhitelist($sfuserId)) {
+   613→            return $this->responseJsonFail('无权限');
+   614→        }
+   615→
+   616→        $id = $request->input('id');
+   617→        $isOn = $request->input('is_on');
+   618→
+   619→        DB::table('daily_report_ai_email_tasks')
+   620→            ->where('id', $id)
+   621→            ->where('sfuser_id', $sfuserId)
+   622→            ->whereNull('deleted_at')
+   623→            ->update(['is_on' => $isOn, 'updated_at' => now()]);
+   624→
+   625→        return $this->responseJsonSuccess();
+   626→    }
+   627→}
+   628→```
+   629→
+   630→- [ ] **Step 2: 创建路由配置**
+   631→
+   632→创建 `oa-server/config/sfuser_apis/daily_report_ai_email.php`：
+   633→
+   634→```php
+   635→<?php
+   636→
+   637→use App\Http\Controllers\Oa\DailyReportAiEmailController;
+   638→
+   639→return [
+   640→    'daily-report/ai-email/task/list' => [
+   641→        'params' => [
+   642→            'sfuser_info' => 'required|array',
+   643→        ],
+   644→        'route' => [DailyReportAiEmailController::class, 'taskList'],
+   645→    ],
+   646→
+   647→    'daily-report/ai-email/task/create' => [
+   648→        'params' => [
+   649→            'sfuser_info' => 'required|array',
+   650→            'name' => 'required|string|max:100',
+   651→            'system_prompt' => 'required|string',
+   652→            'dimension' => 'filled|string|max:20',
+   653→            'report_range' => 'filled|string|max:20',
+   654→            'send_cycle' => 'filled|string|max:20',
+   655→            'send_time' => 'filled|string|max:5',
+   656→        ],
+   657→        'route' => [DailyReportAiEmailController::class, 'taskCreate'],
+   658→        'methods' => ['post'],
+   659→    ],
+   660→
+   661→    'daily-report/ai-email/task/update' => [
+   662→        'params' => [
+   663→            'sfuser_info' => 'required|array',
+   664→            'id' => 'required|integer',
+   665→            'name' => 'filled|string|max:100',
+   666→            'system_prompt' => 'filled|string',
+   667→            'dimension' => 'filled|string|max:20',
+   668→            'report_range' => 'filled|string|max:20',
+   669→            'send_cycle' => 'filled|string|max:20',
+   670→            'send_time' => 'filled|string|max:5',
+   671→        ],
+   672→        'route' => [DailyReportAiEmailController::class, 'taskUpdate'],
+   673→        'methods' => ['post'],
+   674→    ],
+   675→
+   676→    'daily-report/ai-email/task/delete' => [
+   677→        'params' => [
+   678→            'sfuser_info' => 'required|array',
+   679→            'id' => 'required|integer',
+   680→        ],
+   681→        'route' => [DailyReportAiEmailController::class, 'taskDelete'],
+   682→        'methods' => ['post'],
+   683→    ],
+   684→
+   685→    'daily-report/ai-email/task/toggle' => [
+   686→        'params' => [
+   687→            'sfuser_info' => 'required|array',
+   688→            'id' => 'required|integer',
+   689→            'is_on' => 'required|integer|in:0,1',
+   690→        ],
+   691→        'route' => [DailyReportAiEmailController::class, 'taskToggle'],
+   692→        'methods' => ['post'],
+   693→    ],
+   694→];
+   695→```
+   696→
+   697→- [ ] **Step 3: Commit**
+   698→
+   699→```bash
+   700→cd oa-server
+   701→git add app/Http/Controllers/Oa/DailyReportAiEmailController.php config/sfuser_apis/daily_report_ai_email.php
+   702→git commit -m "feat: add DailyReportAiEmailController with task CRUD"
+   703→```
+   704→
+   705→---
+   706→
+   707→### Task 6: oa-server — 新增 DailyReportAiEmailJob
+   708→
+   709→**Files:**
+   710→- Create: `oa-server/app/Jobs/Notification/DailyReportAiEmailJob.php`
+   711→- Modify: `oa-server/app/Console/Kernel.php:56`
+   712→
+   713→- [ ] **Step 1: 创建 Job**
+   714→
+   715→```php
+   716→<?php
+   717→
+   718→namespace App\Jobs\Notification;
+   719→
+   720→use App\Jobs\MyJob;
+   721→use App\Models\MailConfig;
+   722→use App\Service\DailyReportService;
+   723→use App\Service\EncryptService;
+   724→use Illuminate\Support\Arr;
+   725→use Illuminate\Support\Facades\DB;
+   726→
+   727→class DailyReportAiEmailJob extends MyJob
+   728→{
+   729→    public function handle(): bool
+   730→    {
+   731→        $now = now();
+   732→        $currentTime = $now->format('H:i');
+   733→        $currentDayOfWeek = $now->dayOfWeekIso; // 1=Monday, 7=Sunday
+   734→        $currentDayOfMonth = $now->day;
+   735→
+   736→        // 查询所有启用的 AI 日报邮件任务
+   737→        $tasks = DB::table('daily_report_ai_email_tasks')
+   738→            ->where('is_on', 1)
+   739→            ->whereNull('deleted_at')
+   740→            ->where('send_time', $currentTime)
+   741→            ->get();
+   742→
+   743→        if ($tasks->isEmpty()) {
+   744→            return true;
+   745→        }
+   746→
+   747→        foreach ($tasks as $task) {
+   748→            // 检查发送周期是否匹配
+   749→            if (!$this->shouldSendNow($task->send_cycle, $currentDayOfWeek, $currentDayOfMonth)) {
+   750→                continue;
+   751→            }
+   752→
+   753→            try {
+   754→                $this->processTask($task);
+   755→            } catch (\Throwable $e) {
+   756→                info("[DailyReportAiEmailJob] task={$task->id} failed: {$e->getMessage()}" . $e->getTraceAsString());
+   757→            }
+   758→        }
+   759→
+   760→        info('[DailyReportAiEmailJob] finished');
+   761→        return true;
+   762→    }
+   763→
+   764→    private function shouldSendNow(string $sendCycle, int $dayOfWeek, int $dayOfMonth): bool
+   765→    {
+   766→        return match ($sendCycle) {
+   767→            'daily' => true,
+   768→            'weekly_monday' => $dayOfWeek === 1,
+   769→            'weekly_friday' => $dayOfWeek === 5,
+   770→            'monthly_first' => $dayOfMonth === 1,
+   771→            default => false,
+   772→        };
+   773→    }
+   774→
+   775→    private function processTask(object $task): void
+   776→    {
+   777→        $sfuserId = $task->sfuser_id;
+   778→
+   779→        // 读取邮箱配置
+   780→        $mc = MailConfig::where('type', "daily_report_{$sfuserId}")->first();
+   781→        if (!$mc || empty(Arr::get($mc->config, 'to_email'))) {
+   782→            info("[DailyReportAiEmailJob] task={$task->id} no email config, skip");
+   783→            return;
+   784→        }
+   785→
+   786→        $toEmails = Arr::get($mc->config, 'to_email');
+   787→        $sfuserToken = Arr::get($mc->config, 'sfuser_authorized_token', '');
+   788→        if (!$sfuserToken) {
+   789→            info("[DailyReportAiEmailJob] task={$task->id} no sfuser_token, skip");
+   790→            return;
+   791→        }
+   792→
+   793→        // 确定日报日期范围
+   794→        [$startDate, $endDate] = $this->getDateRange($task->report_range);
+   795→
+   796→        // 拉取日报数据
+   797→        $dailyService = app(DailyReportService::class);
+   798→        $focusUserIds = $dailyService->getSubordinates($sfuserId);
+   799→        $data = $dailyService->getOthersDailyReportListEnable(
+   800→            $startDate,
+   801→            $endDate,
+   802→            $sfuserId,
+   803→            $focusUserIds['focus_users'],
+   804→            10000
+   805→        );
+   806→
+   807→        if (empty($data) || empty($data['reports']) || empty($data['reports']['report_list'])) {
+   808→            info("[DailyReportAiEmailJob] task={$task->id} no report data, skip");
+   809→            return;
+   810→        }
+   811→
+   812→        // 构建邮件内容（加密格式，由 oa-core 解密）
+   813→        $content = '';
+   814→        foreach ($data['reports']['report_list'] as $report) {
+   815→            $nickname = $report['data']['nickname'] ?? '';
+   816→            if (empty($nickname)) {
+   817→                continue;
+   818→            }
+   819→            $nickname = EncryptService::app()->markEncrString($nickname);
+   820→            $reportContent = EncryptService::app()->markEncrString($report['content']);
+   821→            $content .= '<p><b>' . $nickname . '</b></p>';
+   822→            $content .= '<div style="border:1px solid #eee;padding:8px;margin-bottom:12px;">' . $reportContent . '</div>';
+   823→        }
+   824→
+   825→        $subject = "【{$startDate}】 {$task->name} - AI 分析";
+   826→
+   827→        // 调 oa-core sendDecr，带 ai_analysis_config
+   828→        info("[DailyReportAiEmailJob] task={$task->id} sending email to " . implode(',', $toEmails));
+   829→        sendEmail(
+   830→            $content,
+   831→            $subject,
+   832→            [$sfuserToken],
+   833→            filter: 'emails',
+   834→            filterMap: ['emails' => $toEmails],
+   835→            // ai_analysis_config 需要在 sendEmail 函数中支持透传
+   836→            // 注意：这里需要确认 sendEmail/getEmailParams 是否支持额外参数
+   837→            // 如果不支持，需要直接调用 CoreApiLib
+   838→        );
+   839→        info("[DailyReportAiEmailJob] task={$task->id} email sent");
+   840→    }
+   841→
+   842→    private function getDateRange(string $reportRange): array
+   843→    {
+   844→        $today = now()->toDateString();
+   845→        return match ($reportRange) {
+   846→            'today' => [$today, $today],
+   847→            'yesterday' => [now()->subDay()->toDateString(), now()->subDay()->toDateString()],
+   848→            default => [$today, $today],
+   849→        };
+   850→    }
+   851→}
+   852→```
+   853→
+   854→**注意：** `sendEmail()` 函数目前不支持透传 `ai_analysis_config`。需要改为直接调用 `CoreApiLib::sendRequest`，或扩展 `sendEmail`/`getEmailParams` 函数。实施时需检查 `app/Helpers/functions.php` 中的 `getEmailParams` 函数并做相应修改，将 `ai_analysis_config` 作为额外参数传入。
+   855→
+   856→- [ ] **Step 2: 在 Kernel.php 中注册调度**
+   857→
+   858→在 `app/Console/Kernel.php` 的 `schedule` 方法中，在现有 `DailyReportJob` 调度行之后添加：
+   859→
+   860→```php
+   861→$schedule->job(new \App\Jobs\Notification\DailyReportAiEmailJob())->everyMinute();
+   862→```
+   863→
+   864→- [ ] **Step 3: Commit**
+   865→
+   866→```bash
+   867→cd oa-server
+   868→git add app/Jobs/Notification/DailyReportAiEmailJob.php app/Console/Kernel.php
+   869→git commit -m "feat: add DailyReportAiEmailJob with per-minute scheduling"
+   870→```
+   871→
+   872→---
+   873→
+   874→### Task 7: oa-server — 改造 DailyReportAiController（去 Dify，走 oa-core AI）
+   875→
+   876→**Files:**
+   877→- Modify: `oa-server/app/Http/Controllers/Oa/DailyReportAiController.php`
+   878→
+   879→- [ ] **Step 1: 改造 extractSlots 方法**
+   880→
+   881→将 `extractSlots()` 中的 Dify curl 调用替换为走 oa-core 中转。由于意图识别不涉及日报解密，可以直接调 oa-core 的 master-api 或新增一个专用接口。
+   882→
+   883→最简方案：将 Dify 调用改为直接调 Vertex AI（通过 oa-core master-api 新接口 `ai/chat`），或保留在 oa-server 端但换成 Vertex AI endpoint。
+   884→
+   885→**推荐：** 由于 extractSlots 不涉及解密，且 Vertex AI credentials 已统一放在 oa-core，可以新增一个 oa-core master-api 接口 `ai/chat` 做纯 AI 对话。
+   886→
+   887→在 `oa-core/config/my_master_api.php` 新增：
+   888→
+   889→```php
+   890→'ai/chat' => [
+   891→    'params' => [
+   892→        'system_prompt' => 'required|string',
+   893→        'message' => 'required|string',
+   894→        'response_mode' => 'filled|string|in:blocking,streaming',
+   895→    ],
+   896→    'route' => [MailController::class, 'aiChat'], // 或新建 AiController
+   897→],
+   898→```
+   899→
+   900→然后在 oa-core 新增对应 Controller 方法，调用 `AiAnalysisService`。
+   901→
+   902→oa-server 端 `extractSlots()` 改为：
+   903→
+   904→```php
+   905→public function extractSlots(Request $request): JsonResponse
+   906→{
+   907→    // ... 现有权限检查和参数准备代码不变 ...
+   908→
+   909→    // 替换 Dify 调用为 oa-core AI
+   910→    $response = CoreApiLib::sendRequest('master-api/ai/chat', [
+   911→        'system_prompt' => $systemPrompt,
+   912→        'message' => $message,
+   913→        'response_mode' => 'blocking',
+   914→    ]);
+   915→
+   916→    $answer = $response['data']['answer'] ?? '';
+   917→    $slots = $this->parseSlotJson($answer);
+   918→
+   919→    // ... 后续逻辑不变 ...
+   920→}
+   921→```
+   922→
+   923→- [ ] **Step 2: 改造 ask 方法**
+   924→
+   925→`ask()` 方法现在直接调 Dify SSE。改造后，oa-server 的 `ask` 不再自己调 AI，而是：
+   926→1. 保存用户消息到数据库（现有逻辑保留）
+   927→2. 将日报上下文 + 用户消息 + system_prompt 打包
+   928→3. 返回响应给 oa-core，由 oa-core 的 `ai_analysis_config` + `response_format=stream` 在中转层做 AI 分析
+   929→
+   930→或者更简单：`ask` 接口改为普通 JSON 响应（返回日报上下文和参数），前端改为在请求时带上 `ai_analysis_config` 和 `response_format=stream`，让 oa-core 中转层处理 SSE。
+   931→
+   932→**实施时需根据前端 AiChatPanel.vue 的调用方式来决定具体改法。** 核心原则是：oa-server 只负责数据准备和会话管理，AI 调用统一走 oa-core。
+   933→
+   934→- [ ] **Step 3: Commit**
+   935→
+   936→```bash
+   937→cd oa-server
+   938→git add app/Http/Controllers/Oa/DailyReportAiController.php
+   939→git commit -m "refactor: migrate DailyReportAiController from Dify to oa-core Vertex AI"
+   940→```
+   941→
+   942→---
+   943→
+   944→### Task 8: oa-frontend — 新增 API 和入口按钮
+   945→
+   946→**Files:**
+   947→- Modify: `oa-frontend/src/apis/StaffPage/dailyReportAiApis.ts`
+   948→- Modify: `oa-frontend/src/app/PC/StaffPage/OaDailyReport/OthersReports/OthersReports.vue:44`
+   949→- Modify: `oa-frontend/src/i18n/zh.ts`
+   950→- Modify: `oa-frontend/src/i18n/en.ts`
+   951→
+   952→- [ ] **Step 1: 在 dailyReportAiApis.ts 中新增任务 CRUD 接口**
+   953→
+   954→在文件末尾 `export default` 之前添加：
+   955→
+   956→```typescript
+   957→// ----------------------------------------------------------------
+   958→// AI 邮件任务
+   959→// ----------------------------------------------------------------
+   960→
+   961→export interface AiEmailTask {
+   962→    id: number
+   963→    name: string
+   964→    dimension: string
+   965→    report_range: string
+   966→    send_cycle: string
+   967→    send_time: string
+   968→    system_prompt: string
+   969→    is_on: number
+   970→    created_at: string
+   971→}
+   972→
+   973→async function getEmailTaskList(): Promise<AiEmailTask[]> {
+   974→    try {
+   975→        const res = await axiosPostWithInt(BASE + 'daily-report/ai-email/task/list', handlerParams({}))
+   976→        return res.data?.list ?? []
+   977→    } catch (e) {
+   978→        Message.error(e?.error_msg)
+   979→        return []
+   980→    }
+   981→}
+   982→
+   983→async function createEmailTask(params: {
+   984→    name: string
+   985→    system_prompt: string
+   986→    dimension?: string
+   987→    report_range?: string
+   988→    send_cycle?: string
+   989→    send_time?: string
+   990→}): Promise<number | null> {
+   991→    try {
+   992→        const res = await axiosPostWithInt(BASE + 'daily-report/ai-email/task/create', handlerParams(params))
+   993→        return res.data?.id ?? null
+   994→    } catch (e) {
+   995→        Message.error(e?.error_msg)
+   996→        return null
+   997→    }
+   998→}
+   999→
+  1000→async function updateEmailTask(params: {
+  1001→    id: number
+  1002→    name?: string
+  1003→    system_prompt?: string
+  1004→    dimension?: string
+  1005→    report_range?: string
+  1006→    send_cycle?: string
+  1007→    send_time?: string
+  1008→}): Promise<void> {
+  1009→    try {
+  1010→        await axiosPostWithInt(BASE + 'daily-report/ai-email/task/update', handlerParams(params))
+  1011→    } catch (e) {
+  1012→        Message.error(e?.error_msg)
+  1013→    }
+  1014→}
+  1015→
+  1016→async function deleteEmailTask(id: number): Promise<void> {
+  1017→    try {
+  1018→        await axiosPostWithInt(BASE + 'daily-report/ai-email/task/delete', handlerParams({ id }))
+  1019→    } catch (e) {
+  1020→        Message.error(e?.error_msg)
+  1021→    }
+  1022→}
+  1023→
+  1024→async function toggleEmailTask(id: number, isOn: number): Promise<void> {
+  1025→    try {
+  1026→        await axiosPostWithInt(BASE + 'daily-report/ai-email/task/toggle', handlerParams({ id, is_on: isOn }))
+  1027→    } catch (e) {
+  1028→        Message.error(e?.error_msg)
+  1029→    }
+  1030→}
+  1031→```
+  1032→
+  1033→在 `export default` 中加入新函数：
+  1034→
+  1035→```typescript
+  1036→export default {
+  1037→    // ... 现有导出 ...
+  1038→    getEmailTaskList,
+  1039→    createEmailTask,
+  1040→    updateEmailTask,
+  1041→    deleteEmailTask,
+  1042→    toggleEmailTask,
+  1043→}
+  1044→```
+  1045→
+  1046→- [ ] **Step 2: 在 OthersReports.vue 添加入口按钮**
+  1047→
+  1048→在现有「通知邮箱配置」按钮旁边（第 44 行附近），添加「智能日报邮件」按钮：
+  1049→
+  1050→```vue
+  1051→<el-button v-if="hasEmailConfigResult" type="primary" size="small" @click="emailConfig()"> {{ $t('t240409203') }}</el-button>
+  1052→<el-button v-if="hasAiAccess" type="primary" size="small" @click="showAiEmailConfig = true">智能日报邮件</el-button>
+  1053→```
+  1054→
+  1055→在 script 中添加：
+  1056→
+  1057→```typescript
+  1058→import AiEmailTaskConfig from './AiEmailTaskConfig.vue'
+  1059→
+  1060→// 在 @Component 的 components 中注册
+  1061→components: { AiChatPanel, LeftMenu, ShowCard, AiEmailTaskConfig }
+  1062→
+  1063→// 数据
+  1064→showAiEmailConfig = false
+  1065→```
+  1066→
+  1067→在 template 中添加弹窗组件：
+  1068→
+  1069→```vue
+  1070→<AiEmailTaskConfig :visible.sync="showAiEmailConfig" />
+  1071→```
+  1072→
+  1073→- [ ] **Step 3: 添加 i18n 文案**
+  1074→
+  1075→在 `src/i18n/zh.ts` 中添加：
+  1076→
+  1077→```typescript
+  1078→t240416001: '智能日报邮件',
+  1079→t240416002: '任务列表',
+  1080→t240416003: '添加新任务',
+  1081→t240416004: '配置详情',
+  1082→t240416005: '任务名称',
+  1083→t240416006: '统计维度',
+  1084→t240416007: '日报统计范围',
+  1085→t240416008: '发送周期',
+  1086→t240416009: 'AI 分析 Prompt (系统指令)',
+  1087→t240416010: '测试 Prompt 效果',
+  1088→t240416011: '按部门',
+  1089→t240416012: '今日日报',
+  1090→t240416013: '昨日日报',
+  1091→t240416014: '每日',
+  1092→t240416015: '每周周一',
+  1093→t240416016: '每周周五',
+  1094→t240416017: '每月1号',
+  1095→```
+  1096→
+  1097→在 `src/i18n/en.ts` 中添加对应英文翻译。
+  1098→
+  1099→- [ ] **Step 4: Commit**
+  1100→
+  1101→```bash
+  1102→cd oa-frontend
+  1103→git add src/apis/StaffPage/dailyReportAiApis.ts src/app/PC/StaffPage/OaDailyReport/OthersReports/OthersReports.vue src/i18n/zh.ts src/i18n/en.ts
+  1104→git commit -m "feat: add AI email task API and entry button in OthersReports"
+  1105→```
+  1106→
+  1107→---
+  1108→
+  1109→### Task 9: oa-frontend — 新增 AiEmailTaskConfig 组件
+  1110→
+  1111→**Files:**
+  1112→- Create: `oa-frontend/src/app/PC/StaffPage/OaDailyReport/OthersReports/AiEmailTaskConfig.vue`
+  1113→
+  1114→- [ ] **Step 1: 创建配置弹窗组件**
+  1115→
+  1116→参照 img.png UI 设计，创建左右布局的弹窗组件。左侧任务列表，右侧配置详情表单。
+  1117→
+  1118→```vue
+  1119→<template>
+  1120→    <el-dialog
+  1121→        title="智能日报邮件"
+  1122→        :visible="visible"
+  1123→        :close-on-click-modal="false"
+  1124→        width="80%"
+  1125→        top="5vh"
+  1126→        @update:visible="$emit('update:visible', $event)"
+  1127→        @close="$emit('update:visible', false)"
+  1128→    >
+  1129→        <div class="ai-email-config">
+  1130→            <div class="left-panel">
+  1131→                <div class="panel-header">
+  1132→                    <span>{{ $t('t240416002') }}</span>
+  1133→                </div>
+  1134→                <div class="task-list">
+  1135→                    <div
+  1136→                        v-for="task in taskList"
+  1137→                        :key="task.id"
+  1138→                        :class="['task-item', { active: selectedTask && selectedTask.id === task.id }]"
+  1139→                        @click="selectTask(task)"
+  1140→                    >
+  1141→                        <div class="task-name">{{ task.name }}</div>
+  1142→                        <div class="task-meta">{{ getDimensionLabel(task.dimension) }} · {{ getCycleLabel(task.send_cycle) }} {{ task.send_time }}</div>
+  1143→                    </div>
+  1144→                </div>
+  1145→                <el-button class="add-btn" type="primary" @click="createTask">
+  1146→                    + {{ $t('t240416003') }}
+  1147→                </el-button>
+  1148→            </div>
+  1149→
+  1150→            <div class="right-panel" v-if="selectedTask">
+  1151→                <h3>{{ $t('t240416004') }}</h3>
+  1152→                <p class="subtitle">设置 AI 分析逻辑与发送范围</p>
+  1153→
+  1154→                <el-form label-position="top" :model="form" v-loading="saving">
+  1155→                    <el-row :gutter="20">
+  1156→                        <el-col :span="12">
+  1157→                            <el-form-item :label="$t('t240416005')">
+  1158→                                <el-input v-model="form.name" />
+  1159→                            </el-form-item>
+  1160→                        </el-col>
+  1161→                        <el-col :span="12">
+  1162→                            <el-form-item :label="$t('t240416006')">
+  1163→                                <el-select v-model="form.dimension" style="width:100%">
+  1164→                                    <el-option value="department" :label="$t('t240416011')" />
+  1165→                                </el-select>
+  1166→                            </el-form-item>
+  1167→                        </el-col>
+  1168→                    </el-row>
+  1169→
+  1170→                    <el-row :gutter="20">
+  1171→                        <el-col :span="8">
+  1172→                            <el-form-item :label="$t('t240416007')">
+  1173→                                <el-select v-model="form.report_range" style="width:100%">
+  1174→                                    <el-option value="today" :label="$t('t240416012')" />
+  1175→                                    <el-option value="yesterday" :label="$t('t240416013')" />
+  1176→                                </el-select>
+  1177→                            </el-form-item>
+  1178→                        </el-col>
+  1179→                        <el-col :span="8">
+  1180→                            <el-form-item :label="$t('t240416008')">
+  1181→                                <el-select v-model="form.send_cycle" style="width:100%">
+  1182→                                    <el-option value="daily" :label="$t('t240416014')" />
+  1183→                                    <el-option value="weekly_monday" :label="$t('t240416015')" />
+  1184→                                    <el-option value="weekly_friday" :label="$t('t240416016')" />
+  1185→                                    <el-option value="monthly_first" :label="$t('t240416017')" />
+  1186→                                </el-select>
+  1187→                            </el-form-item>
+  1188→                        </el-col>
+  1189→                        <el-col :span="8">
+  1190→                            <el-form-item label=" ">
+  1191→                                <el-time-select
+  1192→                                    v-model="form.send_time"
+  1193→                                    :picker-options="{ start: '06:00', step: '00:30', end: '22:00' }"
+  1194→                                    style="width:100%"
+  1195→                                />
+  1196→                            </el-form-item>
+  1197→                        </el-col>
+  1198→                    </el-row>
+  1199→
+  1200→                    <el-form-item>
+  1201→                        <div class="prompt-header">
+  1202→                            <span>{{ $t('t240416009') }}</span>
+  1203→                            <el-button type="text" @click="testPrompt">▷ {{ $t('t240416010') }}</el-button>
+  1204→                        </div>
+  1205→                        <el-input
+  1206→                            v-model="form.system_prompt"
+  1207→                            type="textarea"
+  1208→                            :rows="10"
+  1209→                            resize="vertical"
+  1210→                        />
+  1211→                    </el-form-item>
+  1212→
+  1213→                    <!-- 测试结果展示区 -->
+  1214→                    <div v-if="testResult" class="test-result">
+  1215→                        <div class="test-result-header">AI 分析结果预览</div>
+  1216→                        <div class="test-result-content" v-html="testResult"></div>
+  1217→                    </div>
+  1218→
+  1219→                    <el-form-item>
+  1220→                        <el-button type="primary" @click="saveTask">{{ $t('t486') }}</el-button>
+  1221→                        <el-switch
+  1222→                            v-model="form.is_on"
+  1223→                            :active-value="1"
+  1224→                            :inactive-value="0"
+  1225→                            active-text="启用"
+  1226→                            inactive-text="停用"
+  1227→                            style="margin-left:16px"
+  1228→                        />
+  1229→                    </el-form-item>
+  1230→                </el-form>
+  1231→            </div>
+  1232→
+  1233→            <div class="right-panel empty" v-else>
+  1234→                <p>请选择或创建一个任务</p>
+  1235→            </div>
+  1236→        </div>
+  1237→    </el-dialog>
+  1238→</template>
+  1239→
+  1240→<script lang="ts">
+  1241→import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
+  1242→import { dailyReportAiApis } from '@/apis'
+  1243→import type { AiEmailTask } from '@/apis/StaffPage/dailyReportAiApis'
+  1244→
+  1245→@Component({ name: 'AiEmailTaskConfig' })
+  1246→export default class AiEmailTaskConfig extends Vue {
+  1247→    @Prop({ type: Boolean, default: false }) visible!: boolean
+  1248→
+  1249→    taskList: AiEmailTask[] = []
+  1250→    selectedTask: AiEmailTask | null = null
+  1251→    saving = false
+  1252→    testResult = ''
+  1253→
+  1254→    form = {
+  1255→        name: '',
+  1256→        dimension: 'department',
+  1257→        report_range: 'today',
+  1258→        send_cycle: 'daily',
+  1259→        send_time: '09:00',
+  1260→        system_prompt: '',
+  1261→        is_on: 1,
+  1262→    }
+  1263→
+  1264→    @Watch('visible')
+  1265→    async onVisibleChange(val: boolean) {
+  1266→        if (val) {
+  1267→            await this.loadTasks()
+  1268→        }
+  1269→    }
+  1270→
+  1271→    async loadTasks() {
+  1272→        this.taskList = await dailyReportAiApis.getEmailTaskList()
+  1273→        if (this.taskList.length > 0 && !this.selectedTask) {
+  1274→            this.selectTask(this.taskList[0])
+  1275→        }
+  1276→    }
+  1277→
+  1278→    selectTask(task: AiEmailTask) {
+  1279→        this.selectedTask = task
+  1280→        this.form = {
+  1281→            name: task.name,
+  1282→            dimension: task.dimension,
+  1283→            report_range: task.report_range,
+  1284→            send_cycle: task.send_cycle,
+  1285→            send_time: task.send_time,
+  1286→            system_prompt: task.system_prompt,
+  1287→            is_on: task.is_on,
+  1288→        }
+  1289→        this.testResult = ''
+  1290→    }
+  1291→
+  1292→    async createTask() {
+  1293→        const id = await dailyReportAiApis.createEmailTask({
+  1294→            name: '新任务',
+  1295→            system_prompt: '',
+  1296→        })
+  1297→        if (id) {
+  1298→            await this.loadTasks()
+  1299→            const newTask = this.taskList.find(t => t.id === id)
+  1300→            if (newTask) this.selectTask(newTask)
+  1301→        }
+  1302→    }
+  1303→
+  1304→    async saveTask() {
+  1305→        if (!this.selectedTask) return
+  1306→        this.saving = true
+  1307→        try {
+  1308→            await dailyReportAiApis.updateEmailTask({
+  1309→                id: this.selectedTask.id,
+  1310→                ...this.form,
+  1311→            })
+  1312→            if (this.form.is_on !== this.selectedTask.is_on) {
+  1313→                await dailyReportAiApis.toggleEmailTask(this.selectedTask.id, this.form.is_on)
+  1314→            }
+  1315→            this.$message.success('保存成功')
+  1316→            await this.loadTasks()
+  1317→        } finally {
+  1318→            this.saving = false
+  1319→        }
+  1320→    }
+  1321→
+  1322→    async testPrompt() {
+  1323→        // TODO: 实施时对接 SSE 流式接口
+  1324→        this.testResult = '正在分析...'
+  1325→        this.$message.info('测试 Prompt 功能开发中')
+  1326→    }
+  1327→
+  1328→    getDimensionLabel(dim: string): string {
+  1329→        return dim === 'department' ? '按部门' : dim
+  1330→    }
+  1331→
+  1332→    getCycleLabel(cycle: string): string {
+  1333→        const map: Record<string, string> = {
+  1334→            daily: '每日',
+  1335→            weekly_monday: '每周周一',
+  1336→            weekly_friday: '每周周五',
+  1337→            monthly_first: '每月1号',
+  1338→        }
+  1339→        return map[cycle] || cycle
+  1340→    }
+  1341→}
+  1342→</script>
+  1343→
+  1344→<style lang="less" scoped>
+  1345→.ai-email-config {
+  1346→    display: flex;
+  1347→    min-height: 500px;
+  1348→}
+  1349→
+  1350→.left-panel {
+  1351→    width: 260px;
+  1352→    border-right: 1px solid #ebeef5;
+  1353→    display: flex;
+  1354→    flex-direction: column;
+  1355→
+  1356→    .panel-header {
+  1357→        padding: 12px 16px;
+  1358→        font-weight: bold;
+  1359→        border-bottom: 1px solid #ebeef5;
+  1360→    }
+  1361→
+  1362→    .task-list {
+  1363→        flex: 1;
+  1364→        overflow-y: auto;
+  1365→    }
+  1366→
+  1367→    .task-item {
+  1368→        padding: 12px 16px;
+  1369→        cursor: pointer;
+  1370→        border-bottom: 1px solid #f5f5f5;
+  1371→
+  1372→        &:hover {
+  1373→            background: #f5f7fa;
+  1374→        }
+  1375→
+  1376→        &.active {
+  1377→            background: #ecf5ff;
+  1378→            border-left: 3px solid #409eff;
+  1379→        }
+  1380→
+  1381→        .task-name {
+  1382→            font-weight: 500;
+  1383→            margin-bottom: 4px;
+  1384→        }
+  1385→
+  1386→        .task-meta {
+  1387→            font-size: 12px;
+  1388→            color: #909399;
+  1389→        }
+  1390→    }
+  1391→
+  1392→    .add-btn {
+  1393→        margin: 12px 16px;
+  1394→    }
+  1395→}
+  1396→
+  1397→.right-panel {
+  1398→    flex: 1;
+  1399→    padding: 20px 24px;
+  1400→
+  1401→    &.empty {
+  1402→        display: flex;
+  1403→        align-items: center;
+  1404→        justify-content: center;
+  1405→        color: #909399;
+  1406→    }
+  1407→
+  1408→    .subtitle {
+  1409→        color: #909399;
+  1410→        margin-bottom: 20px;
+  1411→    }
+  1412→
+  1413→    .prompt-header {
+  1414→        display: flex;
+  1415→        justify-content: space-between;
+  1416→        align-items: center;
+  1417→        margin-bottom: 8px;
+  1418→        font-weight: bold;
+  1419→    }
+  1420→}
+  1421→
+  1422→.test-result {
+  1423→    border: 1px solid #e4e7ed;
+  1424→    border-radius: 4px;
+  1425→    padding: 16px;
+  1426→    margin-bottom: 20px;
+  1427→    background: #fafafa;
+  1428→
+  1429→    .test-result-header {
+  1430→        font-weight: bold;
+  1431→        margin-bottom: 8px;
+  1432→        color: #409eff;
+  1433→    }
+  1434→
+  1435→    .test-result-content {
+  1436→        white-space: pre-wrap;
+  1437→        line-height: 1.6;
+  1438→    }
+  1439→}
+  1440→</style>
+  1441→```
+  1442→
+  1443→- [ ] **Step 2: Commit**
+  1444→
+  1445→```bash
+  1446→cd oa-frontend
+  1447→git add src/app/PC/StaffPage/OaDailyReport/OthersReports/AiEmailTaskConfig.vue
+  1448→git commit -m "feat: add AiEmailTaskConfig component for smart daily report email"
+  1449→```
+  1450→
+  1451→---
+  1452→
+  1453→### Task 10: 集成测试 & 收尾
+  1454→
+  1455→- [ ] **Step 1: oa-core — 运行 lint 和 analyse**
+  1456→
+  1457→```bash
+  1458→docker exec -it oa_core-workspace-dev-1 bash -c "composer cs-fix-check && composer analyse"
+  1459→```
+  1460→
+  1461→修复发现的问题。
+  1462→
+  1463→- [ ] **Step 2: oa-server — 运行迁移和 lint**
+  1464→
+  1465→```bash
+  1466→docker exec -it oa-workspace-dev-1 bash -c "php artisan migrate && composer cs-fix-check && composer analyse"
+  1467→```
+  1468→
+  1469→修复发现的问题。
+  1470→
+  1471→- [ ] **Step 3: oa-frontend — 运行 lint**
+  1472→
+  1473→```bash
+  1474→cd oa-frontend && npm run lint
+  1475→```
+  1476→
+  1477→修复发现的问题。
+  1478→
+  1479→- [ ] **Step 4: 手动验收**
+  1480→
+  1481→验收清单：
+  1482→1. 前端打开 OthersReports 页面，能看到「智能日报邮件」按钮
+  1483→2. 点击弹窗，能创建/编辑/删除任务
+  1484→3. 配置 Prompt 后点「测试 Prompt 效果」能看到 AI 分析预览
+  1485→4. 现有 AI 日报助手功能正常（已从 Dify 迁移到 Vertex AI）
+  1486→5. 定时 Job 正确触发并发送包含 AI 分析的邮件
+  1487→
+  1488→- [ ] **Step 5: Final commit**
+  1489→
+  1490→```bash
+  1491→git commit -m "feat: smart daily report email system complete"
+  1492→```
+  1493→

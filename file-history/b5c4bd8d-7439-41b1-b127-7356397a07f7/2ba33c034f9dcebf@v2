@@ -1,0 +1,17 @@
+-- 空间站变更记录表
+CREATE TABLE `collabspace_space_change_record` (
+  `id` bigint NOT NULL COMMENT '主键',
+  `space_id` varchar(255) NOT NULL COMMENT '空间站ID',
+  `type` tinyint NOT NULL COMMENT '变更类型：1=子管理员变更，2=成员变更',
+  `action` varchar(32) NOT NULL COMMENT '操作：ADD/REMOVE',
+  `operator_id` bigint NOT NULL COMMENT '操作人用户ID',
+  `target_user_id` bigint NOT NULL COMMENT '被操作人用户ID',
+  `detail` json DEFAULT NULL COMMENT '变更详情JSON',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '更新人',
+  `is_deleted` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_space_id_type` (`space_id`, `type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='空间站变更记录';

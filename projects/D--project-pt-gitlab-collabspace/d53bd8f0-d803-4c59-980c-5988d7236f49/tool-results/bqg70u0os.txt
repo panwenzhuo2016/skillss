@@ -1,0 +1,601 @@
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/controller/NotificationApprovalController.java b/src/main/java/com/yottastudios/ns/collabspace/control/controller/NotificationApprovalController.java
+index a85299a1..efebef7b 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/controller/NotificationApprovalController.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/controller/NotificationApprovalController.java
+@@ -1,5 +1,7 @@
+ package com.yottastudios.ns.collabspace.control.controller;
+ 
++import com.yottastudios.ns.collabspace.control.entity.PermissionRequestEntity;
++import com.yottastudios.ns.collabspace.control.enums.PermissionRequestException;
+ import com.yottastudios.ns.collabspace.control.service.IPermissionRequestService;
+ import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+ import com.yottastudios.ns.collabspace.core.support.ResponseData;
+@@ -30,6 +32,7 @@ import java.util.Map;
+ public class NotificationApprovalController {
+ 
+     private static final String DOCUMENT_PERMISSION_REQUEST = "document_permission_request";
++    private static final String TYPE_WORKSPACE = "WORKSPACE";
+ 
+     @Resource
+     private IPermissionRequestService permissionRequestService;
+@@ -46,7 +49,11 @@ public class NotificationApprovalController {
+         Long userId = SessionContext.getUserId();
+         log.info("[1822-Approval] APPROVE entry notificationId={} approverUserId={}", notificationId, userId);
+         String requestId = resolveRequestId(notificationId, userId);
+-        permissionRequestService.approveByRequestId(requestId, notificationId, userId);
++        if (TYPE_WORKSPACE.equals(getRequestType(requestId))) {
++            permissionRequestService.approveWorkspaceByRequestId(requestId, notificationId, userId);
++        } else {
++            permissionRequestService.approveByRequestId(requestId, notificationId, userId);
++        }
+         return ResponseData.success();
+     }
+ 
+@@ -59,7 +66,11 @@ public class NotificationApprovalController {
+         Long userId = SessionContext.getUserId();
+         log.info("[1822-Approval] REJECT entry notificationId={} approverUserId={}", notificationId, userId);
+         String requestId = resolveRequestId(notificationId, userId);
+-        permissionRequestService.rejectByRequestId(requestId, notificationId, userId);
++        if (TYPE_WORKSPACE.equals(getRequestType(requestId))) {
++            permissionRequestService.rejectWorkspaceByRequestId(requestId, notificationId, userId);
++        } else {
++            permissionRequestService.rejectByRequestId(requestId, notificationId, userId);
++        }
+         return ResponseData.success();
+     }
+ 
+@@ -72,7 +83,11 @@ public class NotificationApprovalController {
+         Long userId = SessionContext.getUserId();
+         log.info("[1822-Approval] IGNORE entry notificationId={} approverUserId={}", notificationId, userId);
+         String requestId = resolveRequestId(notificationId, userId);
+-        permissionRequestService.ignoreByRequestId(requestId, notificationId, userId);
++        if (TYPE_WORKSPACE.equals(getRequestType(requestId))) {
++            permissionRequestService.ignoreWorkspaceByRequestId(requestId, notificationId, userId);
++        } else {
++            permissionRequestService.ignoreByRequestId(requestId, notificationId, userId);
++        }
+         return ResponseData.success();
+     }
+ 
+@@ -85,10 +100,25 @@ public class NotificationApprovalController {
+         Long userId = SessionContext.getUserId();
+         log.info("[1822-Approval] REAPPROVE entry notificationId={} approverUserId={}", notificationId, userId);
+         String requestId = resolveRequestId(notificationId, userId);
+-        permissionRequestService.reapproveByRequestId(requestId, notificationId, userId);
++        if (TYPE_WORKSPACE.equals(getRequestType(requestId))) {
++            permissionRequestService.reapproveWorkspaceByRequestId(requestId, notificationId, userId);
++        } else {
++            permissionRequestService.reapproveByRequestId(requestId, notificationId, userId);
++        }
+         return ResponseData.success();
+     }
+ 
++    /**
++     * 根据 requestId 查出 type，决定走文档审批还是空间站审批。
++     */
++    private String getRequestType(String requestId) {
++        PermissionRequestEntity request = permissionRequestService.getById(requestId);
++        if (request == null) {
++            throw new BusinessException(PermissionRequestException.PERMISSION_REQUEST_NOT_FOUND);
++        }
++        return request.getType();
++    }
++
+     /**
+      * 通过 gRPC 到 apitable 查通知 body extras，取出 requestId.
+      */
+@@ -98,21 +128,21 @@ public class NotificationApprovalController {
+             log.warn("[1822-Approval] resolveRequestId: getNotificationExtras returned empty notificationId={} approverUserId={}",
+                     notificationId, approverUserId);
+             throw new BusinessException(
+-                com.yottastudios.ns.collabspace.control.enums.PermissionRequestException.NOTIFICATION_NOT_VALID);
++                PermissionRequestException.NOTIFICATION_NOT_VALID);
+         }
+         String templateId = extras.get("templateId");
+         if (!DOCUMENT_PERMISSION_REQUEST.equals(templateId)) {
+             log.warn("[1822-Approval] resolveRequestId: not a permission request notification notificationId={} templateId={}",
+                     notificationId, templateId);
+             throw new BusinessException(
+-                com.yottastudios.ns.collabspace.control.enums.PermissionRequestException.NOTIFICATION_NOT_VALID);
++                PermissionRequestException.NOTIFICATION_NOT_VALID);
+         }
+         String requestId = extras.get("requestId");
+         if (requestId == null || requestId.isBlank()) {
+             log.warn("[1822-Approval] resolveRequestId: requestId missing in extras notificationId={}",
+                     notificationId);
+             throw new BusinessException(
+-                com.yottastudios.ns.collabspace.control.enums.PermissionRequestException.NOTIFICATION_NOT_VALID);
++                PermissionRequestException.NOTIFICATION_NOT_VALID);
+         }
+         log.info("[1822-Approval] resolveRequestId ok notificationId={} requestId={}", notificationId, requestId);
+         return requestId;
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/entity/PermissionRequestEntity.java b/src/main/java/com/yottastudios/ns/collabspace/control/entity/PermissionRequestEntity.java
+index 67393adb..5af2708e 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/entity/PermissionRequestEntity.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/entity/PermissionRequestEntity.java
+@@ -26,6 +26,9 @@ public class PermissionRequestEntity {
+     @TableId(value = "id", type = IdType.INPUT)
+     private String id;
+ 
++    @TableField("type")
++    private String type;
++
+     private Long applicantUserId;
+ 
+     private String documentId;
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/enums/PermissionRequestException.java b/src/main/java/com/yottastudios/ns/collabspace/control/enums/PermissionRequestException.java
+index f564932d..372ca0d7 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/enums/PermissionRequestException.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/enums/PermissionRequestException.java
+@@ -36,6 +36,10 @@ public enum PermissionRequestException implements BaseException {
+ 
+     APPLICANT_UNIT_NOT_FOUND(1210, "未找到申请人的组织单元信息"),
+ 
++    ALREADY_WORKSPACE_MEMBER(1211, "您已是该空间站成员"),
++
++    ALREADY_SUBMITTED_WORKSPACE_REQUEST(1212, "您已提交过空间站加入申请，请勿重复提交"),
++
+     // PermissionException (600-699) - 与 APITable PermissionException 保持一致
+     NODE_NOT_EXIST(600, "文档不存在"),
+ 
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/mapper/PermissionRequestMapper.java b/src/main/java/com/yottastudios/ns/collabspace/control/mapper/PermissionRequestMapper.java
+index 6a1c78fc..78c8f753 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/mapper/PermissionRequestMapper.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/mapper/PermissionRequestMapper.java
+@@ -41,4 +41,11 @@ public interface PermissionRequestMapper extends BaseMapper<PermissionRequestEnt
+         @Param("id") String id,
+         @Param("status") String status,
+         @Param("approverUserId") Long approverUserId);
++
++    /**
++     * Find pending workspace join request by workspaceId and applicant.
++     */
++    PermissionRequestEntity selectPendingWorkspaceBySpaceAndApplicant(
++        @Param("spaceId") String spaceId,
++        @Param("applicantUserId") Long applicantUserId);
+ }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/service/IPermissionRequestService.java b/src/main/java/com/yottastudios/ns/collabspace/control/service/IPermissionRequestService.java
+index 04e37b4d..0e2decb8 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/service/IPermissionRequestService.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/service/IPermissionRequestService.java
+@@ -97,4 +97,31 @@ public interface IPermissionRequestService extends IService<PermissionRequestEnt
+      */
+     void reapproveByRequestId(String requestId, Long notificationId, Long approverUserId);
+ 
++    // ========== Workspace join request ==========
++
++    /**
++     * Submit a workspace join request.
++     */
++    void submitWorkspaceJoinRequest(String workspaceId, Long applicantUserId);
++
++    /**
++     * Approve workspace join request — auto-add member to space.
++     */
++    void approveWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId);
++
++    /**
++     * Reject workspace join request.
++     */
++    void rejectWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId);
++
++    /**
++     * Ignore workspace join request — mark notification as read.
++     */
++    void ignoreWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId);
++
++    /**
++     * Reapprove workspace join request — mark notification as unread.
++     */
++    void reapproveWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId);
++
+ }
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/control/service/impl/PermissionRequestServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/control/service/impl/PermissionRequestServiceImpl.java
+index 94409a1f..5531b5a8 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/control/service/impl/PermissionRequestServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/control/service/impl/PermissionRequestServiceImpl.java
+@@ -66,6 +66,9 @@ public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestM
+     private static final String DOCUMENT_PERMISSION_REQUEST = "document_permission_request";
+     private static final String BODY_EXTRAS = "extras";
+ 
++    private static final String TYPE_DOCUMENT = "DOCUMENT";
++    private static final String TYPE_WORKSPACE = "WORKSPACE";
++
+     @Resource
+     private IControlService controlService;
+ 
+@@ -320,6 +323,267 @@ public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestM
+         }
+     }
+ 
++    // ========== submitWorkspaceJoinRequest ==========
++
++    @Override
++    @Transactional(rollbackFor = Exception.class)
++    public void submitWorkspaceJoinRequest(String workspaceId, Long applicantUserId) {
++        ExceptionUtil.isNotNull(workspaceId, PermissionRequestException.NODE_NOT_EXIST);
++        ExceptionUtil.isNotNull(applicantUserId, PermissionRequestException.NODE_ACCESS_DENIED);
++
++        // 1. Check no pending workspace request
++        PermissionRequestEntity pending = baseMapper.selectPendingWorkspaceBySpaceAndApplicant(workspaceId, applicantUserId);
++        ExceptionUtil.isNull(pending, PermissionRequestException.ALREADY_SUBMITTED_WORKSPACE_REQUEST);
++
++        // 2. Get applicant nickname and space name
++        String applicantNickName = getApplicantNickName(applicantUserId);
++        SpaceEntity space = spaceService.getBySpaceId(workspaceId);
++        String spaceName = space != null && space.getName() != null ? space.getName() : workspaceId;
++
++        // 3. Create permission request record
++        String requestId = REQUEST_ID_PREFIX + IdUtil.getSnowflakeNextId();
++        PermissionRequestEntity entity = PermissionRequestEntity.builder()
++            .id(requestId)
++            .type(TYPE_WORKSPACE)
++            .applicantUserId(applicantUserId)
++            .documentId(workspaceId)
++            .documentName(spaceName)
++            .spaceId(workspaceId)
++            .requestedPermissionType(null)
++            .status(STATUS_PENDING)
++            .isDeleted(0)
++            .createdAt(LocalDateTime.now())
++            .updatedAt(LocalDateTime.now())
++            .build();
++
++        boolean flag = save(entity);
++        if (!flag) {
++            log.error("[2423-WorkspaceJoin] ERROR CREATE insert failed applicantUserId={} workspaceId={}",
++                applicantUserId, workspaceId);
++            throw new BusinessException(PermissionRequestException.INSERT_ERROR);
++        }
++        log.info("[2423-WorkspaceJoin] CREATE request requestId={} applicantUserId={} workspaceId={}",
++            requestId, applicantUserId, workspaceId);
++
++        // 4. Get space admins as notification recipients
++        List<Long> adminUserIds = spaceQueryManager.getAdminUsersWithWorkBenchManagePermission(workspaceId);
++        if (CollUtil.isEmpty(adminUserIds)) {
++            log.warn("[2423-WorkspaceJoin] no admins workspaceId={}", workspaceId);
++            return;
++        }
++        // Exclude applicant from recipients
++        adminUserIds = new ArrayList<>(adminUserIds);
++        adminUserIds.remove(applicantUserId);
++        if (CollUtil.isEmpty(adminUserIds)) {
++            log.warn("[2423-WorkspaceJoin] applicant is the only admin workspaceId={}", workspaceId);
++            return;
++        }
++
++        // 5. Send notification via apitable notification center
++        notifyWorkspaceAdminsAsync(entity, spaceName, applicantNickName, adminUserIds);
++    }
++
++    @Async
++    public void notifyWorkspaceAdminsAsync(PermissionRequestEntity request, String spaceName,
++                                            String applicantNickName, List<Long> adminUserIds) {
++        try {
++            Map<String, Object> extras = new HashMap<>();
++            extras.put("requestId", request.getId());
++            extras.put("type", TYPE_WORKSPACE);
++            extras.put("spaceName", spaceName);
++            extras.put("applicantUserId", String.valueOf(request.getApplicantUserId()));
++            extras.put("applicantNickName", applicantNickName);
++            extras.put("documentId", request.getDocumentId());
++            extras.put("documentName", spaceName);
++            extras.put("status", request.getStatus());
++
++            Map<String, Object> bodyMap = new HashMap<>();
++            bodyMap.put(BODY_EXTRAS, extras);
++            String bodyJson = JSONUtil.toJsonStr(bodyMap);
++
++            apitableGrpcClientService.createNotification(
++                DOCUMENT_PERMISSION_REQUEST,
++                String.valueOf(request.getApplicantUserId()),
++                adminUserIds.stream().map(String::valueOf).collect(Collectors.toList()),
++                request.getDocumentId(),
++                request.getSpaceId(),
++                bodyJson,
++                true
++            );
++
++            log.info("[2423-WorkspaceJoin] notifyAdmins done requestId={} adminCount={}",
++                request.getId(), adminUserIds.size());
++        } catch (Exception e) {
++            log.error("[2423-WorkspaceJoin] ERROR notifyAdmins requestId={} error={}",
++                request.getId(), e.getMessage(), e);
++        }
++    }
++
++    // ========== Approve / Reject / Ignore / Reapprove (workspace) ==========
++
++    @Override
++    @Transactional(rollbackFor = Exception.class)
++    public void approveWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId) {
++        PermissionRequestEntity request = validateAndGetWorkspaceRequest(requestId, approverUserId);
++
++        UserSimpleInfoVo approverInfo = getApproverInfo(approverUserId);
++        String approverNickName = approverInfo != null && approverInfo.getNickName() != null ? approverInfo.getNickName() : "";
++        String approverUuid = approverInfo != null && approverInfo.getUuid() != null ? approverInfo.getUuid() : String.valueOf(approverUserId);
++
++        // Add applicant to space root team (teamId=0L)
++        String workspaceId = request.getSpaceId();
++        try {
++            apitableGrpcClientService.addUsersToTeam(workspaceId,
++                List.of(request.getApplicantUserId()), 0L, true);
++            log.info("[2423-WorkspaceJoin] APPROVE addUsersToTeam ok workspaceId={} applicantUserId={}",
++                workspaceId, request.getApplicantUserId());
++        } catch (Exception e) {
++            log.error("[2423-WorkspaceJoin] APPROVE addUsersToTeam FAILED workspaceId={} applicantUserId={} error={}",
++                workspaceId, request.getApplicantUserId(), e.getMessage(), e);
++            throw new BusinessException("加入空间站失败: " + e.getMessage());
++        }
++
++        // Update request status
++        int rows = baseMapper.updateStatusById(request.getId(), STATUS_APPROVED, approverUserId);
++        log.info("[2423-WorkspaceJoin] APPROVE DB updateStatus requestId={} rows={}", request.getId(), rows);
++
++        // Update notification extras + mark read
++        apitableGrpcClientService.updateNotificationExtras(notificationId, STATUS_APPROVED,
++            approverUuid, approverNickName);
++        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, true);
++
++        // Mark other admins' notifications as read
++        markOtherWorkspaceRecipientNotificationsRead(notificationId, request, approverUserId);
++
++        // Notify applicant
++        notifyWorkspaceApplicantResultAsync(request, STATUS_APPROVED, approverUuid, approverNickName);
++
++        log.info("[2423-WorkspaceJoin] APPROVE done requestId={} approverUserId={} applicantUserId={} workspaceId={}",
++            request.getId(), approverUserId, request.getApplicantUserId(), workspaceId);
++    }
++
++    @Override
++    @Transactional(rollbackFor = Exception.class)
++    public void rejectWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId) {
++        PermissionRequestEntity request = validateAndGetWorkspaceRequest(requestId, approverUserId);
++
++        UserSimpleInfoVo approverInfo = getApproverInfo(approverUserId);
++        String approverNickName = approverInfo != null && approverInfo.getNickName() != null ? approverInfo.getNickName() : "";
++        String approverUuid = approverInfo != null && approverInfo.getUuid() != null ? approverInfo.getUuid() : String.valueOf(approverUserId);
++
++        // Update request status
++        int rows = baseMapper.updateStatusById(request.getId(), STATUS_REJECTED, approverUserId);
++        log.info("[2423-WorkspaceJoin] REJECT DB updateStatus requestId={} rows={}", request.getId(), rows);
++
++        // Update notification extras + mark read
++        apitableGrpcClientService.updateNotificationExtras(notificationId, STATUS_REJECTED,
++            approverUuid, approverNickName);
++        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, true);
++
++        // Mark other admins' notifications as read
++        markOtherWorkspaceRecipientNotificationsRead(notificationId, request, approverUserId);
++
++        // Notify applicant
++        notifyWorkspaceApplicantResultAsync(request, STATUS_REJECTED, approverUuid, approverNickName);
++
++        log.info("[2423-WorkspaceJoin] REJECT done requestId={} approverUserId={} applicantUserId={}",
++            request.getId(), approverUserId, request.getApplicantUserId());
++    }
++
++    @Override
++    public void ignoreWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId) {
++        validateWorkspaceRequestForApprover(requestId, approverUserId);
++        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, true);
++        log.info("[2423-WorkspaceJoin] IGNORE requestId={} notificationId={} approverUserId={}",
++            requestId, notificationId, approverUserId);
++    }
++
++    @Override
++    public void reapproveWorkspaceByRequestId(String requestId, Long notificationId, Long approverUserId) {
++        validateWorkspaceRequestForApprover(requestId, approverUserId);
++        apitableGrpcClientService.setNotificationRead(notificationId, approverUserId, false);
++        log.info("[2423-WorkspaceJoin] REAPPROVE requestId={} notificationId={} approverUserId={}",
++            requestId, notificationId, approverUserId);
++    }
++
++    private PermissionRequestEntity validateAndGetWorkspaceRequest(String requestId, Long approverUserId) {
++        ExceptionUtil.isNotBlank(requestId, PermissionRequestException.NOTIFICATION_NOT_VALID);
++        PermissionRequestEntity request = baseMapper.selectById(requestId);
++        ExceptionUtil.isNotNull(request, PermissionRequestException.PERMISSION_REQUEST_NOT_FOUND);
++        if (!STATUS_PENDING.equals(request.getStatus())) {
++            log.warn("[2423-WorkspaceJoin] validate alreadyProcessed requestId={} status={}",
++                request.getId(), request.getStatus());
++            ExceptionUtil.isTrue(false, PermissionRequestException.REQUEST_ALREADY_PROCESSED);
++        }
++        boolean isSpaceAdmin = spaceQueryManager.isUserSpaceAdmin(approverUserId, request.getSpaceId());
++        ExceptionUtil.isTrue(isSpaceAdmin, PermissionRequestException.INSUFFICIENT_PERMISSIONS);
++        return request;
++    }
++
++    private void validateWorkspaceRequestForApprover(String requestId, Long approverUserId) {
++        ExceptionUtil.isNotBlank(requestId, PermissionRequestException.NOTIFICATION_NOT_VALID);
++        PermissionRequestEntity request = baseMapper.selectById(requestId);
++        ExceptionUtil.isNotNull(request, PermissionRequestException.PERMISSION_REQUEST_NOT_FOUND);
++        boolean isSpaceAdmin = spaceQueryManager.isUserSpaceAdmin(approverUserId, request.getSpaceId());
++        ExceptionUtil.isTrue(isSpaceAdmin, PermissionRequestException.INSUFFICIENT_PERMISSIONS);
++    }
++
++    private void markOtherWorkspaceRecipientNotificationsRead(Long notificationId,
++                                                               PermissionRequestEntity request,
++                                                               Long approverUserId) {
++        try {
++            List<Long> adminUserIds = spaceQueryManager.getAdminUsersWithWorkBenchManagePermission(request.getSpaceId());
++            Set<Long> others = new LinkedHashSet<>(adminUserIds);
++            others.remove(request.getApplicantUserId());
++            others.remove(approverUserId);
++
++            for (Long userId : others) {
++                apitableGrpcClientService.setNotificationRead(notificationId, userId, true);
++            }
++            log.info("[2423-WorkspaceJoin] markOtherRecipients notificationId={} count={} requestId={}",
++                notificationId, others.size(), request.getId());
++        } catch (Exception e) {
++            log.warn("[2423-WorkspaceJoin] markOtherRecipients failed notificationId={} requestId={} error={}",
++                notificationId, request.getId(), e.getMessage());
++        }
++    }
++
++    @Async
++    public void notifyWorkspaceApplicantResultAsync(PermissionRequestEntity request, String status,
++                                                     String approverUuid, String approverNickName) {
++        try {
++            String templateId = STATUS_APPROVED.equals(status) ? "permission_approved" : "permission_rejected";
++
++            Map<String, Object> extras = new HashMap<>();
++            extras.put("requestId", request.getId());
++            extras.put("type", TYPE_WORKSPACE);
++            extras.put("documentId", request.getDocumentId());
++            extras.put("documentName", request.getDocumentName());
++            extras.put("status", status);
++            extras.put("approverUserId", approverUuid);
++            extras.put("approverNickName", approverNickName != null ? approverNickName : "");
++
++            Map<String, Object> bodyMap = new HashMap<>();
++            bodyMap.put(BODY_EXTRAS, extras);
++            String bodyJson = JSONUtil.toJsonStr(bodyMap);
++
++            apitableGrpcClientService.createNotification(
++                templateId,
++                approverUuid,
++                Collections.singletonList(String.valueOf(request.getApplicantUserId())),
++                request.getDocumentId(),
++                request.getSpaceId(),
++                bodyJson,
++                false
++            );
++            log.info("[2423-WorkspaceJoin] notifyApplicantResult requestId={} status={} applicantUserId={}",
++                request.getId(), status, request.getApplicantUserId());
++        } catch (Exception e) {
++            log.error("[2423-WorkspaceJoin] ERROR notifyApplicantResult requestId={} status={} error={}",
++                request.getId(), status, e.getMessage(), e);
++        }
++    }
++
+     // ========== List / Count ==========
+ 
+     @Override
+diff --git a/src/main/java/com/yottastudios/ns/collabspace/space/service/impl/WorkspaceApplyServiceImpl.java b/src/main/java/com/yottastudios/ns/collabspace/space/service/impl/WorkspaceApplyServiceImpl.java
+index 7bd7f664..4f3a1d1d 100644
+--- a/src/main/java/com/yottastudios/ns/collabspace/space/service/impl/WorkspaceApplyServiceImpl.java
++++ b/src/main/java/com/yottastudios/ns/collabspace/space/service/impl/WorkspaceApplyServiceImpl.java
+@@ -1,33 +1,23 @@
+ package com.yottastudios.ns.collabspace.space.service.impl;
+ 
+ import com.yottastudios.ns.collabspace.base.enums.DatabaseException;
++import com.yottastudios.ns.collabspace.control.service.IPermissionRequestService;
+ import com.yottastudios.ns.collabspace.core.exception.BusinessException;
+ import com.yottastudios.ns.collabspace.core.util.ExceptionUtil;
+-import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+-import com.yottastudios.ns.collabspace.shared.config.properties.ConstProperties;
+ import com.yottastudios.ns.collabspace.shared.context.SessionContext;
+-import org.springframework.data.redis.core.RedisTemplate;
+ import com.yottastudios.ns.collabspace.space.entity.SpaceEntity;
+ import com.yottastudios.ns.collabspace.space.manager.query.SpaceQueryManager;
+ import com.yottastudios.ns.collabspace.space.service.ISpaceService;
+ import com.yottastudios.ns.collabspace.space.service.IWorkspaceApplyService;
+-import com.yottastudios.ns.collabspace.user.vo.UserSimpleInfoVo;
+ import jakarta.annotation.Resource;
+ import lombok.extern.slf4j.Slf4j;
+-import org.apache.commons.collections4.CollectionUtils;
+ import org.apache.commons.lang3.StringUtils;
++import org.springframework.data.redis.core.RedisTemplate;
+ import org.springframework.stereotype.Service;
+ 
+ import java.util.List;
+ import java.util.concurrent.TimeUnit;
+ 
+-/**
+- * 空间站成员申请服务实现.
+- * 1. 校验 workspaceId 有效性及当前用户是否已为成员
+- * 2. 获取用户花名、空间站名称
+- * 3. 获取空间站管理员列表
+- * 4. 向管理员发送 knock/mm 消息
+- */
+ @Slf4j
+ @Service
+ public class WorkspaceApplyServiceImpl implements IWorkspaceApplyService {
+@@ -39,13 +29,7 @@ public class WorkspaceApplyServiceImpl implements IWorkspaceApplyService {
+     private SpaceQueryManager spaceQueryManager;
+ 
+     @Resource
+-    private IApitableGrpcClientService apitableGrpcClientService;
+-
+-    @Resource
+-    private ConstProperties constProperties;
+-
+-    @Resource
+-    private WorkspaceApplyNotifyService workspaceApplyNotifyService;
++    private IPermissionRequestService permissionRequestService;
+ 
+     @Resource
+     private RedisTemplate<String, Object> redisTemplate;
+@@ -55,14 +39,15 @@ public class WorkspaceApplyServiceImpl implements IWorkspaceApplyService {
+ 
+     @Override
+     public void applyMembership(String workspaceId) {
+-        log.info("[1822-WorkspaceApply] apply entry workspaceId={}", workspaceId);
++        log.info("[2423-WorkspaceApply] apply entry workspaceId={}", workspaceId);
+         if (StringUtils.isBlank(workspaceId)) {
+             throw new BusinessException("workspaceId 无效");
+         }
+ 
+         Long userId = SessionContext.getUserId();
+-        log.info("[1822-WorkspaceApply] applicant userId={}", userId);
++        log.info("[2423-WorkspaceApply] applicant userId={}", userId);
+ 
++        // Validate space exists and not forbidden
+         SpaceEntity spaceEntity = spaceService.listByIds(List.of(workspaceId), true)
+                 .stream()
+                 .findFirst()
+@@ -73,47 +58,21 @@ public class WorkspaceApplyServiceImpl implements IWorkspaceApplyService {
+             throw new BusinessException("空间站不存在或已禁用");
+         }
+ 
++        // Check user not already a member
+         if (spaceQueryManager.isUserInSpace(userId, workspaceId)) {
+             throw new BusinessException("您已是该空间站成员");
+         }
+ 
+-        UserSimpleInfoVo applicant = apitableGrpcClientService.getUserById(userId);
+-        String applicantNickName = applicant != null && StringUtils.isNotBlank(applicant.getNickName())
+-                ? applicant.getNickName()
+-                : "用户" + userId;
+-
+-        String spaceName = StringUtils.isNotBlank(spaceEntity.getName()) ? spaceEntity.getName() : workspaceId;
+-        log.info("[1822-WorkspaceApply] applicantNickName={} spaceName={}", applicantNickName, spaceName);
+-
+-        List<Long> adminUserIds = spaceQueryManager.getAdminUsersWithWorkBenchManagePermission(workspaceId);
+-        if (CollectionUtils.isEmpty(adminUserIds)) {
+-            log.warn("[1822-WorkspaceApply] no admins workspaceId={}", workspaceId);
+-            return;
+-        }
+-        log.info("[1822-WorkspaceApply] adminCount={}", adminUserIds.size());
+-
++        // Redis cooldown (1 hour)
+         String redisKey = REDIS_KEY_PREFIX + userId + ":" + workspaceId;
+         Boolean firstApply = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", COOLDOWN_HOURS, TimeUnit.HOURS);
+         if (Boolean.FALSE.equals(firstApply)) {
+-            log.info("[1822-WorkspaceApply] duplicate blocked userId={} workspaceId={} cooldown={}h", userId, workspaceId, COOLDOWN_HOURS);
++            log.info("[2423-WorkspaceApply] duplicate blocked userId={} workspaceId={}", userId, workspaceId);
+             throw new BusinessException("您已申请过，请等待管理员处理，请勿重复申请");
+         }
+ 
+-        String managementUrl = buildManagementUrl();
+-        String message = String.format("[%s]申请加入[%s]，请在空间站管理后台添加成员，点击直达空间站管理后台:%s",
+-                applicantNickName, spaceName, managementUrl);
+-        log.info("[1822-WorkspaceApply] notify messageLen={} managementUrl={}", message != null ? message.length() : 0, managementUrl);
+-
+-        workspaceApplyNotifyService.notifyAdmins(workspaceId, spaceName, adminUserIds, message);
+-        log.info("[1822-WorkspaceApply] apply done workspaceId={}", workspaceId);
+-    }
+-
+-    private String buildManagementUrl() {
+-        String domain = constProperties.getServerDomain();
+-        if (StringUtils.isBlank(domain)) {
+-            return "";
+-        }
+-        String base = domain.endsWith("/") ? domain.substring(0, domain.length() - 1) : domain;
+-        return base + "/#/user-backend/space-roles";
++        // Delegate to permission request service (creates record + sends notification)
++        permissionRequestService.submitWorkspaceJoinRequest(workspaceId, userId);
++        log.info("[2423-WorkspaceApply] apply done workspaceId={} userId={}", workspaceId, userId);
+     }
+ }

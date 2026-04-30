@@ -1,0 +1,441 @@
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\SpaceNodeVo.java-66-    @Schema(description = "可以被引用（用户设置）")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\SpaceNodeVo.java-67-    private Boolean aiEnable;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\SpaceNodeVo.java-68-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\SpaceNodeVo.java:69:    @Schema(description = "真的被引用了（仅由 updateSpaceNodeAIQuotedBatch 更新）")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\SpaceNodeVo.java-70-    private Boolean aiQuoted;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\SpaceNodeVo.java-71-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\SpaceNodeVo.java-72-    @Schema(description = "0跟随 1允许 2禁止")
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\AiReferenceStatusVo.java-22-    @Schema(description = "可以被引用（用户设置）")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\AiReferenceStatusVo.java-23-    private Boolean aiEnable;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\AiReferenceStatusVo.java-24-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\AiReferenceStatusVo.java:25:    @Schema(description = "真的被引用了（仅由 updateSpaceNodeAIQuotedBatch 更新）")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\AiReferenceStatusVo.java-26-    private Boolean aiQuoted;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\AiReferenceStatusVo.java-27-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\vo\AiReferenceStatusVo.java-28-    @Schema(description = "0跟随 1允许 2禁止")
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchUpdateAICitationRo.java-8-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchUpdateAICitationRo.java-9-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchUpdateAICitationRo.java-10-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchUpdateAICitationRo.java:11:public class BatchUpdateAICitationRo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchUpdateAICitationRo.java-12-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchUpdateAICitationRo.java-13-    @NotEmpty(message = "nodeIds 不能为空")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchUpdateAICitationRo.java-14-    @Schema(description = "SpaceNode id 列表", requiredMode = Schema.RequiredMode.REQUIRED)
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-170-            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-171-                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-172-    })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:173:    @Operation(summary = "Commit Import (batch)")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-174-    public ResponseData<ImportTaskVo> commitImport(@RequestBody @Valid CommitImportRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-175-        ImportTaskVo vo = spaceNodeImportTaskUpdateManager.commitImport(ro.getTaskId(), ro.getItems());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-176-        return ResponseData.success(vo);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-332-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-333-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-334-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:335:    @PostResource(path = "/batchMoveSpaceNode", externalOnly = true)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-336-    @Parameters({
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-337-            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-338-                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-339-    })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:340:    @Operation(summary = "Batch Move Space Nodes")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:341:    public ResponseData<Void> batchMoveSpaceNode(@RequestBody @Valid BatchMoveSpaceNodeRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-342-        String spaceId = SpaceHolder.get();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:343:        spaceNodeUpdateManager.batchMoveSpaceNode(spaceId, ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-344-        return ResponseData.success();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-345-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-346-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-364-        return ResponseData.success(result);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-365-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-366-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:367:    @PostResource(path = "/updateSpaceNodeAIQuotedBatch", requiredLogin = false,requiredPermission = false)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:368:    @Operation(summary = "Batch Update Space Node AI Quoted")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:369:    public ResponseData<Void> updateSpaceNodeAIQuotedBatch(@RequestBody @Valid SpaceNodeAIQuotedBatchUpdateRo ro) throws JsonProcessingException {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:370:        spaceNodeUpdateManager.updateSpaceNodeAIQuotedBatch(ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-371-        return ResponseData.success();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-372-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-373-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:374:    @PostResource(path = "/batchUpdateAICitation", externalOnly = true)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-375-    @Parameters({
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-376-            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-377-                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-378-    })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:379:    @Operation(summary = "Batch Update Document AI Citation")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:380:    public ResponseData<Void> batchUpdateAICitation(@RequestBody @Valid BatchUpdateAICitationRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-381-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-382-        if (!ro.getNodeIds().isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-383-            // AI 引用批量设置（仅文档）：这里沿用“节点维度”的 AI_ENABLE 权限做鉴权。
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-387-            permissionChecker.requireUser(userId).onNode(ro.getNodeIds().getFirst()).needPermission(NodePermission.AI_ENABLE);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-388-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-389-        // 进入业务链路：逐个节点校验（存在/类型）+ 父级文件夹策略覆盖判断（覆盖则返回 610）+ 更新 aiEnable 字段
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java:390:        spaceNodeUpdateManager.batchUpdateAICitation(ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-391-        return ResponseData.success();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-392-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\SpaceNodeController.java-393-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-32-    private String icon;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-33-    private Integer isSnapshot;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-34-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java:35:     * 可以被引用（用户通过 batchUpdateAICitation/updateAICitation 设置）
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-36-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-37-    private Boolean aiEnable;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-38-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java:39:     * 真的被引用了（仅由 updateSpaceNodeAIQuotedBatch 更新，表示文档已被 AI 知识库收录）
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-40-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-41-    private Boolean aiQuoted;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\entity\SpaceNodeEntity.java-42-    /**
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-65-        return ResponseData.success(result);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-66-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-67-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java:68:    @PostResource(path = "/batchGetNodeShare")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-69-    @Parameters({
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-70-            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-71-                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-72-    })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java:73:    @Operation(summary = "Batch get node share configs")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java:74:    public ResponseData<List<AllShareConfigsVo>> batchGetNodeShare(@RequestBody @Valid BatchGetNodeShareRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java:75:        List<AllShareConfigsVo> result = nodeShareQueryManager.batchGetNodeShare(ro.getAppSpaceNodeIds());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-76-        return ResponseData.success(result);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-77-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeShareController.java-78-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-103-        return ResponseData.success(result);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-104-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-105-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java:106:    @PostResource(path = "/batchEditRole", externalOnly = true)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-107-    @Parameters({
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-108-            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-109-                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-110-    })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java:111:    @Operation(summary = "Batch edit node role")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java:112:    public ResponseData<EditRoleResultVo> batchEditRole(@RequestBody @Valid BatchModifyNodeRoleRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-113-        String spaceId = SpaceHolder.get();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-114-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-115-        //pre-check current operator has permission and unit ids in current space
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-135-        return ResponseData.success(result);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-136-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-137-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java:138:    @PostResource(path = "/batchDeleteRole", externalOnly = true)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-139-    @Parameters({
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-140-            @Parameter(name = ParamsConstants.SPACE_ID, description = "space id", required = true,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-141-                    schema = @Schema(type = "string"), in = ParameterIn.HEADER, example = "spcVyED5StRev"),
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-142-    })
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java:143:    @Operation(summary = "Delete node role batch")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java:144:    public ResponseData<EditRoleResultVo> batchDeleteRole(@RequestBody @Valid BatchDeleteNodeRoleRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-145-        Long userId = SessionContext.getUserId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-146-        String spaceId = SpaceHolder.get();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\controller\NodeRoleController.java-147-        //pre-check current operator has permission and unit ids in current space
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java-8-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java-9-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java-10-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java:11:@Schema(name = "BatchMoveSpaceNodeRo")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java:12:public class BatchMoveSpaceNodeRo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java-13-    @NotEmpty(message = "nodeIds cannot be empty")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java-14-    @Schema(description = "Node IDs to move", example = "[1,2,3]")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchMoveSpaceNodeRo.java-15-    private List<Long> nodeIds;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-14-@Builder
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-15-@NoArgsConstructor
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-16-@AllArgsConstructor
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java:17:public class SpaceNodeBatchCreateReq {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-18-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-19-    private String appSpaceNodeId;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-20-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-22-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-23-    private Integer type;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-24-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java:25:    private List<SpaceNodeBatchCreateReq> children;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeBatchCreateReq.java-26-}
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchModifyNodeRoleRo.java-9-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchModifyNodeRoleRo.java-10-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchModifyNodeRoleRo.java-11-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchModifyNodeRoleRo.java:12:public class BatchModifyNodeRoleRo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchModifyNodeRoleRo.java-13-    @NotNull(message = "Space Node ID cannot be empty")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchModifyNodeRoleRo.java-14-    @Schema(description = "Space Node ID", example = "1879759949475848193")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchModifyNodeRoleRo.java-15-    private Long spaceNodeId;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeAIQuotedBatchUpdateRo.java-6-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeAIQuotedBatchUpdateRo.java-7-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeAIQuotedBatchUpdateRo.java-8-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeAIQuotedBatchUpdateRo.java:9:public class SpaceNodeAIQuotedBatchUpdateRo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeAIQuotedBatchUpdateRo.java-10-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeAIQuotedBatchUpdateRo.java-11-    @NotEmpty(message = "请求列表 不能为空")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\SpaceNodeAIQuotedBatchUpdateRo.java-12-    private List<SpaceNodeAIQuotedUpdateRo> ros;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java-7-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java-8-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java-9-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java:10:@Schema(description = "Batch get node share configs request")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java:11:public class BatchGetNodeShareRo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java-12-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java-13-    @NotEmpty(message = "appSpaceNodeIds不能为空")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchGetNodeShareRo.java-14-    @Schema(description = "第三方应用nodeID列表", example = "[\"dstXXX\", \"dstYYY\"]", requiredMode = Schema.RequiredMode.REQUIRED)
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\ISpaceNodeUserRoleCacheService.java-14-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\ISpaceNodeUserRoleCacheService.java-15-    List<Long> listUserIdsByspaceNodeIdsAndMinRole(List<Long> spaceNodeIds, NodeRoleLevel minRole);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\ISpaceNodeUserRoleCacheService.java-16-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\ISpaceNodeUserRoleCacheService.java:17:    List<SpaceNodeUserRoleCacheEntity> batchUpsert(List<SpaceNodeUserRoleCacheEntity> caches);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\ISpaceNodeUserRoleCacheService.java-18-}
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java-8-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java-9-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java-10-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java:11:@Schema(description = "Batch Delete Node Role Request Parameters")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java:12:public class BatchDeleteNodeRoleRo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java-13-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java-14-    @NotNull(message = "Space Node ID cannot be empty")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchDeleteNodeRoleRo.java-15-    @Schema(description = "Space Node ID", example = "1879759949475848193")
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java-140-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java-141-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java-142-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java:143:        List<SpaceNodeUserRoleCacheEntity> changedEntities = cacheService.batchUpsert(cacheEntities);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java:144:        log.info("Batch upserting {} cache entries, changed {}", cacheEntities.size(), changedEntities.size());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java-145-        return changedEntities;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java-146-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\manager\PermissionCacheManager.java-147-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-56-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-57-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-58-    @Transactional
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java:59:    public List<SpaceNodeUserRoleCacheEntity> batchUpsert(List<SpaceNodeUserRoleCacheEntity> caches) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-60-        if (caches == null || caches.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-61-            return new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-62-        }
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-105-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-106-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-107-        if (!toInsert.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java:108:            saveBatch(toInsert);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-109-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-110-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-111-        if (!toUpdate.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java:112:            updateBatchById(toUpdate);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-113-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-114-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\service\impl\SpaceNodeUserRoleCacheServiceImpl.java-115-        return changed;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchAppSpaceNodeRelRo.java-8-import java.util.List;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchAppSpaceNodeRelRo.java-9-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchAppSpaceNodeRelRo.java-10-@Data
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchAppSpaceNodeRelRo.java:11:public class BatchAppSpaceNodeRelRo {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchAppSpaceNodeRelRo.java-12-    @NotNull(message = "parentId不能为空")
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchAppSpaceNodeRelRo.java-13-    @Schema(description = "要插入到哪个父节点下, 对应父节点的(TreeNode对象)的id, 特殊值:根节点0", example = "0", requiredMode = Schema.RequiredMode.REQUIRED)
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\ro\BatchAppSpaceNodeRelRo.java-14-    private Long parentId;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-5-import com.yottastudios.ns.collabspace.control.service.IControlRoleService;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-6-import com.yottastudios.ns.collabspace.grpc.IApitableGrpcClientService;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-7-import com.yottastudios.ns.collabspace.interfaces.eventbus.model.treenode.TreeNodeAddedEvent;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java:8:import com.yottastudios.ns.collabspace.interfaces.eventbus.model.treenode.TreeNodeBatchMovedEvent;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-9-import com.yottastudios.ns.collabspace.interfaces.eventbus.model.treenode.TreeNodeDeletedEvent;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-10-import com.yottastudios.ns.collabspace.interfaces.eventbus.model.treenode.TreeNodeEvent;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-11-import com.yottastudios.ns.collabspace.workspace.permission.calculator.PermissionScopeCalculator;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-49-    public PermissionScope calculateScope(TreeNodeEvent event) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-50-        if (event instanceof TreeNodeAddedEvent) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-51-            return handleTreeNodeAdded((TreeNodeAddedEvent) event);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java:52:        } else if (event instanceof TreeNodeBatchMovedEvent) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java:53:            return handleTreeNodeMoved((TreeNodeBatchMovedEvent) event);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-54-        } else if (event instanceof TreeNodeDeletedEvent) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-55-            return handleTreeNodeDeleted((TreeNodeDeletedEvent) event);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-56-        }
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-89-        return scope;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-90-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-91-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java:92:    private PermissionScope handleTreeNodeMoved(TreeNodeBatchMovedEvent event) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-93-        PermissionScope scope = new PermissionScope();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java:94:        List<TreeNodeBatchMovedEvent.MovedNodeInfo> movedNodes = event.getMovedNodes();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-95-        if (movedNodes == null || movedNodes.isEmpty()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-96-            return scope;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-97-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-98-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java:99:        for (TreeNodeBatchMovedEvent.MovedNodeInfo node : movedNodes) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-100-            if (node == null) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-101-                continue;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\permission\calculator\impl\PermissionScopeCalculatorImpl.java-102-            }
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-17-    /**
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-18-     * 子树批量创建：同层级节点在单次锁内批量插入树，每个 CreateReq 可携带 children 表达子树。
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-19-     */
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:20:    List<TreeNode<SpaceNodeVo>> createSpaceNodesOnlyInAioBatch(String spaceId, Long parentId, List<SpaceNodeBatchCreateReq> roots);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-21-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-22-    TreeNode<SpaceNodeVo> importSpaceNode(String spaceId, Long userId, SpaceNodeImportRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-23-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-41-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-42-    TreeNode<SpaceNodeVo> relAppSpaceNode(String spaceId, AppSpaceNodeRelRo ro, Long userId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-43-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:44:    List<TreeNode<SpaceNodeVo>> batchRelAppSpaceNode(String spaceId, BatchAppSpaceNodeRelRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-45-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-46-    void setSpaceNodeIcon(@Valid SpaceNodeIconRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-47-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:48:    void batchMoveSpaceNode(String spaceId, BatchMoveSpaceNodeRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-49-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-50-    SpaceNodeVo updateSpaceNodeAIEnable(SpaceNodeAIEnableUpdateRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-51-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:52:    void updateSpaceNodeAIQuotedBatch(SpaceNodeAIQuotedBatchUpdateRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-53-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java:54:    void batchUpdateAICitation(BatchUpdateAICitationRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-55-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-56-    SpaceNodeVo updateAICitation(Long spaceNodeId, UpdateAICitationRo ro);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\SpaceNodeUpdateManager.java-57-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-209-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-210-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-211-    @Transactional
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:212:    public List<TreeNode<SpaceNodeVo>> createSpaceNodesOnlyInAioBatch(String spaceId, Long parentId, List<SpaceNodeBatchCreateReq> roots) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-213-        if (CollectionUtils.isEmpty(roots)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-214-            return List.of();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-215-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-216-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-217-        List<SpaceNodeEntity> allSpaceNodes = new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-218-        List<SubtreeNode> subtreeRoots = flattenSpaceNodeTree(roots, spaceId, allSpaceNodes);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:219:        spaceNodeService.saveBatch(allSpaceNodes);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-220-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-221-        List<NodeEntity> allNodeEntities = treeNodeTemplate.addSubtree(parentId, spaceId, subtreeRoots, SpaceNodeEntity.class);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-222-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-228-        return assembleResultTree(subtreeRoots, spaceNodeById, nodeByRelId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-229-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-230-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:231:    private List<SubtreeNode> flattenSpaceNodeTree(List<SpaceNodeBatchCreateReq> reqs, String spaceId,
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-232-                                                   List<SpaceNodeEntity> collector) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-233-        List<SubtreeNode> result = new ArrayList<>(reqs.size());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:234:        for (SpaceNodeBatchCreateReq req : reqs) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-235-            String appNodeId = FOLDER.getValue().equals(req.getType()) ? "" : req.getAppSpaceNodeId();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-236-            SpaceNodeEntity entity = SpaceNodeEntity.builder()
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-237-                    .id(IdWorker.getId())
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-485-                        .roleCode(role.getRoleCode())
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-486-                        .build());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-487-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:488:            controlRoleService.saveBatch(newRoles);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-489-            log.info("[convertToNextcloud] copied {} permission roles from {} to {}", newRoles.size(), sourceControlId, newControlId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-490-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-491-    }
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-851-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-852-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-853-    @Transactional
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:854:    public void batchMoveSpaceNode(String spaceId, BatchMoveSpaceNodeRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-855-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-856-        List<NodeEntity> nodeList = nodeService.listByIds(ro.getNodeIds());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-857-        ExceptionUtil.isFalse(CollectionUtils.isEmpty(nodeList), DatabaseException.QUERY_EMPTY_BY_ID);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-882-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-883-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-884-    @Transactional
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:885:    public List<TreeNode<SpaceNodeVo>> batchRelAppSpaceNode(String spaceId, BatchAppSpaceNodeRelRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-886-        spaceService.checkSpaceExist(spaceId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-887-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-888-        List<AppSpaceNodeRelTreeNodeRo> tree = ro.getTree();
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-987-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-988-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-989-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:990:    public void updateSpaceNodeAIQuotedBatch(SpaceNodeAIQuotedBatchUpdateRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:991:        log.info("[AI Ref] Update aiQuoted batch: count={}", ro.getRos().size());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-992-        int updatedCount = 0;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-993-        for (SpaceNodeAIQuotedUpdateRo updateRo : ro.getRos()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-994-            SpaceNodeEntity spaceNodeEntity = spaceNodeService.getById(updateRo.getId());
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-998-                updatedCount++;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-999-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1000-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:1001:        log.info("[AI Ref] Update aiQuoted batch done: updatedCount={}", updatedCount);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1002-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1003-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1004-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1005-    @Transactional
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:1006:    public void batchUpdateAICitation(BatchUpdateAICitationRo ro) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1007-        boolean allow = Boolean.TRUE.equals(ro.getAllowAICitation());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:1008:        log.info("[AI Ref] Batch update: nodeIds={}, allow={}", ro.getNodeIds(), allow);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1009-        for (Long id : ro.getNodeIds()) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1010-            SpaceNodeEntity entity = spaceNodeService.getById(id);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1011-            // 业务约束：批量接口仅允许操作“文档”节点；如果节点不存在或传入文件夹，需要明确报错给前端
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1018-            //   否则前端展示的 effectiveAllowAICitation 会出现“用户设置成功但有效状态不生效”的错觉。
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1019-            // - 610：AI_REFERENCE_OVERRIDDEN_BY_PARENT（提示用户移出该父文件夹，或将父级改为“跟随(0)”）
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1020-            if (aiReferenceHelper.hasParentWithAllowOrDeny(id)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:1021:                log.warn("[AI Ref] Batch update blocked by parent: nodeId={}", id);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1022-                throw new BusinessException(SpaceNodeException.AI_REFERENCE_OVERRIDDEN_BY_PARENT);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1023-            }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:1024:            // aiEnable=可以被引用，由用户设置；aiQuoted=真的被引用了，由 updateSpaceNodeAIQuotedBatch 更新
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1025-            entity.setAiEnable(allow);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1026-            spaceNodeService.updateById(entity);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:1027:            log.info("[AI Ref] Batch update success: nodeId={}, name={}, aiEnable={}", id, entity.getName(), allow);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1028-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1029-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1030-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1041-            log.warn("[AI Ref] Update doc blocked by parent: nodeId={}", spaceNodeId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1042-            throw new BusinessException(SpaceNodeException.AI_REFERENCE_OVERRIDDEN_BY_PARENT);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1043-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java:1044:        // aiEnable=可以被引用，由用户设置；aiQuoted=真的被引用了，由 updateSpaceNodeAIQuotedBatch 更新
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1045-        entity.setAiEnable(allow);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1046-        spaceNodeService.updateById(entity);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeUpdateManagerImpl.java-1047-        log.info("[AI Ref] Update doc success: nodeId={}, aiEnable={}", spaceNodeId, allow);
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-318-        // 获取全部状态是disabled 并且更新时间比当前时间大于30天的snapshot, 批量删除
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-319-        List<CollabspaceVersionSnapshotEntity> deleteList = versionSnapshotService.getOverTimeSnapshotList();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-320-        if (!deleteList.isEmpty()){
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java:321:            versionSnapshotService.removeBatchByIds(deleteList.stream().map(CollabspaceVersionSnapshotEntity::getId).toList());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-322-        }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-323-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeMigrationUpdateManagerImpl.java-324-
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-13-import com.yottastudios.ns.collabspace.workspace.entity.SpaceNodeImportTaskEntity;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-14-import com.yottastudios.ns.collabspace.workspace.manager.update.SpaceNodeUpdateManager;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-15-import com.yottastudios.ns.collabspace.workspace.ro.AppSpaceNodeRelTreeNodeRo;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java:16:import com.yottastudios.ns.collabspace.workspace.ro.BatchAppSpaceNodeRelRo;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-17-import com.yottastudios.ns.collabspace.workspace.ro.ImportTreeNodeRo;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-18-import com.yottastudios.ns.collabspace.workspace.ro.RegisterImportRo;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-19-import com.yottastudios.ns.collabspace.workspace.service.ISpaceNodeImportTaskService;
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-161-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-162-        entity.setImportTree(JSONUtil.toJsonStr(importedTree));
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-163-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java:164:        BatchAppSpaceNodeRelRo relRo = new BatchAppSpaceNodeRelRo();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-165-        relRo.setParentId(entity.getTargetParentId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-166-        relRo.setPreId(entity.getTargetPreId());
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-167-        relRo.setTree(convertToRelTree(importedTree));
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-169-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-170-        // insert db
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-171-        try {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java:172:            spaceNodeUpdateManager.batchRelAppSpaceNode(entity.getSpaceId(), relRo);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-173-        } catch (Exception e) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-174-            log.error(e.getMessage(), e);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\update\impl\SpaceNodeImportTaskUpdateManagerImpl.java-175-            if (StringUtils.isNotBlank(errorMessage)) {
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\NodeShareQueryManager.java-18-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\NodeShareQueryManager.java-19-    NodeShareInfoVo readShareInfo(Long userId, String shareId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\NodeShareQueryManager.java-20-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\NodeShareQueryManager.java:21:    List<AllShareConfigsVo> batchGetNodeShare(List<String> appSpaceNodeIds);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\NodeShareQueryManager.java-22-    
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\NodeShareQueryManager.java-23-    ShareExistsVo checkShareExists(String shareId);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\NodeShareQueryManager.java-24-} 
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeQueryManagerImpl.java-420-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeQueryManagerImpl.java-421-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeQueryManagerImpl.java-422-        List<SpaceAcrossConfigDto> spaceAcrossConfigDtos =
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeQueryManagerImpl.java:423:                apitableGrpcClientService.batchQueryAcrossConfig(spaceIdList);
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeQueryManagerImpl.java-424-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeQueryManagerImpl.java-425-        if(CollectionUtils.isEmpty(spaceAcrossConfigDtos)) return result;
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\SpaceNodeQueryManagerImpl.java-426-        Map<String, Boolean> acquireMap = spaceAcrossConfigDtos.stream().collect(
+--
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\NodeShareQueryManagerImpl.java-273-    }
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\NodeShareQueryManagerImpl.java-274-
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\NodeShareQueryManagerImpl.java-275-    @Override
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\NodeShareQueryManagerImpl.java:276:    public List<AllShareConfigsVo> batchGetNodeShare(List<String> appSpaceNodeIds) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\NodeShareQueryManagerImpl.java-277-        if (CollectionUtils.isEmpty(appSpaceNodeIds)) {
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\NodeShareQueryManagerImpl.java-278-            return new ArrayList<>();
+D:\project\pt-gitlab\collabspace\collabspace-server\src\main\java\com\yottastudios\ns\collabspace\workspace\manager\query\impl\NodeShareQueryManagerImpl.java-279-        }

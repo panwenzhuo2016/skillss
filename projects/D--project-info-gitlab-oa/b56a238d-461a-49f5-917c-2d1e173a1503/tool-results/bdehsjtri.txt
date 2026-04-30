@@ -1,0 +1,991 @@
+diff --git a/app/Console/Kernel.php b/app/Console/Kernel.php
+index 4d68181ba..431631d1e 100644
+--- a/app/Console/Kernel.php
++++ b/app/Console/Kernel.php
+@@ -54,7 +54,7 @@ class Kernel extends ConsoleKernel
+         $schedule->job(new \App\Jobs\Notification\DailyApprovalJob())->dailyAt('08:28');
+         $schedule->job(new \App\Jobs\Notification\DailyWorkOvertimeJob())->dailyAt('08:33');
+         $schedule->job(new \App\Jobs\Notification\DailyReportJob())->dailyAt('08:48');
+-        $schedule->job(new \App\Jobs\Notification\DailyReportAiEmailJob())->everyMinute();
++        $schedule->job(new \App\Jobs\Notification\DailyReportAiEmailJob())->dailyAt('22:00');
+         $schedule->job(new \App\Jobs\Notification\CacheNotifyNumbers())->twiceDailyAt(6, 17, 30); // 每日 06:30 和 17:30
+         $schedule->job(new \App\Jobs\Notification\CacheNotifyNumbers())->dailyAt('11:10'); // 12:30
+         $schedule->job(new \App\Jobs\Notification\CacheNotifyNumbers())->dailyAt('12:30'); // 12:30
+diff --git a/app/Http/Controllers/Oa/DailyReportAiEmailController.php b/app/Http/Controllers/Oa/DailyReportAiEmailController.php
+index ea1b1885a..129b60d85 100644
+--- a/app/Http/Controllers/Oa/DailyReportAiEmailController.php
++++ b/app/Http/Controllers/Oa/DailyReportAiEmailController.php
+@@ -3,339 +3,13 @@
+ namespace App\Http\Controllers\Oa;
+ 
+ use App\Http\Controllers\Controller;
+-use App\Jobs\Notification\DailyReportAiEmailJob;
+-use App\Models\MailConfig;
+-use App\Models\Sfuser;
+-use App\Service\DailyReportService;
+-use App\Service\EncryptService;
+-use Illuminate\Http\JsonResponse;
+-use Illuminate\Http\Request;
+-use Illuminate\Support\Arr;
+-use Illuminate\Support\Facades\DB;
+ 
++/**
++ * AI 日报邮件 Controller.
++ *
++ * 原有前端 CRUD 接口已移除（0422 需求：前端智能日报邮件配置不要了）。
++ * 邮件发送逻辑由 DailyReportAiEmailJob 定时执行，收件人从白名单读取。
++ */
+ class DailyReportAiEmailController extends Controller
+ {
+-    // 智能日报邮件功能仅限指定用户（线上 171514，测试 232753）
+-    private const AI_EMAIL_ALLOWED_IDS = [171514];
+-    public function taskList(Request $request): JsonResponse
+-    {
+-        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+-        if (!$this->inWhitelist($sfuserId)) {
+-            return $this->responseJsonFail('无权限');
+-        }
+-
+-        $list = DB::table('daily_report_ai_email_tasks')
+-            ->where('sfuser_id', $sfuserId)
+-            ->whereNull('deleted_at')
+-            ->orderByDesc('created_at')
+-            ->get(['id', 'name', 'dimension', 'report_range', 'send_cycle', 'send_day', 'send_time', 'system_prompt', 'is_on', 'created_at']);
+-
+-        return $this->responseJsonSuccess(['list' => $list]);
+-    }
+-
+-    public function taskCreate(Request $request): JsonResponse
+-    {
+-        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+-        if (!$this->inWhitelist($sfuserId)) {
+-            return $this->responseJsonFail('无权限');
+-        }
+-
+-        $input = Arr::only($request->all(), ['name', 'dimension', 'report_range', 'send_cycle', 'send_day', 'send_time', 'system_prompt']);
+-
+-        $id = DB::table('daily_report_ai_email_tasks')->insertGetId([
+-            'sfuser_id' => $sfuserId,
+-            'name' => $input['name'],
+-            'dimension' => $input['dimension'] ?? 'department',
+-            'report_range' => $input['report_range'] ?? 'today',
+-            'send_cycle' => $input['send_cycle'] ?? 'daily',
+-            'send_day' => $input['send_day'] ?? 1,
+-            'send_time' => $input['send_time'] ?? '09:00',
+-            'system_prompt' => $input['system_prompt'] ?? '',
+-            'is_on' => 1,
+-            'created_at' => now(),
+-            'updated_at' => now(),
+-        ]);
+-
+-        \Log::info('[lbl][0416-AI日报][AiEmail][CREATE] 创建邮件任务', ['sfuser_id' => $sfuserId, 'task_id' => $id, 'name' => $input['name']]);
+-
+-        return $this->responseJsonSuccess(['id' => $id]);
+-    }
+-
+-    public function taskUpdate(Request $request): JsonResponse
+-    {
+-        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+-        if (!$this->inWhitelist($sfuserId)) {
+-            return $this->responseJsonFail('无权限');
+-        }
+-
+-        $id = $request->input('id');
+-        $input = Arr::only($request->all(), ['name', 'dimension', 'report_range', 'send_cycle', 'send_day', 'send_time', 'system_prompt']);
+-
+-        $affected = DB::table('daily_report_ai_email_tasks')
+-            ->where('id', $id)
+-            ->where('sfuser_id', $sfuserId)
+-            ->whereNull('deleted_at')
+-            ->update(array_merge(
+-                array_filter($input, fn ($v) => $v !== null),
+-                ['updated_at' => now()]
+-            ));
+-
+-        \Log::info('[lbl][0416-AI日报][AiEmail][UPDATE] 更新邮件任务', ['sfuser_id' => $sfuserId, 'task_id' => $id, 'affected' => $affected]);
+-
+-        return $this->responseJsonSuccess(['affected' => $affected]);
+-    }
+-
+-    public function taskDelete(Request $request): JsonResponse
+-    {
+-        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+-        if (!$this->inWhitelist($sfuserId)) {
+-            return $this->responseJsonFail('无权限');
+-        }
+-
+-        $taskId = $request->input('id');
+-        DB::table('daily_report_ai_email_tasks')
+-            ->where('id', $taskId)
+-            ->where('sfuser_id', $sfuserId)
+-            ->whereNull('deleted_at')
+-            ->update(['deleted_at' => now()]);
+-
+-        \Log::info('[lbl][0416-AI日报][AiEmail][DELETE] 删除邮件任务', ['sfuser_id' => $sfuserId, 'task_id' => $taskId]);
+-
+-        return $this->responseJsonSuccess();
+-    }
+-
+-    public function taskToggle(Request $request): JsonResponse
+-    {
+-        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+-        if (!$this->inWhitelist($sfuserId)) {
+-            return $this->responseJsonFail('无权限');
+-        }
+-
+-        $id = $request->input('id');
+-        $isOn = $request->input('is_on');
+-
+-        DB::table('daily_report_ai_email_tasks')
+-            ->where('id', $id)
+-            ->where('sfuser_id', $sfuserId)
+-            ->whereNull('deleted_at')
+-            ->update(['is_on' => $isOn, 'updated_at' => now()]);
+-
+-        \Log::info('[lbl][0416-AI日报][AiEmail][UPDATE] 切换邮件任务开关', ['sfuser_id' => $sfuserId, 'task_id' => $id, 'is_on' => $isOn]);
+-
+-        return $this->responseJsonSuccess();
+-    }
+-
+-    /**
+-     * 手动触发：将指定任务 dispatch 到 ai-email 队列，立即执行一次完整的邮件发送流程.
+-     */
+-    public function taskTrigger(Request $request): JsonResponse
+-    {
+-        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+-        if (!$this->inWhitelist($sfuserId)) {
+-            return $this->responseJsonFail('无权限');
+-        }
+-
+-        $taskId = (int)$request->input('id');
+-        $task = DB::table('daily_report_ai_email_tasks')
+-            ->where('id', $taskId)
+-            ->where('sfuser_id', $sfuserId)
+-            ->whereNull('deleted_at')
+-            ->first();
+-
+-        if (!$task) {
+-            return $this->responseJsonFail('任务不存在');
+-        }
+-
+-        DailyReportAiEmailJob::dispatch($taskId);
+-
+-        \Log::info('[lbl][0416-AI日报][AiEmail][TRIGGER] 手动触发邮件任务', ['sfuser_id' => $sfuserId, 'task_id' => $taskId]);
+-
+-        return $this->responseJsonSuccess();
+-    }
+-
+-    /**
+-     * 测试 Prompt 效果：后端查询加密日报数据，返回 JSON，AI 分析由 oa-core TransferRequestService 完成。
+-     */
+-    public function taskTest(Request $request): JsonResponse
+-    {
+-        $sfuserId = Arr::get($request->input('sfuser_info'), 'id');
+-        if (!$this->inWhitelist($sfuserId)) {
+-            return $this->responseJsonFail('无权限');
+-        }
+-
+-        $systemPrompt = $request->input('system_prompt', '');
+-        $dimension = $request->input('dimension', 'department');
+-        $reportRange = $request->input('report_range', 'today');
+-        $groupKey = $request->input('group_key', '');
+-
+-        // 计算日期范围
+-        $today = now()->toDateString();
+-        [$startDate, $endDate] = match ($reportRange) {
+-            'last_3_days' => [now()->subDays(2)->toDateString(), $today],
+-            'last_7_days' => [now()->subDays(6)->toDateString(), $today],
+-            default => [$today, $today],
+-        };
+-
+-        // 拉取该用户能看到日报的全部员工
+-        $dailyService = app(DailyReportService::class);
+-        $subordinates = $dailyService->getSubordinates($sfuserId);
+-        $groupUserIds = [];
+-        foreach ($subordinates['group_users'] as $userIds) {
+-            $groupUserIds = array_merge($groupUserIds, $userIds);
+-        }
+-        $targetUserIds = array_unique(array_merge(
+-            $subordinates['direct_subordinates'],
+-            $subordinates['depart_subordinates'],
+-            $subordinates['other_subordinates'],
+-            $subordinates['focus_users'],
+-            $groupUserIds
+-        ));
+-
+-        if (empty($targetUserIds)) {
+-            return $this->responseJsonFail('没有可查看的员工');
+-        }
+-
+-        // 拉取日报数据
+-        $data = $dailyService->getOthersDailyReportListEnable($startDate, $endDate, $sfuserId, $targetUserIds, 10000);
+-        if (empty($data) || empty($data['reports']) || empty($data['reports']['report_list'])) {
+-            return $this->responseJsonFail('所选日期范围内没有日报数据');
+-        }
+-
+-        $reportList = $data['reports']['report_list'];
+-        $reportSfuserIds = array_unique(array_column($reportList, 'sfuser_id'));
+-
+-        // 构建分组映射
+-        $sfuserGroupMap = $this->buildGroupMap($reportSfuserIds, $dimension);
+-
+-        // 按维度分组日报
+-        $grouped = [];
+-        foreach ($reportList as $report) {
+-            $uid = $report['sfuser_id'];
+-            $key = $sfuserGroupMap[$uid]['key'] ?? 'unknown';
+-            $grouped[$key]['name'] = $sfuserGroupMap[$uid]['name'] ?? '';
+-            $grouped[$key]['reports'][] = $report;
+-        }
+-
+-        // 找到用户选中的分组，找不到则取第一个
+-        $targetGroup = $grouped[$groupKey] ?? reset($grouped);
+-        if (empty($targetGroup) || empty($targetGroup['reports'])) {
+-            return $this->responseJsonFail('所选分组没有日报数据');
+-        }
+-
+-        // 构建带加密标记的内容（oa-core 负责解密）
+-        $groupNameMarked = EncryptService::app()->markEncrString($targetGroup['name']);
+-        $content = "【分组：{$groupNameMarked}】\n\n";
+-        $no = 0;
+-        foreach ($targetGroup['reports'] as $report) {
+-            $nickname = $report['data']['nickname'] ?? '';
+-            if (empty($nickname)) {
+-                continue;
+-            }
+-            $nickname = EncryptService::app()->markEncrString(e($nickname));
+-            $reportContent = EncryptService::app()->markEncrString($report['content']);
+-            ++$no;
+-            $content .= $no.'、 '.$nickname."\n".$reportContent."\n\n";
+-        }
+-
+-        if ($no === 0) {
+-            return $this->responseJsonFail('该分组没有有效的日报内容');
+-        }
+-
+-        \Log::info('[lbl][0416-AI日报][AiEmail][TEST] 开始测试 Prompt', [
+-            'sfuser_id' => $sfuserId,
+-            'dimension' => $dimension,
+-            'group_key' => $groupKey,
+-            'group_name' => $targetGroup['name'],
+-            'report_count' => $no,
+-            'content_len' => mb_strlen($content),
+-        ]);
+-
+-        // 从 MailConfig 读取 sfuser_authorized_token
+-        $mc = MailConfig::where('type', "daily_report_{$sfuserId}")->first();
+-        $sfuserToken = $mc ? Arr::get($mc->config, 'sfuser_authorized_token', '') : '';
+-        if (empty($sfuserToken)) {
+-            return $this->responseJsonFail('未配置邮件授权 Token，请先在管理后台配置邮件');
+-        }
+-
+-        // 构建摘要
+-        $dimensionLabel = $dimension === 'direct_manager' ? '按直接主管' : '按部门';
+-        $rangeLabel = match ($reportRange) {
+-            'last_3_days' => '近3天',
+-            'last_7_days' => '近7天',
+-            default => '今日',
+-        };
+-        $dateRange = $startDate === $endDate ? $startDate : "{$startDate} ~ {$endDate}";
+-
+-        // 返回数据 + decrypt_config + ai_analysis_config，由 oa-core TransferRequestService 做解密+AI streaming
+-        return $this->responseJsonSuccess([
+-            'content' => $content,
+-            'summary' => "{$dimensionLabel} · {$rangeLabel}（{$dateRange}）· {$no}份日报",
+-            'decrypt_config' => [
+-                'obj' => '$this',
+-                'decrypt_columns' => [],
+-                'partly_decrypt_columns' => ['content'],
+-                'tokens' => [$sfuserToken],
+-                'operation' => 'send_email',
+-            ],
+-            'ai_analysis_config' => [
+-                'system_prompt' => $systemPrompt,
+-                'target_field' => 'content',
+-                'compress' => true,
+-            ],
+-        ]);
+-    }
+-
+-    /**
+-     * 根据维度构建 sfuser_id => ['key' => 分组键, 'name' => 分组名] 的映射.
+-     * 复用 DailyReportAiEmailJob 中的分组逻辑.
+-     */
+-    private function buildGroupMap(array $sfuserIds, string $dimension): array
+-    {
+-        if (empty($sfuserIds)) {
+-            return [];
+-        }
+-
+-        $map = [];
+-
+-        if ($dimension === 'direct_manager') {
+-            $users = Sfuser::whereIn('id', $sfuserIds)
+-                ->select('id', 'direct_supervisor_id', 'direct_supervisor_nickname')
+-                ->get();
+-            foreach ($users as $user) {
+-                $managerId = $user->direct_supervisor_id ?: 0;
+-                $managerName = $user->direct_supervisor_nickname ?: '无直接主管';
+-                $map[$user->id] = [
+-                    'key' => "mgr_{$managerId}",
+-                    'name' => $managerName,
+-                ];
+-            }
+-        } else {
+-            $users = Sfuser::whereIn('id', $sfuserIds)
+-                ->select('id', 'department_id')
+-                ->get();
+-            $deptIds = $users->pluck('department_id')->filter()->unique()->values()->toArray();
+-            $deptNames = [];
+-            if (!empty($deptIds)) {
+-                $deptNames = DB::table('job_departments')
+-                    ->whereIn('department_id', $deptIds)
+-                    ->pluck('department_name', 'department_id')
+-                    ->toArray();
+-            }
+-            foreach ($users as $user) {
+-                $deptId = $user->department_id ?: 0;
+-                $deptName = $deptNames[$deptId] ?? '未分配部门';
+-                $map[$user->id] = [
+-                    'key' => "dept_{$deptId}",
+-                    'name' => $deptName,
+-                ];
+-            }
+-        }
+-
+-        return $map;
+-    }
+-
+-    private function inWhitelist(int $sfuserId): bool
+-    {
+-        return in_array($sfuserId, self::AI_EMAIL_ALLOWED_IDS);
+-    }
+ }
+diff --git a/app/Jobs/Notification/DailyReportAiEmailJob.php b/app/Jobs/Notification/DailyReportAiEmailJob.php
+index 29dfed4c3..0bc16ee2f 100644
+--- a/app/Jobs/Notification/DailyReportAiEmailJob.php
++++ b/app/Jobs/Notification/DailyReportAiEmailJob.php
+@@ -5,373 +5,241 @@ namespace App\Jobs\Notification;
+ use App\Jobs\MyJob;
+ use App\Lib\Facade\CoreApiLib;
+ use App\Models\MailConfig;
++use App\Models\OaSetting;
+ use App\Models\Sfuser;
++use App\Models\ShiftCalendar;
+ use App\Service\DailyReportService;
+ use App\Service\EncryptService;
+ use Illuminate\Support\Arr;
+-use Illuminate\Support\Facades\DB;
+ 
+ class DailyReportAiEmailJob extends MyJob
+ {
++    /** 固定额外收件人 线上环境 sfuser_id = 171514，测试环境 sfuser_id = 232753 */
++    private const EXTRA_RECIPIENT_IDS = [171514];
++
++    /** 硬编码的 AI 分析 system_prompt */
++    private const SYSTEM_PROMPT = 'Role
++你是一位拥有 10 年以上经验的高级运营总监及项目管理专家，擅长从繁杂的员工日报中抽丝剥茧，精准捕捉各部门的关键进展、潜在风险以及团队协作中的断层。
++Task
++我将为你提供一份公司各部门员工的日报汇总。请你作为我的"管理顾问"，按照以下框架进行深度解读，帮我识别出今天最值得关注的大事。
++Analysis Framework
++请对日报进行解析，输出以下内容：
++核心里程碑 (Key Milestones)： 谁完成了具有阶段性意义的任务？是否有重要的功能上线或关键素材产出？
++潜在风险与阻碍 (Risks & Bottlenecks)：
++延期预警： 哪些任务停滞不前或进度明显滞后？
++协作脱节： 是否有员工提到在等待其他部门的配合？
++负面情绪： 日报中是否流露出压力过大、迷茫或消极的信号？
++异动监控 (Anomaly Detection)： 记录内容过于笼统（如"处理杂事"）或与目标计划严重不符的情况。
++管理建议 (Managerial Advice)： 针对上述问题，建议我今天找谁谈话，或者需要开会解决哪个具体痛点？
++Output Style
++精简： 过滤掉琐碎的"日常打杂"，只汇报对全局有影响的信息。
++直观： 使用 Markdown 表格或清晰的分级标题。
++犀利： 能够读懂"字里行间"的意思（比如：当员工连续三天写"调研中"，可能代表他卡住了）。
++Constraints
++禁止简单罗列原文，必须经过二次加工和逻辑归纳。
++如果日报中包含多部门协作的冲突，请优先标注。
++请你用清晰易读的邮件格式输出内容，全程不使用任何复杂 HTML 标签，只使用纯文本、Markdown 基础格式（如标题用##、列表用-或数字列表、分隔线用---），段落之间用空行分隔，排版尽量简洁清爽';
+     public $queue = 'default';
+ 
+-    /** 手动触发时传入具体 task ID，跳过时间/周期匹配（必须 public，private 属性队列序列化后丢失） */
+-    public ?int $taskId;
+-
+-    /** 只发送指定的 group key（如 ['dept_6', 'dept_1']），为空则发送全部分组 */
+-    public array $onlyGroupKeys;
+-
+-    public function __construct(?int $taskId = null, array $onlyGroupKeys = [])
+-    {
+-        $this->taskId = $taskId;
+-        $this->onlyGroupKeys = $onlyGroupKeys;
+-    }
+-
+     public function handle(): bool
+     {
+-        // 手动触发：直接处理指定任务，不检查时间和周期
+-        if ($this->taskId) {
+-            $task = DB::table('daily_report_ai_email_tasks')
+-                ->whereNull('deleted_at')
+-                ->where('id', $this->taskId)
+-                ->first();
+-
+-            if (!$task) {
+-                info("[lbl][0416-AI日报][AiEmailJob] manual trigger: task={$this->taskId} not found");
+-                return true;
+-            }
++        // 工作日判断
++        $today = now()->toDateString();
++        $todayCalendar = ShiftCalendar::where('full_date', $today)->first();
++        if (!$todayCalendar || $todayCalendar->is_weekend || $todayCalendar->is_holiday) {
++            info('[lbl][0422-AI日报邮件][AiEmailJob] 非工作日，跳过');
++            return true;
++        }
+ 
+-            info("[lbl][0416-AI日报][AiEmailJob] manual trigger: task={$this->taskId}");
+-            $this->processTask($task);
+-            info("[lbl][0416-AI日报][AiEmailJob] manual trigger: task={$this->taskId} done");
++        // 白名单直接主管
++        $managerIds = $this->getWhitelistManagerIds();
++        if (empty($managerIds)) {
++            info('[lbl][0422-AI日报邮件][AiEmailJob] 白名单为空，跳过');
+             return true;
+         }
+ 
+-        // 定时调度：按时间和周期匹配任务
+-        $now = now();
+-        $currentTime = $now->format('H:i');
+-        $currentDayOfWeek = $now->dayOfWeekIso; // 1=Monday, 7=Sunday
+-        $currentDayOfMonth = $now->day;
++        // 额外收件人邮箱（每封邮件都抄送）
++        $extraEmails = $this->getExtraEmails();
+ 
+-        info("[lbl][0416-AI日报][AiEmailJob] handle started, currentTime={$currentTime}, dayOfWeek={$currentDayOfWeek}, dayOfMonth={$currentDayOfMonth}");
++        info('[lbl][0422-AI日报邮件][AiEmailJob] 开始处理', [
++            'date' => $today,
++            'manager_count' => count($managerIds),
++            'manager_ids' => $managerIds,
++            'extra_emails' => $extraEmails,
++        ]);
+ 
+-        $tasks = DB::table('daily_report_ai_email_tasks')
+-            ->where('is_on', 1)
+-            ->whereNull('deleted_at')
+-            ->where('send_time', $currentTime)
+-            ->get();
++        // 获取上个工作日
++        $lastWorkday = ShiftCalendar::where('is_weekend', 0)
++            ->where('is_holiday', 0)
++            ->where('full_date', '<', $today)
++            ->orderByDesc('full_date')
++            ->value('full_date');
+ 
+-        if ($tasks->isEmpty()) {
+-            info("[lbl][0416-AI日报][AiEmailJob] no matching tasks for time={$currentTime}, skip");
++        if (!$lastWorkday) {
++            info('[lbl][0422-AI日报邮件][AiEmailJob] 找不到上个工作日，跳过');
+             return true;
+         }
+ 
+-        info("[lbl][0416-AI日报][AiEmailJob] found {$tasks->count()} task(s) for time={$currentTime}");
+-
+-        foreach ($tasks as $task) {
+-            if (!$this->shouldSendNow($task, $currentDayOfWeek, $currentDayOfMonth)) {
+-                continue;
+-            }
++        $processedCount = 0;
++        $totalManagers = count($managerIds);
+ 
++        foreach ($managerIds as $sfuserId) {
+             try {
+-                $this->processTask($task);
++                $this->processManager($sfuserId, $lastWorkday, $extraEmails);
++                ++$processedCount;
+             } catch (\Throwable $e) {
+-                info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} failed: {$e->getMessage()}".$e->getTraceAsString());
++                info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 处理失败: {$e->getMessage()}", [
++                    'trace' => mb_substr($e->getTraceAsString(), 0, 500),
++                ]);
++            }
++
++            // 间隔 65 秒，避免打满 Vertex AI TPM 配额
++            if ($processedCount < $totalManagers) {
++                info('[lbl][0422-AI日报邮件][AiEmailJob] 等待 65s 处理下一个主管');
++                sleep(65);
+             }
+         }
+ 
+-        info('[lbl][0416-AI日报][AiEmailJob] finished');
++        info('[lbl][0422-AI日报邮件][AiEmailJob] 全部完成', [
++            'processed' => $processedCount,
++            'total' => $totalManagers,
++        ]);
++
+         return true;
+     }
+ 
+-    private function shouldSendNow(object $task, int $dayOfWeek, int $dayOfMonth): bool
++    /**
++     * 获取白名单直接主管 ID 列表.
++     */
++    private function getWhitelistManagerIds(): array
+     {
+-        $sendDay = (int)($task->send_day ?? 1);
+-
+-        return match ($task->send_cycle) {
+-            'daily' => true,
+-            'weekly' => $dayOfWeek === $sendDay,
+-            'monthly' => $this->isMonthlyMatch($sendDay, $dayOfMonth),
+-            default => false,
+-        };
++        $setting = OaSetting::where('type', 'daily_report_ai')->select('ids', 'is_on')->first();
++
++        return ($setting && $setting->is_on) ? array_values(array_unique($setting->ids ?? [])) : [];
+     }
+ 
+     /**
+-     * 月度匹配：如果设定日超过当月天数，则在当月最后一天触发.
++     * 获取固定额外收件人的邮箱列表（每封邮件都抄送）.
+      */
+-    private function isMonthlyMatch(int $sendDay, int $dayOfMonth): bool
++    private function getExtraEmails(): array
+     {
+-        $lastDayOfMonth = (int)now()->endOfMonth()->day;
+-        $effectiveDay = min($sendDay, $lastDayOfMonth);
++        $emails = [];
++        foreach (self::EXTRA_RECIPIENT_IDS as $extraId) {
++            $mc = MailConfig::where('type', "daily_report_{$extraId}")->first();
++            $toEmails = $mc ? Arr::get($mc->config, 'to_email', []) : [];
++            if (!empty($toEmails)) {
++                $emails = array_merge($emails, $toEmails);
++            }
++        }
+ 
+-        return $dayOfMonth === $effectiveDay;
++        return array_values(array_unique($emails));
+     }
+ 
+-    private function processTask(object $task): void
++    /**
++     * 处理单个直接主管：查直属下属日报 → 组装邮件 → 发送给主管 + 额外收件人.
++     */
++    private function processManager(int $sfuserId, string $reportDate, array $extraEmails): void
+     {
+-        $taskStartTime = microtime(true);
+-        $sfuserId = $task->sfuser_id;
+-
+-        info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} processTask start", [
+-            'sfuser_id' => $sfuserId,
+-            'dimension' => $task->dimension,
+-            'report_range' => $task->report_range,
+-            'send_cycle' => $task->send_cycle,
+-            'prompt_len' => mb_strlen($task->system_prompt ?? ''),
+-        ]);
+-
+         // 读取邮箱配置
+         $mc = MailConfig::where('type', "daily_report_{$sfuserId}")->first();
+         if (!$mc || empty(Arr::get($mc->config, 'to_email'))) {
+-            info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} no email config, skip");
++            info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 无邮箱配置，跳过");
+             return;
+         }
+ 
+-        $toEmails = Arr::get($mc->config, 'to_email');
++        // 主管自己的邮箱 + 额外收件人邮箱合并去重
++        $managerEmails = Arr::get($mc->config, 'to_email');
++        $toEmails = array_values(array_unique(array_merge($managerEmails, $extraEmails)));
+         $sfuserToken = Arr::get($mc->config, 'sfuser_authorized_token', '');
+         if (!$sfuserToken) {
+-            info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} no sfuser_token, skip");
++            info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 无 token，跳过");
+             return;
+         }
+ 
+-        // 确定日报日期范围
+-        [$startDate, $endDate] = $this->getDateRange($task->report_range);
+-
+-        // 拉取该用户能看到日报的全部员工（维度只决定分组方式）
+-        $t0 = microtime(true);
+-        $dailyService = app(DailyReportService::class);
+-        $subordinates = $dailyService->getSubordinates($sfuserId);
+-        // group_users 是二维数组 [groupId => [userId, ...]]，需要 flatten
+-        $groupUserIds = [];
+-        foreach ($subordinates['group_users'] as $userIds) {
+-            $groupUserIds = array_merge($groupUserIds, $userIds);
+-        }
+-        $targetUserIds = array_unique(array_merge(
+-            $subordinates['direct_subordinates'],
+-            $subordinates['depart_subordinates'],
+-            $subordinates['other_subordinates'],
+-            $subordinates['focus_users'],
+-            $groupUserIds
+-        ));
+-
+-        info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} getSubordinates done", [
+-            'elapsed' => round(microtime(true) - $t0, 2),
+-            'target_user_count' => count($targetUserIds),
+-            'direct' => count($subordinates['direct_subordinates']),
+-            'depart' => count($subordinates['depart_subordinates']),
+-            'other' => count($subordinates['other_subordinates']),
+-            'focus' => count($subordinates['focus_users']),
+-            'group' => count($groupUserIds),
+-        ]);
++        // 查询直属下属（direct_supervisor_id = 当前收件人）
++        $subordinateIds = Sfuser::where('direct_supervisor_id', $sfuserId)
++            ->where('status', 1)
++            ->pluck('id')
++            ->toArray();
+ 
+-        if (empty($targetUserIds)) {
+-            info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} no visible users, skip");
++        if (empty($subordinateIds)) {
++            info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 无直属下属，跳过");
+             return;
+         }
+ 
+         // 拉取日报数据
+-        $t0 = microtime(true);
++        $dailyService = app(DailyReportService::class);
+         $data = $dailyService->getOthersDailyReportListEnable(
+-            $startDate,
+-            $endDate,
++            $reportDate,
++            $reportDate,
+             $sfuserId,
+-            $targetUserIds,
++            $subordinateIds,
+             10000
+         );
+-        $reportCount = count($data['reports']['report_list'] ?? []);
+-        info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} getReports done", [
+-            'elapsed' => round(microtime(true) - $t0, 2),
+-            'date_range' => "{$startDate}~{$endDate}",
+-            'report_count' => $reportCount,
+-        ]);
+ 
+-        if (empty($data) || empty($data['reports']) || empty($data['reports']['report_list'])) {
+-            info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} no report data, skip");
++        if (empty($data['reports']['report_list'])) {
++            info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 日期={$reportDate} 无日报数据，跳过");
+             return;
+         }
+ 
+         $reportList = $data['reports']['report_list'];
+ 
+-        // 收集所有日报涉及的 sfuser_id
+-        $reportSfuserIds = array_unique(array_column($reportList, 'sfuser_id'));
+-
+-        // 查询分组信息：按部门需要 department_id + department_name，按直接主管需要 direct_supervisor_id + direct_supervisor_nickname
+-        $sfuserGroupMap = $this->buildGroupMap($reportSfuserIds, $task->dimension);
+-
+-        // 按维度分组日报
+-        $grouped = [];
++        // 组装邮件内容
++        $content = '';
++        $no = 0;
+         foreach ($reportList as $report) {
+-            $uid = $report['sfuser_id'];
+-            $groupKey = $sfuserGroupMap[$uid]['key'] ?? 'unknown';
+-            $grouped[$groupKey]['name'] = $sfuserGroupMap[$uid]['name'] ?? '';
+-            $grouped[$groupKey]['reports'][] = $report;
+-        }
+-
+-        $groupSummary = array_map(fn ($g) => ($g['name'] ?? '?').'('.count($g['reports']).'人)', $grouped);
+-        info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} grouped", [
+-            'dimension' => $task->dimension,
+-            'group_count' => count($grouped),
+-            'groups' => $groupSummary,
+-            'to_emails' => $toEmails,
+-        ]);
+-
+-        // 按 onlyGroupKeys 过滤分组
+-        if (!empty($this->onlyGroupKeys)) {
+-            $grouped = array_intersect_key($grouped, array_flip($this->onlyGroupKeys));
+-            info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} filtered to groups: ".implode(',', $this->onlyGroupKeys).', matched='.count($grouped));
+-        }
+-
+-        // 每个分组独立发送一封邮件，各自独立 AI 分析
+-        $groupIndex = 0;
+-        $totalGroups = count($grouped);
+-        foreach ($grouped as $groupKey => $group) {
+-            ++$groupIndex;
+-            try {
+-                $groupName = $group['name'];
+-                $reports = $group['reports'];
+-
+-                $dimensionLabel = $task->dimension === 'direct_manager' ? '直属主管' : '部门';
+-                $groupNameMarked = EncryptService::app()->markEncrString($groupName);
+-                // 在日报内容前加上分组上下文，解密后 AI 能识别
+-                $content = "<p><b>{$dimensionLabel}：{$groupNameMarked}</b></p>\n";
+-                $no = 0;
+-                foreach ($reports as $report) {
+-                    $nickname = $report['data']['nickname'] ?? '';
+-                    if (empty($nickname)) {
+-                        continue;
+-                    }
+-                    $nickname = EncryptService::app()->markEncrString(e($nickname));
+-                    $reportContent = EncryptService::app()->markEncrString($report['content']);
+-                    ++$no;
+-                    $content .= '<p><b>'.$no.'、 '.$nickname.'</b></p>';
+-                    $content .= '<div style="border:1px solid #eee;padding:8px;margin-bottom:12px;">'.$reportContent.'</div>';
+-                }
+-
+-                if ($no === 0) {
+-                    info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} group={$groupName} no valid reports, skip");
+-                    continue;
+-                }
+-
+-                $subject = "【{$startDate}】 {$task->name}（{$dimensionLabel}：{$groupNameMarked}）- 智能日报";
+-
+-                $params = [
+-                    'decrypt_config' => [
+-                        'obj' => '$this',
+-                        'decrypt_columns' => [],
+-                        'partly_decrypt_columns' => ['content', 'subject'],
+-                    ],
+-                    'receivers' => [[
+-                        'type' => 'token',
+-                        'tokens' => [$sfuserToken],
+-                        'filter' => 'emails',
+-                        'filter_map' => ['emails' => $toEmails],
+-                    ]],
+-                    'content' => $content,
+-                    'subject' => $subject,
+-                    'ai_analysis_config' => [
+-                        'system_prompt' => $task->system_prompt,
+-                        'compress' => true,
+-                    ],
+-                ];
+-
+-                info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} [{$groupIndex}/{$totalGroups}] sending", [
+-                    'group_key' => $groupKey,
+-                    'group_name' => $groupName,
+-                    'report_count' => $no,
+-                    'content_bytes' => strlen($content),
+-                    'content_chars' => mb_strlen($content),
+-                    'subject' => $subject,
+-                ]);
+-
+-                $t0 = microtime(true);
+-                $result = CoreApiLib::sendRequest('master-api/mail/send-decr', $params);
+-                info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} [{$groupIndex}/{$totalGroups}] CoreApi responded", [
+-                    'group_name' => $groupName,
+-                    'elapsed' => round(microtime(true) - $t0, 2),
+-                    'result_code' => $result['error_code'] ?? null,
+-                    'result_msg' => $result['error_msg'] ?? null,
+-                ]);
+-            } catch (\Throwable $e) {
+-                info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} [{$groupIndex}/{$totalGroups}] group={$group['name']} failed", [
+-                    'error' => $e->getMessage(),
+-                    'trace' => mb_substr($e->getTraceAsString(), 0, 500),
+-                ]);
+-            }
+-
+-            // 分组间隔 65 秒，避免短时间内多个大请求打满 Vertex AI TPM 配额
+-            if ($groupIndex < $totalGroups) {
+-                info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} sleeping 65s before next group");
+-                sleep(65);
++            $nickname = $report['data']['nickname'] ?? '';
++            if (empty($nickname)) {
++                continue;
+             }
++            $nickname = EncryptService::app()->markEncrString(e($nickname));
++            $reportContent = EncryptService::app()->markEncrString($report['content']);
++            ++$no;
++            $content .= '<p><b>'.$no.'、 '.$nickname.'</b></p>';
++            $content .= '<div style="border:1px solid #eee;padding:8px;margin-bottom:12px;">'.$reportContent.'</div>';
+         }
+ 
+-        info("[lbl][0416-AI日报][AiEmailJob] task={$task->id} all groups sent", [
+-            'total_groups' => $totalGroups,
+-            'total_elapsed' => round(microtime(true) - $taskStartTime, 2),
+-        ]);
+-    }
+-
+-    /**
+-     * 根据维度构建 sfuser_id => ['key' => 分组键, 'name' => 分组名] 的映射.
+-     */
+-    private function buildGroupMap(array $sfuserIds, string $dimension): array
+-    {
+-        if (empty($sfuserIds)) {
+-            return [];
++        if ($no === 0) {
++            info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 无有效日报内容，跳过");
++            return;
+         }
+ 
+-        $map = [];
+-
+-        if ($dimension === 'direct_manager') {
+-            // 按直接主管分组
+-            $users = Sfuser::whereIn('id', $sfuserIds)
+-                ->select('id', 'direct_supervisor_id', 'direct_supervisor_nickname')
+-                ->get();
+-
+-            foreach ($users as $user) {
+-                $managerId = $user->direct_supervisor_id ?: 0;
+-                $managerName = $user->direct_supervisor_nickname ?: '无直接主管';
+-                $map[$user->id] = [
+-                    'key' => "mgr_{$managerId}",
+-                    'name' => $managerName,
+-                ];
+-            }
+-        } else {
+-            // 按部门分组
+-            $users = Sfuser::whereIn('id', $sfuserIds)
+-                ->select('id', 'department_id')
+-                ->get();
+-
+-            // 批量查部门名称
+-            $deptIds = $users->pluck('department_id')->filter()->unique()->values()->toArray();
+-            $deptNames = [];
+-            if (!empty($deptIds)) {
+-                $deptNames = DB::table('job_departments')
+-                    ->whereIn('department_id', $deptIds)
+-                    ->pluck('department_name', 'department_id')
+-                    ->toArray();
+-            }
+-
+-            foreach ($users as $user) {
+-                $deptId = $user->department_id ?: 0;
+-                $deptName = $deptNames[$deptId] ?? '未分配部门';
+-                $map[$user->id] = [
+-                    'key' => "dept_{$deptId}",
+-                    'name' => $deptName,
+-                ];
+-            }
+-        }
++        $subject = EncryptService::app()->markEncrString("【{$reportDate}】智能日报");
++
++        $params = [
++            'decrypt_config' => [
++                'obj' => '$this',
++                'decrypt_columns' => [],
++                'partly_decrypt_columns' => ['content', 'subject'],
++            ],
++            'receivers' => [[
++                'type' => 'token',
++                'tokens' => [$sfuserToken],
++                'filter' => 'emails',
++                'filter_map' => ['emails' => $toEmails],
++            ]],
++            'content' => $content,
++            'subject' => $subject,
++            'ai_analysis_config' => [
++                'system_prompt' => self::SYSTEM_PROMPT,
++                'compress' => true,
++            ],
++        ];
++
++        info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 发送邮件", [
++            'report_count' => $no,
++            'subordinate_count' => count($subordinateIds),
++            'date' => $reportDate,
++            'to_emails' => $toEmails,
++        ]);
+ 
+-        return $map;
+-    }
++        $t0 = microtime(true);
++        $result = CoreApiLib::sendRequest('master-api/mail/send-decr', $params);
+ 
+-    private function getDateRange(string $reportRange): array
+-    {
+-        $today = now()->toDateString();
+-        return match ($reportRange) {
+-            'last_3_days' => [now()->subDays(2)->toDateString(), $today],
+-            'last_7_days' => [now()->subDays(6)->toDateString(), $today],
+-            default => [$today, $today],
+-        };
++        info("[lbl][0422-AI日报邮件][AiEmailJob] sfuser={$sfuserId} 发送完成", [
++            'elapsed' => round(microtime(true) - $t0, 2),
++            'result_code' => $result['error_code'] ?? null,
++            'result_msg' => $result['error_msg'] ?? null,
++        ]);
+     }
+ }
+diff --git a/config/sfuser_apis/daily_report_ai_email.php b/config/sfuser_apis/daily_report_ai_email.php
+index bc9ba19f7..1199836b6 100644
+--- a/config/sfuser_apis/daily_report_ai_email.php
++++ b/config/sfuser_apis/daily_report_ai_email.php
+@@ -1,81 +1,4 @@
+ <?php
+ 
+-use App\Http\Controllers\Oa\DailyReportAiEmailController;
+-
+-return [
+-    'daily-report/ai-email/task/list' => [
+-        'params' => [
+-            'sfuser_info' => 'required|array',
+-        ],
+-        'route' => [DailyReportAiEmailController::class, 'taskList'],
+-    ],
+-
+-    'daily-report/ai-email/task/create' => [
+-        'params' => [
+-            'sfuser_info' => 'required|array',
+-            'name' => 'required|string|max:100',
+-            'system_prompt' => 'required|string',
+-            'dimension' => 'filled|string|max:20',
+-            'report_range' => 'filled|string|max:20',
+-            'send_cycle' => 'filled|string|max:20',
+-            'send_time' => 'filled|string|max:5',
+-        ],
+-        'route' => [DailyReportAiEmailController::class, 'taskCreate'],
+-        'methods' => ['post'],
+-    ],
+-
+-    'daily-report/ai-email/task/update' => [
+-        'params' => [
+-            'sfuser_info' => 'required|array',
+-            'id' => 'required|integer',
+-            'name' => 'filled|string|max:100',
+-            'system_prompt' => 'filled|string',
+-            'dimension' => 'filled|string|max:20',
+-            'report_range' => 'filled|string|max:20',
+-            'send_cycle' => 'filled|string|max:20',
+-            'send_time' => 'filled|string|max:5',
+-        ],
+-        'route' => [DailyReportAiEmailController::class, 'taskUpdate'],
+-        'methods' => ['post'],
+-    ],
+-
+-    'daily-report/ai-email/task/delete' => [
+-        'params' => [
+-            'sfuser_info' => 'required|array',
+-            'id' => 'required|integer',
+-        ],
+-        'route' => [DailyReportAiEmailController::class, 'taskDelete'],
+-        'methods' => ['post'],
+-    ],
+-
+-    'daily-report/ai-email/task/toggle' => [
+-        'params' => [
+-            'sfuser_info' => 'required|array',
+-            'id' => 'required|integer',
+-            'is_on' => 'required|integer|in:0,1',
+-        ],
+-        'route' => [DailyReportAiEmailController::class, 'taskToggle'],
+-        'methods' => ['post'],
+-    ],
+-
+-    'daily-report/ai-email/task/trigger' => [
+-        'params' => [
+-            'sfuser_info' => 'required|array',
+-            'id' => 'required|integer',
+-        ],
+-        'route' => [DailyReportAiEmailController::class, 'taskTrigger'],
+-        'methods' => ['post'],
+-    ],
+-
+-    'daily-report/ai-email/task/test' => [
+-        'params' => [
+-            'sfuser_info' => 'required|array',
+-            'system_prompt' => 'required|string',
+-            'dimension' => 'required|string|in:department,direct_manager',
+-            'report_range' => 'required|string|in:today,last_3_days,last_7_days',
+-            'group_key' => 'required|string',
+-        ],
+-        'route' => [DailyReportAiEmailController::class, 'taskTest'],
+-        'methods' => ['post'],
+-    ],
+-];
++// 0422 需求：前端智能日报邮件配置已移除，邮件由 DailyReportAiEmailJob 定时发送
++return [];
