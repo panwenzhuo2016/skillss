@@ -45,5 +45,5 @@
     "ANTHROPIC_API_KEY": "yotta_pk_21ba700d662c786b542e8899d2a65071",
     "ANTHROPIC_BASE_URL": "https://tower-ai.yottastudios.com/zi/proxy"
   },
-  "fastMode": true
+  "preferFastMode": true
 }
