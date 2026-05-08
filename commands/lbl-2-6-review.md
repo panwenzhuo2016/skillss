@@ -44,6 +44,7 @@
 - 命名是否清晰
 - 代码是否重复（DRY）
 - 方法是否过长（建议不超过 50 行）
+- **同类职责是否归类到独立类**：配置/选项获取是否收拢到 ConfigCache/ConfigService？第三方调用是否在 XxxClient/XxxHelper？数据转换是否在 Converter/Mapper？通用校验是否在 Validator？发现散落在 Service 中的同类逻辑，建议提取到对应的归类类中
 
 ### 7. 规范性
 - 是否符合项目现有代码风格
