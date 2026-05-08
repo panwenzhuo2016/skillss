@@ -2,3 +2,5 @@ backups/
 file-history/
 projects/
 shell-snapshots/
+debug/
+plugins/
