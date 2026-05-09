@@ -58,29 +58,29 @@
 
 | Agent | 输出文件 | 数据来源 |
 |-------|---------|---------|
-| Agent-1 | 01-技术方案设计.md | 构建配置 + 目录结构 + 核心代码 |
-| Agent-2 | 02-架构图.md | docker-compose + 模块依赖 + 网关配置 |
-| Agent-3 | 05-时序图与流程图.md | Controller → Service 调用链分析 |
-| Agent-4 | 06-开发规范.md | 代码风格分析 + 命名模式 + 项目约定 |
+| Agent-1 | 01-技术方案设计.html | 构建配置 + 目录结构 + 核心代码 |
+| Agent-2 | 02-架构图.html | docker-compose + 模块依赖 + 网关配置 |
+| Agent-3 | 05-时序图与流程图.html | Controller → Service 调用链分析 |
+| Agent-4 | 06-开发规范.html | 代码风格分析 + 命名模式 + 项目约定 |
 
 **第 2 批（并行 4 个 Agent）—— 数据与接口类：**
 
 | Agent | 输出文件 | 数据来源 |
 |-------|---------|---------|
-| Agent-5 | 03-数据库设计.md | 全部 Entity 类（字段名、类型、注解） |
-| Agent-6 | 04-接口设计文档.md | 全部 Controller 类（@RequestMapping 路径、方法、参数） |
-| Agent-7 | 10-数据字典.md | Entity 枚举 + 常量类 + 数据库枚举值 |
-| Agent-8 | 13-第三方集成文档.md | 搜索第三方 SDK/Client/OAuth 代码 |
+| Agent-5 | 03-数据库设计.html | 全部 Entity 类（字段名、类型、注解） |
+| Agent-6 | 04-接口设计文档.html | 全部 Controller 类（@RequestMapping 路径、方法、参数） |
+| Agent-7 | 10-数据字典.html | Entity 枚举 + 常量类 + 数据库枚举值 |
+| Agent-8 | 13-第三方集成文档.html | 搜索第三方 SDK/Client/OAuth 代码 |
 
 **第 3 批（并行 5 个 Agent）—— 运维与安全类：**
 
 | Agent | 输出文件 | 数据来源 |
 |-------|---------|---------|
-| Agent-9 | 07-环境配置文档.md | docker-compose + application.yml + .env |
-| Agent-10 | 08-部署文档.md | CI 配置 + Dockerfile + docker-compose |
-| Agent-11 | 09-运维手册.md | 健康检查端点 + 日志配置 + 监控配置 |
-| Agent-12 | 11-性能基线与压测方案.md | 连接池/线程池/JVM 配置 + 限流配置 |
-| Agent-13 | 12-安全设计文档.md | 认证 Filter + 权限 Service + 网关配置 |
+| Agent-9 | 07-环境配置文档.html | docker-compose + application.yml + .env |
+| Agent-10 | 08-部署文档.html | CI 配置 + Dockerfile + docker-compose |
+| Agent-11 | 09-运维手册.html | 健康检查端点 + 日志配置 + 监控配置 |
+| Agent-12 | 11-性能基线与压测方案.html | 连接池/线程池/JVM 配置 + 限流配置 |
+| Agent-13 | 12-安全设计文档.html | 认证 Filter + 权限 Service + 网关配置 |
 
 ### 第三步：交叉验证
 
@@ -112,12 +112,16 @@
 ## 文档格式要求
 
 - 文件编码：UTF-8 无 BOM
-- 格式：Markdown
+- 格式：**增强 HTML**（纯 HTML+CSS，不依赖外部库）
 - 语言：中文
 - 每个文档开头标注版本和更新时间
-- 表格用 Markdown 表格，不用 HTML
-- 架构图/时序图用 ASCII art，不依赖外部渲染工具
-- 代码示例用 fenced code block 并标注语言
+- 表格用 HTML `<table>`，带样式（斑马纹、hover 高亮）
+- 架构图/时序图用 CSS 可视化图表（彩色方框+连线），不用 ASCII art
+- 代码示例用 `<pre>` + CSS 语法高亮（关键字蓝色、字符串橙色、注释绿色）
+- 使用侧边栏导航 + 可折叠区块（`<details>`/`<summary>`）
+- SQL 用 CSS class 高亮（`.kw` 关键字蓝色加粗、`.tp` 类型青色、`.str` 字符串橙色）
+- JSON 用 CSS class 高亮（`.jk` key 蓝色、`.js` 字符串橙色、`.jn` 数字绿色）
+- 支持响应式布局 + 打印友好
 
 ## 注意事项
 

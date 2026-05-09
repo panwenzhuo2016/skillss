@@ -18,15 +18,15 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 
 | 编号 | 来源 | 文件名 |
 |------|------|--------|
-| 01 | `/lbl-1-superpowers-brainstorming`（头脑风暴） | `01-<需求编号>-design.md`、`01-<需求编号>-plan.md` |
-| 02 | 本流程 步骤 2 | `02-<需求编号>-日志记录.md` |
-| 03 | 本流程 步骤 3 | `03-<需求编号>-后端功能点对照.md` |
+| 01 | `/lbl-1-superpowers-brainstorming`（头脑风暴） | `01-<需求编号>-design.html`、`01-<需求编号>-plan.html` |
+| 02 | 本流程 步骤 2 | `02-<需求编号>-日志记录.html` |
+| 03 | 本流程 步骤 3 | `03-<需求编号>-后端功能点对照.html` |
 | 04 | 本流程 步骤 4 | `04-<需求编号>-<功能名>-建表SQL.sql` |
 | 05 | 本流程 步骤 5 | `05-<需求编号>-test-api.js` |
-| 06 | 本流程 步骤 6 | `06-<需求编号>-<功能名>-前端接口文档.md` |
-| 07 | 本流程 步骤 8 | `07-<需求编号>-部署及验证.md` |
-| 08 | 本流程 步骤 9 | `08-<需求编号>-会话记忆.md` |
-| 09 | 本流程 步骤 10 | `09-<需求编号>-需求对照.md` |
+| 06 | 本流程 步骤 6 | `06-<需求编号>-<功能名>-前端接口文档.html` |
+| 07 | 本流程 步骤 8 | `07-<需求编号>-部署及验证.html` |
+| 08 | 本流程 步骤 9 | `08-<需求编号>-会话记忆.html` |
+| 09 | 本流程 步骤 10 | `09-<需求编号>-需求对照.html` |
 
 > 步骤 7（代码审查）不生成独立编号文件，审查问题直接修复。
 
@@ -35,7 +35,7 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 **每个子 skill 有自己的文件命名规则，本表必须与子 skill 保持一致。** 执行子 skill 时，必须使用子 skill 定义的完整文件名格式，不得简化或省略功能名：
 
 - `/lbl-2-3-gen-sql` 规定文件名为 `04-功能名-建表SQL.sql` → 必须带功能名
-- `/lbl-2-5-frontend-api-doc` 规定文件名为 `06-功能名-前端接口文档.md` → 必须带功能名
+- `/lbl-2-5-frontend-api-doc` 规定文件名为 `06-功能名-前端接口文档.html` → 必须带功能名
 - `<功能名>` 用中文，如"同步推送开关"、"模板排序"
 
 ---
@@ -61,7 +61,7 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 
 ### 输出文件
 
-`myfeature/功能目录/output/02-<需求编号>-日志记录.md`
+`myfeature/功能目录/output/02-<需求编号>-日志记录.html`
 
 ### 输出格式
 
@@ -193,7 +193,7 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 
 ### 输出文件
 
-`myfeature/功能目录/output/07-<需求编号>-部署及验证.md`
+`myfeature/功能目录/output/07-<需求编号>-部署及验证.html`
 
 ### 输出格式
 
@@ -262,7 +262,7 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 
 ### 输出文件
 
-`myfeature/功能目录/output/08-<需求编号>-会话记忆.md`
+`myfeature/功能目录/output/08-<需求编号>-会话记忆.html`
 
 ### 内容要求（~100-150 行，控制在 ~1500 tokens）
 
@@ -283,7 +283,7 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 - **只记结论**：不记过程中的试错、不记显而易见的常识
 - 多个会话做同一功能时，合并到同一个文件
 
-完成后告知用户：「✅ 步骤 9/10 会话记忆已导出到 myfeature/xxx/output/08-会话记忆.md。进入步骤 10。」
+完成后告知用户：「✅ 步骤 9/10 会话记忆已导出到 myfeature/xxx/output/08-会话记忆.html。进入步骤 10。」
 
 ---
 
@@ -295,7 +295,7 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 
 ### 输出文件
 
-`myfeature/功能目录/output/09-<需求编号>-需求对照.md`
+`myfeature/功能目录/output/09-<需求编号>-需求对照.html`
 
 ### 结果处理
 
@@ -326,14 +326,14 @@ $ARGUMENTS — 功能分支名、功能目录路径、或功能名称
 10. ✅ 需求对照：N 个检查点，X 个 ✅，Y 个 ⚠️，Z 个 ❌
 
 生成文件清单：
-- myfeature/xxx/output/01-<需求编号>-design.md（头脑风暴阶段生成）
-- myfeature/xxx/output/01-<需求编号>-plan.md（头脑风暴阶段生成）
-- myfeature/xxx/output/02-<需求编号>-日志记录.md
-- myfeature/xxx/output/03-<需求编号>-后端功能点对照.md
+- myfeature/xxx/output/01-<需求编号>-design.html（头脑风暴阶段生成）
+- myfeature/xxx/output/01-<需求编号>-plan.html（头脑风暴阶段生成）
+- myfeature/xxx/output/02-<需求编号>-日志记录.html
+- myfeature/xxx/output/03-<需求编号>-后端功能点对照.html
 - myfeature/xxx/output/04-<需求编号>-<功能名>-建表SQL.sql
 - myfeature/xxx/output/05-<需求编号>-test-api.js
-- myfeature/xxx/output/06-<需求编号>-<功能名>-前端接口文档.md
-- myfeature/xxx/output/07-<需求编号>-部署及验证.md
-- myfeature/xxx/output/08-<需求编号>-会话记忆.md
-- myfeature/xxx/output/09-<需求编号>-需求对照.md
+- myfeature/xxx/output/06-<需求编号>-<功能名>-前端接口文档.html
+- myfeature/xxx/output/07-<需求编号>-部署及验证.html
+- myfeature/xxx/output/08-<需求编号>-会话记忆.html
+- myfeature/xxx/output/09-<需求编号>-需求对照.html
 ```

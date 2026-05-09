@@ -84,7 +84,7 @@ git commit --allow-empty -m "chore: trigger MR creation"
 git push origin lbl-YYMMDD-release -o merge_request.create -o merge_request.target=<主分支> -o "merge_request.title=lbl-YYMMDD-release: 需求编号列表"
 ```
 
-最后输出 MR 地址给用户，并将 MR 地址写入工作目录下的 `myfeatrue/<需求目录>/lbl-YYMMDD-mr.md`（markdown 格式，方便在 IDE 中点击）。
+最后输出 MR 地址给用户，并将 MR 地址写入工作目录下的 `myfeatrue/<需求目录>/lbl-YYMMDD-mr.html`（增强 HTML 格式，方便在浏览器中查看）。
 
 > **注意**：MR 文件不是写到各 git 仓库内的 `myfeature/` 目录，而是写到工作目录上层的公共 `myfeatrue/<需求目录>/` 下（如 `D:/project/info-gitlab/oa/myfeatrue/0416-AI日报配置/lbl-260416-mr.md`）。如果不确定需求目录名，**问用户**。
 
@@ -96,6 +96,7 @@ git push origin lbl-YYMMDD-release -o merge_request.create -o merge_request.targ
 - **SQL 去重**：同一需求多个 SQL 文件内容相同的只保留一份。
 - **已发版需求**：如果某个需求的分支已经合并到主分支（用户说"已经发了"），从列表中移除。
 - **MR 文件位置**：写到公共 `myfeatrue/<需求目录>/` 下，不是各项目 git 仓库内。
+- **输出格式**：增强 HTML（纯 HTML+CSS，不依赖外部库），包含 MR 链接、需求清单、SQL 汇总状态等信息，使用表格样式和状态徽章
 
 ## Output Format
 
