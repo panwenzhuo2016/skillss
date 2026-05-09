@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI时代技术人转型路线图 - 10年Java → 35k+</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-hover: #334155;
+    --accent: #38bdf8;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --accent4: #fb923c;
+    --accent5: #f472b6;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #334155;
+    --success: #22c55e;
+    --warning: #eab308;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #0c4a6e 100%);
+    padding: 60px 40px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero h1 {
+    font-size: 2.8em;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .hero .subtitle {
+    font-size: 1.3em;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .hero .tags {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .hero .tag {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    color: var(--accent);
+  }
+  /* Container */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  /* Section */
+  .section {
+    margin-bottom: 60px;
+  }
+  .section-title {
+    font-size: 1.8em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-desc {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    font-size: 1.05em;
+  }
+  /* Analysis Cards */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .analysis-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .analysis-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(56, 189, 248, 0.1);
+  }
+  .analysis-card h3 {
+    font-size: 1.2em;
+    margin-bottom: 12px;
+    color: var(--accent);
+  }
+  .analysis-card .salary {
+    display: inline-block;
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    margin-bottom: 12px;
+  }
+  .analysis-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .analysis-card li {
+    padding: 4px 0;
+    padding-left: 20px;
+    position: relative;
+    color: var(--text-muted);
+  }
+  .analysis-card li::before {
+    content: '›';
+    position: absolute;
+    left: 4px;
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .recommend-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  /* Direction Blocks */
+  .direction {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .direction-header {
+    padding: 24px 32px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+  .direction-header:hover {
+    background: var(--card-hover);
+  }
+  .direction-header h3 {
+    font-size: 1.4em;
+  }
+  .direction-header .arrow {
+    font-size: 1.5em;
+    transition: transform 0.3s;
+    color: var(--text-muted);
+  }
+  .direction.open .arrow {
+    transform: rotate(180deg);
+  }
+  .direction-body {
+    padding: 0 32px 28px;
+    display: none;
+  }
+  .direction.open .direction-body {
+    display: block;
+  }
+  /* Phase */
+  .phase {
+    margin-bottom: 28px;
+  }
+  .phase-title {
+    font-size: 1.1em;
+    color: var(--accent2);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .phase-title .week {
+    background: rgba(167, 139, 250, 0.15);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    padding: 2px 10px;
+    border-radius: 8px;
+    font-size: 0.8em;
+  }
+  /* Learning Item */
+  .learn-item {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  .learn-item.project {
+    border-left-color: var(--accent3);
+  }
+  .learn-item.resource {
+    border-left-color: var(--accent4);
+  }
+  .learn-item .label {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .learn-item h4 {
+    margin-bottom: 6px;
+  }
+  .learn-item p {
+    color: var(--text-muted);
+    font-size: 0.95em;
+  }
+  .learn-item .links {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .learn-item .links a, .learn-item .links span {
+    display: inline-block;
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--accent);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    text-decoration: none;
+  }
+  /* Keyword Tags */
+  .keywords {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .kw {
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    color: var(--accent3);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.8em;
+  }
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item.done::before { background: var(--success); }
+  .timeline-item.current::before {
+    background: var(--warning);
+    box-shadow: 0 0 12px rgba(234, 179, 8, 0.5);
+  }
+  /* Action Plan */
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .action-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .action-card .num {
+    font-size: 2em;
+    font-weight: bold;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .action-card h4 { margin: 8px 0; }
+  .action-card p { color: var(--text-muted); font-size: 0.9em; }
+  /* Search Keywords Section */
+  .search-section {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(56, 189, 248, 0.1));
+    border-radius: 16px;
+    padding: 32px;
+    border: 1px solid var(--border);
+  }
+  .search-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .search-tag {
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    padding: 12px 16px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.95em;
+    transition: all 0.2s;
+  }
+  .search-tag:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: var(--accent);
+  }
+  /* Interview Section */
+  .interview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+  }
+  .interview-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border);
+  }
+  .interview-card h4 {
+    color: var(--accent4);
+    margin-bottom: 12px;
+    font-size: 1.1em;
+  }
+  .interview-card ol {
+    padding-left: 20px;
+    color: var(--text-muted);
+  }
+  .interview-card li {
+    margin-bottom: 6px;
+  }
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 0.9em;
+    border-top: 1px solid var(--border);
+  }
+  /* Color coding for directions */
+  .dir-ai .direction-header { border-left: 4px solid var(--accent); }
+  .dir-platform .direction-header { border-left: 4px solid var(--accent2); }
+  .dir-arch .direction-header { border-left: 4px solid var(--accent3); }
+  .dir-indie .direction-header { border-left: 4px solid var(--accent4); }
+  .dir-interview .direction-header { border-left: 4px solid var(--accent5); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td { color: var(--text-muted); }
+  tr:hover td { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>AI 时代技术人转型路线图</h1>
+  <p class="subtitle">10年 Java 老兵 → 35k+ 突围战略 & 学习路径</p>
+  <div class="tags">
+    <span class="tag">Java 10年</span>
+    <span class="tag">JS / PHP / Go / Linux</span>
+    <span class="tag">AI 工具熟练</span>
+    <span class="tag">目标 35k+</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ========== 现状分析 ========== -->
+  <div class="section">
+    <h2 class="section-title">&#x1F4CA; 现状分析</h2>
+    <p class="section-desc">你的核心竞争力：10年工程经验 × AI工具能力。市场上纯AI的人不懂工程，纯工程的人不会AI，你两个都有。</p>
+    <div class="analysis-grid">
+      <div class="analysis-card">
+        <h3>&#x2705; 你的优势</h3>
+        <ul>
+          <li>10年 Java 生产级开发经验</li>
+          <li>多语言能力（JS/PHP/Go/Linux）= 学习能力证明</li>
+          <li>AI 工具使用熟练 = 最大杠杆</li>
+          <li>愿意转方向 = 不被"Java程序员"标签锁死</li>
+          <li>目标35k+，正常跳槽范围，不难</li>
+        </ul>
+      </div>
+      <div class="analysis-card">
+        <h3>&#x26A0;&#xFE0F; 要补的短板</h3>
+        <ul>
+          <li>Python（AI生态通用语言）</li>
+          <li>AI/LLM 领域系统化知识</li>
+          <li>简历包装：从"技术栈罗列"到"业务成果导向"</li>
+          <li>面试准备：系统设计 + AI场景题</li>
+          <li>个人作品集 / 可展示项目</li>
+        </ul>
+      </div>
+      <div class="analysis-card">
+        <h3>&#x1F4B0; 市场行情（2026）</h3>
+        <ul>
+          <li>纯 Java 后端：20k-35k（卷，增长有限）</li>
+          <li>AI 应用工程师：35k-55k（缺人，增长快）</li>
+          <li>平台工程/DevOps：32k-45k（稳定需求）</li>
+          <li>技术负责人/架构师：40k-60k（需要管理经验）</li>
+          <li>独立开发/出海：不封顶（高风险高回报）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 四大方向 ========== -->
+  <div class="section">
+    <h2 class="section-title">&#x1F3AF; 四大转型方向 & 学习路径</h2>
+    <p class="section-desc">点击展开查看每个方向的详细学习计划。每个方向都标注了时间线、学什么、怎么学、做什么项目。</p>
+
+    <!-- 方向1: AI 应用工程 -->
+    <div class="direction dir-ai open" id="dir1">
+      <div class="direction-header" onclick="toggleDir('dir1')">
+        <h3>&#x1F916; 方向一：AI 应用工程师 <span class="recommend-badge">最推荐</span></h3>
+        <span class="arrow">&#x25BC;</span>
+      </div>
+      <div class="direction-body">
+        <p style="color:var(--text-muted);margin-bottom:20px;">
+          <strong>为什么推荐：</strong>你Java底子厚 + AI用得溜，市场最缺的就是"能把AI落地到业务里"的人。不需要发论文，不需要调模型，核心是工程化能力。
+        </p>
+
+        <!-- 阶段1 -->
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F4D6; 阶段一：基础补齐</span>
+            <span class="week">第1-2周</span>
+          </div>
+
+          <div class="learn-item">
+            <div class="label">学习</div>
+            <h4>Python 快速上手</h4>
+            <p>你有多语言基础，Python语法1-2天够了。重点学：类型提示(typing)、async/await、包管理(uv/poetry)、虚拟环境</p>
+            <div class="links">
+              <span>Python Crash Course</span>
+              <span>Real Python</span>
+              <span>每天2小时，5天够</span>
+            </div>
+          </div>
+
+          <div class="learn-item">
+            <div class="label">学习</div>
+            <h4>LLM 基础概念</h4>
+            <p>Token、Embedding、Prompt、Temperature、Context Window、Fine-tuning vs RAG 的区别。不需要懂数学，懂概念和工程取舍就行</p>
+            <div class="links">
+              <span>Andrej Karpathy YouTube</span>
+              <span>Anthropic Docs</span>
+              <span>OpenAI Cookbook</span>
+            </div>
+          </div>
+
+          <div class="learn-item">
+            <div class="label">学习</div>
+            <h4>Prompt Engineering 系统化</h4>
+            <p>不是"写prompt"那么简单。学：Chain of Thought、Few-shot、System Prompt设计、结构化输出(JSON Mode)、工具调用(Function Calling)</p>
+            <div class="links">
+              <span>Anthropic Prompt Engineering Guide</span>
+              <span>DAIR.AI Prompt Engineering Guide</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 阶段2 -->
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F527; 阶段二：核心技术栈</span>
+            <span class="week">第3-5周</span>
+          </div>
+
+          <div class="learn-item">
+            <div class="label">RAG 系统</div>
+            <h4>检索增强生成（重点中的重点）</h4>
+            <p>企业落地LLM最多的场景。学：文档切片策略、Embedding模型选型、向量数据库(Milvus/Pgvector/Qdrant)、检索排序(Reranker)、混合检索(关键词+向量)</p>
+            <div class="keywords">
+              <span class="kw">LangChain</span>
+              <span class="kw">LlamaIndex</span>
+              <span class="kw">Milvus</span>
+              <span class="kw">Pgvector</span>
+              <span class="kw">Chunking策略</span>
+              <span class="kw">Hybrid Search</span>
+            </div>
+          </div>
+
+          <div class="learn-item">
+            <div class="label">Agent 编排</div>
+            <h4>AI Agent 系统设计与开发</h4>
+            <p>2026年最热方向。学：Agent架构模式(ReAct/Plan-and-Execute)、工具调用(Tool Use/MCP)、多Agent协作、记忆管理、安全防护(Prompt Injection防御)</p>
+            <div class="keywords">
+              <span class="kw">Claude Agent SDK</span>
+              <span class="kw">LangGraph</span>
+              <span class="kw">CrewAI</span>
+              <span class="kw">MCP协议</span>
+              <span class="kw">Tool Use</span>
+              <span class="kw">Multi-Agent</span>
+            </div>
+          </div>
+
+          <div class="learn-item">
+            <div class="label">AI 中间件</div>
+            <h4>LLM 应用基础设施</h4>
+            <p>这块跟你Java后端经验最匹配。学：API网关(LLM Proxy)、流式响应(SSE)、缓存策略(语义缓存)、限流降级、可观测性(调用链追踪/成本监控)</p>
+            <div class="keywords">
+              <span class="kw">LiteLLM</span>
+              <span class="kw">OpenRouter</span>
+              <span class="kw">LangFuse</span>
+              <span class="kw">SSE/WebSocket</span>
+              <span class="kw">Token计费</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 阶段3 -->
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F680; 阶段三：实战项目（选1-2个做）</span>
+            <span class="week">第5-8周</span>
+          </div>
+
+          <div class="learn-item project">
+            <div class="label">项目 A</div>
+            <h4>企业知识库 RAG 系统</h4>
+            <p>做一个完整的：文档上传 → 自动解析(PDF/Word/网页) → 切片&向量化 → 对话式检索 → 引用来源标注。用 Java(Spring Boot) + Python(LangChain) 混合架构，展示你的全栈能力</p>
+          </div>
+
+          <div class="learn-item project">
+            <div class="label">项目 B</div>
+            <h4>AI Agent 工作流平台</h4>
+            <p>做一个可视化的Agent编排平台：拖拽定义工作流 → Agent自动执行 → 工具调用(数据库查询/API调用/文件操作) → 执行日志追踪。参考 Dify/Coze 的设计</p>
+          </div>
+
+          <div class="learn-item project">
+            <div class="label">项目 C</div>
+            <h4>用 Claude Agent SDK 做业务场景自动化</h4>
+            <p>选一个你熟悉的业务场景（代码审查/测试生成/运维自动化），用 Agent SDK 做端到端自动化。面试时能讲出完整的技术选型和踩坑经验</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方向2: 平台工程 -->
+    <div class="direction dir-platform" id="dir2">
+      <div class="direction-header" onclick="toggleDir('dir2')">
+        <h3>&#x2601;&#xFE0F; 方向二：平台工程 / DevOps + AI</h3>
+        <span class="arrow">&#x25BC;</span>
+      </div>
+      <div class="direction-body">
+        <p style="color:var(--text-muted);margin-bottom:20px;">
+          <strong>为什么适合你：</strong>你会Linux + Go + Java，天然适合。平台工程是DevOps的进化，2026年独立岗位需求大增。
+        </p>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F4D6; 阶段一：K8s 深入</span>
+            <span class="week">第1-3周</span>
+          </div>
+          <div class="learn-item">
+            <h4>Kubernetes 生产级实践</h4>
+            <p>不是会写 YAML 就行。学：Pod调度策略、资源管理(requests/limits)、HPA/VPA自动伸缩、网络策略(NetworkPolicy)、存储(PV/PVC/StorageClass)、安全(RBAC/PSP/OPA)</p>
+            <div class="keywords">
+              <span class="kw">CKA 认证</span>
+              <span class="kw">Helm Chart</span>
+              <span class="kw">Kustomize</span>
+              <span class="kw">ArgoCD</span>
+              <span class="kw">Istio</span>
+            </div>
+          </div>
+          <div class="learn-item resource">
+            <div class="label">认证</div>
+            <h4>CKA (Certified Kubernetes Administrator)</h4>
+            <p>面试加分项，很多公司35k+岗位要求CKA。考试偏实操，对你来说不难。准备2-3周足够</p>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F527; 阶段二：CI/CD & IaC</span>
+            <span class="week">第3-5周</span>
+          </div>
+          <div class="learn-item">
+            <h4>CI/CD 流水线设计</h4>
+            <p>学：GitLab CI / GitHub Actions 高级用法、多环境部署策略(蓝绿/金丝雀/灰度)、制品管理(Harbor/Nexus)、安全扫描集成(SAST/DAST/SCA)</p>
+          </div>
+          <div class="learn-item">
+            <h4>基础设施即代码 (IaC)</h4>
+            <p>Terraform 管理云资源、Pulumi(用Go/TS写)、Crossplane(K8s原生)。至少精通一个</p>
+            <div class="keywords">
+              <span class="kw">Terraform</span>
+              <span class="kw">Pulumi</span>
+              <span class="kw">Crossplane</span>
+              <span class="kw">GitOps</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F4CA; 阶段三：可观测性 & AIOps</span>
+            <span class="week">第5-7周</span>
+          </div>
+          <div class="learn-item">
+            <h4>可观测性三件套</h4>
+            <p>Metrics(Prometheus+Grafana)、Logs(Loki/ELK)、Traces(Jaeger/Tempo)。重点是如何关联三者，快速定位问题</p>
+          </div>
+          <div class="learn-item">
+            <h4>AIOps - AI驱动的运维</h4>
+            <p>用LLM做：告警智能聚合、根因分析、故障自愈、容量预测。这是平台工程+AI的交叉点，极度稀缺</p>
+            <div class="keywords">
+              <span class="kw">告警降噪</span>
+              <span class="kw">根因分析</span>
+              <span class="kw">自动扩缩容</span>
+              <span class="kw">ChatOps</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F680; 阶段四：内部开发者平台 (IDP)</span>
+            <span class="week">第7-9周</span>
+          </div>
+          <div class="learn-item project">
+            <div class="label">项目</div>
+            <h4>搭建一个 Internal Developer Platform</h4>
+            <p>参考 Backstage/Port，做一个：服务目录 → 一键创建项目(模板) → 自动化CI/CD → 环境管理 → 自助运维。用Go写后端，这就是你的作品集</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方向3: 架构师 -->
+    <div class="direction dir-arch" id="dir3">
+      <div class="direction-header" onclick="toggleDir('dir3')">
+        <h3>&#x1F3D7;&#xFE0F; 方向三：后端架构师 / 技术负责人</h3>
+        <span class="arrow">&#x25BC;</span>
+      </div>
+      <div class="direction-body">
+        <p style="color:var(--text-muted);margin-bottom:20px;">
+          <strong>为什么适合你：</strong>10年经验本来就该往这走。架构师不只是画图，是技术决策 + 落地能力 + 带人能力。
+        </p>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F4D6; 阶段一：系统设计能力</span>
+            <span class="week">第1-3周</span>
+          </div>
+          <div class="learn-item">
+            <h4>系统设计经典题刷一遍</h4>
+            <p>这是35k+面试必考。至少准备15个场景：短链系统、消息队列、秒杀系统、分布式ID、搜索引擎、新闻Feed流、聊天系统、文件存储、限流器、缓存系统……</p>
+            <div class="links">
+              <span>System Design Interview (Alex Xu)</span>
+              <span>ByteByteGo</span>
+              <span>每天1题，2周搞定</span>
+            </div>
+          </div>
+          <div class="learn-item">
+            <h4>DDD 领域驱动设计实战</h4>
+            <p>不是背概念，是能用DDD拆解复杂业务。学：限界上下文划分、聚合根设计、领域事件、CQRS。结合你做过的项目重新用DDD视角分析</p>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F527; 阶段二：技术选型与决策</span>
+            <span class="week">第3-5周</span>
+          </div>
+          <div class="learn-item">
+            <h4>技术选型方法论</h4>
+            <p>学会用数据和实验做决策，而不是拍脑袋。框架：① 列出候选方案 → ② 定义评估维度(性能/成本/团队熟悉度/社区活跃度) → ③ PoC验证 → ④ 写ADR(Architecture Decision Record)</p>
+          </div>
+          <div class="learn-item">
+            <h4>常见架构模式深入</h4>
+            <p>微服务拆分策略、事件驱动架构(EDA)、Saga模式、Outbox模式、CQRS+Event Sourcing、Sidecar/Service Mesh。每个模式要知道适用场景和踩坑点</p>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F465; 阶段三：团队管理</span>
+            <span class="week">第5-7周</span>
+          </div>
+          <div class="learn-item">
+            <h4>技术管理基础</h4>
+            <p>代码评审规范制定、技术方案评审流程、团队能力矩阵、技术债管理、OKR制定。推荐读《An Elegant Puzzle》和《The Manager's Path》</p>
+          </div>
+          <div class="learn-item">
+            <h4>面试时怎么讲管理经验</h4>
+            <p>即使没带过大团队，也要包装：① 主导过的技术方案评审 ② 指导过的新人 ③ 推动过的技术改进 ④ 解决过的跨团队协作问题。用 STAR 法则讲故事</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方向4: 独立开发 -->
+    <div class="direction dir-indie" id="dir4">
+      <div class="direction-header" onclick="toggleDir('dir4')">
+        <h3>&#x1F30F; 方向四：全栈独立开发 / 出海产品</h3>
+        <span class="arrow">&#x25BC;</span>
+      </div>
+      <div class="direction-body">
+        <p style="color:var(--text-muted);margin-bottom:20px;">
+          <strong>为什么值得考虑：</strong>你前后端都会，AI时代一个人能干一个小团队的活。做出产品 = 收入不封顶，但需要产品思维和市场嗅觉。
+        </p>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F4D6; 阶段一：出海技术栈</span>
+            <span class="week">第1-2周</span>
+          </div>
+          <div class="learn-item">
+            <h4>SaaS 产品技术栈</h4>
+            <p>前端：Next.js / Nuxt.js（SEO友好）。后端：可以继续用Java(Spring Boot)或试试Node.js。部署：Vercel/Cloudflare Workers。支付：Stripe/Lemon Squeezy。认证：Clerk/Auth.js</p>
+            <div class="keywords">
+              <span class="kw">Next.js</span>
+              <span class="kw">Tailwind CSS</span>
+              <span class="kw">Stripe</span>
+              <span class="kw">Vercel</span>
+              <span class="kw">Supabase</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F527; 阶段二：AI 工具类产品</span>
+            <span class="week">第2-4周</span>
+          </div>
+          <div class="learn-item">
+            <h4>找到 AI + 垂直场景的交叉点</h4>
+            <p>不做通用AI工具（打不过大厂）。找垂直场景：AI简历优化器、AI合同审查、AI客服训练平台、AI数据分析仪表盘、AI代码审查工具……选你熟悉的行业切入</p>
+          </div>
+          <div class="learn-item resource">
+            <div class="label">方法</div>
+            <h4>产品发现与验证</h4>
+            <p>① 在 ProductHunt / Indie Hackers / X 上找灵感 → ② 用 Claude 快速出 MVP → ③ 发到 ProductHunt 测试反响 → ④ 有人付费再投入精力迭代</p>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-title">
+            <span>&#x1F4B0; 阶段三：变现</span>
+            <span class="week">第4-8周</span>
+          </div>
+          <div class="learn-item">
+            <h4>出海 SaaS 变现路径</h4>
+            <p>① Free trial → 订阅制 (MRR) ② Freemium + 高级功能付费 ③ API as a Service (按调用计费)。目标：先做到 MRR $500，再考虑全职</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 面试准备 ========== -->
+  <div class="section">
+    <h2 class="section-title">&#x1F3AF; 面试准备：系统设计 + AI 场景题</h2>
+    <p class="section-desc">35k+ 岗位面试核心考点，按优先级排列</p>
+
+    <div class="interview-grid">
+      <div class="interview-card">
+        <h4>系统设计题 Top 15</h4>
+        <ol>
+          <li>设计一个短链接系统（URL Shortener）</li>
+          <li>设计一个消息队列（类 Kafka）</li>
+          <li>设计一个秒杀系统</li>
+          <li>设计一个分布式缓存（类 Redis Cluster）</li>
+          <li>设计一个新闻 Feed 流（类微博/朋友圈）</li>
+          <li>设计一个搜索引擎（类 ES）</li>
+          <li>设计一个聊天系统（类微信）</li>
+          <li>设计一个分布式文件存储（类 S3）</li>
+          <li>设计一个限流器（Rate Limiter）</li>
+          <li>设计一个分布式 ID 生成器</li>
+          <li>设计一个任务调度系统</li>
+          <li>设计一个权限系统（RBAC/ABAC）</li>
+          <li>设计一个监控告警系统</li>
+          <li>设计一个配置中心</li>
+          <li>设计一个 API 网关</li>
+        </ol>
+      </div>
+
+      <div class="interview-card">
+        <h4>AI 应用场景题 Top 10</h4>
+        <ol>
+          <li>设计一个企业知识库 RAG 系统，如何保证检索准确率？</li>
+          <li>如何设计一个多 Agent 协作系统？Agent 间如何通信？</li>
+          <li>RAG 系统中，文档切片策略有哪些？各自优劣？</li>
+          <li>如何防止 Prompt Injection 攻击？</li>
+          <li>LLM 输出不稳定怎么办？如何做质量控制？</li>
+          <li>如何设计 LLM 应用的缓存策略？语义缓存 vs 精确缓存？</li>
+          <li>如何做 LLM 应用的成本优化？（模型选择/缓存/批处理）</li>
+          <li>如何设计一个可观测的 AI 应用？需要监控哪些指标？</li>
+          <li>向量数据库选型：Milvus vs Pgvector vs Qdrant 怎么选？</li>
+          <li>Fine-tuning vs RAG vs Prompt Engineering 分别什么时候用？</li>
+        </ol>
+      </div>
+
+      <div class="interview-card">
+        <h4>高频行为面试题</h4>
+        <ol>
+          <li>你做过最复杂的系统是什么？你在其中的角色？</li>
+          <li>讲一个你解决过的最难的线上问题</li>
+          <li>你如何做技术选型？举一个具体例子</li>
+          <li>你如何推动一个技术改进落地？</li>
+          <li>讲一个你和其他团队协作遇到冲突的经历</li>
+          <li>你如何保证代码质量？</li>
+          <li>你对 AI 在软件开发中的应用怎么看？</li>
+          <li>你为什么想转方向？</li>
+        </ol>
+      </div>
+
+      <div class="interview-card">
+        <h4>面试答题模板 (STAR)</h4>
+        <ol>
+          <li><strong>Situation</strong>：项目背景、团队规模、业务量级</li>
+          <li><strong>Task</strong>：你负责什么、面临什么挑战</li>
+          <li><strong>Action</strong>：你做了什么（技术方案、权衡取舍）</li>
+          <li><strong>Result</strong>：数据结果（性能提升X%、成本降低X%、故障率下降X%）</li>
+        </ol>
+        <p style="margin-top:12px;color:var(--text-muted);">
+          每个项目经历都用这个模板准备，重点讲 Action 和 Result，不要花太多时间在背景上。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 简历投递关键词 ========== -->
+  <div class="section">
+    <h2 class="section-title">&#x1F50D; 简历投递：搜索关键词</h2>
+    <p class="section-desc">别只搜"Java开发"，用这些关键词打开新世界</p>
+    <div class="search-section">
+      <div class="search-grid">
+        <div class="search-tag">AI 应用工程师</div>
+        <div class="search-tag">LLM 工程师</div>
+        <div class="search-tag">AI 平台工程师</div>
+        <div class="search-tag">AI 基础设施工程师</div>
+        <div class="search-tag">技术负责人</div>
+        <div class="search-tag">后端架构师</div>
+        <div class="search-tag">平台工程师</div>
+        <div class="search-tag">DevOps 工程师</div>
+        <div class="search-tag">SRE 工程师</div>
+        <div class="search-tag">全栈工程师</div>
+        <div class="search-tag">AIGC 开发工程师</div>
+        <div class="search-tag">大模型应用开发</div>
+        <div class="search-tag">智能体开发工程师</div>
+        <div class="search-tag">RAG 工程师</div>
+        <div class="search-tag">AI 产品技术负责人</div>
+        <div class="search-tag">云原生工程师</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 立刻执行 ========== -->
+  <div class="section">
+    <h2 class="section-title">&#x26A1; 立刻执行清单</h2>
+    <p class="section-desc">别光看，现在就开始干</p>
+    <div class="action-grid">
+      <div class="action-card">
+        <div class="num">01</div>
+        <h4>本周：选定主方向</h4>
+        <p>在四个方向里选一个主攻。建议选"AI 应用工程"，投入产出比最高</p>
+      </div>
+      <div class="action-card">
+        <div class="num">02</div>
+        <h4>第1-2周：基础补齐</h4>
+        <p>Python快速上手 + LLM基础概念 + Prompt Engineering系统学习</p>
+      </div>
+      <div class="action-card">
+        <div class="num">03</div>
+        <h4>第3-5周：核心技术</h4>
+        <p>RAG + Agent + AI中间件，每个方向跟着教程做一个小Demo</p>
+      </div>
+      <div class="action-card">
+        <div class="num">04</div>
+        <h4>第5-8周：项目 + 面试</h4>
+        <p>做一个完整项目放GitHub，同时开始刷系统设计题 + 投简历</p>
+      </div>
+      <div class="action-card">
+        <div class="num">05</div>
+        <h4>简历重写</h4>
+        <p>从"熟悉xxx"改成"用AI工具将开发效率提升xx%"等成果导向描述</p>
+      </div>
+      <div class="action-card">
+        <div class="num">06</div>
+        <h4>持续输出</h4>
+        <p>每周写1-2篇技术文章（掘金/知乎），主题围绕AI应用落地实践</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 学习资源汇总 ========== -->
+  <div class="section">
+    <h2 class="section-title">&#x1F4DA; 学习资源汇总</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>类别</th>
+          <th>资源</th>
+          <th>说明</th>
+          <th>优先级</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>LLM 基础</td>
+          <td>Andrej Karpathy - Intro to LLMs (YouTube)</td>
+          <td>1小时视频，最好的入门</td>
+          <td style="color:var(--success)">&#x2B50; 必看</td>
+        </tr>
+        <tr>
+          <td>Prompt Engineering</td>
+          <td>Anthropic Prompt Engineering Guide</td>
+          <td>官方文档，最权威</td>
+          <td style="color:var(--success)">&#x2B50; 必看</td>
+        </tr>
+        <tr>
+          <td>RAG</td>
+          <td>LangChain / LlamaIndex 官方教程</td>
+          <td>跟着做一遍就会了</td>
+          <td style="color:var(--success)">&#x2B50; 必看</td>
+        </tr>
+        <tr>
+          <td>Agent</td>
+          <td>Anthropic Claude Agent SDK 文档</td>
+          <td>2026年最新的Agent开发框架</td>
+          <td style="color:var(--success)">&#x2B50; 必看</td>
+        </tr>
+        <tr>
+          <td>系统设计</td>
+          <td>System Design Interview (Alex Xu) 1 & 2</td>
+          <td>面试圣经，每章一个经典题</td>
+          <td style="color:var(--success)">&#x2B50; 必看</td>
+        </tr>
+        <tr>
+          <td>系统设计</td>
+          <td>ByteByteGo (YouTube / Newsletter)</td>
+          <td>图解系统设计，直观易懂</td>
+          <td style="color:var(--warning)">推荐</td>
+        </tr>
+        <tr>
+          <td>K8s</td>
+          <td>CKA 官方认证备考</td>
+          <td>实操为主，2-3周可考</td>
+          <td style="color:var(--warning)">推荐（走平台方向）</td>
+        </tr>
+        <tr>
+          <td>Python</td>
+          <td>Real Python / Python Crash Course</td>
+          <td>你有基础，快速过一遍语法</td>
+          <td style="color:var(--warning)">推荐</td>
+        </tr>
+        <tr>
+          <td>DDD</td>
+          <td>《实现领域驱动设计》(Vaughn Vernon)</td>
+          <td>走架构师方向必读</td>
+          <td>选读</td>
+        </tr>
+        <tr>
+          <td>技术管理</td>
+          <td>《An Elegant Puzzle》/ 《The Manager's Path》</td>
+          <td>技术领导力入门</td>
+          <td>选读</td>
+        </tr>
+        <tr>
+          <td>出海</td>
+          <td>Indie Hackers / ProductHunt</td>
+          <td>独立开发者社区，找灵感</td>
+          <td>选读（走独立开发方向）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 核心心法 ========== -->
+  <div class="section">
+    <div class="search-section" style="background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(244, 114, 182, 0.1));">
+      <h2 class="section-title" style="margin-bottom: 16px;">&#x1F4A1; 核心心法</h2>
+      <table>
+        <tr>
+          <td style="width:40%; color:var(--accent4); font-weight:bold;">不要以"Java程序员"的身份卖自己</td>
+          <td>要以"能把AI落地的资深工程师"身份卖自己。10年经验 × AI能力 = 稀缺组合</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent4); font-weight:bold;">项目 > 证书 > 文章 > 简历描述</td>
+          <td>一个能跑的RAG项目比10行简历描述有用100倍</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent4); font-weight:bold;">先做后学，边做边学</td>
+          <td>不要试图"学完再做"。直接上手项目，遇到什么学什么</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent4); font-weight:bold;">35k 只是起步价</td>
+          <td>AI应用工程师 + 10年经验，在一线城市40-50k完全可能</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent4); font-weight:bold;">两个月足够转型</td>
+          <td>你不是从零开始，是在10年基础上加新能力。8周集中学习 + 项目，足以面试35k+岗位</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Generated by Claude | 2026-05-09 | 你的AI时代转型路线图</p>
+  <p style="margin-top:8px;">记住：你最大的杠杆是 <strong style="color:var(--accent)">10年工程经验 × AI工具能力</strong></p>
+</div>
+
+<script>
+function toggleDir(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>
