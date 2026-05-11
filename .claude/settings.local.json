@@ -1,0 +1,8 @@
+{
+  "enabledMcpjsonServers": [
+    "hr-testdb",
+    "oa-testdb",
+    "collabspace-testdb",
+    "surveyking-testdb"
+  ]
+}

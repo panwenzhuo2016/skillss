@@ -1,4 +1,8 @@
 {
+  "env": {
+    "ANTHROPIC_API_KEY": "yotta_pk_21ba700d662c786b542e8899d2a65071",
+    "ANTHROPIC_BASE_URL": "https://tower-ai.yottastudios.com/zi/proxy"
+  },
   "permissions": {
     "allow": [
       "Bash(*)",
@@ -16,7 +20,6 @@
       "Bash(git push:*)"
     ]
   },
-  "model": "claude-opus-4-6",
   "hooks": {
     "PreToolUse": [
       {
@@ -41,9 +44,7 @@
       }
     }
   },
-  "env": {
-    "ANTHROPIC_API_KEY": "yotta_pk_21ba700d662c786b542e8899d2a65071",
-    "ANTHROPIC_BASE_URL": "https://tower-ai.yottastudios.com/zi/proxy"
-  },
-  "fastMode": false
+  "fastMode": false,
+  "language": "chinese",
+  "model": "claude-opus-4-7"
 }
