@@ -4,5 +4,10 @@
     "oa-testdb",
     "collabspace-testdb",
     "surveyking-testdb"
-  ]
+  ],
+  "permissions": {
+    "allow": [
+      "Skill(update-config)"
+    ]
+  }
 }
