@@ -31,6 +31,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 'C:/Users/luobeilin/.claude/commands/lbl-end-notify.js'",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
