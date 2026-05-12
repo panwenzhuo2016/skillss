@@ -8,3 +8,9 @@ history.jsonl
 tasks/
 ide/
 sessions/
+paste-cache/
+plans/
+session-env/
+telemetry/
+todos/
+cache/

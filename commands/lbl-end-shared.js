@@ -67,15 +67,33 @@ function isRealUserMessage(obj) {
   return false;
 }
 
+function extractUserText(obj) {
+  const content = obj.message && obj.message.content;
+  let text = '';
+  if (typeof content === 'string') text = content;
+  else if (Array.isArray(content)) {
+    text = content.filter((c) => c && c.type === 'text' && c.text).map((c) => c.text).join('\n');
+  }
+  // 剥 system-reminder / command-* 这类标签噪音
+  text = text.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '');
+  text = text.replace(/<command-[a-z]+>[\s\S]*?<\/command-[a-z]+>/g, '');
+  text = text.replace(/<local-command-[a-z]+>[\s\S]*?<\/local-command-[a-z]+>/g, '');
+  return text.trim();
+}
+
 // 倒推 transcript，从最后一条真实 user message 之后累加所有 assistant 的 usage
 function gatherTurnStats(lines) {
-  const stats = { input: 0, output: 0, cache_read: 0, cache_write: 0, hasText: false, summary: '' };
-  // 第一步：找出"本回合"起点（最后一条真实 user message 之后）
+  const stats = { input: 0, output: 0, cache_read: 0, cache_write: 0, hasText: false, summary: '', userInput: '' };
+  // 第一步：找出"本回合"起点（最后一条真实 user message 之后），同时取该 user message 的文本
   let turnStartIdx = 0;
   for (let i = lines.length - 1; i >= 0; i--) {
     let obj;
     try { obj = JSON.parse(lines[i]); } catch { continue; }
-    if (isRealUserMessage(obj)) { turnStartIdx = i + 1; break; }
+    if (isRealUserMessage(obj)) {
+      turnStartIdx = i + 1;
+      stats.userInput = extractUserText(obj);
+      break;
+    }
   }
 
   // 第二步：累加 usage + 收集最后一条带文本的 assistant message
@@ -179,6 +197,7 @@ async function gatherContext() {
   const result = {
     sessionId, cwd, sessionName, summary, transcriptPath,
     hasText: stats.hasText, stats, cost, statsLine,
+    userInput: stats.userInput || '',
   };
   debugLog(raw, payload, { ...result, transcriptPath: !!transcriptPath });
   return result;

@@ -46,6 +46,12 @@
             "command": "node 'C:/Users/luobeilin/.claude/commands/lbl-end-notify-knock.js'",
             "async": true,
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "node 'C:/Users/luobeilin/.claude/commands/lbl-end-answer-log.js'",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
