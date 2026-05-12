@@ -4,3 +4,7 @@ projects/
 shell-snapshots/
 debug/
 plugins/
+history.jsonl
+tasks/
+ide/
+sessions/
