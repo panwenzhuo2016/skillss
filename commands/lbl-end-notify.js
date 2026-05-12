@@ -26,9 +26,6 @@ Start-Sleep -Seconds 1;
 
 (async () => {
   const ctx = await gatherContext();
-  if (!ctx.hasText) {
-    console.log('[lbl-end-notify] 无文本回复，跳过');
-    return;
-  }
-  await sendToast(`爹，干完了：${ctx.sessionName}`, ctx.summary, ctx.statsLine);
+  const line2 = ctx.hasText ? ctx.summary : '（无文本回复 / 仅工具调用）';
+  await sendToast(`爹，干完了：${ctx.sessionName}`, line2, ctx.statsLine);
 })();

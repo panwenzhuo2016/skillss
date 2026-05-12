@@ -78,12 +78,9 @@ async function sendGroupRich(title, content) {
 
 (async () => {
   const ctx = await gatherContext();
-  if (!ctx.hasText) {
-    console.log('[knock] 无文本回复，跳过');
-    return;
-  }
+  const summaryLine = ctx.hasText ? ctx.summary : '（无文本回复 / 仅工具调用）';
   try {
-    const content = ctx.summary + '\n\n' + ctx.statsLine;
+    const content = summaryLine + '\n\n' + ctx.statsLine;
     const resp = await sendGroupRich(`爹，干完了：${ctx.sessionName}`, content);
     console.log('[knock] ok:', resp);
   } catch (err) {
