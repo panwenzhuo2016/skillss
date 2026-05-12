@@ -4,7 +4,9 @@
       "Skill(update-config)",
       "Bash(git rm *)",
       "Bash(rm -f commands/claude-answer-all.html)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(rm -f \"C:/Users/luobeilin/.claude/commands/claude-answer-all.html\")",
+      "Bash(node -e ' *)"
     ]
   },
   "enabledMcpjsonServers": [
