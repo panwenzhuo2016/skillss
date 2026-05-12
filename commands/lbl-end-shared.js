@@ -3,7 +3,7 @@ const path = require('path');
 const os = require('os');
 
 const CLAUDE_HOME = path.join(os.homedir(), '.claude');
-const MAX_SUMMARY_CHARS = 100;
+const MAX_SUMMARY_CHARS = 1000;
 
 // Anthropic Claude Opus 4 公开价 (USD per 1M tokens)。如改用其他模型/内部价，改这里。
 const PRICE_PER_M = {
@@ -54,6 +54,16 @@ function pickSummaryFromText(text) {
   const m = text.match(re);
   if (m && m[1]) return m[1].trim();
   return text.trim();
+}
+
+// 规范化总结：合并多余空白，但识别到 ①②③ 等分点符号时强制换行
+function normalizeSummary(text) {
+  return text
+    .replace(/[\r\n]+/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\s*([①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮])\s*/g, '\n$1 ')
+    .replace(/^\n+/, '')
+    .trim();
 }
 
 // 判断 transcript 一行是不是"用户真实输入"（不是 tool_result 回填）
@@ -123,7 +133,7 @@ function gatherTurnStats(lines) {
   if (lastTextBlock) {
     stats.hasText = true;
     const picked = pickSummaryFromText(lastTextBlock.text);
-    stats.summary = picked.replace(/[\r\n\s]+/g, ' ').trim();
+    stats.summary = normalizeSummary(picked);
   }
   return stats;
 }
@@ -155,45 +165,48 @@ function truncate(s, n) {
 function debugLog(raw, payload, resolved) {
   try {
     const lam = payload && payload.last_assistant_message;
-    const lamPeek = lam ? {
-      has_content: !!lam.content,
-      content_type: Array.isArray(lam.content) ? 'array' : typeof lam.content,
-      content_block_types: Array.isArray(lam.content) ? lam.content.map((c) => c && c.type) : null,
-      first_text_head: Array.isArray(lam.content)
-        ? (lam.content.find((c) => c && c.type === 'text') || {}).text?.slice(0, 120)
-        : (typeof lam.content === 'string' ? lam.content.slice(0, 120) : null),
-      has_usage: !!lam.usage,
-      usage: lam.usage || null,
-    } : null;
+    // 把 last_assistant_message 完整 dump 到独立文件方便分析（每次覆盖最新一条）
+    if (lam !== undefined) {
+      try {
+        fs.writeFileSync(path.join(CLAUDE_HOME, 'lbl-end-lam-dump.json'), JSON.stringify(lam, null, 2));
+      } catch {}
+    }
+    const lamMeta = {
+      type: typeof lam,
+      isArray: Array.isArray(lam),
+      keys: lam && typeof lam === 'object' && !Array.isArray(lam) ? Object.keys(lam) : null,
+      stringPreview: typeof lam === 'string' ? lam.slice(0, 200) : null,
+    };
     const line = JSON.stringify({
       ts: new Date().toISOString(),
       raw_len: raw.length,
       payload_keys: Object.keys(payload || {}),
-      lam_peek: lamPeek,
+      lam_meta: lamMeta,
       resolved,
     }) + '\n';
     fs.appendFileSync(path.join(CLAUDE_HOME, 'lbl-end-debug.log'), line);
   } catch {}
 }
 
-// 优先从 hook payload 的 last_assistant_message 拿 text + usage（CC 官方注入，最准）
+// 优先从 hook payload 的 last_assistant_message 拿 text（CC Stop hook 直接给的是纯字符串）
 function statsFromLastAssistantMessage(msg) {
   const stats = { input: 0, output: 0, cache_read: 0, cache_write: 0, hasText: false, summary: '', userInput: '' };
   if (!msg) return stats;
-  // msg.content 是 content blocks 数组
-  if (Array.isArray(msg.content)) {
-    const tb = msg.content.find((c) => c && c.type === 'text' && c.text && c.text.trim());
-    if (tb) {
-      stats.hasText = true;
-      const picked = pickSummaryFromText(tb.text);
-      stats.summary = picked.replace(/[\r\n\s]+/g, ' ').trim();
-    }
-  } else if (typeof msg.content === 'string' && msg.content.trim()) {
+  // CC Stop hook 实测：last_assistant_message 是 string，直接就是上一条 assistant 文本
+  let text = '';
+  if (typeof msg === 'string') text = msg;
+  else if (Array.isArray(msg.content)) {
+    const tb = msg.content.find((c) => c && c.type === 'text' && c.text);
+    text = tb ? tb.text : '';
+  } else if (typeof msg.content === 'string') text = msg.content;
+
+  if (text && text.trim()) {
     stats.hasText = true;
-    const picked = pickSummaryFromText(msg.content);
-    stats.summary = picked.replace(/[\r\n\s]+/g, ' ').trim();
+    const picked = pickSummaryFromText(text);
+    stats.summary = normalizeSummary(picked);
   }
-  if (msg.usage) {
+  // CC 不在 stdin 里给 usage，token 统计从 transcript 倒推
+  if (msg && typeof msg === 'object' && msg.usage) {
     stats.input = msg.usage.input_tokens || 0;
     stats.output = msg.usage.output_tokens || 0;
     stats.cache_read = msg.usage.cache_read_input_tokens || 0;
