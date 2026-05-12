@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const { execFile } = require('child_process');
-const { gatherContext } = require('./_lbl-end-shared');
+const { gatherContext } = require('./lbl-end-shared');
 
 function sendToast(title, message) {
   const escape = (s) => String(s).replace(/'/g, "''");

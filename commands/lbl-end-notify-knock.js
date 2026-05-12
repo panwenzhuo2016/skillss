@@ -2,7 +2,7 @@
 const http = require('http');
 const crypto = require('crypto');
 const { URL } = require('url');
-const { gatherContext } = require('./_lbl-end-shared');
+const { gatherContext } = require('./lbl-end-shared');
 
 const KNOCK_URL = 'http://oa-chn.xinyoudi.com/third-api/request';
 const CLIENT_ID = 'apitable';
