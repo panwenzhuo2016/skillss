@@ -154,15 +154,52 @@ function truncate(s, n) {
 
 function debugLog(raw, payload, resolved) {
   try {
+    const lam = payload && payload.last_assistant_message;
+    const lamPeek = lam ? {
+      has_content: !!lam.content,
+      content_type: Array.isArray(lam.content) ? 'array' : typeof lam.content,
+      content_block_types: Array.isArray(lam.content) ? lam.content.map((c) => c && c.type) : null,
+      first_text_head: Array.isArray(lam.content)
+        ? (lam.content.find((c) => c && c.type === 'text') || {}).text?.slice(0, 120)
+        : (typeof lam.content === 'string' ? lam.content.slice(0, 120) : null),
+      has_usage: !!lam.usage,
+      usage: lam.usage || null,
+    } : null;
     const line = JSON.stringify({
       ts: new Date().toISOString(),
       raw_len: raw.length,
-      raw_head: raw.slice(0, 300),
       payload_keys: Object.keys(payload || {}),
+      lam_peek: lamPeek,
       resolved,
     }) + '\n';
     fs.appendFileSync(path.join(CLAUDE_HOME, 'lbl-end-debug.log'), line);
   } catch {}
+}
+
+// 优先从 hook payload 的 last_assistant_message 拿 text + usage（CC 官方注入，最准）
+function statsFromLastAssistantMessage(msg) {
+  const stats = { input: 0, output: 0, cache_read: 0, cache_write: 0, hasText: false, summary: '', userInput: '' };
+  if (!msg) return stats;
+  // msg.content 是 content blocks 数组
+  if (Array.isArray(msg.content)) {
+    const tb = msg.content.find((c) => c && c.type === 'text' && c.text && c.text.trim());
+    if (tb) {
+      stats.hasText = true;
+      const picked = pickSummaryFromText(tb.text);
+      stats.summary = picked.replace(/[\r\n\s]+/g, ' ').trim();
+    }
+  } else if (typeof msg.content === 'string' && msg.content.trim()) {
+    stats.hasText = true;
+    const picked = pickSummaryFromText(msg.content);
+    stats.summary = picked.replace(/[\r\n\s]+/g, ' ').trim();
+  }
+  if (msg.usage) {
+    stats.input = msg.usage.input_tokens || 0;
+    stats.output = msg.usage.output_tokens || 0;
+    stats.cache_read = msg.usage.cache_read_input_tokens || 0;
+    stats.cache_write = msg.usage.cache_creation_input_tokens || 0;
+  }
+  return stats;
 }
 
 async function gatherContext() {
@@ -180,11 +217,28 @@ async function gatherContext() {
 
   const transcriptPath = findTranscript(sessionId, transcriptHint);
 
-  let stats = { input: 0, output: 0, cache_read: 0, cache_write: 0, hasText: false, summary: '' };
+  // 1) 优先用 hook payload 自带的 last_assistant_message（CC 直接给的最准数据）
+  let stats = statsFromLastAssistantMessage(payload.last_assistant_message);
+
+  // 2) 不管 1) 拿没拿到，都尝试从 transcript 取 userInput + 累加整 turn 的 usage
   if (transcriptPath) {
     try {
       const lines = fs.readFileSync(transcriptPath, 'utf8').trim().split(/\r?\n/);
-      stats = gatherTurnStats(lines);
+      const turnStats = gatherTurnStats(lines);
+      // userInput 必须从 transcript 拿
+      stats.userInput = turnStats.userInput || stats.userInput;
+      // 如果 1) 没拿到 hasText/summary（payload 里没 last_assistant_message），回退用 transcript 的
+      if (!stats.hasText && turnStats.hasText) {
+        stats.hasText = true;
+        stats.summary = turnStats.summary;
+      }
+      // usage 用整 turn 累加值（更准），但 1) 拿到了就以 1) 为准（避免重复累加）
+      if (!stats.input && !stats.output) {
+        stats.input = turnStats.input;
+        stats.output = turnStats.output;
+        stats.cache_read = turnStats.cache_read;
+        stats.cache_write = turnStats.cache_write;
+      }
     } catch {}
   }
 
