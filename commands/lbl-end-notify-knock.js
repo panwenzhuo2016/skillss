@@ -77,9 +77,14 @@ async function sendGroupRich(title, content) {
 }
 
 (async () => {
-  const { sessionName, summary } = await gatherContext();
+  const ctx = await gatherContext();
+  if (!ctx.hasText) {
+    console.log('[knock] 无文本回复，跳过');
+    return;
+  }
   try {
-    const resp = await sendGroupRich(`爹，干完了：${sessionName}`, summary);
+    const content = ctx.summary + '\n\n' + ctx.statsLine;
+    const resp = await sendGroupRich(`爹，干完了：${ctx.sessionName}`, content);
     console.log('[knock] ok:', resp);
   } catch (err) {
     console.error('[knock] 发送失败:', err.message);
