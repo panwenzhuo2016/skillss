@@ -24,8 +24,14 @@ Start-Sleep -Seconds 1;
   });
 }
 
+function truncateChars(s, n) {
+  const chars = Array.from(String(s || ''));
+  return chars.length > n ? chars.slice(0, n).join('') + '…' : chars.join('');
+}
+
 (async () => {
   const ctx = await gatherContext();
-  const line2 = ctx.hasText ? ctx.summary : '（无文本回复 / 仅工具调用）';
-  await sendToast(`爹，干完了：${ctx.sessionName}`, line2, ctx.statsLine);
+  const summary = ctx.hasText ? ctx.summary : '（无文本回复 / 仅工具调用）';
+  const inputLine = `「${truncateChars(ctx.userInput, 25)}」`;
+  await sendToast(`爹，干完了：${ctx.sessionName}`, `${inputLine} → ${summary}`, ctx.statsLine);
 })();

@@ -76,11 +76,17 @@ async function sendGroupRich(title, content) {
   return postKnock(reqBody);
 }
 
+function truncateChars(s, n) {
+  const chars = Array.from(String(s || ''));
+  return chars.length > n ? chars.slice(0, n).join('') + '…' : chars.join('');
+}
+
 (async () => {
   const ctx = await gatherContext();
   const summaryLine = ctx.hasText ? ctx.summary : '（无文本回复 / 仅工具调用）';
+  const inputLine = `> 我说：${truncateChars(ctx.userInput, 25)}`;
   try {
-    const content = summaryLine + '\n\n' + ctx.statsLine;
+    const content = inputLine + '\n\n' + summaryLine + '\n\n' + ctx.statsLine;
     const resp = await sendGroupRich(`爹，干完了：${ctx.sessionName}`, content);
     console.log('[knock] ok:', resp);
   } catch (err) {
