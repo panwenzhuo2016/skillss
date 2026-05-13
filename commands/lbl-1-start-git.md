@@ -40,7 +40,8 @@ D:\project\info-gitlab\oa\myfeatrue\260512-分组名单不能确定顺序吗
    ```bash
    git -C "<repo_path>" status --porcelain
    ```
-   - 有输出 → **报错中止**：「<repo> 有未提交改动，请先处理后再跑」
+   - **忽略**未追踪文件（`??` 开头）中文件名以 `merge-to-` 开头的（如 `merge-to-staging.bat`），属于本地脚本
+   - 过滤掉忽略项后仍有输出 → **报错中止**：「<repo> 有未提交改动，请先处理后再跑」
    - 不要自作主张 stash 或丢弃
 
 2. **识别该仓库主分支名**（不同仓库可能不同）：
