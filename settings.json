@@ -70,5 +70,5 @@
   },
   "fastMode": false,
   "language": "chinese",
-  "model": "claude-opus-4-7"
+  "model": "claude-haiku-4-5"
 }
