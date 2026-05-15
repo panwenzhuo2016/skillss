@@ -3,7 +3,16 @@ const fs = require('fs');
 const path = require('path');
 const { gatherContext } = require('./lbl-end-shared');
 
-const HTML_PATH = path.join(__dirname, 'claude-answer-all.html');
+const now = new Date();
+
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const day = String(now.getDate()).padStart(2, '0');
+
+const HTML_PATH = path.join(
+    __dirname,
+    `claude-answer-all-${year}${month}${day}.html`
+);
 
 const HTML_HEAD = `<!doctype html>
 <html lang="zh">
