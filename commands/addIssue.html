@@ -4,99 +4,431 @@
     <meta charset="UTF-8">
     <title>创建需求</title>
     <style>
-        body {
-            font-family: Arial, "Microsoft YaHei", sans-serif;
-            padding: 20px;
-            line-height: 1.6;
+        * {
+            box-sizing: border-box;
         }
 
-        .row {
-            margin-bottom: 16px;
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+            color: #2c3e50;
+            background: #f6f8fa;
+            line-height: 1.65;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        aside {
+            width: 260px;
+            background: #1f2937;
+            color: #cbd5e1;
+            padding: 24px 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        aside h2 {
+            color: #fff;
+            font-size: 15px;
+            padding: 0 24px 14px;
+            margin: 0;
+            border-bottom: 1px solid #374151;
+        }
+
+        aside .section {
+            padding: 18px 24px 6px;
+            color: #9ca3af;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        aside .menu-item {
+            display: block;
+            padding: 7px 24px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 13px;
+            border-left: 3px solid transparent;
+        }
+
+        aside .menu-item.active,
+        aside .menu-item:hover {
+            background: #374151;
+            color: #fff;
+            border-left-color: #3b82f6;
+        }
+
+        aside .path-list {
+            padding: 0 18px 0 24px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+
+        aside .path-list div {
+            margin: 8px 0;
+            padding: 8px 10px;
+            background: rgba(255,255,255,.05);
+            border-radius: 6px;
+            word-break: break-all;
+        }
+
+        aside .path-list strong {
+            color: #fff;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        main {
+            flex: 1;
+            padding: 36px 48px;
+            max-width: 1100px;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin: 0 0 8px;
+            color: #111827;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 28px;
+            font-size: 13.5px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 26px 30px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 22px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::before {
+            content: "";
+            width: 4px;
+            height: 18px;
+            border-radius: 99px;
+            background: #3b82f6;
+            display: inline-block;
+        }
+
+        .form-row {
+            margin-bottom: 20px;
         }
 
         label {
-            display: inline-block;
-            width: 90px;
-            font-weight: bold;
+            display: block;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        select,
+        input[type="text"],
+        textarea {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            color: #111827;
+            background: #fff;
+            outline: none;
+            transition: all .15s;
         }
 
         select {
-            width: 220px;
-            padding: 6px;
-            font-size: 14px;
-        }
-
-        input[type="text"] {
-            width: 600px;
-            padding: 6px;
-            font-size: 14px;
-        }
-
-        textarea {
-            width: 700px;
-            height: 160px;
-            padding: 8px;
-            font-size: 14px;
-        }
-
-        button {
-            padding: 8px 16px;
-            font-size: 14px;
+            max-width: 260px;
             cursor: pointer;
         }
 
-        .path {
-            color: #666;
-            background: #f5f5f5;
-            padding: 6px 10px;
-            display: inline-block;
-            border-radius: 4px;
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+        }
+
+        textarea {
+            min-height: 170px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .path-box {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            padding: 11px 13px;
+            border-radius: 8px;
+            font-family: "JetBrains Mono", Consolas, monospace;
+            font-size: 13px;
+            word-break: break-all;
         }
 
         .tip {
-            color: #999;
+            color: #6b7280;
             font-size: 13px;
+            margin-top: 7px;
+        }
+
+        .tip strong {
+            color: #374151;
+        }
+
+        .warning {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 11px 14px;
+            border-radius: 0 8px 8px 0;
+            color: #78350f;
+            font-size: 13.5px;
+            margin-bottom: 22px;
+        }
+
+        .preview {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e3a8a;
+            padding: 13px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .preview-title {
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .preview-name {
+            font-family: "JetBrains Mono", Consolas, monospace;
+            word-break: break-all;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, .22);
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .badge-project {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-file {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .result {
+            margin-top: 20px;
+            border-radius: 10px;
+            padding: 16px 18px;
+            font-size: 14px;
+        }
+
+        .result-success {
+            background: #ecfdf5;
+            border: 1px solid #bbf7d0;
+            color: #14532d;
+        }
+
+        .result-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #7f1d1d;
+        }
+
+        .result-title {
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .result-line {
+            margin: 4px 0;
+            word-break: break-all;
+        }
+
+        code {
+            background: rgba(0,0,0,.06);
+            color: #be185d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "JetBrains Mono", Consolas, monospace;
+            font-size: 12.5px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                display: block;
+            }
+
+            aside {
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+
+            main {
+                padding: 24px 18px;
+            }
         }
     </style>
 </head>
 <body>
 
-<h2>创建需求</h2>
+<div class="container">
 
-<div class="row">
-    <label>项目：</label>
-    <select id="projectSelect">
-        <option value="oa">oa</option>
-        <option value="hr">hr</option>
-        <option value="collabspace">collabspace</option>
-        <option value="jira">jira</option>
-    </select>
+    <aside>
+        <h2>创建需求工具</h2>
+
+        <div class="section">操作</div>
+        <a class="menu-item active" href="javascript:void(0)">创建需求文件夹</a>
+
+        <div class="section">项目目录</div>
+        <div class="path-list">
+            <div>
+                <strong>oa</strong>
+                D:\project\info-gitlab\oa\myfeatrue
+            </div>
+            <div>
+                <strong>hr</strong>
+                D:\project\info-gitlab\hr\myfeature
+            </div>
+            <div>
+                <strong>collabspace</strong>
+                D:\project\pt-gitlab\collabspace\myfeature
+            </div>
+            <div>
+                <strong>jira</strong>
+                D:\project\pt-gitlab\jira\myfeature
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <h1>创建需求</h1>
+        <p class="subtitle">
+            自动生成：<code>日期-目录名</code> 文件夹，并在里面创建 <code>tt.txt</code>，文件内容为需求文本。
+        </p>
+
+        <div class="warning">
+            注意：浏览器不能自动直接写入固定路径。点击按钮后，需要你在弹出的目录选择框中手动选择页面显示的目标目录。
+        </div>
+
+        <div class="card">
+            <div class="card-title">需求信息</div>
+
+            <div class="form-row">
+                <label for="projectSelect">项目</label>
+                <select id="projectSelect">
+                    <option value="oa">oa</option>
+                    <option value="hr">hr</option>
+                    <option value="collabspace">collabspace</option>
+                    <option value="jira">jira</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label>目标目录</label>
+                <div id="targetPath" class="path-box">D:\project\info-gitlab\oa\myfeatrue</div>
+                <div class="tip">
+                    点击创建时，请在系统弹窗中选择这个目录。
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label for="requirementInput">需求</label>
+                <textarea id="requirementInput" placeholder="请输入需求，例如：申请Jira权限选择通用或X"></textarea>
+            </div>
+
+            <div class="form-row">
+                <label for="folderNameInput">目录名</label>
+                <input id="folderNameInput" type="text" placeholder="目录名会默认使用上面需求里的内容">
+                <div class="tip">
+                    目录名会先默认等于需求内容，你可以再手动修改。非法字符会自动清理：<code>\ / : * ? &quot; &lt; &gt; |</code>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="preview">
+                    <div class="preview-title">最终文件夹预览</div>
+                    <div id="folderPreview" class="preview-name">例如：260514-申请Jira权限选择通用或X</div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="createBtn" class="btn-primary">选择目录并创建需求</button>
+                <button id="resetNameBtn" class="btn-secondary">重新用需求生成目录名</button>
+            </div>
+
+            <div id="result"></div>
+        </div>
+    </main>
+
 </div>
-
-<div class="row">
-    <label>目标目录：</label>
-    <span id="targetPath" class="path">D:\project\info-gitlab\oa\myfeatrue</span>
-</div>
-
-<div class="row">
-    <label>需求：</label>
-
-    <textarea id="requirementInput" placeholder="请输入需求，例如：申请Jira权限选择通用或X"></textarea>
-</div>
-
-<div class="row">
-    <label>目录名：</label>
-    <input id="folderNameInput" type="text" placeholder="目录名会默认使用上面需求里的内容">
-    <div class="tip">
-        目录名会先默认等于需求内容，你可以再手动修改。
-    </div>
-</div>
-
-<div class="row">
-    <button id="createBtn">选择目录并创建需求</button>
-</div>
-
-<div id="result"></div>
 
 <script>
     const projectSelect = document.getElementById('projectSelect');
@@ -104,7 +436,9 @@
     const requirementInput = document.getElementById('requirementInput');
     const folderNameInput = document.getElementById('folderNameInput');
     const createBtn = document.getElementById('createBtn');
+    const resetNameBtn = document.getElementById('resetNameBtn');
     const result = document.getElementById('result');
+    const folderPreview = document.getElementById('folderPreview');
 
     const projectPaths = {
         oa: 'D:\\project\\info-gitlab\\oa\\myfeatrue',
@@ -115,26 +449,35 @@
 
     let folderNameEdited = false;
 
-    // 根据项目切换显示目标目录
+    updatePreview();
+
     projectSelect.addEventListener('change', () => {
         const project = projectSelect.value;
         targetPath.textContent = projectPaths[project];
+        updatePreview();
     });
 
-    // 需求输入时，默认同步到目录名
-    // 如果你手动改过目录名，就不再自动覆盖
     requirementInput.addEventListener('input', () => {
         if (!folderNameEdited) {
             folderNameInput.value = requirementInput.value.trim();
         }
+        updatePreview();
     });
 
     folderNameInput.addEventListener('input', () => {
         folderNameEdited = true;
+        updatePreview();
+    });
+
+    resetNameBtn.addEventListener('click', () => {
+        folderNameInput.value = requirementInput.value.trim();
+        folderNameEdited = false;
+        updatePreview();
     });
 
     createBtn.addEventListener('click', async () => {
         if (!window.showDirectoryPicker) {
+            showError('当前浏览器不支持，请使用 Chrome 或 Edge。');
             alert('当前浏览器不支持，请使用 Chrome 或 Edge');
             return;
         }
@@ -143,6 +486,7 @@
         const requirement = requirementInput.value.trim();
 
         if (!requirement) {
+            showError('请先输入需求内容。');
             alert('请先输入需求内容');
             return;
         }
@@ -153,66 +497,99 @@
             folderName = requirement;
         }
 
-        // 清理目录名中的非法字符
         folderName = sanitizeFileName(folderName);
 
         if (!folderName) {
+            showError('目录名不能为空，或者目录名全是非法字符。');
             alert('目录名不能为空，或者目录名全是非法字符');
             return;
         }
 
         const datePrefix = getYYMMDD();
-
-        // 最终文件夹名，例如：260514-申请Jira权限选择通用或X
         const finalFolderName = `${datePrefix}-${folderName}`;
 
         try {
-            // 注意：
-            // 浏览器不能直接自动进入 projectPaths[project] 这个路径
-            // 需要你在弹窗里手动选择页面显示的目标目录
             const rootHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
                 id: `${project}-myfeature`
             });
 
-            // 创建 日期-目录名 文件夹
             const newFolderHandle = await rootHandle.getDirectoryHandle(finalFolderName, {
                 create: true
             });
 
-            // 创建 tt.txt
             const fileHandle = await newFolderHandle.getFileHandle('tt.txt', {
                 create: true
             });
 
             const writable = await fileHandle.createWritable();
-
-            // tt.txt 内容为需求输入框里的值
             await writable.write(requirementInput.value);
             await writable.close();
 
-            result.innerHTML = `
-          <p style="color: green;">
-            创建成功：${finalFolderName}
-
-            项目：${project}
-
-            目标目录：${projectPaths[project]}
-
-            文件：${finalFolderName}\\tt.txt
-          </p>
-        `;
+            showSuccess({
+                project,
+                targetDir: projectPaths[project],
+                finalFolderName,
+                fileName: 'tt.txt'
+            });
 
             alert('创建成功：' + finalFolderName);
 
         } catch (err) {
             console.error(err);
+            showError('用户取消或创建失败。');
             alert('用户取消或创建失败');
         }
     });
 
-    // 日期格式：YYMMDD
-    // 例如 2026-05-14 => 260514
+    function updatePreview() {
+        let name = folderNameInput.value.trim();
+
+        if (!name) {
+            name = requirementInput.value.trim();
+        }
+
+        name = sanitizeFileName(name);
+
+        if (!name) {
+            folderPreview.textContent = `${getYYMMDD()}-目录名`;
+            return;
+        }
+
+        folderPreview.textContent = `${getYYMMDD()}-${name}`;
+    }
+
+    function showSuccess(data) {
+        result.className = 'result result-success';
+        result.innerHTML = `
+      <div class="result-title">创建成功</div>
+      <div class="result-line">
+        <span class="badge badge-project">项目</span>
+        ${escapeHtml(data.project)}
+      </div>
+      <div class="result-line">
+        <span class="badge badge-project">目标目录</span>
+        ${escapeHtml(data.targetDir)}
+      </div>
+      <div class="result-line">
+        <span class="badge badge-file">文件夹</span>
+        ${escapeHtml(data.finalFolderName)}
+      </div>
+      <div class="result-line">
+        <span class="badge badge-file">文件</span>
+        ${escapeHtml(data.finalFolderName)}\\${escapeHtml(data.fileName)}
+      </div>
+    `;
+    }
+
+    function showError(message) {
+        result.className = 'result result-error';
+        result.innerHTML = `
+      <div class="result-title">操作失败</div>
+      <div class="result-line">${escapeHtml(message)}</div>
+    `;
+    }
+
     function getYYMMDD() {
         const d = new Date();
         const yy = String(d.getFullYear()).slice(-2);
@@ -221,13 +598,21 @@
         return `${yy}${mm}${dd}`;
     }
 
-    // Windows 文件夹名非法字符： \ / : * ? " < > |
     function sanitizeFileName(name) {
         return name
             .replace(/[\\/:*?"<>|]/g, '')
             .replace(/\r?\n/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 </script>
 
