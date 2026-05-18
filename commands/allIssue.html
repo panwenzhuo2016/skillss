@@ -79,7 +79,6 @@
                 </select>
                 <button id="btnAdd" class="btn-primary">新增需求</button>
                 <button id="btnExport" class="btn-ghost">导出 JSON</button>
-                <label class="btn-ghost" for="importFile">导入 JSON</label>
                 <input id="importFile" class="import-input" type="file" accept=".json,application/json" />
                 <div style="margin-left:auto" class="small muted">当前视图：<span id="currentView">全部项目</span></div>
             </div>
@@ -88,6 +87,7 @@
                 <thead>
                 <tr>
                     <th style="width:46px"><input id="selectAll" type="checkbox" title="全选当前页"></th>
+                    <th>项目</th>
                     <th>需求内容</th>
                     <th style="width:160px">创建时间</th>
                     <th style="width:100px">完成</th>
