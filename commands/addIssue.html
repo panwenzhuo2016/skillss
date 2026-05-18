@@ -406,9 +406,9 @@
 
             <div class="form-row">
                 <label for="folderNameInput">目录名</label>
-                <input id="folderNameInput" type="text" placeholder="目录名会默认使用上面需求里的内容">
+                <input id="folderNameInput" type="text" placeholder="目录名会默认使用需求内容的前 20 个字符">
                 <div class="tip">
-                    目录名会先默认等于需求内容，你可以再手动修改。非法字符会自动清理：<code>\ / : * ? &quot; &lt; &gt; |</code>
+                    目录名会先默认等于需求内容的前 20 个字符，你可以再手动修改。非法字符会自动清理：<code>\ / : * ? &quot; &lt; &gt; |</code>
                 </div>
             </div>
 
@@ -459,7 +459,7 @@
 
     requirementInput.addEventListener('input', () => {
         if (!folderNameEdited) {
-            folderNameInput.value = requirementInput.value.trim();
+            folderNameInput.value = getDefaultFolderName(requirementInput.value);
         }
         updatePreview();
     });
@@ -470,7 +470,7 @@
     });
 
     resetNameBtn.addEventListener('click', () => {
-        folderNameInput.value = requirementInput.value.trim();
+        folderNameInput.value = getDefaultFolderName(requirementInput.value);
         folderNameEdited = false;
         updatePreview();
     });
@@ -494,7 +494,7 @@
         let folderName = folderNameInput.value.trim();
 
         if (!folderName) {
-            folderName = requirement;
+            folderName = getDefaultFolderName(requirement);
         }
 
         folderName = sanitizeFileName(folderName);
@@ -546,7 +546,7 @@
         let name = folderNameInput.value.trim();
 
         if (!name) {
-            name = requirementInput.value.trim();
+            name = getDefaultFolderName(requirementInput.value);
         }
 
         name = sanitizeFileName(name);
@@ -596,6 +596,12 @@
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
         return `${yy}${mm}${dd}`;
+    }
+
+    // 默认目录名：取需求内容前 20 个字符
+    // 使用 Array.from 是为了中文、emoji 等字符截取更安全
+    function getDefaultFolderName(text) {
+        return Array.from(text.trim()).slice(0, 20).join('');
     }
 
     function sanitizeFileName(name) {
