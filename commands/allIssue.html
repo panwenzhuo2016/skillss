@@ -137,6 +137,9 @@
     let currentProject = 'all'; // 'all' or project key
     let filteredList = []; // 当前显示数组
 
+    // 行缓存：id -> <tr>，用于增量渲染
+    const rowCache = new Map();
+
     // 初始化侧栏菜单点击
     menuItems.forEach(item => {
         item.addEventListener('click', () => {
@@ -203,9 +206,9 @@
         showStatus('已新增需求');
     }
 
-    // 渲染列表（根据 currentProject、搜索、过滤）
+    // 渲染列表（根据 currentProject、搜索、过滤）——增量渲染版本
     function renderList(){
-        // 构造列表
+        // 1) 构造当前应显示的 list
         let list = [];
         if (currentProject === 'all') {
             PROJECTS.forEach(p => list = list.concat(data[p].map(it => ({...it, project:p}))));
@@ -215,89 +218,162 @@
 
         // 搜索
         const kw = searchInput.value.trim().toLowerCase();
-        if (kw) {
-            list = list.filter(item => item.text.toLowerCase().includes(kw));
-        }
+        if (kw) list = list.filter(item => item.text.toLowerCase().includes(kw));
 
-        // 过滤完成状态
+        // 完成状态筛选
         const fc = filterCompleted.value;
         if (fc === 'done') list = list.filter(i => i.done === true);
         if (fc === 'todo') list = list.filter(i => i.done === false);
 
         filteredList = list;
 
-        // 更新表格
-        reqTbody.innerHTML = '';
+        // 2) 增量更新 tbody
+        patchTable(list);
+
+        // 3) 其他 UI 状态
         if (list.length === 0) {
             emptyBlock.style.display = 'block';
             selectAllCheckbox.checked = false;
             selectAllCheckbox.indeterminate = false;
             statusLine.textContent = '';
-            return;
         } else {
             emptyBlock.style.display = 'none';
+            showStatus(`共 ${list.length} 条匹配`);
         }
 
-        list.forEach(item => {
-            const tr = document.createElement('tr');
+        // 4) 根据当前已勾选情况更新“全选”状态
+        updateSelectAllState();
+    }
 
-            // select checkbox for row
-            const tdSel = document.createElement('td');
-            const cbSel = document.createElement('input');
-            cbSel.type = 'checkbox';
-            cbSel.className = 'checkbox';
-            cbSel.dataset.id = item.id;
-            cbSel.addEventListener('change', onRowSelectChange);
-            tdSel.appendChild(cbSel);
-            tr.appendChild(tdSel);
+    // 对比并打补丁（最小 DOM 变更）
+    function patchTable(items){
+        const nextIds = new Set(items.map(i => i.id));
 
-            // text
-            const tdText = document.createElement('td');
-            const p = document.createElement('div');
-            p.style.marginBottom = '6px';
-            p.textContent = item.text;
-            const meta = document.createElement('div');
-            meta.className = 'small muted';
-            meta.textContent = `项目：${item.project}`;
-            tdText.appendChild(p);
-            tdText.appendChild(meta);
-            tr.appendChild(tdText);
-
-            // createdAt
-            const tdCreated = document.createElement('td');
-            const dt = new Date(item.createdAt);
-            tdCreated.textContent = formatDate(dt);
-            tr.appendChild(tdCreated);
-
-            // done checkbox
-            const tdDone = document.createElement('td');
-            const cbDone = document.createElement('input');
-            cbDone.type = 'checkbox';
-            cbDone.checked = !!item.done;
-            cbDone.addEventListener('change', () => toggleDone(item.project, item.id, cbDone.checked));
-            tdDone.appendChild(cbDone);
-            tr.appendChild(tdDone);
-
-            // actions
-            const tdAct = document.createElement('td');
-            tdAct.className = 'actions';
-            const btnEdit = document.createElement('button');
-            btnEdit.className = 'btn-ghost';
-            btnEdit.textContent = '编辑';
-            btnEdit.addEventListener('click', () => onEdit(item.project, item.id));
-            const btnDelete = document.createElement('button');
-            btnDelete.className = 'btn-ghost';
-            btnDelete.textContent = '删除';
-            btnDelete.addEventListener('click', () => onDelete(item.project, item.id));
-            tdAct.appendChild(btnEdit);
-            tdAct.appendChild(btnDelete);
-            tr.appendChild(tdAct);
-
-            reqTbody.appendChild(tr);
+        // A. 移除不在结果中的旧行
+        rowCache.forEach((row, id) => {
+            if (!nextIds.has(id)) {
+                if (row.parentNode === reqTbody) reqTbody.removeChild(row);
+                rowCache.delete(id);
+            }
         });
 
-        updateSelectAllState();
-        showStatus(`共 ${list.length} 条匹配`);
+        // B. 创建或更新需要的行
+        for (const item of items) {
+            let row = rowCache.get(item.id);
+            if (!row) {
+                row = createRow(item);
+                rowCache.set(item.id, row);
+            }
+            updateRow(row, item);
+        }
+
+        // C. 维护顺序（仅在位置不对时移动）
+        for (let i = 0; i < items.length; i++) {
+            const wantRow = rowCache.get(items[i].id);
+            const curAtI = reqTbody.children[i];
+            if (curAtI !== wantRow) {
+                reqTbody.insertBefore(wantRow, curAtI || null);
+            }
+        }
+    }
+
+    // 创建一行（绑定事件一次即可复用）
+    function createRow(item){
+        const tr = document.createElement('tr');
+        tr.dataset.id = item.id;
+
+        // 选择框（行选择，用于全选）
+        const tdSel = document.createElement('td');
+        const cbSel = document.createElement('input');
+        cbSel.type = 'checkbox';
+        cbSel.className = 'checkbox';
+        cbSel.dataset.id = item.id;
+        cbSel.addEventListener('change', onRowSelectChange);
+        tdSel.appendChild(cbSel);
+        tr.appendChild(tdSel);
+
+        // 文本 + 项目信息（保持原布局：项目放在 muted 元素里）
+        const tdText = document.createElement('td');
+        const p = document.createElement('div');
+        p.style.marginBottom = '6px';
+        p.textContent = item.text;
+        const meta = document.createElement('div');
+        meta.className = 'small muted';
+        meta.textContent = `项目：${item.project}`;
+        tdText.appendChild(p);
+        tdText.appendChild(meta);
+        tr.appendChild(tdText);
+
+        // 创建时间
+        const tdCreated = document.createElement('td');
+        tdCreated.textContent = formatDate(new Date(item.createdAt));
+        tr.appendChild(tdCreated);
+
+        // 完成复选框
+        const tdDone = document.createElement('td');
+        const cbDone = document.createElement('input');
+        cbDone.type = 'checkbox';
+        cbDone.checked = !!item.done;
+        cbDone.addEventListener('change', () => toggleDone(item.project, item.id, cbDone.checked));
+        tdDone.appendChild(cbDone);
+        tr.appendChild(tdDone);
+
+        // 操作
+        const tdAct = document.createElement('td');
+        tdAct.className = 'actions';
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'btn-ghost';
+        btnEdit.textContent = '编辑';
+        btnEdit.addEventListener('click', () => onEdit(item.project, item.id));
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'btn-ghost';
+        btnDelete.textContent = '删除';
+        btnDelete.addEventListener('click', () => onDelete(item.project, item.id));
+        tdAct.appendChild(btnEdit);
+        tdAct.appendChild(btnDelete);
+        tr.appendChild(tdAct);
+
+        // 缓存行内引用，便于后续增量更新
+        tr._els = { cbSel, p, meta, tdCreated, cbDone, btnEdit, btnDelete };
+        tr._data = {}; // 存上一版数据做脏检查
+
+        return tr;
+    }
+
+    // 更新一行（仅变更有差异的字段）
+    function updateRow(tr, item){
+        const els = tr._els || {};
+        const prev = tr._data || {};
+
+        // 文本
+        if (prev.text !== item.text) {
+            els.p.textContent = item.text;
+        }
+
+        // 项目
+        if (prev.project !== item.project) {
+            els.meta.textContent = `项目：${item.project}`;
+        }
+
+        // 创建时间
+        if (prev.createdAt !== item.createdAt) {
+            els.tdCreated.textContent = formatDate(new Date(item.createdAt));
+        }
+
+        // 完成状态
+        const doneNow = !!item.done;
+        if (prev.done !== doneNow) {
+            els.cbDone.checked = doneNow;
+        }
+
+        // 记录最新数据快照
+        tr._data = {
+            id: item.id,
+            text: item.text,
+            project: item.project,
+            createdAt: item.createdAt,
+            done: doneNow
+        };
     }
 
     // 行内选择框改变（用于批量操作的全选逻辑）
@@ -438,8 +514,6 @@
         const tr = ev.target.closest('tr');
         if (!tr) return;
         const cb = tr.querySelector('input[type="checkbox"][class="checkbox"]');
-        const projectCell = tr.querySelector('td:nth-child(2) .small');
-        // 通过文本匹配项目名
         if (!cb) return;
         const idAttr = cb.dataset.id;
         // 找出 item from filteredList
