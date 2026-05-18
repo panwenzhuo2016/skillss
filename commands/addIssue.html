@@ -371,7 +371,7 @@
     <main>
         <h1>创建需求</h1>
         <p class="subtitle">
-            自动生成：<code>日期-目录名</code> 文件夹，并在里面创建 <code>tt.txt</code>，文件内容为需求文本。
+            自动生成：<code>日期-目录名</code> 文件夹，并在里面创建 <code>原始需求.txt</code>，文件内容为需求文本。
         </p>
 
         <div class="warning">
@@ -401,7 +401,7 @@
 
             <div class="form-row">
                 <label for="requirementInput">需求</label>
-                <textarea id="requirementInput" placeholder="请输入需求，例如：申请Jira权限选择通用或X"></textarea>
+                <textarea id="requirementInput" placeholder="请输入需求，例如：用户管理需求"></textarea>
             </div>
 
             <div class="form-row">
@@ -415,7 +415,7 @@
             <div class="form-row">
                 <div class="preview">
                     <div class="preview-title">最终文件夹预览</div>
-                    <div id="folderPreview" class="preview-name">例如：260514-申请Jira权限选择通用或X</div>
+                    <div id="folderPreview" class="preview-name">例如：260514-用户管理需求</div>
                 </div>
             </div>
 
@@ -518,7 +518,7 @@
                 create: true
             });
 
-            const fileHandle = await newFolderHandle.getFileHandle('tt.txt', {
+            const fileHandle = await newFolderHandle.getFileHandle('原始需求.txt', {
                 create: true
             });
 
@@ -530,7 +530,7 @@
                 project,
                 targetDir: projectPaths[project],
                 finalFolderName,
-                fileName: 'tt.txt'
+                fileName: '原始需求.txt'
             });
 
             alert('创建成功：' + finalFolderName);
