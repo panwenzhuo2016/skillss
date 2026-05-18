@@ -83,7 +83,7 @@ function truncateChars(s, n) {
 
 (async () => {
   const ctx = await gatherContext();
-  const summaryLine = ctx.hasText ? ctx.summary : '（无文本回复 / 仅工具调用）';
+  const summaryLine = ctx.hasText ? `「${truncateChars(ctx.summary, 100)}」` : '（无文本回复 / 仅工具调用）';
   const inputLine = `> 我说：${truncateChars(ctx.userInput, 25)}`;
   try {
     const content = inputLine + '\n\n' + summaryLine + '\n\n' + ctx.statsLine;

@@ -31,7 +31,7 @@ function truncateChars(s, n) {
 
 (async () => {
   const ctx = await gatherContext();
-  const summary = ctx.hasText ? ctx.summary : '（无文本回复 / 仅工具调用）';
+  const summary = ctx.hasText ? `「${truncateChars(ctx.summary, 100)}」` : '（无文本回复 / 仅工具调用）';
   const inputLine = `「${truncateChars(ctx.userInput, 25)}」`;
   await sendToast(`爹，干完了：${ctx.sessionName}`, `${inputLine} → ${summary}`, ctx.statsLine);
 })();
