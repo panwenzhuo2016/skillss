@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>创建 OA 文件夹</title>
+    <title>创建需求文件夹</title>
     <style>
         body {
             font-family: Arial, "Microsoft YaHei", sans-serif;
@@ -18,6 +18,12 @@
             display: inline-block;
             width: 90px;
             font-weight: bold;
+        }
+
+        select {
+            width: 220px;
+            padding: 6px;
+            font-size: 14px;
         }
 
         input[type="text"] {
@@ -55,34 +61,34 @@
 </head>
 <body>
 
-<h2>创建 OA 文件夹</h2>
+<h2>创建需求文件夹</h2>
 
 <div class="row">
-    <label>编号：</label>
-    <span>1</span>
-</div>
-
-<div class="row">
-    <label>类型：</label>
-    <span>oa</span>
+    <label>项目：</label>
+    <select id="projectSelect">
+        <option value="oa">oa</option>
+        <option value="hr">hr</option>
+        <option value="collabspace">collabspace</option>
+        <option value="jira">jira</option>
+    </select>
 </div>
 
 <div class="row">
     <label>目标目录：</label>
-    <span class="path">D:\project\info-gitlab\oa\myfeatrue</span>
+    <span id="targetPath" class="path">D:\project\info-gitlab\oa\myfeatrue</span>
 </div>
 
 <div class="row">
-    <label>多行文本：</label>
+    <label>需求：</label>
 
-    <textarea id="contentInput" placeholder="请输入内容，例如：申请Jira权限选择通用或X"></textarea>
+    <textarea id="requirementInput" placeholder="请输入需求，例如：申请Jira权限选择通用或X"></textarea>
 </div>
 
 <div class="row">
     <label>目录名：</label>
-    <input id="folderNameInput" type="text" placeholder="目录名会默认使用上面多行文本的内容">
+    <input id="folderNameInput" type="text" placeholder="目录名会默认使用上面需求里的内容">
     <div class="tip">
-        目录名会先默认等于多行文本内容，你可以再手动修改。
+        目录名会先默认等于需求内容，你可以再手动修改。
     </div>
 </div>
 
@@ -93,18 +99,33 @@
 <div id="result"></div>
 
 <script>
-    const contentInput = document.getElementById('contentInput');
+    const projectSelect = document.getElementById('projectSelect');
+    const targetPath = document.getElementById('targetPath');
+    const requirementInput = document.getElementById('requirementInput');
     const folderNameInput = document.getElementById('folderNameInput');
     const createBtn = document.getElementById('createBtn');
     const result = document.getElementById('result');
 
+    const projectPaths = {
+        oa: 'D:\\project\\info-gitlab\\oa\\myfeatrue',
+        hr: 'D:\\project\\info-gitlab\\hr\\myfeature',
+        collabspace: 'D:\\project\\pt-gitlab\\collabspace\\myfeature',
+        jira: 'D:\\project\\pt-gitlab\\jira\\myfeature'
+    };
+
     let folderNameEdited = false;
 
-    // 多行文本输入时，默认同步到目录名
+    // 根据项目切换显示目标目录
+    projectSelect.addEventListener('change', () => {
+        const project = projectSelect.value;
+        targetPath.textContent = projectPaths[project];
+    });
+
+    // 需求输入时，默认同步到目录名
     // 如果你手动改过目录名，就不再自动覆盖
-    contentInput.addEventListener('input', () => {
+    requirementInput.addEventListener('input', () => {
         if (!folderNameEdited) {
-            folderNameInput.value = contentInput.value.trim();
+            folderNameInput.value = requirementInput.value.trim();
         }
     });
 
@@ -118,17 +139,18 @@
             return;
         }
 
-        const content = contentInput.value.trim();
+        const project = projectSelect.value;
+        const requirement = requirementInput.value.trim();
 
-        if (!content) {
-            alert('请先输入多行文本内容');
+        if (!requirement) {
+            alert('请先输入需求内容');
             return;
         }
 
         let folderName = folderNameInput.value.trim();
 
         if (!folderName) {
-            folderName = content;
+            folderName = requirement;
         }
 
         // 清理目录名中的非法字符
@@ -145,11 +167,12 @@
         const finalFolderName = `${datePrefix}-${folderName}`;
 
         try {
-            // 这里不能直接指定 D:\project\info-gitlab\oa\myfeatrue
-            // 需要用户在弹窗里手动选择这个目录
+            // 注意：
+            // 浏览器不能直接自动进入 projectPaths[project] 这个路径
+            // 需要你在弹窗里手动选择页面显示的目标目录
             const rootHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
-                id: 'oa-myfeature'
+                id: `${project}-myfeature`
             });
 
             // 创建 日期-目录名 文件夹
@@ -157,20 +180,24 @@
                 create: true
             });
 
-            // 在里面创建 tt.txt
+            // 创建 tt.txt
             const fileHandle = await newFolderHandle.getFileHandle('tt.txt', {
                 create: true
             });
 
             const writable = await fileHandle.createWritable();
 
-            // tt.txt 内容为多行文本输入框里的值
-            await writable.write(contentInput.value);
+            // tt.txt 内容为需求输入框里的值
+            await writable.write(requirementInput.value);
             await writable.close();
 
             result.innerHTML = `
           <p style="color: green;">
             创建成功：${finalFolderName}
+
+            项目：${project}
+
+            目标目录：${projectPaths[project]}
 
             文件：${finalFolderName}\\tt.txt
           </p>
