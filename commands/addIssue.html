@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>创建 OA 文件夹</title>
+    <style>
+        body {
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .row {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: inline-block;
+            width: 90px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 600px;
+            padding: 6px;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 700px;
+            height: 160px;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .path {
+            color: #666;
+            background: #f5f5f5;
+            padding: 6px 10px;
+            display: inline-block;
+            border-radius: 4px;
+        }
+
+        .tip {
+            color: #999;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>创建 OA 文件夹</h2>
+
+<div class="row">
+    <label>编号：</label>
+    <span>1</span>
+</div>
+
+<div class="row">
+    <label>类型：</label>
+    <span>oa</span>
+</div>
+
+<div class="row">
+    <label>目标目录：</label>
+    <span class="path">D:\project\info-gitlab\oa\myfeatrue</span>
+</div>
+
+<div class="row">
+    <label>多行文本：</label>
+
+    <textarea id="contentInput" placeholder="请输入内容，例如：申请Jira权限选择通用或X"></textarea>
+</div>
+
+<div class="row">
+    <label>目录名：</label>
+    <input id="folderNameInput" type="text" placeholder="目录名会默认使用上面多行文本的内容">
+    <div class="tip">
+        目录名会先默认等于多行文本内容，你可以再手动修改。
+    </div>
+</div>
+
+<div class="row">
+    <button id="createBtn">选择目录并创建文件夹</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+    const contentInput = document.getElementById('contentInput');
+    const folderNameInput = document.getElementById('folderNameInput');
+    const createBtn = document.getElementById('createBtn');
+    const result = document.getElementById('result');
+
+    let folderNameEdited = false;
+
+    // 多行文本输入时，默认同步到目录名
+    // 如果你手动改过目录名，就不再自动覆盖
+    contentInput.addEventListener('input', () => {
+        if (!folderNameEdited) {
+            folderNameInput.value = contentInput.value.trim();
+        }
+    });
+
+    folderNameInput.addEventListener('input', () => {
+        folderNameEdited = true;
+    });
+
+    createBtn.addEventListener('click', async () => {
+        if (!window.showDirectoryPicker) {
+            alert('当前浏览器不支持，请使用 Chrome 或 Edge');
+            return;
+        }
+
+        const content = contentInput.value.trim();
+
+        if (!content) {
+            alert('请先输入多行文本内容');
+            return;
+        }
+
+        let folderName = folderNameInput.value.trim();
+
+        if (!folderName) {
+            folderName = content;
+        }
+
+        // 清理目录名中的非法字符
+        folderName = sanitizeFileName(folderName);
+
+        if (!folderName) {
+            alert('目录名不能为空，或者目录名全是非法字符');
+            return;
+        }
+
+        const datePrefix = getYYMMDD();
+
+        // 最终文件夹名，例如：260514-申请Jira权限选择通用或X
+        const finalFolderName = `${datePrefix}-${folderName}`;
+
+        try {
+            // 这里不能直接指定 D:\project\info-gitlab\oa\myfeatrue
+            // 需要用户在弹窗里手动选择这个目录
+            const rootHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                id: 'oa-myfeature'
+            });
+
+            // 创建 日期-目录名 文件夹
+            const newFolderHandle = await rootHandle.getDirectoryHandle(finalFolderName, {
+                create: true
+            });
+
+            // 在里面创建 tt.txt
+            const fileHandle = await newFolderHandle.getFileHandle('tt.txt', {
+                create: true
+            });
+
+            const writable = await fileHandle.createWritable();
+
+            // tt.txt 内容为多行文本输入框里的值
+            await writable.write(contentInput.value);
+            await writable.close();
+
+            result.innerHTML = `
+          <p style="color: green;">
+            创建成功：${finalFolderName}
+
+            文件：${finalFolderName}\\tt.txt
+          </p>
+        `;
+
+            alert('创建成功：' + finalFolderName);
+
+        } catch (err) {
+            console.error(err);
+            alert('用户取消或创建失败');
+        }
+    });
+
+    // 日期格式：YYMMDD
+    // 例如 2026-05-14 => 260514
+    function getYYMMDD() {
+        const d = new Date();
+        const yy = String(d.getFullYear()).slice(-2);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yy}${mm}${dd}`;
+    }
+
+    // Windows 文件夹名非法字符： \ / : * ? " < > |
+    function sanitizeFileName(name) {
+        return name
+            .replace(/[\\/:*?"<>|]/g, '')
+            .replace(/\r?\n/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+</script>
+
+</body>
+</html>
