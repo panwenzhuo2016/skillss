@@ -98,9 +98,9 @@
 </div>
 
 <script>
-const API_KEY = 'sk-7bhlww4oak63t7ha8fyt157rbo2jxwtp';
-const API_URL = 'https://api.b.ai/v1/chat/completions';
-const STORAGE_KEY = 'ai_chat_conversations';
+const DDFSDE = 'sk-7bhlww4oak63t7ha8fyt157rbo2jxwtp';
+const NMIDSF = 'https://api.b.ai/v1/chat/completions';
+const GIURGEWF = 'ai_chat_conversations';
 
 const MODELS = [
   { model: "gpt-5.5", label: "GPT-5.5", provider: "OpenAI", priceIn: 5, priceOut: 30, desc: "GPT-5.5 是用于最复杂专业工作的最新前沿模型。" },
@@ -134,7 +134,7 @@ const MODELS = [
 const DEFAULT_MODEL = 'gpt-5-nano';
 
 // 对话管理
-let conversations = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let conversations = JSON.parse(localStorage.getItem(GIURGEWF) || '[]');
 let currentId = null;
 let sending = false;
 
@@ -193,7 +193,7 @@ setModel(DEFAULT_MODEL);
 
 // 对话存储
 function saveConversations() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+  localStorage.setItem(GIURGEWF, JSON.stringify(conversations));
 }
 
 function getConversation(id) {
@@ -328,10 +328,10 @@ async function sendMessage() {
   const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
 
   try {
-    const resp = await fetch(API_URL, {
+    const resp = await fetch(NMIDSF, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
+        'Authorization': `Bearer ${DDFSDE}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
