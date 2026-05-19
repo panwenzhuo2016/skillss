@@ -30,7 +30,7 @@
   .msg.error { align-self: center; background: #ffeaea; color: #c0392b; border: 1px solid #f5c6cb; font-size: 13px; max-width: 90%; }
   .msg .model-tag { font-size: 11px; color: #aaa; margin-bottom: 4px; }
 
-  .typing-indicator { padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; border-bottom-left-radius: 4px; display: none; align-self: flex-start; margin: 0 10%; }
+  .typing-indicator { padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; border-bottom-left-radius: 4px; align-self: flex-start; }
   .typing-indicator span { display: inline-block; width: 8px; height: 8px; background: #ccc; border-radius: 50%; margin: 0 2px; animation: bounce 1.4s infinite ease-in-out; }
   .typing-indicator span:nth-child(1) { animation-delay: 0s; }
   .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
@@ -80,9 +80,6 @@
 <div class="main">
   <div class="chat-container">
     <div class="chat-area" id="chatArea"></div>
-    <div class="typing-indicator" id="typingIndicator">
-      <span></span><span></span><span></span>
-    </div>
     <div class="input-area">
       <textarea id="userInput" placeholder="输入消息… (Enter 发送, Shift+Enter 换行)" rows="1"></textarea>
       <button class="btn-send" id="btnSend" onclick="sendMessage()">发送</button>
@@ -143,7 +140,6 @@ const modelSelect = document.getElementById('modelSelect');
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const btnSend = document.getElementById('btnSend');
-const typingIndicator = document.getElementById('typingIndicator');
 const historyList = document.getElementById('historyList');
 
 // 初始化开发商下拉
@@ -297,6 +293,40 @@ function appendError(text) {
   chatArea.scrollTop = chatArea.scrollHeight;
 }
 
+function showTyping() {
+  const el = document.createElement('div');
+  el.className = 'typing-indicator';
+  el.id = 'typingBubble';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  chatArea.appendChild(el);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typingBubble');
+  if (el) el.remove();
+}
+
+async function callApi(model, apiMessages) {
+  const resp = await fetch(NMIDSF, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${DDFSDE}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: apiMessages,
+      stream: false,
+      temperature: 0.7,
+      max_tokens: 2000,
+    }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error?.message || `API 错误 ${resp.status}`);
+  return data.choices?.[0]?.message?.content;
+}
+
 async function sendMessage() {
   const text = userInput.value.trim();
   if (!text || sending) return;
@@ -308,7 +338,6 @@ async function sendMessage() {
   const modelInfo = MODELS.find(m => m.model === model);
   conv.model = model;
 
-  // 用第一条消息作为对话标题
   if (conv.messages.length === 0) {
     conv.title = text.slice(0, 30) + (text.length > 30 ? '…' : '');
   }
@@ -322,49 +351,38 @@ async function sendMessage() {
   userInput.style.height = '44px';
   sending = true;
   btnSend.disabled = true;
-  typingIndicator.style.display = 'block';
-  chatArea.scrollTop = chatArea.scrollHeight;
+  showTyping();
 
   const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
+  const MAX_RETRY = 10;
 
   try {
-    const resp = await fetch(NMIDSF, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${DDFSDE}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: apiMessages,
-        stream: false,
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok) {
-      appendError(`API 错误 ${resp.status}: ${data.error?.message || JSON.stringify(data)}`);
-      return;
+    let reply = null;
+    for (let i = 0; i < MAX_RETRY; i++) {
+      try {
+        reply = await callApi(model, apiMessages);
+        if (reply) break;
+      } catch (e) {
+        if (i === MAX_RETRY - 1) throw e;
+      }
     }
 
-    const reply = data.choices?.[0]?.message?.content;
+    hideTyping();
+
     if (reply) {
       const label = modelInfo?.label || model;
       conv.messages.push({ role: 'assistant', content: reply, modelLabel: label });
       saveConversations();
       appendMsg('assistant', reply, label);
     } else {
-      appendError('AI 返回了空内容: ' + JSON.stringify(data));
+      appendError('网络不稳定，请稍后再试。');
     }
   } catch (err) {
-    appendError('请求失败: ' + err.message);
+    hideTyping();
+    appendError('网络不稳定，请稍后再试。');
   } finally {
     sending = false;
     btnSend.disabled = false;
-    typingIndicator.style.display = 'none';
     chatArea.scrollTop = chatArea.scrollHeight;
     userInput.focus();
   }
