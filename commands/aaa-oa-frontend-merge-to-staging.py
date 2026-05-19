@@ -83,7 +83,7 @@ def main():
     print(f"已切换回 {source_branch} 分支")
     print("=" * 40)
 
-    input("\n按回车键退出...")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

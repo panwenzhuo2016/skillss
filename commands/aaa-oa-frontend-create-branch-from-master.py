@@ -75,7 +75,7 @@ def main():
     print("当前已切换到该分支，可以开始开发了")
     print("=" * 40)
 
-    input("\n按回车键退出...")
+    sys.exit(0)
 
 
 if __name__ == "__main__":
