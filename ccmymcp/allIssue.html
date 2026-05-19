@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>需求列表 — oa/hr/collabspace/jira</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif; color: #2c3e50; background: #f6f8fa; line-height: 1.65; }
+        .container { display:flex; min-height:100vh; }
+        aside { width:260px; background:#1f2937; color:#cbd5e1; padding:24px 0; position:sticky; top:0; height:100vh; overflow:auto; flex-shrink:0; }
+        aside h2 { color:#fff; font-size:15px; padding:0 24px 12px; margin:0; border-bottom:1px solid #374151; }
+        .section { padding:14px 24px 4px; color:#9ca3af; font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+        .menu-item { display:block; padding:8px 24px; color:#cbd5e1; text-decoration:none; font-size:13px; border-left:3px solid transparent; cursor:pointer; }
+        .menu-item.active, .menu-item:hover { background:#374151; color:#fff; border-left-color:#3b82f6; }
+        .path-list { padding:12px 18px 0 24px; font-size:12px; color:#cbd5e1; }
+        .path-list div { margin:8px 0; padding:8px 10px; background:rgba(255,255,255,.03); border-radius:6px; word-break:break-all; }
+        main { flex:1; padding:28px 40px; max-width:1200px; }
+        h1 { font-size:24px; margin:0 0 8px; color:#111827; }
+        .subtitle { color:#6b7280; margin-bottom:18px; font-size:13.5px; }
+        .card { background:#fff; border-radius:12px; padding:18px 20px; box-shadow:0 6px 18px rgba(15,23,42,.05); border:1px solid #e5e7eb; margin-bottom:18px; }
+        .controls { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+        input[type="text"], select { padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:14px; outline:none; }
+        input[type="text"]:focus, select:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); }
+        button { border:none; border-radius:8px; padding:8px 12px; font-size:14px; cursor:pointer; }
+        .btn-primary { background:#2563eb; color:#fff; font-weight:700; }
+        .btn-ghost { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; }
+        table { width:100%; border-collapse:collapse; font-size:14px; }
+        th, td { padding:10px 12px; border-bottom:1px solid #f3f4f6; vertical-align:middle; text-align:left; }
+        th { background:#fafafa; color:#374151; font-weight:700; }
+        tr:hover td { background:#fbfdff; }
+        .muted { color:#6b7280; font-size:13px; }
+        .small { font-size:13px; color:#6b7280; }
+        .checkbox { width:18px; height:18px; cursor:pointer; }
+        .actions { display:flex; gap:8px; align-items:center; }
+        .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; background:#eef2ff; color:#3730a3; }
+        .pill-released { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; background:#dcfce7; color:#166534; margin-left:8px; vertical-align:middle; font-weight:600; }
+        .pill-current { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; background:#dbeafe; color:#1e40af; margin-left:8px; vertical-align:middle; font-weight:600; }
+        .empty { padding:18px; color:#6b7280; text-align:center; }
+        .result { margin-top:12px; font-size:14px; }
+        .import-input { display:none; }
+        @media (max-width:900px) { .container { display:block } aside { width:100%; height:auto; position:static } main { padding:20px } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <aside>
+        <h2>需求面板</h2>
+        <div class="section">视图</div>
+        <div id="menuAll" class="menu-item active" data-project="all">全部项目</div>
+        <div id="menuOa" class="menu-item" data-project="oa">oa</div>
+        <div id="menuHr" class="menu-item" data-project="hr">hr</div>
+        <div id="menuCollab" class="menu-item" data-project="collabspace">collabspace</div>
+        <div id="menuJira" class="menu-item" data-project="jira">jira</div>
+
+        <div class="section">项目目录</div>
+        <div class="path-list">
+            <div><strong>oa</strong>
+                D:\project\info-gitlab\oa\myfeatrue</div>
+            <div><strong>hr</strong>
+                D:\project\info-gitlab\hr\myfeature</div>
+            <div><strong>collabspace</strong>
+                D:\project\pt-gitlab\collabspace\myfeature</div>
+            <div><strong>jira</strong>
+                D:\project\pt-gitlab\jira\myfeature</div>
+        </div>
+    </aside>
+
+    <main>
+        <h1>需求列表</h1>
+        <p class="subtitle">查看并管理四个项目下的需求。勾选复选框表示"已完成"，支持新增 / 编辑 / 删除 / 导入 / 导出。运行 <code>python sync_issues.py</code> 可从本地文件夹同步需求。</p>
+
+        <div class="card">
+            <div class="controls">
+                <input id="searchInput" type="text" placeholder="搜索需求内容..." style="min-width:220px" />
+                <select id="filterCompleted">
+                    <option value="all">全部（不筛选）</option>
+                    <option value="done">已完成</option>
+                    <option value="todo">未完成</option>
+                </select>
+                <select id="filterStatus">
+                    <option value="all">全部状态</option>
+                    <option value="current">进行中</option>
+                    <option value="released">已上线</option>
+                </select>
+                <button id="btnAdd" class="btn-primary">新增需求</button>
+                <button id="btnExport" class="btn-ghost">导出 JSON</button>
+                <input id="importFile" class="import-input" type="file" accept=".json,application/json" />
+                <div style="margin-left:auto" class="small muted">当前视图：<span id="currentView">全部项目</span></div>
+            </div>
+
+            <table id="reqTable" aria-describedby="reqTableDesc">
+                <thead>
+                <tr>
+                    <th style="width:46px"><input id="selectAll" type="checkbox" title="全选当前页"></th>
+                    <th style="width:100px">项目</th>
+                    <th>需求内容</th>
+                    <th style="width:160px">创建时间</th>
+                    <th style="width:80px">完成</th>
+                    <th style="width:130px">操作</th>
+                </tr>
+                </thead>
+                <tbody id="reqTbody">
+                </tbody>
+            </table>
+
+            <div id="emptyBlock" class="empty" style="display:none">当前没有需求。点击 "新增需求" 添加一条。</div>
+
+            <div class="result" id="statusLine"></div>
+        </div>
+    </main>
+</div>
+
+<script>
+    /* SEED_DATA_START */
+        const SEED_DATA = {
+        "oa": [
+                {
+                        "id": "scan_08b413efb7",
+                        "text": "260518-豪鬼",
+                        "createdAt": "2026-05-18T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_789ef9579b",
+                        "text": "260514-申请Jira权限选择通用或X",
+                        "createdAt": "2026-05-14T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_dea8c5ad3a",
+                        "text": "260513-ask加密",
+                        "createdAt": "2026-05-13T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_cee5813e29",
+                        "text": "260513-01-没法到活水需求申请的页面",
+                        "createdAt": "2026-05-13T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_2a8221fa8c",
+                        "text": "260512-分组名单不能确定顺序吗",
+                        "createdAt": "2026-05-12T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_e84346861a",
+                        "text": "260509-考勤记录这边有两个数据异常麻烦看下是什么问题",
+                        "createdAt": "2026-05-09T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_1e1d6af3cc",
+                        "text": "260509-新增的需求是数据采集平台的需求",
+                        "createdAt": "2026-05-09T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_f2a347751e",
+                        "text": "260508-4月考勤结算后有些问题需要麻烦你看下",
+                        "createdAt": "2026-05-08T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_a7e2b3b8b4",
+                        "text": "260507-数据统计",
+                        "createdAt": "2026-05-07T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_9799dc3729",
+                        "text": "260507-智能日报邮件没发",
+                        "createdAt": "2026-05-07T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_53c5c02ccc",
+                        "text": "260507-艾莎收到的请假和加班汇总，是在哪里配置的啊",
+                        "createdAt": "2026-05-07T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_13c3a0806b",
+                        "text": "260506-SGP台湾办共有5位员工，其中一位点开我的日报只会出现第一张图2个tab；其他4人都能正常出现第二张图4个tab，麻烦帮看看",
+                        "createdAt": "2026-05-06T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_a5c18e0d11",
+                        "text": "260430-给SGP库的员工配了日报功能，现在反馈无法正常添加抄送人",
+                        "createdAt": "2026-04-30T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_8507b1a1cd",
+                        "text": "260430-这个报销审批的附件，可以加一个下载按钮",
+                        "createdAt": "2026-04-30T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_873e9ea0b4",
+                        "text": "260428-注册oa登陆",
+                        "createdAt": "2026-04-28T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_c57a4a1e62",
+                        "text": "0423-ai日报优化",
+                        "createdAt": "2026-04-23T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_05f8f05398",
+                        "text": "0422-ai日报邮件优化",
+                        "createdAt": "2026-04-22T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_eabf1c4e2e",
+                        "text": "0416-AI日报配置",
+                        "createdAt": "2026-04-16T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_2ad153246d",
+                        "text": "0331-AI日报",
+                        "createdAt": "2026-03-31T00:00:00",
+                        "done": true,
+                        "released": true
+                }
+        ],
+        "hr": [
+                {
+                        "id": "scan_9830ac4bd7",
+                        "text": "2055-HR端搜索&页面性能优化",
+                        "createdAt": "2026-05-19T11:49:40.505545",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_6cff369a89",
+                        "text": "260513-hr 归档离职材料这里，麻烦帮加一个编辑入口",
+                        "createdAt": "2026-05-13T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_a8a237bdd2",
+                        "text": "260506-这是hr系统人事补充界面的显示",
+                        "createdAt": "2026-05-06T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_4a788793e8",
+                        "text": "260428-offer审批增加时间筛选",
+                        "createdAt": "2026-04-28T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_6a2a1a335c",
+                        "text": "260427-审批消失问题",
+                        "createdAt": "2026-04-27T00:00:00",
+                        "done": true,
+                        "released": true
+                }
+        ],
+        "collabspace": [
+                {
+                        "id": "scan_8d876c4495",
+                        "text": "1991-后端统一内网空间站成员花名",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_c1cb81a38a",
+                        "text": "2087-消息推送与反馈收集",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_5daee87a3d",
+                        "text": "2093-文档设置权限功能优化",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_bc1ab02e58",
+                        "text": "2101-增加空间站成员变更记录",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_48aa818169",
+                        "text": "2122-空间站文件转移功能优化",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_0d5f249ee5",
+                        "text": "2184-给用户检查给exam",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_9f8f68b3fe",
+                        "text": "2210-空间站公告功能",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_a5de68ed53",
+                        "text": "2263-复制镜像功能优化",
+                        "createdAt": "2026-05-19T11:49:40.506544",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_d689611637",
+                        "text": "260515-PXTL-2517-空间站小组公开邀请链接",
+                        "createdAt": "2026-05-15T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_67d5a5ecf1",
+                        "text": "260515-PXTL-2518-批量添加成员接口优化",
+                        "createdAt": "2026-05-15T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_75351e3d96",
+                        "text": "260515-PXTL-2519-文档分享支持历史版本",
+                        "createdAt": "2026-05-15T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_36239f95ca",
+                        "text": "260429-2414-调整测试和线上部署方式把redis单独拆出来",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_2cb3069d24",
+                        "text": "260429-2415-反馈收集页面支持导出csv",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_58cf144a35",
+                        "text": "260429-2416-空节点列表导致IN子句为空",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_5f39cb5827",
+                        "text": "260429-2417-MQ消费ACK通道关闭",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_72a26c9878",
+                        "text": "260429-2418-权限缓存相关报错",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_5556e5826d",
+                        "text": "260429-2419-getUserByIds空指针",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_52aeb38d55",
+                        "text": "260429-2421-公告功能支持新增开关按钮",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_0decae4c8d",
+                        "text": "260429-2422-复制到内网镜像功能优化",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_0ead0abd5f",
+                        "text": "260429-2423-空间站权限审批优化",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_15cac2f8fc",
+                        "text": "260429-2424-订阅文档更新通知",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_fc9b1238ca",
+                        "text": "260429-2425-新增文档标签支持对文档进行标记分类",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                }
+        ],
+        "jira": [
+                {
+                        "id": "scan_24d1b3a02f",
+                        "text": "260507-2411-版本移入移出模块",
+                        "createdAt": "2026-05-07T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
+                        "id": "scan_e213ca12da",
+                        "text": "260428-2235-批量建单",
+                        "createdAt": "2026-04-28T00:00:00",
+                        "done": true,
+                        "released": true
+                }
+        ]
+};
+        /* SEED_DATA_END */
+
+    /*
+      数据结构（保存在 localStorage，key = "requirementsData_v2"）:
+      {
+        oa: [ { id, text, createdAt, done, released }, ... ],
+        hr: [...],
+        collabspace: [...],
+        jira: [...]
+      }
+    */
+
+    const PROJECTS = ['oa','hr','collabspace','jira'];
+    const STORAGE_KEY = 'requirementsData_v2';
+    const DEFAULT_DATA = { oa:[], hr:[], collabspace:[], jira:[] };
+
+    const menuItems = document.querySelectorAll('.menu-item');
+    const currentViewEl = document.getElementById('currentView');
+    const reqTbody = document.getElementById('reqTbody');
+    const emptyBlock = document.getElementById('emptyBlock');
+    const statusLine = document.getElementById('statusLine');
+    const searchInput = document.getElementById('searchInput');
+    const filterCompleted = document.getElementById('filterCompleted');
+    const filterStatus = document.getElementById('filterStatus');
+    const btnAdd = document.getElementById('btnAdd');
+    const btnExport = document.getElementById('btnExport');
+    const importFile = document.getElementById('importFile');
+    const selectAllCheckbox = document.getElementById('selectAll');
+
+    let data = loadData();
+    let currentProject = 'all';
+    let filteredList = [];
+
+    const rowCache = new Map();
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            menuItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            currentProject = item.getAttribute('data-project') || 'all';
+            currentViewEl.textContent = (currentProject === 'all') ? '全部项目' : currentProject;
+            renderList();
+        });
+    });
+
+    searchInput.addEventListener('input', renderList);
+    filterCompleted.addEventListener('change', renderList);
+    filterStatus.addEventListener('change', renderList);
+    btnAdd.addEventListener('click', onAdd);
+    btnExport.addEventListener('click', onExport);
+    importFile.addEventListener('change', onImport);
+    selectAllCheckbox.addEventListener('change', onSelectAll);
+
+    renderList();
+
+    /* ---- 数据加载与合并 ---- */
+
+    function loadData(){
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            let localData = null;
+            if (raw) {
+                localData = JSON.parse(raw);
+                PROJECTS.forEach(p => { if (!localData[p]) localData[p]=[]; });
+            }
+
+            const hasSeed = typeof SEED_DATA === 'object' && SEED_DATA !== null
+                && PROJECTS.some(p => (SEED_DATA[p] || []).length > 0);
+
+            if (hasSeed) {
+                const merged = mergeSeedWithLocal(SEED_DATA, localData);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                return merged;
+            }
+
+            if (localData) return localData;
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_DATA));
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        } catch (e) {
+            console.error('loadData error', e);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_DATA));
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+    }
+
+    function mergeSeedWithLocal(seed, local){
+        const result = {};
+        PROJECTS.forEach(p => {
+            const seedItems = seed[p] || [];
+            const localItems = local ? (local[p] || []) : [];
+            const localByText = {};
+            localItems.forEach(i => { localByText[i.text] = i; });
+
+            const merged = [];
+            const seenTexts = new Set();
+
+            seedItems.forEach(si => {
+                const li = localByText[si.text];
+                merged.push({
+                    ...si,
+                    done: li ? li.done : si.done,
+                });
+                seenTexts.add(si.text);
+            });
+
+            localItems.forEach(li => {
+                if (!seenTexts.has(li.text)) merged.push(li);
+            });
+
+            result[p] = merged;
+        });
+        return result;
+    }
+
+    function saveData(){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function genId(){
+        return 'id_' + Date.now().toString(36) + '_' + Math.floor(Math.random()*1000).toString(36);
+    }
+
+    /* ---- 新增需求 ---- */
+
+    function onAdd(){
+        const project = (currentProject === 'all') ? 'oa' : currentProject;
+        const text = prompt(`在【${project}】新增需求：\n（输入需求内容）`);
+        if (!text) return;
+        const item = {
+            id: genId(),
+            text: text.trim(),
+            createdAt: new Date().toISOString(),
+            done: false,
+            released: false
+        };
+        data[project].unshift(item);
+        saveData();
+        renderList();
+        showStatus('已新增需求');
+    }
+
+    /* ---- 渲染列表 ---- */
+
+    function renderList(){
+        let list = [];
+        if (currentProject === 'all') {
+            PROJECTS.forEach(p => list = list.concat(data[p].map(it => ({...it, project:p}))));
+        } else {
+            list = data[currentProject].map(it => ({...it, project: currentProject}));
+        }
+
+        const kw = searchInput.value.trim().toLowerCase();
+        if (kw) list = list.filter(item => item.text.toLowerCase().includes(kw));
+
+        const fc = filterCompleted.value;
+        if (fc === 'done') list = list.filter(i => i.done === true);
+        if (fc === 'todo') list = list.filter(i => i.done === false);
+
+        const fs = filterStatus.value;
+        if (fs === 'current') list = list.filter(i => !i.released);
+        if (fs === 'released') list = list.filter(i => i.released);
+
+        filteredList = list;
+
+        patchTable(list);
+
+        if (list.length === 0) {
+            emptyBlock.style.display = 'block';
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+            statusLine.textContent = '';
+        } else {
+            emptyBlock.style.display = 'none';
+            const relCount = list.filter(i => i.released).length;
+            const curCount = list.length - relCount;
+            showStatus(`共 ${list.length} 条（${curCount} 进行中，${relCount} 已上线）`);
+        }
+
+        updateSelectAllState();
+    }
+
+    function patchTable(items){
+        const nextIds = new Set(items.map(i => i.id));
+
+        rowCache.forEach((row, id) => {
+            if (!nextIds.has(id)) {
+                if (row.parentNode === reqTbody) reqTbody.removeChild(row);
+                rowCache.delete(id);
+            }
+        });
+
+        for (const item of items) {
+            let row = rowCache.get(item.id);
+            if (!row) {
+                row = createRow(item);
+                rowCache.set(item.id, row);
+            }
+            updateRow(row, item);
+        }
+
+        for (let i = 0; i < items.length; i++) {
+            const wantRow = rowCache.get(items[i].id);
+            const curAtI = reqTbody.children[i];
+            if (curAtI !== wantRow) {
+                reqTbody.insertBefore(wantRow, curAtI || null);
+            }
+        }
+    }
+
+    /* ---- 行创建与更新 ---- */
+
+    function createRow(item){
+        const tr = document.createElement('tr');
+        tr.dataset.id = item.id;
+
+        // 选择框
+        const tdSel = document.createElement('td');
+        const cbSel = document.createElement('input');
+        cbSel.type = 'checkbox';
+        cbSel.className = 'checkbox';
+        cbSel.dataset.id = item.id;
+        cbSel.addEventListener('change', onRowSelectChange);
+        tdSel.appendChild(cbSel);
+        tr.appendChild(tdSel);
+
+        // 项目名
+        const tdProject = document.createElement('td');
+        tdProject.style.fontWeight = '600';
+        tdProject.style.fontSize = '13px';
+        tdProject.textContent = item.project || '';
+        tr.appendChild(tdProject);
+
+        // 需求内容 + 状态标签
+        const tdText = document.createElement('td');
+        const textSpan = document.createElement('span');
+        textSpan.textContent = item.text;
+        tdText.appendChild(textSpan);
+        const statusBadge = document.createElement('span');
+        statusBadge.className = item.released ? 'pill-released' : 'pill-current';
+        statusBadge.textContent = item.released ? '已上线' : '进行中';
+        tdText.appendChild(statusBadge);
+        tr.appendChild(tdText);
+
+        // 创建时间
+        const tdCreated = document.createElement('td');
+        tdCreated.className = 'small';
+        tdCreated.textContent = formatDate(new Date(item.createdAt));
+        tr.appendChild(tdCreated);
+
+        // 完成复选框
+        const tdDone = document.createElement('td');
+        const cbDone = document.createElement('input');
+        cbDone.type = 'checkbox';
+        cbDone.checked = !!item.done;
+        cbDone.addEventListener('change', () => toggleDone(item.project, item.id, cbDone.checked));
+        tdDone.appendChild(cbDone);
+        tr.appendChild(tdDone);
+
+        // 操作
+        const tdAct = document.createElement('td');
+        tdAct.className = 'actions';
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'btn-ghost';
+        btnEdit.textContent = '编辑';
+        btnEdit.addEventListener('click', () => onEdit(item.project, item.id));
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'btn-ghost';
+        btnDelete.textContent = '删除';
+        btnDelete.addEventListener('click', () => onDelete(item.project, item.id));
+        tdAct.appendChild(btnEdit);
+        tdAct.appendChild(btnDelete);
+        tr.appendChild(tdAct);
+
+        tr._els = { cbSel, tdProject, textSpan, statusBadge, tdCreated, cbDone, btnEdit, btnDelete };
+        tr._data = {};
+
+        return tr;
+    }
+
+    function updateRow(tr, item){
+        const els = tr._els || {};
+        const prev = tr._data || {};
+
+        if (prev.text !== item.text) {
+            els.textSpan.textContent = item.text;
+        }
+
+        if (prev.project !== item.project) {
+            els.tdProject.textContent = item.project || '';
+        }
+
+        if (prev.released !== item.released) {
+            els.statusBadge.className = item.released ? 'pill-released' : 'pill-current';
+            els.statusBadge.textContent = item.released ? '已上线' : '进行中';
+        }
+
+        if (prev.createdAt !== item.createdAt) {
+            els.tdCreated.textContent = formatDate(new Date(item.createdAt));
+        }
+
+        const doneNow = !!item.done;
+        if (prev.done !== doneNow) {
+            els.cbDone.checked = doneNow;
+        }
+
+        tr._data = {
+            id: item.id,
+            text: item.text,
+            project: item.project,
+            createdAt: item.createdAt,
+            done: doneNow,
+            released: !!item.released
+        };
+    }
+
+    /* ---- 全选 ---- */
+
+    function onRowSelectChange(){
+        updateSelectAllState();
+    }
+
+    function updateSelectAllState(){
+        const rows = reqTbody.querySelectorAll('input[type="checkbox"].checkbox');
+        if (rows.length === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+            return;
+        }
+        const checkedCount = Array.from(rows).filter(cb => cb.checked).length;
+        if (checkedCount === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === rows.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    function onSelectAll(){
+        const rows = reqTbody.querySelectorAll('input[type="checkbox"].checkbox');
+        rows.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    }
+
+    /* ---- 增删改 ---- */
+
+    function toggleDone(project, id, done){
+        const list = data[project];
+        const idx = list.findIndex(i => i.id === id);
+        if (idx >= 0) {
+            list[idx].done = !!done;
+            saveData();
+            showStatus('已更新完成状态');
+            const fc = filterCompleted.value;
+            if (fc === 'done' || fc === 'todo') renderList();
+        }
+    }
+
+    function onEdit(project, id){
+        const list = data[project];
+        const idx = list.findIndex(i => i.id === id);
+        if (idx < 0) return;
+        const cur = list[idx];
+        const newText = prompt('编辑需求内容：', cur.text);
+        if (newText == null) return;
+        cur.text = newText.trim();
+        saveData();
+        renderList();
+        showStatus('已保存编辑');
+    }
+
+    function onDelete(project, id){
+        if (!confirm('确认删除该需求？')) return;
+        const list = data[project];
+        const idx = list.findIndex(i => i.id === id);
+        if (idx >= 0) {
+            list.splice(idx,1);
+            saveData();
+            renderList();
+            showStatus('已删除');
+        }
+    }
+
+    /* ---- 导入导出 ---- */
+
+    function onExport(){
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'requirements_backup.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showStatus('已导出 JSON');
+    }
+
+    function onImport(e){
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const parsed = JSON.parse(ev.target.result);
+                if (typeof parsed !== 'object') throw new Error('格式错误');
+                PROJECTS.forEach(p => { if (!Array.isArray(parsed[p])) parsed[p] = []; });
+                data = parsed;
+                saveData();
+                renderList();
+                showStatus('已导入数据');
+                importFile.value = '';
+            } catch (err) {
+                alert('导入失败：文件格式不对');
+                importFile.value = '';
+            }
+        };
+        reader.readAsText(f);
+    }
+
+    /* ---- 工具函数 ---- */
+
+    function formatDate(d){
+        if (!d || !(d instanceof Date) || isNaN(d)) return '';
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const day = String(d.getDate()).padStart(2,'0');
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mm = String(d.getMinutes()).padStart(2,'0');
+        return `${y}-${m}-${day} ${hh}:${mm}`;
+    }
+
+    function showStatus(text){
+        statusLine.textContent = text;
+        setTimeout(()=> {
+            if (statusLine.textContent === text) statusLine.textContent = '';
+        }, 3000);
+    }
+
+    window.addEventListener('beforeunload', saveData);
+
+    reqTbody.addEventListener('dblclick', (ev) => {
+        const tr = ev.target.closest('tr');
+        if (!tr) return;
+        const cb = tr.querySelector('input[type="checkbox"][class="checkbox"]');
+        if (!cb) return;
+        const idAttr = cb.dataset.id;
+        const item = filteredList.find(i => i.id === idAttr);
+        if (item) {
+            toggleDone(item.project, item.id, !item.done);
+            renderList();
+        }
+    });
+
+    searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Escape') { searchInput.value=''; renderList(); }
+    });
+</script>
+
+</body>
+</html>

@@ -71,6 +71,8 @@ def main():
     # 写入需求文件
     file_path = os.path.join(folder_path, "原始需求.txt")
     with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"{date_prefix}-{title} {folder_path}\原始需求.txt\n")
+        f.write(f"\n")
         f.write(f"标题：{title}\n")
         f.write(f"创建时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
         f.write("=" * 40 + "\n\n")

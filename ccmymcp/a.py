@@ -21,6 +21,17 @@ for line in content.splitlines():
                 total += float(line[start + 2:end])
             except ValueError:
                 pass
-        print(line)
+        result = line.split("</span>")[0].split(">")[-1]
+        print(f"花费: '{result}'")
+    if "chip session" in line:
+        start = line.find(" $")
+        end = line.find("</span>")
+        if start != -1 and end != -1 and end > start:
+            try:
+                total += float(line[start + 2:end])
+            except ValueError:
+                pass
+        result = line.split("</span>")[0].split(">")[-1]
+        print(f"项目: '{result}'")
 
 print(total)
