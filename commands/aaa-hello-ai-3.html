@@ -354,7 +354,7 @@ async function sendMessage() {
   showTyping();
 
   const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
-  const MAX_RETRY = 10;
+  const MAX_RETRY = 2;
 
   try {
     let reply = null;
