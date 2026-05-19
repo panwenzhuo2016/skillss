@@ -467,7 +467,7 @@
         /* SEED_DATA_END */
 
     /* SYNC_META_START */
-        const SYNC_META = {"lastSync": "2026-05-19 12:42:33", "added": 0, "modified": 0, "total": 49};
+        const SYNC_META = {"lastSync": "2026-05-19 12:50:05", "added": 0, "modified": 0, "total": 49};
         /* SYNC_META_END */
 
     /*
@@ -481,7 +481,7 @@
     */
 
     const PROJECTS = ['oa','hr','collabspace','jira'];
-    const STORAGE_KEY = 'requirementsData_v2';
+    const STORAGE_KEY = 'requirementsData_v3';
     const DEFAULT_DATA = { oa:[], hr:[], collabspace:[], jira:[] };
 
     const menuItems = document.querySelectorAll('.menu-item');
@@ -550,17 +550,17 @@
 
             if (hasSeed) {
                 const merged = mergeSeedWithLocal(SEED_DATA, localData);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                // localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
                 return merged;
             }
 
             if (localData) return localData;
 
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_DATA));
+            // localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_DATA));
             return JSON.parse(JSON.stringify(DEFAULT_DATA));
         } catch (e) {
             console.error('loadData error', e);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_DATA));
+            // localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_DATA));
             return JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
     }
@@ -595,7 +595,7 @@
     }
 
     function saveData(){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
     function genId(){
