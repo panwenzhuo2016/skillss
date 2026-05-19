@@ -68,14 +68,13 @@
 
     <main>
         <h1>需求列表</h1>
-        <p class="subtitle">查看并管理四个项目下的需求。勾选复选框表示"已完成"，支持新增 / 编辑 / 删除 / 导入 / 导出。运行 <code>python sync_issues.py</code> 可从本地文件夹同步需求。</p>
+        <p class="subtitle">查看四个项目下的需求。支持导入 / 导出。运行 <code>python sync_issues.py</code> 可从本地文件夹同步需求。</p>
 
         <div class="card">
             <div class="controls">
                 <input id="searchInput" type="text" placeholder="搜索需求内容..." style="min-width:220px" />
-                <select id="filterCompleted">
+                <select id="filterCompleted" style="display:none">
                     <option value="all">全部（不筛选）</option>
-                    <option value="done">已完成</option>
                     <option value="todo">未完成</option>
                 </select>
                 <select id="filterStatus">
@@ -83,7 +82,7 @@
                     <option value="current">进行中</option>
                     <option value="released">已上线</option>
                 </select>
-                <button id="btnAdd" class="btn-primary">新增需求</button>
+                <button id="btnAdd" class="btn-primary" style="display:none">新增需求</button>
                 <button id="btnExport" class="btn-ghost">导出 JSON</button>
                 <input id="importFile" class="import-input" type="file" accept=".json,application/json" />
                 <div style="margin-left:auto" class="small muted">当前视图：<span id="currentView">全部项目</span></div>
@@ -96,15 +95,13 @@
                     <th style="width:100px">项目</th>
                     <th>需求内容</th>
                     <th style="width:160px">创建时间</th>
-                    <th style="width:80px">完成</th>
-                    <th style="width:130px">操作</th>
                 </tr>
                 </thead>
                 <tbody id="reqTbody">
                 </tbody>
             </table>
 
-            <div id="emptyBlock" class="empty" style="display:none">当前没有需求。点击 "新增需求" 添加一条。</div>
+            <div id="emptyBlock" class="empty" style="display:none">当前没有需求。</div>
 
             <div class="result" id="statusLine"></div>
         </div>
@@ -709,31 +706,7 @@
         tdCreated.textContent = formatDate(new Date(item.createdAt));
         tr.appendChild(tdCreated);
 
-        // 完成复选框
-        const tdDone = document.createElement('td');
-        const cbDone = document.createElement('input');
-        cbDone.type = 'checkbox';
-        cbDone.checked = !!item.done;
-        cbDone.addEventListener('change', () => toggleDone(item.project, item.id, cbDone.checked));
-        tdDone.appendChild(cbDone);
-        tr.appendChild(tdDone);
-
-        // 操作
-        const tdAct = document.createElement('td');
-        tdAct.className = 'actions';
-        const btnEdit = document.createElement('button');
-        btnEdit.className = 'btn-ghost';
-        btnEdit.textContent = '编辑';
-        btnEdit.addEventListener('click', () => onEdit(item.project, item.id));
-        const btnDelete = document.createElement('button');
-        btnDelete.className = 'btn-ghost';
-        btnDelete.textContent = '删除';
-        btnDelete.addEventListener('click', () => onDelete(item.project, item.id));
-        tdAct.appendChild(btnEdit);
-        tdAct.appendChild(btnDelete);
-        tr.appendChild(tdAct);
-
-        tr._els = { cbSel, tdProject, textSpan, statusBadge, tdCreated, cbDone, btnEdit, btnDelete };
+        tr._els = { cbSel, tdProject, textSpan, statusBadge, tdCreated };
         tr._data = {};
 
         return tr;
@@ -760,17 +733,12 @@
             els.tdCreated.textContent = formatDate(new Date(item.createdAt));
         }
 
-        const doneNow = !!item.done;
-        if (prev.done !== doneNow) {
-            els.cbDone.checked = doneNow;
-        }
-
         tr._data = {
             id: item.id,
             text: item.text,
             project: item.project,
             createdAt: item.createdAt,
-            done: doneNow,
+            done: !!item.done,
             released: !!item.released
         };
     }
