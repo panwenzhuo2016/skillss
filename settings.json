@@ -37,19 +37,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node 'C:/Users/luobeilin/.claude/commands/lbl-end-notify.js'",
+            "command": "python 'C:/Users/luobeilin/.claude/ccmymcp/lbl_end_notify.py'",
             "async": true,
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "node 'C:/Users/luobeilin/.claude/commands/lbl-end-notify-knock.js'",
+            "command": "python 'C:/Users/luobeilin/.claude/ccmymcp/lbl_end_notify_knock.py'",
             "async": true,
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "node 'C:/Users/luobeilin/.claude/commands/lbl-end-answer-log.js'",
+            "command": "python 'C:/Users/luobeilin/.claude/ccmymcp/lbl_end_answer_log.py'",
             "async": true,
             "timeout": 10
           }

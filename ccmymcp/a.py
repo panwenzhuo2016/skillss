@@ -7,7 +7,7 @@ import os
 from datetime import date
 from pathlib import Path
 
-file_path = Path.home() / ".claude" / "commands" / f"claude-answer-all-{date.today().strftime('%Y%m%d')}.html"
+file_path = Path.home() / ".claude" / "ccmymcp" / f"claude-answer-all-{date.today().strftime('%Y%m%d')}.html"
 
 content = file_path.read_text(encoding="utf-8")
 

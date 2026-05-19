@@ -14,5 +14,5 @@ session-env/
 telemetry/
 todos/
 cache/
-commands/claude-answer-all.html
+ccmymcp/claude-answer-all-*.html
 lbl-end-debug.log
