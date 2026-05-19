@@ -6,38 +6,60 @@
 <title>AI Chat</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; height: 100vh; display: flex; flex-direction: column; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-  .toolbar { display: flex; gap: 12px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; align-items: center; flex-shrink: 0; }
+  .toolbar { display: flex; gap: 12px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; align-items: center; flex-shrink: 0; }
   .toolbar select { padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: #fff; min-width: 140px; }
   .toolbar select:focus { outline: none; border-color: #4a90d9; }
-  .toolbar label { font-size: 13px; color: #666; }
-  .toolbar .rank-badge { font-size: 12px; color: #999; margin-left: 4px; }
-  .btn-clear { padding: 6px 14px; border: 1px solid #e74c3c; color: #e74c3c; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; margin-left: auto; }
-  .btn-clear:hover { background: #e74c3c; color: #fff; }
+  .toolbar label { font-size: 13px; color: #666; font-weight: 500; }
 
-  .chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .model-info { padding: 6px 16px; background: #fafafa; border-bottom: 1px solid #e0e0e0; font-size: 12px; color: #666; display: flex; gap: 16px; align-items: center; flex-shrink: 0; }
+  .model-info .price-item { background: #e8f4fd; padding: 2px 8px; border-radius: 4px; color: #2980b9; font-weight: 500; }
+  .model-info .price-item.out { background: #fdf2e8; color: #d35400; }
+  .model-info .desc { flex: 1; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  .msg { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .main { flex: 1; display: flex; overflow: hidden; }
+
+  /* 聊天主区域 */
+  .chat-container { flex: 1; display: flex; flex-direction: column; }
+  .chat-area { flex: 1; overflow-y: auto; padding: 16px 10%; display: flex; flex-direction: column; gap: 12px; }
+
+  .msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
   .msg.user { align-self: flex-end; background: #4a90d9; color: #fff; border-bottom-right-radius: 4px; }
   .msg.assistant { align-self: flex-start; background: #fff; color: #333; border: 1px solid #e0e0e0; border-bottom-left-radius: 4px; }
-  .msg.error { align-self: center; background: #ffeaea; color: #c0392b; border: 1px solid #f5c6cb; font-size: 13px; }
-  .msg .model-tag { font-size: 11px; color: #999; margin-bottom: 4px; }
-  .msg.assistant .model-tag { color: #aaa; }
+  .msg.error { align-self: center; background: #ffeaea; color: #c0392b; border: 1px solid #f5c6cb; font-size: 13px; max-width: 90%; }
+  .msg .model-tag { font-size: 11px; color: #aaa; margin-bottom: 4px; }
 
-  .typing-indicator { align-self: flex-start; padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; border-bottom-left-radius: 4px; display: none; }
+  .typing-indicator { padding: 10px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; border-bottom-left-radius: 4px; display: none; align-self: flex-start; margin: 0 10%; }
   .typing-indicator span { display: inline-block; width: 8px; height: 8px; background: #ccc; border-radius: 50%; margin: 0 2px; animation: bounce 1.4s infinite ease-in-out; }
   .typing-indicator span:nth-child(1) { animation-delay: 0s; }
   .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
   .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes bounce { 0%,80%,100% { transform: scale(0); } 40% { transform: scale(1); } }
 
-  .input-area { display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-top: 1px solid #e0e0e0; flex-shrink: 0; }
+  .input-area { display: flex; gap: 8px; padding: 12px 10%; background: #fff; border-top: 1px solid #e0e0e0; flex-shrink: 0; }
   .input-area textarea { flex: 1; padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; resize: none; height: 44px; max-height: 120px; font-family: inherit; line-height: 1.5; }
   .input-area textarea:focus { outline: none; border-color: #4a90d9; }
   .btn-send { padding: 0 20px; background: #4a90d9; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; white-space: nowrap; }
   .btn-send:hover { background: #357abd; }
   .btn-send:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* 右侧对话历史 */
+  .sidebar { width: 240px; background: #fff; border-left: 1px solid #e0e0e0; display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-header { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+  .btn-new { width: 100%; padding: 8px 0; background: #4a90d9; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .btn-new:hover { background: #357abd; }
+
+  .history-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .history-item { display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #333; margin-bottom: 4px; gap: 6px; }
+  .history-item:hover { background: #f0f0f0; }
+  .history-item.active { background: #e8f4fd; color: #2980b9; }
+  .history-item .title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-item .btn-del { width: 20px; height: 20px; border: none; background: none; color: #ccc; cursor: pointer; font-size: 14px; line-height: 20px; text-align: center; border-radius: 4px; flex-shrink: 0; visibility: hidden; }
+  .history-item:hover .btn-del { visibility: visible; }
+  .history-item .btn-del:hover { background: #ffeaea; color: #e74c3c; }
+
+  .history-empty { text-align: center; color: #ccc; font-size: 13px; padding: 24px 0; }
 </style>
 </head>
 <body>
@@ -47,62 +69,84 @@
   <select id="providerSelect"></select>
   <label>模型</label>
   <select id="modelSelect"></select>
-  <span id="rankInfo" class="rank-badge"></span>
-  <button class="btn-clear" onclick="clearChat()">清空对话</button>
 </div>
 
-<div class="chat-area" id="chatArea">
-  <div class="msg assistant">选择开发商和模型，开始对话吧。</div>
+<div class="model-info" id="modelInfo">
+  <span class="price-item" id="priceIn">输入: -</span>
+  <span class="price-item out" id="priceOut">输出: -</span>
+  <span class="desc" id="modelDesc"></span>
 </div>
 
-<div class="typing-indicator" id="typingIndicator">
-  <span></span><span></span><span></span>
-</div>
+<div class="main">
+  <div class="chat-container">
+    <div class="chat-area" id="chatArea"></div>
+    <div class="typing-indicator" id="typingIndicator">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="input-area">
+      <textarea id="userInput" placeholder="输入消息… (Enter 发送, Shift+Enter 换行)" rows="1"></textarea>
+      <button class="btn-send" id="btnSend" onclick="sendMessage()">发送</button>
+    </div>
+  </div>
 
-<div class="input-area">
-  <textarea id="userInput" placeholder="输入消息… (Enter 发送, Shift+Enter 换行)" rows="1"></textarea>
-  <button class="btn-send" id="btnSend" onclick="sendMessage()">发送</button>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <button class="btn-new" onclick="newConversation()">+ 新建对话</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
 </div>
 
 <script>
 const API_KEY = 'sk-7bhlww4oak63t7ha8fyt157rbo2jxwtp';
 const API_URL = 'https://api.b.ai/v1/chat/completions';
+const STORAGE_KEY = 'ai_chat_conversations';
 
 const MODELS = [
-  { model: "claude-opus-4.7", label: "Claude Opus 4.7", provider: "Anthropic", rank: 1, rankDelta: 0 },
-  { model: "gpt-5.5", label: "GPT-5.5", provider: "OpenAI", rank: 2, rankDelta: 1 },
-  { model: "claude-sonnet-4.6", label: "Claude Sonnet 4.6", provider: "Anthropic", rank: 3, rankDelta: -1 },
-  { model: "claude-haiku-4.5", label: "Claude Haiku 4.5", provider: "Anthropic", rank: 4, rankDelta: 2 },
-  { model: "deepseek-v4-pro", label: "DeepSeek-V4-Pro", provider: "DeepSeek", rank: 5, rankDelta: -1 },
-  { model: "gemini-3.1-pro", label: "Gemini 3.1 pro", provider: "Google", rank: 6, rankDelta: 1 },
-  { model: "gpt-5.2", label: "GPT-5.2", provider: "OpenAI", rank: 7, rankDelta: 9 },
-  { model: "deepseek-v4-flash", label: "DeepSeek-V4-Flash", provider: "DeepSeek", rank: 8, rankDelta: 0 },
-  { model: "claude-opus-4.5", label: "Claude Opus 4.5", provider: "Anthropic", rank: 9, rankDelta: -4 },
-  { model: "gpt-5.4", label: "GPT-5.4", provider: "OpenAI", rank: 10, rankDelta: -1 },
-  { model: "glm-5.1", label: "GLM-5.1", provider: "Zhipu AI", rank: 11, rankDelta: 7 },
-  { model: "glm-5", label: "GLM-5", provider: "Zhipu AI", rank: 12, rankDelta: 2 },
-  { model: "gpt-5.4-nano", label: "GPT-5.4-nano", provider: "OpenAI", rank: 13, rankDelta: -2 },
-  { model: "claude-sonnet-4.5", label: "Claude Sonnet 4.5", provider: "Anthropic", rank: 14, rankDelta: 1 },
-  { model: "gemini-3-flash", label: "Gemini 3 flash", provider: "Google", rank: 15, rankDelta: -5 },
-  { model: "gpt-5-nano", label: "GPT-5-nano", provider: "OpenAI", rank: 16, rankDelta: -4 },
-  { model: "gpt-5-mini", label: "GPT-5-mini", provider: "OpenAI", rank: 17, rankDelta: -4 },
-  { model: "gpt-5.4-mini", label: "GPT-5.4-mini", provider: "OpenAI", rank: 18, rankDelta: 2 },
-  { model: "deepseek-v3.2", label: "DeepSeek-V3.2", provider: "DeepSeek", rank: 19, rankDelta: -2 },
-  { model: "gpt-5.5-instant", label: "GPT-5.5-Instant", provider: "OpenAI", rank: 20, rankDelta: -1 },
+  { model: "gpt-5.5", label: "GPT-5.5", provider: "OpenAI", priceIn: 5, priceOut: 30, desc: "GPT-5.5 是用于最复杂专业工作的最新前沿模型。" },
+  { model: "gpt-5.4", label: "GPT-5.4", provider: "OpenAI", priceIn: 2.5, priceOut: 15, desc: "最前沿的模型，适用于复杂的专业任务。" },
+  { model: "gpt-5.3-codex", label: "GPT-5.3 Codex", provider: "OpenAI", priceIn: 1.75, priceOut: 14, desc: "优化用于 Codex 或类似环境中的代理式编码任务。" },
+  { model: "gpt-5.2", label: "GPT-5.2", provider: "OpenAI", priceIn: 1.75, priceOut: 14, desc: "支持复杂推理，适用于代码密集型或多步骤的代理任务。" },
+  { model: "gpt-5", label: "GPT-5", provider: "OpenAI", priceIn: 1.25, priceOut: 10, desc: "适用于跨领域编码、推理和代理任务的旗舰模型。" },
+  { model: "gpt-5-mini", label: "GPT-5 mini", provider: "OpenAI", priceIn: 0.25, priceOut: 2, desc: "GPT-5 更快更经济的版本，适合明确任务和精确提示。" },
+  { model: "gpt-5-nano", label: "GPT-5 nano", provider: "OpenAI", priceIn: 0.05, priceOut: 0.4, desc: "GPT-5 最快最经济的版本，适合摘要和分类任务。" },
+  { model: "gpt-4.1", label: "GPT-4.1", provider: "OpenAI", priceIn: 2, priceOut: 8, desc: "针对复杂任务的优秀模型，适合跨领域问题解决。" },
+  { model: "gpt-4o", label: "GPT-4o", provider: "OpenAI", priceIn: 2.5, priceOut: 10, desc: "最先进的多模态模型，比 4.0turbo 更快更便宜。" },
+  { model: "gpt-4o-mini", label: "GPT-4o mini", provider: "OpenAI", priceIn: 0.15, priceOut: 0.6, desc: "最便宜的轻量多模态模型，比 3.5turbo 更智能。" },
+  { model: "o4-mini", label: "o4-mini", provider: "OpenAI", priceIn: 1.1, priceOut: 4.4, desc: "最新小型推理模型，在编码和视觉任务中表现卓越。" },
+  { model: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite", provider: "Google", priceIn: 0.25, priceOut: 1.5, desc: "最实惠的 Gemini 3.1 模型，优化用于高流量和大规模数据处理。" },
+  { model: "gemini-3.1-pro", label: "Gemini 3.1 Pro", provider: "Google", priceIn: 2, priceOut: 12, desc: "最先进推理模型，支持文本、音频、图像、视频、PDF、代码库等。" },
+  { model: "gemini-3-flash", label: "Gemini 3 Flash", provider: "Google", priceIn: 0.5, priceOut: 3, desc: "融合 Gemini 3 Pro 推理能力与 Flash 系列的低延迟和高效率。" },
+  { model: "gemini-2.5-flash", label: "Gemini 2.5 Flash", provider: "Google", priceIn: 0.3, priceOut: 2.5, desc: "首个混合推理模型，平衡质量、成本与运行时间。" },
+  { model: "gemini-2.5-pro", label: "Gemini 2.5 Pro", provider: "Google", priceIn: 1.25, priceOut: 10, desc: "最新综合推理模型，在编码、数学和科学领域领先。" },
+  { model: "nano-banana-2", label: "Nano Banana 2", provider: "Google", priceIn: 0.5, priceOut: 3, desc: "最先进的图像生成与编辑模型。" },
+  { model: "nano-banana-pro", label: "Nano Banana Pro", provider: "Google", priceIn: 2, priceOut: 12, desc: "最新图像生成模型，生成精准、细致、丰富的图像结果。" },
+  { model: "deepseek-chat", label: "DeepSeek Chat 满血版", provider: "DeepSeek", priceIn: 0.28, priceOut: 1.1, desc: "多轮对话和自然语言生成，低成本高通用性。(不支持图片/联网)" },
+  { model: "deepseek-reasoner", label: "DeepSeek R1 满血版", provider: "DeepSeek", priceIn: 0.55, priceOut: 2.2, desc: "专长复杂逻辑推理、数学问题和复杂问题解决。(不支持图片/联网)" },
+  { model: "deepseek-v3.2", label: "DeepSeek V3.2", provider: "DeepSeek", priceIn: 0.55, priceOut: 1.65, desc: "平衡推理能力与输出长度，适合日常使用。" },
+  { model: "claude-opus-4.7", label: "Claude Opus 4.7", provider: "Anthropic", priceIn: 5, priceOut: 25, desc: "用于构建代理和编写代码的最智能模型。" },
+  { model: "claude-sonnet-4.6", label: "Claude Sonnet 4.6", provider: "Anthropic", priceIn: 3, priceOut: 15, desc: "在智能、成本和速度之间实现最佳平衡。" },
+  { model: "claude-haiku-4.5", label: "Claude Haiku 4.5", provider: "Anthropic", priceIn: 1, priceOut: 5, desc: "Claude 中速度最快，成本效益最高的模型。" },
+  { model: "grok-4.20", label: "Grok 4.20", provider: "Grok", priceIn: 2, priceOut: 6, desc: "最新最强旗舰模型，自然语言、数学和推理最佳性能。" },
+  { model: "grok-4.1-fast", label: "Grok 4.1 Fast", provider: "Grok", priceIn: 0.2, priceOut: 0.5, desc: "针对高性能代理工具调用优化的前沿多模态模型。" },
 ];
 
-let messages = [];
+const DEFAULT_MODEL = 'gpt-5-nano';
+
+// 对话管理
+let conversations = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let currentId = null;
 let sending = false;
 
 const providerSelect = document.getElementById('providerSelect');
 const modelSelect = document.getElementById('modelSelect');
-const rankInfo = document.getElementById('rankInfo');
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const btnSend = document.getElementById('btnSend');
 const typingIndicator = document.getElementById('typingIndicator');
+const historyList = document.getElementById('historyList');
 
-// 按开发商分组
+// 初始化开发商下拉
 const providers = [...new Set(MODELS.map(m => m.provider))];
 providers.forEach(p => {
   const opt = document.createElement('option');
@@ -111,43 +155,125 @@ providers.forEach(p => {
   providerSelect.appendChild(opt);
 });
 
-providerSelect.addEventListener('change', updateModels);
-modelSelect.addEventListener('change', updateRankInfo);
+providerSelect.addEventListener('change', () => { updateModels(); updateModelInfo(); });
+modelSelect.addEventListener('change', updateModelInfo);
 
-function updateModels() {
+function updateModels(targetModel) {
   const provider = providerSelect.value;
   const filtered = MODELS.filter(m => m.provider === provider);
   modelSelect.innerHTML = '';
   filtered.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.model;
-    opt.textContent = `#${m.rank} ${m.label}`;
+    opt.textContent = `${m.label}  ($${m.priceIn} / $${m.priceOut})`;
+    if (m.model === targetModel) opt.selected = true;
     modelSelect.appendChild(opt);
   });
-  updateRankInfo();
 }
 
-function updateRankInfo() {
+function updateModelInfo() {
   const m = MODELS.find(x => x.model === modelSelect.value);
-  if (!m) { rankInfo.textContent = ''; return; }
-  const arrow = m.rankDelta > 0 ? `↑${m.rankDelta}` : m.rankDelta < 0 ? `↓${Math.abs(m.rankDelta)}` : '–';
-  rankInfo.textContent = `排名 #${m.rank} (${arrow})`;
+  if (!m) return;
+  document.getElementById('priceIn').textContent = `输入: $${m.priceIn}/1M`;
+  document.getElementById('priceOut').textContent = `输出: $${m.priceOut}/1M`;
+  document.getElementById('modelDesc').textContent = m.desc;
 }
 
-updateModels();
+function setModel(modelId) {
+  const m = MODELS.find(x => x.model === modelId);
+  if (!m) return;
+  providerSelect.value = m.provider;
+  updateModels(modelId);
+  modelSelect.value = modelId;
+  updateModelInfo();
+}
 
-// 自动调整 textarea 高度
-userInput.addEventListener('input', () => {
-  userInput.style.height = '44px';
-  userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
-});
+// 默认选 GPT-5 nano
+setModel(DEFAULT_MODEL);
 
-userInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
+// 对话存储
+function saveConversations() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+}
+
+function getConversation(id) {
+  return conversations.find(c => c.id === id);
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function newConversation() {
+  const conv = {
+    id: generateId(),
+    title: '新对话',
+    model: modelSelect.value,
+    messages: [],
+    createdAt: Date.now(),
+  };
+  conversations.unshift(conv);
+  saveConversations();
+  switchTo(conv.id);
+}
+
+function switchTo(id) {
+  currentId = id;
+  const conv = getConversation(id);
+  if (!conv) return;
+
+  setModel(conv.model);
+  renderChat(conv);
+  renderHistory();
+  userInput.focus();
+}
+
+function deleteConversation(id, e) {
+  e.stopPropagation();
+  conversations = conversations.filter(c => c.id !== id);
+  saveConversations();
+  if (currentId === id) {
+    if (conversations.length > 0) {
+      switchTo(conversations[0].id);
+    } else {
+      newConversation();
+    }
+  } else {
+    renderHistory();
   }
-});
+}
+
+function renderChat(conv) {
+  chatArea.innerHTML = '';
+  if (conv.messages.length === 0) {
+    appendMsg('assistant', '开始新对话吧！');
+    return;
+  }
+  conv.messages.forEach(m => {
+    appendMsg(m.role, m.content, m.role === 'assistant' ? m.modelLabel : undefined);
+  });
+}
+
+function renderHistory() {
+  historyList.innerHTML = '';
+  if (conversations.length === 0) {
+    historyList.innerHTML = '<div class="history-empty">暂无对话</div>';
+    return;
+  }
+  conversations.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'history-item' + (c.id === currentId ? ' active' : '');
+    div.onclick = () => switchTo(c.id);
+    div.innerHTML = `<span class="title">${escapeHtml(c.title)}</span><button class="btn-del" title="删除" onclick="deleteConversation('${c.id}', event)">&times;</button>`;
+    historyList.appendChild(div);
+  });
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
 
 function appendMsg(role, content, modelLabel) {
   const div = document.createElement('div');
@@ -158,11 +284,9 @@ function appendMsg(role, content, modelLabel) {
     tag.textContent = modelLabel;
     div.appendChild(tag);
   }
-  const text = document.createTextNode(content);
-  div.appendChild(text);
+  div.appendChild(document.createTextNode(content));
   chatArea.appendChild(div);
   chatArea.scrollTop = chatArea.scrollHeight;
-  return div;
 }
 
 function appendError(text) {
@@ -173,20 +297,26 @@ function appendError(text) {
   chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-function clearChat() {
-  messages = [];
-  chatArea.innerHTML = '<div class="msg assistant">对话已清空，重新开始吧。</div>';
-}
-
 async function sendMessage() {
   const text = userInput.value.trim();
   if (!text || sending) return;
 
+  const conv = getConversation(currentId);
+  if (!conv) return;
+
   const model = modelSelect.value;
   const modelInfo = MODELS.find(m => m.model === model);
+  conv.model = model;
+
+  // 用第一条消息作为对话标题
+  if (conv.messages.length === 0) {
+    conv.title = text.slice(0, 30) + (text.length > 30 ? '…' : '');
+  }
 
   appendMsg('user', text);
-  messages.push({ role: 'user', content: text });
+  conv.messages.push({ role: 'user', content: text });
+  saveConversations();
+  renderHistory();
 
   userInput.value = '';
   userInput.style.height = '44px';
@@ -194,6 +324,8 @@ async function sendMessage() {
   btnSend.disabled = true;
   typingIndicator.style.display = 'block';
   chatArea.scrollTop = chatArea.scrollHeight;
+
+  const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
 
   try {
     const resp = await fetch(API_URL, {
@@ -204,7 +336,7 @@ async function sendMessage() {
       },
       body: JSON.stringify({
         model,
-        messages: [...messages],
+        messages: apiMessages,
         stream: false,
         temperature: 0.7,
         max_tokens: 2000,
@@ -220,8 +352,10 @@ async function sendMessage() {
 
     const reply = data.choices?.[0]?.message?.content;
     if (reply) {
-      messages.push({ role: 'assistant', content: reply });
-      appendMsg('assistant', reply, modelInfo?.label || model);
+      const label = modelInfo?.label || model;
+      conv.messages.push({ role: 'assistant', content: reply, modelLabel: label });
+      saveConversations();
+      appendMsg('assistant', reply, label);
     } else {
       appendError('AI 返回了空内容: ' + JSON.stringify(data));
     }
@@ -236,7 +370,25 @@ async function sendMessage() {
   }
 }
 
-userInput.focus();
+// textarea 自适应高度
+userInput.addEventListener('input', () => {
+  userInput.style.height = '44px';
+  userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+});
+
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// 初始化：如果没有对话就创建一个
+if (conversations.length === 0) {
+  newConversation();
+} else {
+  switchTo(conversations[0].id);
+}
 </script>
 </body>
 </html>
