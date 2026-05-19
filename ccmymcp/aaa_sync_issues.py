@@ -4,9 +4,8 @@
 【AI逻辑总结】
 ① 扫描 oa/hr/collabspace/jira 四个项目的 myfeature 目录，收集数字开头的 issue 文件夹
 ② 同时扫描"已上线"和"上线中"子目录，已上线标记 released=True，上线中仍算进行中
-③ 从文件夹名解析日期（支持 YYMMDD 和 MMDD 格式）作为 createdAt
-④ 从 allIssue.html 提取已有 SEED_DATA 做增量合并：新文件夹加入、released 状态同步、保留 done 状态
-⑤ 合并结果按 createdAt 降序排列，写回 allIssue.html 的 SEED_DATA 区域
+③ 用文件夹最后修改时间作为 createdAt；已有项保留原 createdAt 不变，保证重复运行幂等
+④ 增量合并后输出新增/修改/不变的条数，写回 allIssue.html 的 SEED_DATA 和 SYNC_META 区域
 """
 
 import os
@@ -28,6 +27,8 @@ HTML_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'allIssue.h
 
 SEED_START = '/* SEED_DATA_START */'
 SEED_END = '/* SEED_DATA_END */'
+META_START = '/* SYNC_META_START */'
+META_END = '/* SYNC_META_END */'
 
 
 def gen_id(project, name):
@@ -35,18 +36,9 @@ def gen_id(project, name):
     return f'scan_{h}'
 
 
-def parse_date(name):
-    m = re.match(r'^(\d{2})(\d{2})(\d{2})-', name)
-    if m:
-        yy, mm, dd = int(m.group(1)), int(m.group(2)), int(m.group(3))
-        if 1 <= mm <= 12 and 1 <= dd <= 31:
-            return f'20{yy:02d}-{mm:02d}-{dd:02d}T00:00:00'
-    m = re.match(r'^(\d{2})(\d{2})-', name)
-    if m:
-        mm, dd = int(m.group(1)), int(m.group(2))
-        if 1 <= mm <= 12 and 1 <= dd <= 31:
-            return f'{datetime.now().year}-{mm:02d}-{dd:02d}T00:00:00'
-    return None
+def folder_mtime_iso(path):
+    ts = os.path.getmtime(path)
+    return datetime.fromtimestamp(ts).strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def scan_dir(base_dir, released):
@@ -61,7 +53,7 @@ def scan_dir(base_dir, released):
             continue
         if not re.match(r'^\d+[-]', name):
             continue
-        items.append((name, released))
+        items.append((name, released, full))
     return items
 
 
@@ -74,12 +66,11 @@ def scan_all():
         folders += scan_dir(os.path.join(base_dir, '上线中'), released=False)
 
         items = []
-        for name, rel in folders:
-            date_str = parse_date(name) or datetime.now().isoformat()
+        for name, rel, full_path in folders:
             items.append({
                 'id': gen_id(project, name),
                 'text': name,
-                'createdAt': date_str,
+                'createdAt': folder_mtime_iso(full_path),
                 'done': rel,
                 'released': rel,
             })
@@ -108,39 +99,75 @@ def read_existing_seed():
 
 
 def merge(existing, scanned):
+    stats = {'added': 0, 'modified': 0, 'unchanged': 0}
     result = {}
     for project in PROJECTS:
         scanned_items = scanned.get(project, [])
         existing_items = existing.get(project, [])
-        done_map = {it['text']: it.get('done', False) for it in existing_items}
+        existing_map = {it['text']: it for it in existing_items}
 
         merged = []
         for item in scanned_items:
-            if item['text'] in done_map and not item['released']:
-                item['done'] = done_map[item['text']]
+            ex = existing_map.get(item['text'])
+            if ex:
+                changed = ex.get('released') != item['released']
+                if changed:
+                    stats['modified'] += 1
+                else:
+                    stats['unchanged'] += 1
+                item['createdAt'] = ex['createdAt']
+                if not item['released']:
+                    item['done'] = ex.get('done', False)
+            else:
+                stats['added'] += 1
             merged.append(item)
         result[project] = merged
-    return result
+    return result, stats
 
 
-def write_to_html(data):
+def write_to_html(data, stats):
     with open(HTML_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
 
     json_str = json.dumps(data, ensure_ascii=False, indent=8)
-    new_block = f"""{SEED_START}
+    new_seed = f"""{SEED_START}
         const SEED_DATA = {json_str};
         {SEED_END}"""
 
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    total = stats['added'] + stats['modified'] + stats['unchanged']
+    meta_obj = {
+        'lastSync': now_str,
+        'added': stats['added'],
+        'modified': stats['modified'],
+        'total': total,
+    }
+    meta_json = json.dumps(meta_obj, ensure_ascii=False)
+    new_meta = f"""{META_START}
+        const SYNC_META = {meta_json};
+        {META_END}"""
+
+    # SEED_DATA
     start = content.find(SEED_START)
     end = content.find(SEED_END)
     if start >= 0 and end >= 0:
-        content = content[:start] + new_block + content[end + len(SEED_END):]
+        content = content[:start] + new_seed + content[end + len(SEED_END):]
     else:
         content = content.replace(
             '<script>\n    /*\n',
-            f'<script>\n    {new_block}\n\n    /*\n',
+            f'<script>\n    {new_seed}\n\n    /*\n',
         )
+
+    # SYNC_META
+    ms = content.find(META_START)
+    me = content.find(META_END)
+    if ms >= 0 and me >= 0:
+        content = content[:ms] + new_meta + content[me + len(META_END):]
+    else:
+        seed_end_pos = content.find(SEED_END)
+        if seed_end_pos >= 0:
+            insert_at = seed_end_pos + len(SEED_END)
+            content = content[:insert_at] + '\n\n    ' + new_meta + content[insert_at:]
 
     with open(HTML_FILE, 'w', encoding='utf-8') as f:
         f.write(content)
@@ -149,10 +176,11 @@ def write_to_html(data):
 def main():
     scanned = scan_all()
     existing = read_existing_seed()
-    merged = merge(existing, scanned)
-    write_to_html(merged)
+    merged, stats = merge(existing, scanned)
+    write_to_html(merged, stats)
 
     print(f'已更新: {HTML_FILE}')
+    print(f'  新增: {stats["added"]} 条，更新: {stats["modified"]} 条，不变: {stats["unchanged"]} 条')
     total = 0
     for p in PROJECTS:
         items = merged.get(p, [])

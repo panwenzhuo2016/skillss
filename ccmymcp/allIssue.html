@@ -68,7 +68,8 @@
 
     <main>
         <h1>需求列表</h1>
-        <p class="subtitle">查看四个项目下的需求。支持导入 / 导出。运行 <code>python sync_issues.py</code> 可从本地文件夹同步需求。</p>
+        <p class="subtitle">查看四个项目下的需求。支持导入 / 导出。运行 <code>python aaa_sync_issues.py</code> 可从本地文件夹同步需求。</p>
+        <p id="syncInfo" class="subtitle" style="font-size:12px;color:#9ca3af;margin-top:-12px;display:none"></p>
 
         <div class="card">
             <div class="controls">
@@ -127,6 +128,13 @@
                         "released": true
                 },
                 {
+                        "id": "scan_e84346861a",
+                        "text": "260509-考勤记录这边有两个数据异常麻烦看下是什么问题",
+                        "createdAt": "2026-05-09T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
                         "id": "scan_dea8c5ad3a",
                         "text": "260513-ask加密",
                         "createdAt": "2026-05-13T00:00:00",
@@ -148,13 +156,6 @@
                         "released": true
                 },
                 {
-                        "id": "scan_e84346861a",
-                        "text": "260509-考勤记录这边有两个数据异常麻烦看下是什么问题",
-                        "createdAt": "2026-05-09T00:00:00",
-                        "done": false,
-                        "released": false
-                },
-                {
                         "id": "scan_1e1d6af3cc",
                         "text": "260509-新增的需求是数据采集平台的需求",
                         "createdAt": "2026-05-09T00:00:00",
@@ -169,15 +170,15 @@
                         "released": true
                 },
                 {
-                        "id": "scan_a7e2b3b8b4",
-                        "text": "260507-数据统计",
+                        "id": "scan_9799dc3729",
+                        "text": "260507-智能日报邮件没发",
                         "createdAt": "2026-05-07T00:00:00",
                         "done": true,
                         "released": true
                 },
                 {
-                        "id": "scan_9799dc3729",
-                        "text": "260507-智能日报邮件没发",
+                        "id": "scan_a7e2b3b8b4",
+                        "text": "260507-数据统计",
                         "createdAt": "2026-05-07T00:00:00",
                         "done": true,
                         "released": true
@@ -197,13 +198,6 @@
                         "released": true
                 },
                 {
-                        "id": "scan_a5c18e0d11",
-                        "text": "260430-给SGP库的员工配了日报功能，现在反馈无法正常添加抄送人",
-                        "createdAt": "2026-04-30T00:00:00",
-                        "done": true,
-                        "released": true
-                },
-                {
                         "id": "scan_8507b1a1cd",
                         "text": "260430-这个报销审批的附件，可以加一个下载按钮",
                         "createdAt": "2026-04-30T00:00:00",
@@ -211,9 +205,9 @@
                         "released": true
                 },
                 {
-                        "id": "scan_873e9ea0b4",
-                        "text": "260428-注册oa登陆",
-                        "createdAt": "2026-04-28T00:00:00",
+                        "id": "scan_a5c18e0d11",
+                        "text": "260430-给SGP库的员工配了日报功能，现在反馈无法正常添加抄送人",
+                        "createdAt": "2026-04-30T00:00:00",
                         "done": true,
                         "released": true
                 },
@@ -221,6 +215,13 @@
                         "id": "scan_c57a4a1e62",
                         "text": "0423-ai日报优化",
                         "createdAt": "2026-04-23T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_873e9ea0b4",
+                        "text": "260428-注册oa登陆",
+                        "createdAt": "2026-04-28T00:00:00",
                         "done": true,
                         "released": true
                 },
@@ -248,13 +249,6 @@
         ],
         "hr": [
                 {
-                        "id": "scan_9830ac4bd7",
-                        "text": "2055-HR端搜索&页面性能优化",
-                        "createdAt": "2026-05-19T12:06:28.711889",
-                        "done": true,
-                        "released": true
-                },
-                {
                         "id": "scan_6cff369a89",
                         "text": "260513-hr 归档离职材料这里，麻烦帮加一个编辑入口",
                         "createdAt": "2026-05-13T00:00:00",
@@ -269,6 +263,13 @@
                         "released": true
                 },
                 {
+                        "id": "scan_6a2a1a335c",
+                        "text": "260427-审批消失问题",
+                        "createdAt": "2026-04-27T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
                         "id": "scan_4a788793e8",
                         "text": "260428-offer审批增加时间筛选",
                         "createdAt": "2026-04-28T00:00:00",
@@ -276,70 +277,14 @@
                         "released": true
                 },
                 {
-                        "id": "scan_6a2a1a335c",
-                        "text": "260427-审批消失问题",
-                        "createdAt": "2026-04-27T00:00:00",
+                        "id": "scan_9830ac4bd7",
+                        "text": "2055-HR端搜索&页面性能优化",
+                        "createdAt": "2026-05-19T12:34:40.800033",
                         "done": true,
                         "released": true
                 }
         ],
         "collabspace": [
-                {
-                        "id": "scan_9f8f68b3fe",
-                        "text": "2210-空间站公告功能",
-                        "createdAt": "2026-05-19T12:06:28.713887",
-                        "done": true,
-                        "released": true
-                },
-                {
-                        "id": "scan_a5de68ed53",
-                        "text": "2263-复制镜像功能优化",
-                        "createdAt": "2026-05-19T12:06:28.713887",
-                        "done": true,
-                        "released": true
-                },
-                {
-                        "id": "scan_8d876c4495",
-                        "text": "1991-后端统一内网空间站成员花名",
-                        "createdAt": "2026-05-19T12:06:28.712913",
-                        "done": false,
-                        "released": false
-                },
-                {
-                        "id": "scan_c1cb81a38a",
-                        "text": "2087-消息推送与反馈收集",
-                        "createdAt": "2026-05-19T12:06:28.712913",
-                        "done": true,
-                        "released": true
-                },
-                {
-                        "id": "scan_5daee87a3d",
-                        "text": "2093-文档设置权限功能优化",
-                        "createdAt": "2026-05-19T12:06:28.712913",
-                        "done": true,
-                        "released": true
-                },
-                {
-                        "id": "scan_bc1ab02e58",
-                        "text": "2101-增加空间站成员变更记录",
-                        "createdAt": "2026-05-19T12:06:28.712913",
-                        "done": true,
-                        "released": true
-                },
-                {
-                        "id": "scan_48aa818169",
-                        "text": "2122-空间站文件转移功能优化",
-                        "createdAt": "2026-05-19T12:06:28.712913",
-                        "done": true,
-                        "released": true
-                },
-                {
-                        "id": "scan_0d5f249ee5",
-                        "text": "2184-给用户检查给exam",
-                        "createdAt": "2026-05-19T12:06:28.712913",
-                        "done": true,
-                        "released": true
-                },
                 {
                         "id": "scan_f2d954dfd6",
                         "text": "260519-移动文件报错",
@@ -355,6 +300,13 @@
                         "released": false
                 },
                 {
+                        "id": "scan_75351e3d96",
+                        "text": "260515-PXTL-2519-文档分享支持历史版本",
+                        "createdAt": "2026-05-15T00:00:00",
+                        "done": false,
+                        "released": false
+                },
+                {
                         "id": "scan_67d5a5ecf1",
                         "text": "260515-PXTL-2518-批量添加成员接口优化",
                         "createdAt": "2026-05-15T00:00:00",
@@ -362,11 +314,11 @@
                         "released": false
                 },
                 {
-                        "id": "scan_75351e3d96",
-                        "text": "260515-PXTL-2519-文档分享支持历史版本",
-                        "createdAt": "2026-05-15T00:00:00",
-                        "done": false,
-                        "released": false
+                        "id": "scan_0decae4c8d",
+                        "text": "260429-2422-复制到内网镜像功能优化",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
                 },
                 {
                         "id": "scan_36239f95ca",
@@ -376,8 +328,15 @@
                         "released": true
                 },
                 {
-                        "id": "scan_2cb3069d24",
-                        "text": "260429-2415-反馈收集页面支持导出csv",
+                        "id": "scan_15cac2f8fc",
+                        "text": "260429-2424-订阅文档更新通知",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_0ead0abd5f",
+                        "text": "260429-2423-空间站权限审批优化",
                         "createdAt": "2026-04-29T00:00:00",
                         "done": true,
                         "released": true
@@ -385,6 +344,27 @@
                 {
                         "id": "scan_58cf144a35",
                         "text": "260429-2416-空节点列表导致IN子句为空",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_fc9b1238ca",
+                        "text": "260429-2425-新增文档标签支持对文档进行标记分类",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_52aeb38d55",
+                        "text": "260429-2421-公告功能支持新增开关按钮",
+                        "createdAt": "2026-04-29T00:00:00",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_5556e5826d",
+                        "text": "260429-2419-getUserByIds空指针",
                         "createdAt": "2026-04-29T00:00:00",
                         "done": true,
                         "released": true
@@ -404,46 +384,67 @@
                         "released": true
                 },
                 {
-                        "id": "scan_5556e5826d",
-                        "text": "260429-2419-getUserByIds空指针",
+                        "id": "scan_2cb3069d24",
+                        "text": "260429-2415-反馈收集页面支持导出csv",
                         "createdAt": "2026-04-29T00:00:00",
                         "done": true,
                         "released": true
                 },
                 {
-                        "id": "scan_52aeb38d55",
-                        "text": "260429-2421-公告功能支持新增开关按钮",
-                        "createdAt": "2026-04-29T00:00:00",
+                        "id": "scan_9f8f68b3fe",
+                        "text": "2210-空间站公告功能",
+                        "createdAt": "2026-05-19T12:34:40.801034",
                         "done": true,
                         "released": true
                 },
                 {
-                        "id": "scan_0decae4c8d",
-                        "text": "260429-2422-复制到内网镜像功能优化",
-                        "createdAt": "2026-04-29T00:00:00",
+                        "id": "scan_a5de68ed53",
+                        "text": "2263-复制镜像功能优化",
+                        "createdAt": "2026-05-19T12:34:40.801034",
                         "done": true,
                         "released": true
                 },
                 {
-                        "id": "scan_0ead0abd5f",
-                        "text": "260429-2423-空间站权限审批优化",
-                        "createdAt": "2026-04-29T00:00:00",
+                        "id": "scan_0d5f249ee5",
+                        "text": "2184-给用户检查给exam",
+                        "createdAt": "2026-05-19T12:34:40.801034",
                         "done": true,
                         "released": true
                 },
                 {
-                        "id": "scan_15cac2f8fc",
-                        "text": "260429-2424-订阅文档更新通知",
-                        "createdAt": "2026-04-29T00:00:00",
+                        "id": "scan_c1cb81a38a",
+                        "text": "2087-消息推送与反馈收集",
+                        "createdAt": "2026-05-19T12:34:40.801034",
                         "done": true,
                         "released": true
                 },
                 {
-                        "id": "scan_fc9b1238ca",
-                        "text": "260429-2425-新增文档标签支持对文档进行标记分类",
-                        "createdAt": "2026-04-29T00:00:00",
+                        "id": "scan_5daee87a3d",
+                        "text": "2093-文档设置权限功能优化",
+                        "createdAt": "2026-05-19T12:34:40.801034",
                         "done": true,
                         "released": true
+                },
+                {
+                        "id": "scan_48aa818169",
+                        "text": "2122-空间站文件转移功能优化",
+                        "createdAt": "2026-05-19T12:34:40.801034",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_bc1ab02e58",
+                        "text": "2101-增加空间站成员变更记录",
+                        "createdAt": "2026-05-19T12:34:40.801034",
+                        "done": true,
+                        "released": true
+                },
+                {
+                        "id": "scan_8d876c4495",
+                        "text": "1991-后端统一内网空间站成员花名",
+                        "createdAt": "2026-05-19T12:34:40.801034",
+                        "done": false,
+                        "released": false
                 }
         ],
         "jira": [
@@ -464,6 +465,10 @@
         ]
 };
         /* SEED_DATA_END */
+
+    /* SYNC_META_START */
+        const SYNC_META = {"lastSync": "2026-05-19 12:39:59", "added": 0, "modified": 0, "total": 49};
+        /* SYNC_META_END */
 
     /*
       数据结构（保存在 localStorage，key = "requirementsData_v2"）:
@@ -517,6 +522,17 @@
     selectAllCheckbox.addEventListener('change', onSelectAll);
 
     renderList();
+    showSyncInfo();
+
+    /* ---- 同步信息显示 ---- */
+
+    function showSyncInfo(){
+        if (typeof SYNC_META === 'object' && SYNC_META && SYNC_META.lastSync) {
+            const el = document.getElementById('syncInfo');
+            el.style.display = 'block';
+            el.textContent = `上次同步: ${SYNC_META.lastSync}　|　新增 ${SYNC_META.added || 0} 条，更新 ${SYNC_META.modified || 0} 条，共 ${SYNC_META.total || 0} 条`;
+        }
+    }
 
     /* ---- 数据加载与合并 ---- */
 
